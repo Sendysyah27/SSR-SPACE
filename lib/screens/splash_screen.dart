@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
 import 'package:ssr_space/screens/onboarding_screen.dart';
 import 'package:ssr_space/screens/lock_screen.dart';
 import 'package:ssr_space/screens/home_screen.dart';
+import 'package:ssr_space/screens/auth_screen.dart';
+import 'package:ssr_space/screens/org_switcher_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   final SessionService session;
-  const SplashScreen({super.key, required this.session});
+  final bool skipAuth;
+  const SplashScreen({super.key, required this.session, this.skipAuth = false});
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -22,6 +27,21 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _boot() async {
     try {
       await Future.delayed(const Duration(milliseconds: 800));
+      if (!mounted) return;
+      if (!widget.skipAuth && SupabaseConfig.url.isNotEmpty) {
+        if (SupabaseConfig.client.auth.currentUser == null) {
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => AuthScreen(session: widget.session)));
+          return;
+        }
+        final prefs = await SharedPreferences.getInstance();
+        if ((prefs.getString('active_org_id') ?? '').isEmpty) {
+          if (!mounted) return;
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => OrgSwitcherScreen(session: widget.session)));
+          return;
+        }
+      }
       if (!mounted) return;
       if (widget.session.isFirstRun) {
         Navigator.pushReplacement(context,
