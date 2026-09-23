@@ -14,6 +14,8 @@ class OrgSwitcherScreen extends StatefulWidget {
 class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
   List<Map<String, dynamic>> orgs = [];
   bool loading = true;
+  bool busy = false;
+  String? err;
   final nameC = TextEditingController();
 
   @override
@@ -22,8 +24,12 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
     _load();
   }
 
+  void _fail(Object e) {
+    setState(() => err = 'Gagal: ${e.toString().split('\n').first}');
+  }
+
   Future<void> _load() async {
-    setState(() => loading = true);
+    setState(() { loading = true; err = null; });
     try {
       final uid = SupabaseConfig.client.auth.currentUser!.id;
       final rows = await SupabaseConfig.client
@@ -31,7 +37,8 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
           .select('org_id, role, organizations(id, name, plan)')
           .eq('user_id', uid);
       setState(() => orgs = List<Map<String, dynamic>>.from(rows));
-    } catch (_) {
+    } catch (e) {
+      _fail(e);
       setState(() => orgs = []);
     } finally {
       setState(() => loading = false);
@@ -39,22 +46,30 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
   }
 
   Future<void> _create() async {
-    if (nameC.text.isEmpty) return;
-    final c = SupabaseConfig.client;
-    final org = await c.from('organizations').insert({'name': nameC.text}).select().single();
-    await c.from('org_members').insert({
-      'org_id': org['id'],
-      'user_id': c.auth.currentUser!.id,
-      'role': 'owner',
-    });
-    nameC.clear();
-    await _load();
+    if (nameC.text.trim().isEmpty || busy) return;
+    setState(() { busy = true; err = null; });
+    try {
+      final c = SupabaseConfig.client;
+      final org = await c.from('organizations').insert({'name': nameC.text.trim()}).select().single();
+      await c.from('org_members').insert({
+        'org_id': org['id'],
+        'user_id': c.auth.currentUser!.id,
+        'role': 'owner',
+      });
+      nameC.clear();
+      await _select(org);
+    } catch (e) {
+      _fail(e);
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   Future<void> _select(Map<String, dynamic> org) async {
+    final o = (org['organizations'] ?? org) as Map<String, dynamic>;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('active_org_id', (org['organizations'] ?? org)['id']);
-    await prefs.setString('active_org_name', (org['organizations'] ?? org)['name']);
+    await prefs.setString('active_org_id', o['id'].toString());
+    await prefs.setString('active_org_name', (o['name'] ?? '-').toString());
     if (!mounted) return;
     Navigator.pushReplacement(context,
         MaterialPageRoute(builder: (_) => HomeScreen(session: widget.session)));
@@ -76,7 +91,15 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
               const Divider(),
               const Text('Buat workspace baru'),
               TextField(controller: nameC, decoration: const InputDecoration(labelText: 'Nama workspace')),
-              ElevatedButton(onPressed: _create, child: const Text('Buat')),
+              if (err != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(err!, style: const TextStyle(color: Colors.red)),
+                ),
+              const SizedBox(height: 8),
+              busy
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton(onPressed: _create, child: const Text('Buat')),
             ]),
     );
   }
