@@ -28,7 +28,7 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
-      if (!widget.skipAuth && SupabaseConfig.url.isNotEmpty) {
+      if (!widget.skipAuth && SupabaseConfig.isConfigured) {
         if (SupabaseConfig.client.auth.currentUser == null) {
           Navigator.pushReplacement(context,
               MaterialPageRoute(builder: (_) => AuthScreen(session: widget.session)));

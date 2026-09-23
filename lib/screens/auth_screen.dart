@@ -19,6 +19,18 @@ class _AuthScreenState extends State<AuthScreen> {
   bool loading = false;
   String? err;
 
+  String _friendly(Object e) {
+    final s = e.toString();
+    if (s.contains('Failed host lookup')) {
+      return 'Tidak bisa menghubungi server (${SupabaseConfig.host}). Cek internet / matikan VPN-adblock, lalu Coba Lagi.';
+    }
+    if (s.contains('SocketException') || s.contains('ClientException') || s.contains('Connection')) {
+      return 'Jaringan bermasalah. Cek internet lalu Coba Lagi.';
+    }
+    if (e is AuthException) return e.message;
+    return s;
+  }
+
   Future<void> _submit() async {
     setState(() { loading = true; err = null; });
     try {
@@ -36,10 +48,8 @@ class _AuthScreenState extends State<AuthScreen> {
       } else {
         setState(() => err = 'Cek email — verifikasi mungkin diperlukan.');
       }
-    } on AuthException catch (e) {
-      setState(() => err = e.message);
     } catch (e) {
-      setState(() => err = e.toString());
+      setState(() => err = _friendly(e));
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -63,6 +73,8 @@ class _AuthScreenState extends State<AuthScreen> {
             onPressed: () => setState(() => isLogin = !isLogin),
             child: Text(isLogin ? 'Belum punya akun? Daftar' : 'Sudah punya akun? Masuk'),
           ),
+          const Spacer(),
+          Text('server: ${SupabaseConfig.host}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
         ]),
       ),
     );

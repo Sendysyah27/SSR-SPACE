@@ -21,6 +21,7 @@ jobs:
             flutter create . --project-name ssr_space --org com.ssr.space
           fi
           rm -f test/widget_test.dart
+          grep -q "android.permission.INTERNET" android/app/src/main/AndroidManifest.xml
       - run: flutter test
       - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
       - uses: actions/upload-artifact@v4
