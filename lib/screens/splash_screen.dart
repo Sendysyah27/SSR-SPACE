@@ -24,35 +24,31 @@ class _SplashScreenState extends State<SplashScreen> {
     _boot();
   }
 
+  Future<void> _go(Widget w) async {
+    if (!mounted) return;
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => w));
+  }
+
   Future<void> _boot() async {
     try {
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
-      if (!widget.skipAuth && SupabaseConfig.isConfigured) {
-        if (SupabaseConfig.client.auth.currentUser == null) {
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (_) => AuthScreen(session: widget.session)));
-          return;
+      if (SupabaseConfig.isConfigured) {
+        if (!widget.skipAuth && SupabaseConfig.client.auth.currentUser == null) {
+          return _go(AuthScreen(session: widget.session));
         }
         final prefs = await SharedPreferences.getInstance();
         if ((prefs.getString('active_org_id') ?? '').isEmpty) {
-          if (!mounted) return;
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (_) => OrgSwitcherScreen(session: widget.session)));
-          return;
+          return _go(OrgSwitcherScreen(session: widget.session));
         }
       }
       if (!mounted) return;
       if (widget.session.isFirstRun) {
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => OnboardingScreen(session: widget.session)));
+        return _go(OnboardingScreen(session: widget.session));
       } else if (widget.session.hasPin) {
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => LockScreen(session: widget.session)));
-      } else {
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => HomeScreen(session: widget.session)));
+        return _go(LockScreen(session: widget.session));
       }
+      return _go(HomeScreen(session: widget.session));
     } catch (e) {
       setState(() => error = e.toString());
     }

@@ -14,6 +14,7 @@ class TransactionsScreen extends StatefulWidget {
 class _TransactionsScreenState extends State<TransactionsScreen> {
   List<SaasTransaction> items = [];
   List<Wallet> wallets = [];
+  bool noOrg = false;
   final amountC = TextEditingController();
   final noteC = TextEditingController();
   String type = 'out';
@@ -27,7 +28,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Future<void> _load() async {
     final orgId = await _orgId();
-    if (orgId.isEmpty) return;
+    if (orgId.isEmpty) {
+      setState(() => noOrg = true);
+      return;
+    }
+    setState(() => noOrg = false);
     wallets = await WalletService().list(orgId);
     items = await TransactionService().list(orgId);
     setState(() {});
@@ -35,6 +40,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (noOrg) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Transaksi')),
+        body: const Center(child: Text('Pilih / buat workspace dulu')),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Transaksi')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
