@@ -18,6 +18,8 @@ class _AuthScreenState extends State<AuthScreen> {
   bool isLogin = true;
   bool loading = false;
   String? err;
+  String? info;
+  bool needVerify = false;
 
   String _friendly(Object e) {
     final s = e.toString();
@@ -27,31 +29,60 @@ class _AuthScreenState extends State<AuthScreen> {
     if (s.contains('SocketException') || s.contains('ClientException') || s.contains('Connection')) {
       return 'Jaringan bermasalah. Cek internet lalu Coba Lagi.';
     }
+    if (s.contains('Email not confirmed')) {
+      return 'Email belum verifikasi. Cek inbox lalu klik link, atau kirim ulang di bawah.';
+    }
     if (e is AuthException) return e.message;
     return s;
   }
 
   Future<void> _submit() async {
-    setState(() { loading = true; err = null; });
+    setState(() { loading = true; err = null; info = null; needVerify = false; });
     try {
       final auth = AuthService();
-      AuthResponse res;
       if (isLogin) {
-        res = await auth.signIn(emailC.text.trim(), passC.text);
-      } else {
-        res = await auth.signUp(emailC.text.trim(), passC.text);
-      }
-      if (res.session != null || SupabaseConfig.client.auth.currentUser != null) {
+        final res = await auth.signIn(emailC.text.trim(), passC.text);
+        if (res.session == null) {
+          setState(() {
+            err = 'Masuk gagal — sesi kosong. Kalau baru daftar, verifikasi email dulu.';
+            needVerify = true;
+          });
+          return;
+        }
         if (!mounted) return;
         Navigator.pushReplacement(context,
             MaterialPageRoute(builder: (_) => SplashScreen(session: widget.session, skipAuth: true)));
       } else {
-        setState(() => err = 'Cek email — verifikasi mungkin diperlukan.');
+        final res = await auth.signUp(emailC.text.trim(), passC.text);
+        if (res.session == null) {
+          setState(() {
+            info = 'Akun dibuat. Cek email, klik link verifikasi, lalu Masuk.';
+            isLogin = true;
+            needVerify = true;
+          });
+          return;
+        }
+        if (!mounted) return;
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (_) => SplashScreen(session: widget.session, skipAuth: true)));
       }
     } catch (e) {
-      setState(() => err = _friendly(e));
+      final m = _friendly(e);
+      setState(() {
+        err = m;
+        if (m.contains('verifikasi') || m.contains('confirm')) needVerify = true;
+      });
     } finally {
       if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _resend() async {
+    try {
+      await AuthService().resendVerification(emailC.text.trim());
+      setState(() => info = 'Link verifikasi dikirim ulang. Cek inbox/spam.');
+    } catch (e) {
+      setState(() => err = _friendly(e));
     }
   }
 
@@ -65,6 +96,9 @@ class _AuthScreenState extends State<AuthScreen> {
           TextField(controller: emailC, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email')),
           TextField(controller: passC, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
           if (err != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(err!, style: const TextStyle(color: Colors.red))),
+          if (info != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(info!, style: const TextStyle(color: Colors.green))),
+          if (needVerify && emailC.text.isNotEmpty)
+            TextButton(onPressed: _resend, child: const Text('Kirim ulang verifikasi')),
           const SizedBox(height: 12),
           loading
               ? const CircularProgressIndicator()

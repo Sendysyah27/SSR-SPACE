@@ -34,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
       if (SupabaseConfig.isConfigured) {
-        if (!widget.skipAuth && SupabaseConfig.client.auth.currentUser == null) {
+        if (!widget.skipAuth && SupabaseConfig.client.auth.currentSession == null) {
           return _go(AuthScreen(session: widget.session));
         }
         final prefs = await SharedPreferences.getInstance();

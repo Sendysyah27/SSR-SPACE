@@ -17,4 +17,7 @@ class AuthService {
       _c.auth.signInWithPassword(email: email, password: password);
 
   Future<void> signOut() => _c.auth.signOut();
+
+  Future<void> resendVerification(String email) =>
+      _c.auth.resend(type: OtpType.signup, email: email);
 }
