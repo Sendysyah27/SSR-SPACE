@@ -75,7 +75,7 @@ const watchedApps = [
   WatchedApp('Jago', ['id.co.jago', 'com.bankjago']),
   WatchedApp('Blu', ['com.bca.digital', 'id.co.bca.blu']),
   WatchedApp('CIMB', ['com.cimb', 'com.octo']),
-  WatchedApp('KEB Hana', ['id.co.bankbke', 'id.co.kebhana']),
+  WatchedApp('KEB Hana', ['id.co.bankbkemobile', 'id.co.bankbke', 'id.co.kebhana']),
   WatchedApp('ISAKU', ['com.isaku']),
 ];
 
