@@ -15,7 +15,13 @@ class CapturedNotif {
   final String title;
   final String content;
   final DateTime at;
-  CapturedNotif(this.package, this.appLabel, this.title, this.content) : at = DateTime.now();
+  final double? amount;
+  final String? type;
+  String? status;
+  CapturedNotif(this.package, this.appLabel, this.title, this.content)
+      : at = DateTime.now(),
+        amount = parseNotifAmount('$title $content'),
+        type = classifyNotif('$title $content');
 }
 
 class NotifTrack {
@@ -58,6 +64,13 @@ class NotifTrack {
     } catch (_) {}
   }
 
+  static void _remember(CapturedNotif n) {
+    recent.removeWhere((e) =>
+        e.package == n.package && e.title == n.title && e.content == n.content);
+    recent.insert(0, n);
+    if (recent.length > 20) recent.removeLast();
+  }
+
   static Future<void> _onEvent(ServiceNotificationEvent e) async {
     try {
       if (e.hasRemoved ?? false) return;
@@ -66,36 +79,88 @@ class NotifTrack {
       final title = (e.title ?? '').trim();
       final content = (e.content ?? '').trim();
       if (title.isEmpty && content.isEmpty) return;
-      final label = matchWatchedApp(pkg);
-      recent.insert(0, CapturedNotif(pkg, label, title, content));
-      if (recent.length > 20) recent.removeLast();
-      if (label == null) return;
+      final n = CapturedNotif(pkg, matchWatchedApp(pkg), title, content);
+      if (n.appLabel == null) {
+        n.status = 'Bukan app terpantau';
+        _remember(n);
+        return;
+      }
       final prefs = await SharedPreferences.getInstance();
-      if (!(prefs.getBool('track_master') ?? false)) return;
-      if (!(prefs.getBool('track_$label') ?? true)) return;
-      if (SupabaseConfig.client.auth.currentSession == null) return;
+      if (!(prefs.getBool('track_master') ?? false)) {
+        n.status = 'Master pelacakan mati';
+        _remember(n);
+        return;
+      }
+      if (!(prefs.getBool('track_${n.appLabel}') ?? true)) {
+        n.status = 'Toggle ${n.appLabel} mati';
+        _remember(n);
+        return;
+      }
+      if (SupabaseConfig.client.auth.currentSession == null) {
+        n.status = 'Belum masuk di aplikasi';
+        _remember(n);
+        return;
+      }
       final orgId = prefs.getString('active_org_id') ?? '';
-      if (orgId.isEmpty) return;
-      final text = '$title $content';
-      final amount = parseNotifAmount(text);
-      final type = classifyNotif(text);
-      if (amount == null || amount <= 0 || type == null) return;
+      if (orgId.isEmpty) {
+        n.status = 'Workspace belum dipilih';
+        _remember(n);
+        return;
+      }
+      if (n.amount == null || n.amount! <= 0 || n.type == null) {
+        n.status = 'Nominal atau jenis tidak terbaca';
+        _remember(n);
+        return;
+      }
       final hash = notifHash(pkg, title, content);
+      try {
+        final code = await TransactionService().mintCode(orgId);
+        await TransactionService().add(
+          orgId: orgId,
+          type: n.type!,
+          amount: n.amount!,
+          category: n.appLabel,
+          note: 'Otomatis dari ${n.appLabel}',
+          code: code,
+          sourcePackage: pkg,
+          sourceHash: hash,
+        );
+        n.status = 'Tersimpan';
+      } on PostgrestException catch (err) {
+        n.status = err.code == '23505' ? 'Sudah pernah dicatat' : 'Gagal simpan: ${err.code}';
+      }
+      _remember(n);
+    } catch (err) {
+      debugPrint('track: $err');
+    }
+  }
+
+  static Future<String> forceSave(CapturedNotif n) async {
+    final prefs = await SharedPreferences.getInstance();
+    final orgId = prefs.getString('active_org_id') ?? '';
+    if (orgId.isEmpty) return 'Workspace belum dipilih';
+    if (SupabaseConfig.client.auth.currentSession == null) return 'Belum masuk di aplikasi';
+    if (n.amount == null || n.type == null) return 'Nominal atau jenis tidak terbaca';
+    try {
       final code = await TransactionService().mintCode(orgId);
       await TransactionService().add(
         orgId: orgId,
-        type: type,
-        amount: amount,
-        category: label,
-        note: 'Otomatis dari $label',
+        type: n.type!,
+        amount: n.amount!,
+        category: n.appLabel,
+        note: 'Otomatis dari ${n.appLabel}',
         code: code,
-        sourcePackage: pkg,
-        sourceHash: hash,
+        sourcePackage: n.package,
+        sourceHash: notifHash(n.package, n.title, n.content),
       );
+      n.status = 'Tersimpan';
+      return 'Tersimpan';
     } on PostgrestException catch (err) {
-      if (err.code != '23505') debugPrint('track: $err');
-    } catch (err) {
-      debugPrint('track: $err');
+      final msg = err.code == '23505' ? 'Sudah pernah dicatat' : 'Gagal simpan: ${err.code}';
+      n.status = msg;
+      return msg;
+    } catch (_) {
+      return 'Gagal simpan. Coba lagi.';
     }
   }
 }

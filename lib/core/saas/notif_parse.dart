@@ -59,6 +59,7 @@ const watchedApps = [
   WatchedApp('Blu', ['blu']),
   WatchedApp('CIMB', ['cimb', 'octo']),
   WatchedApp('KEB Hana', ['keb', 'hana', 'bankbke']),
+  WatchedApp('ISAKU', ['isaku', 'saku']),
 ];
 
 String? matchWatchedApp(String package) {

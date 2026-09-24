@@ -100,15 +100,39 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
           },
           child: const Text('Pindai notifikasi aktif sekarang'),
         ),
-        if (NotifTrack.recent.isEmpty)
-          Text('Belum ada notifikasi tertangkap sesi ini.', style: Theme.of(context).textTheme.bodyMedium),
-        for (final n in NotifTrack.recent)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(n.title.isEmpty ? n.package : n.title),
-            subtitle: Text('${n.appLabel ?? n.package} | ${time.format(n.at)}\n${n.content}'),
-            isThreeLine: true,
-          ),
+        Builder(builder: (_) {
+          final shown = NotifTrack.recent
+              .where((n) => n.appLabel != null || n.amount != null)
+              .toList();
+          if (shown.isEmpty) {
+            return Text(
+              'Belum ada notifikasi keuangan tertangkap sesi ini.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            );
+          }
+          return Column(
+            children: [
+              for (final n in shown)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(n.title.isEmpty ? (n.appLabel ?? n.package) : n.title),
+                  subtitle: Text(
+                    '${n.appLabel ?? n.package} | ${time.format(n.at)}\n${n.content}\nStatus: ${n.status ?? 'melewati filter'}',
+                  ),
+                  isThreeLine: true,
+                  trailing: (n.status != 'Tersimpan' && n.amount != null && n.type != null)
+                      ? TextButton(
+                          onPressed: () async {
+                            await NotifTrack.forceSave(n);
+                            setState(() {});
+                          },
+                          child: const Text('Simpan'),
+                        )
+                      : null,
+                ),
+            ],
+          );
+        }),
       ]),
     );
   }

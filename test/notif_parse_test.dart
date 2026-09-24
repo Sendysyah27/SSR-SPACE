@@ -20,6 +20,8 @@ void main() {
     expect(notifHash('a', 'b', 'c'), notifHash('a', 'b', 'c'));
     expect(matchWatchedApp('com.bca.mybca.omni.android'), 'myBCA');
     expect(matchWatchedApp('com.gojek.app'), 'GoPay');
+    expect(matchWatchedApp('com.isaku.app'), 'ISAKU');
+    expect(matchWatchedApp('id.co.bankbkemobile.digitalbank'), 'KEB Hana');
     expect(matchWatchedApp('com.game.asing'), null);
   });
 }
