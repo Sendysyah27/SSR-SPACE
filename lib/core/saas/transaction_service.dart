@@ -78,4 +78,39 @@ class TransactionService {
     }
     return id;
   }
+
+  Future<void> update({
+    required String id,
+    required String orgId,
+    required String type,
+    required double amount,
+    String? walletId,
+    String? toWalletId,
+    String? category,
+    String? note,
+    String? date,
+  }) async {
+    assert(amount > 0);
+    await SupabaseConfig.client
+        .from('transactions')
+        .update({
+          'type': type,
+          'amount': amount,
+          'wallet_id': walletId,
+          'to_wallet_id': toWalletId,
+          'category': category,
+          'note': note,
+          'date': date,
+        })
+        .eq('id', id)
+        .eq('org_id', orgId);
+  }
+
+  Future<void> delete(String id, String orgId) async {
+    await SupabaseConfig.client
+        .from('transactions')
+        .delete()
+        .eq('id', id)
+        .eq('org_id', orgId);
+  }
 }
