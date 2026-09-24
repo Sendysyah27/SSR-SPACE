@@ -7,7 +7,8 @@ class SaasTransaction {
   final String? toWalletId;
   final String? category;
   final String? note;
-  SaasTransaction({required this.id, required this.orgId, required this.type, required this.amount, this.walletId, this.toWalletId, this.category, this.note});
+  final String? date;
+  SaasTransaction({required this.id, required this.orgId, required this.type, required this.amount, this.walletId, this.toWalletId, this.category, this.note, this.date});
   factory SaasTransaction.fromMap(Map<String, dynamic> m) => SaasTransaction(
         id: m['id'].toString(),
         orgId: m['org_id'].toString(),
@@ -17,5 +18,6 @@ class SaasTransaction {
         toWalletId: m['to_wallet_id']?.toString(),
         category: m['category']?.toString(),
         note: m['note']?.toString(),
+        date: m['date']?.toString(),
       );
 }
