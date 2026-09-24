@@ -1,8 +1,9 @@
+import 'dart:ui' show FontFeature;
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/core/format/datetime.dart';
 import 'package:ssr_space/core/format/money.dart';
-import 'package:ssr_space/core/saas/category_icons.dart';
 import 'package:ssr_space/core/saas/month.dart';
 import 'package:ssr_space/core/saas/transaction_service.dart';
 import 'package:ssr_space/core/theme/app_theme.dart';
@@ -11,10 +12,18 @@ import 'package:ssr_space/screens/budgets_screen.dart';
 import 'package:ssr_space/screens/reports_screen.dart';
 import 'package:ssr_space/screens/transactions_screen.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
+import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/state_views.dart';
+import 'package:ssr_space/widgets/status_chip.dart';
+import 'package:ssr_space/widgets/tx_row.dart';
 
 class BerandaScreen extends StatefulWidget {
-  const BerandaScreen({super.key});
+  final VoidCallback? onCatat;
+  final VoidCallback? onBudget;
+  final VoidCallback? onLaporan;
+
+  const BerandaScreen({super.key, this.onCatat, this.onBudget, this.onLaporan});
+
   @override
   State<BerandaScreen> createState() => BerandaScreenState();
 }
@@ -35,12 +44,18 @@ class BerandaScreenState extends State<BerandaScreen> {
   Future<void> reload() => _load();
 
   Future<void> _load() async {
-    setState(() { loading = true; err = null; });
+    setState(() {
+      loading = true;
+      err = null;
+    });
     try {
       final prefs = await SharedPreferences.getInstance();
       final orgId = prefs.getString('active_org_id') ?? '';
       if (orgId.isEmpty) {
-        setState(() { loading = false; items = []; });
+        setState(() {
+          loading = false;
+          items = [];
+        });
         return;
       }
       final txs = await TransactionService().listMonth(orgId, month);
@@ -52,23 +67,96 @@ class BerandaScreenState extends State<BerandaScreen> {
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() { loading = false; err = 'Gagal memuat beranda. Periksa koneksi.'; });
+      setState(() {
+        loading = false;
+        err = 'Gagal memuat beranda. Periksa koneksi.';
+      });
     }
+  }
+
+  void _goCatat() {
+    final cb = widget.onCatat;
+    if (cb != null) {
+      cb();
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const TransactionsScreen()),
+    );
+  }
+
+  void _goBudget() {
+    final cb = widget.onBudget;
+    if (cb != null) {
+      cb();
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const BudgetsScreen()),
+    );
+  }
+
+  void _goLaporan() {
+    final cb = widget.onLaporan;
+    if (cb != null) {
+      cb();
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ReportsScreen()),
+    );
+  }
+
+  void _openMonthTx() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionsScreen(initialMonth: month),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Beranda')),
-      body: _body(),
+      body: AnimatedSwitcher(
+        duration: SsrMotion.base,
+        switchInCurve: SsrMotion.curve,
+        switchOutCurve: SsrMotion.curve,
+        child: _body(),
+      ),
     );
   }
 
   Widget _body() {
-    if (loading) return const LoadingView(label: 'Memuat ringkasan...');
-    if (err != null) return ErrorView(message: err!, onRetry: _load);
-    final totalIn = items.where((t) => t.type == 'in').fold<double>(0, (s, t) => s + t.amount);
-    final totalOut = items.where((t) => t.type == 'out').fold<double>(0, (s, t) => s + t.amount);
+    if (loading) {
+      return const LoadingView(
+        key: ValueKey('beranda-loading'),
+        label: 'Memuat ringkasan...',
+      );
+    }
+    if (err != null) {
+      return ErrorView(
+        key: const ValueKey('beranda-error'),
+        message: err!,
+        onRetry: _load,
+      );
+    }
+    return _content(key: const ValueKey('beranda-content'));
+  }
+
+  Widget _content({Key? key}) {
+    final theme = Theme.of(context);
+    final totalIn = items
+        .where((t) => t.type == 'in')
+        .fold<double>(0, (s, t) => s + t.amount);
+    final totalOut = items
+        .where((t) => t.type == 'out')
+        .fold<double>(0, (s, t) => s + t.amount);
     final surplus = totalIn - totalOut;
     final denom = totalIn + totalOut;
     final inShare = denom <= 0 ? 0.0 : totalIn / denom;
@@ -78,131 +166,262 @@ class BerandaScreenState extends State<BerandaScreen> {
       final d = (t.date ?? '').isEmpty ? '-' : t.date!;
       groups.putIfAbsent(d, () => []).add(t);
     }
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      Center(child: Text(orgName, style: Theme.of(context).textTheme.bodyMedium)),
-      MonthPicker(month: month, onChanged: (m) { setState(() => month = m); _load(); }),
-      const SizedBox(height: 8),
-      _surplusCard(totalIn, totalOut, surplus, inShare, pctOut),
-      const SizedBox(height: 12),
-      InkWell(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TransactionsScreen(initialMonth: month))),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text('${items.length} transaksi ${monthLabel(month).toLowerCase()}', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
-        ),
+    return ListView(
+      key: key,
+      padding: const EdgeInsets.fromLTRB(
+        SsrSpace.lg,
+        SsrSpace.lg,
+        SsrSpace.lg,
+        96,
       ),
-      Row(children: [
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionsScreen())),
-            child: const Text('Catat'),
+      children: [
+        if (orgName.isNotEmpty && orgName != '-') ...[
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: SsrColors.accent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: SsrSpace.sm),
+              Expanded(
+                child: Text(
+                  orgName,
+                  style: theme.textTheme.titleMedium,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: OutlinedButton(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BudgetsScreen())),
-            child: const Text('Budget'),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: OutlinedButton(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen())),
-            child: const Text('Laporan'),
-          ),
-        ),
-      ]),
-      const SizedBox(height: 20),
-      Text('Transaksi terbaru', style: Theme.of(context).textTheme.titleMedium),
-      const SizedBox(height: 8),
-      if (items.isEmpty)
-        Text('Belum ada transaksi bulan ini.', style: Theme.of(context).textTheme.bodyMedium),
-      for (final d in groups.keys.take(7)) ...[
-        Padding(
-          padding: const EdgeInsets.only(top: 12, bottom: 4),
-          child: Text(d, style: Theme.of(context).textTheme.bodySmall),
-        ),
-        for (final t in groups[d]!.take(5)) _txRow(t),
-      ],
-    ]);
-  }
-
-  Widget _surplusCard(double totalIn, double totalOut, double surplus, double inShare, int? pctOut) {
-    final positive = surplus >= 0;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: SsrColors.ink, borderRadius: BorderRadius.circular(24)),
-      child: Column(children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-          child: Text(
-            positive ? 'SURPLUS' : 'DEFISIT',
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.8),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(rp(surplus), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: Colors.white, fontFeatures: [FontFeature.tabularFigures()])),
-        Text('Selisih ${monthLabel(month).toLowerCase()}', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13)),
-        if (pctOut != null) ...[
-          const SizedBox(height: 8),
-          Text('${pctOut >= 0 ? '+' : ''}$pctOut% dari pengeluaran', style: const TextStyle(color: Colors.white, fontSize: 13)),
+          const SizedBox(height: SsrSpace.md),
         ],
-        const SizedBox(height: 16),
-        Row(children: [
-          Expanded(child: Text('Masuk ${rp(totalIn)}', style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13))),
-          Expanded(child: Text('Keluar ${rp(totalOut)}', textAlign: TextAlign.end, style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13))),
-        ]),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: inShare,
-            minHeight: 8,
-            color: SsrColors.accent,
-            backgroundColor: Colors.white.withOpacity(0.15),
-          ),
+        MonthPicker(
+          month: month,
+          onChanged: (m) {
+            setState(() => month = m);
+            _load();
+          },
         ),
-      ]),
+        const SizedBox(height: SsrSpace.sm),
+        _surplusCard(totalIn, totalOut, surplus, inShare, pctOut),
+        const SizedBox(height: SsrSpace.xl),
+        PrimaryButton(label: 'Catat', onPressed: _goCatat),
+        const SizedBox(height: SsrSpace.sm),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _goBudget,
+                child: const Text('Budget'),
+              ),
+            ),
+            const SizedBox(width: SsrSpace.sm),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _goLaporan,
+                child: const Text('Laporan'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: SsrSpace.xl),
+        Text('Transaksi terbaru', style: theme.textTheme.titleMedium),
+        if (items.isNotEmpty) ...[
+          const SizedBox(height: SsrSpace.xs),
+          InkWell(
+            onTap: _openMonthTx,
+            borderRadius: BorderRadius.circular(SsrRadius.chip),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                '${items.length} transaksi ${monthLabel(month).toLowerCase()}',
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+        if (items.isEmpty)
+          SizedBox(
+            height: 280,
+            child: EmptyView(
+              icon: Icons.receipt_long_outlined,
+              title: 'Belum ada transaksi bulan ini',
+              subtitle:
+                  'Catat pemasukan atau pengeluaran untuk mengisi buku kas.',
+              actionLabel: 'Catat transaksi',
+              onAction: _goCatat,
+            ),
+          )
+        else
+          for (final d in groups.keys.take(7)) ...[
+            Padding(
+              padding: const EdgeInsets.only(
+                top: SsrSpace.md,
+                bottom: SsrSpace.xs,
+              ),
+              child: Text(dayLabel(d), style: theme.textTheme.bodySmall),
+            ),
+            for (final t in groups[d]!.take(5)) ...[
+              TxRow(tx: t),
+              const Divider(height: 1),
+            ],
+          ],
+      ],
     );
   }
 
-  Widget _txRow(SaasTransaction t) {
-    final isIn = t.type == 'in';
-    return Column(children: [
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(color: SsrColors.accent.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-          child: Icon(iconForCategory(t.category), color: SsrColors.accent),
-        ),
-        title: Text(t.note?.isNotEmpty ?? false ? t.note! : (t.category ?? '-')),
-        subtitle: Text([
-          t.code ?? '-',
-          if (t.sourcePackage != null) 'Otomatis',
-          t.category ?? '-',
-          if (txTime(t.createdAt).isNotEmpty) txTime(t.createdAt),
-        ].join(' | ')),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: (isIn ? SsrColors.accent : SsrColors.danger).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            '${isIn ? '+' : '-'}${rp(t.amount)}',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: isIn ? SsrColors.accent : SsrColors.danger,
-              fontFeatures: const [FontFeature.tabularFigures()],
+  Widget _surplusCard(
+    double totalIn,
+    double totalOut,
+    double surplus,
+    double inShare,
+    int? pctOut,
+  ) {
+    final positive = surplus >= 0;
+    return Container(
+      padding: const EdgeInsets.all(SsrSpace.xl),
+      decoration: const BoxDecoration(
+        color: SsrColors.ink,
+        borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: StatusChip(
+              label: positive ? 'SURPLUS' : 'DEFISIT',
+              tone: positive ? StatusTone.accent : StatusTone.danger,
             ),
           ),
-        ),
+          const SizedBox(height: SsrSpace.md),
+          Text(
+            rp(surplus),
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+              color: Colors.white,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Text(
+            'Selisih ${monthLabel(month).toLowerCase()}',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 13,
+            ),
+          ),
+          if (pctOut != null) ...[
+            const SizedBox(height: SsrSpace.sm),
+            Text(
+              '${pctOut >= 0 ? '+' : ''}$pctOut% dari pengeluaran',
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+            ),
+          ],
+          const SizedBox(height: SsrSpace.lg),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Masuk',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      rp(totalIn),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Keluar',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      rp(totalOut),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: SsrSpace.md),
+          SizedBox(
+            height: 8,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(
+                      begin: 0,
+                      end: inShare < 0 ? 0.0 : (inShare > 1 ? 1.0 : inShare),
+                    ),
+                    duration: SsrMotion.base,
+                    curve: SsrMotion.curve,
+                    builder: (context, value, _) {
+                      return Align(
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: value,
+                          heightFactor: 1,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: SsrColors.accent,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      const Divider(height: 1),
-    ]);
+    );
   }
 }

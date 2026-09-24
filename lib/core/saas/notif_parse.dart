@@ -1,8 +1,12 @@
 import 'package:crypto/crypto.dart';
+
 import 'dart:convert';
 
 /// Cocok `Rp88.655`, `Rp 10.800,00`, `IDR 88,655.00`, `IDR88,655`.
-final _amountRe = RegExp(r'(?:Rp|IDR)\.?\s*([\d][\d.,]*)', caseSensitive: false);
+final _amountRe = RegExp(
+  r'(?:Rp|IDR)\.?\s*([\d][\d.,]*)',
+  caseSensitive: false,
+);
 
 /// Normalisasi angka:
 /// - `88.655` / `1.234.567` → gaya Indonesia (titik = ribuan)
@@ -30,7 +34,8 @@ double? _normalizeAmount(String raw) {
     }
   } else if (hasDot) {
     final parts = g.split('.');
-    final allThousands = parts.length > 1 && parts.skip(1).every((p) => p.length == 3);
+    final allThousands =
+        parts.length > 1 && parts.skip(1).every((p) => p.length == 3);
     normalized = allThousands ? g.replaceAll('.', '') : g;
   } else {
     normalized = g;
@@ -45,23 +50,50 @@ double? parseNotifAmount(String text) {
 }
 
 const _inKeys = [
-  'dana masuk', 'uang masuk', 'telah diterima', 'diterima sebesar',
-  'pengkreditan', 'top up masuk', 'top up', 'topup', 'refund',
-  'dana kembali', 'cashback', 'transfer masuk', 'masuk sebesar',
-  'telah masuk', 'gaji telah', 'pemasukan', 'menerima', 'diterima',
-  'berhasil top up', 'isi saldo',
+  'dana masuk',
+  'uang masuk',
+  'telah diterima',
+  'diterima sebesar',
+  'pengkreditan',
+  'top up masuk',
+  'top up',
+  'topup',
+  'refund',
+  'dana kembali',
+  'cashback',
+  'transfer masuk',
+  'masuk sebesar',
+  'telah masuk',
+  'gaji telah',
+  'pemasukan',
+  'menerima',
+  'diterima',
+  'berhasil top up',
+  'isi saldo',
 ];
 
 const _outKeys = [
-  'berhasil ditransfer', 'transfer berhasil', 'pembayaran berhasil',
-  'berhasil dibayar', 'telah dibayar', 'berhasil terkirim',
-  'dana keluar', 'saldo berkurang', 'pendebetan', 'penarikan berhasil',
-  'pembelian berhasil', 'qris berhasil', 'berhasil ditarik',
-  'pengeluaran', 'penarikan', 'pembayaran', 'dibebankan',
+  'berhasil ditransfer',
+  'transfer berhasil',
+  'pembayaran berhasil',
+  'berhasil dibayar',
+  'telah dibayar',
+  'berhasil terkirim',
+  'dana keluar',
+  'saldo berkurang',
+  'pendebetan',
+  'penarikan berhasil',
+  'pembelian berhasil',
+  'qris berhasil',
+  'berhasil ditarik',
+  'pengeluaran',
+  'penarikan',
+  'pembayaran',
+  'dibebankan',
 ];
 
 /// Cocokkan frasa multi-kata: kata berurutan, boleh ada jeda
-/// (nominal / kata penghubung) di antaranya — mis. `Transfer Rp50.000 berhasil`.
+/// (nominal / kata penghubung) di antaranya, mis. `Transfer Rp50.000 berhasil`.
 bool _phraseHit(String t, String phrase) {
   if (!phrase.contains(' ')) return t.contains(phrase);
   final words = phrase.split(RegExp(r'\s+'));
@@ -126,7 +158,11 @@ const watchedApps = [
   WatchedApp('Jago', ['id.co.jago', 'com.bankjago']),
   WatchedApp('Blu', ['com.bca.digital', 'id.co.bca.blu']),
   WatchedApp('CIMB', ['com.cimb', 'com.octo']),
-  WatchedApp('KEB Hana', ['id.co.bankbkemobile', 'id.co.bankbke', 'id.co.kebhana']),
+  WatchedApp('KEB Hana', [
+    'id.co.bankbkemobile',
+    'id.co.bankbke',
+    'id.co.kebhana',
+  ]),
   WatchedApp('ISAKU', ['com.isaku']),
 ];
 

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
+import 'package:ssr_space/core/theme/app_theme.dart';
 import 'package:ssr_space/screens/onboarding_screen.dart';
 import 'package:ssr_space/screens/lock_screen.dart';
 import 'package:ssr_space/screens/main_shell.dart';
 import 'package:ssr_space/screens/auth_screen.dart';
 import 'package:ssr_space/screens/org_switcher_screen.dart';
+import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/widgets/state_views.dart';
 
 class SplashScreen extends StatefulWidget {
   final SessionService session;
@@ -17,10 +20,15 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  String? error;
+  bool failed = false;
+  bool _visible = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _visible = true);
+    });
     _boot();
   }
 
@@ -30,11 +38,13 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _boot() async {
+    setState(() => failed = false);
     try {
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
       if (SupabaseConfig.isConfigured) {
-        if (!widget.skipAuth && SupabaseConfig.client.auth.currentSession == null) {
+        if (!widget.skipAuth &&
+            SupabaseConfig.client.auth.currentSession == null) {
           return _go(AuthScreen(session: widget.session));
         }
         final prefs = await SharedPreferences.getInstance();
@@ -49,25 +59,64 @@ class _SplashScreenState extends State<SplashScreen> {
         return _go(LockScreen(session: widget.session));
       }
       return _go(MainShell(session: widget.session));
-    } catch (e) {
-      setState(() => error = e.toString());
+    } catch (_) {
+      if (mounted) setState(() => failed = true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: error == null
-            ? Column(mainAxisSize: MainAxisSize.min, children: [
-                Text('SSR SPACE', style: Theme.of(context).textTheme.displaySmall),
-                SizedBox(height: 12),
-                CircularProgressIndicator(),
-              ])
-            : Column(mainAxisSize: MainAxisSize.min, children: [
-                Text('Gagal init: $error'),
-                ElevatedButton(onPressed: _boot, child: const Text('Retry')),
-              ]),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: SsrSpace.xxl),
+            child: !failed
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedOpacity(
+                        opacity: _visible ? 1 : 0,
+                        duration: SsrMotion.base,
+                        curve: SsrMotion.curve,
+                        child: Column(
+                          children: [
+                            Text(
+                              'SSR SPACE',
+                              style: Theme.of(context).textTheme.displaySmall,
+                            ),
+                            const SizedBox(height: SsrSpace.sm),
+                            Text(
+                              'Buku kas harian.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: SsrSpace.xxl),
+                      const LoadingView(label: 'Menyiapkan buku kas...'),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.cloud_off_outlined,
+                        size: 40,
+                        color: SsrColors.secondary,
+                      ),
+                      const SizedBox(height: SsrSpace.md),
+                      Text(
+                        'Gagal menyiapkan buku kas. Periksa koneksi lalu coba lagi.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: SsrSpace.lg),
+                      PrimaryButton(label: 'Coba lagi', onPressed: _boot),
+                    ],
+                  ),
+          ),
+        ),
       ),
     );
   }

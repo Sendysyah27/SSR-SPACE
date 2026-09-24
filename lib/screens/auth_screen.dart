@@ -3,7 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/core/saas/auth_service.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
+import 'package:ssr_space/core/theme/app_theme.dart';
 import 'package:ssr_space/screens/splash_screen.dart';
+import 'package:ssr_space/widgets/primary_button.dart';
 
 class AuthScreen extends StatefulWidget {
   final SessionService session;
@@ -21,12 +23,21 @@ class _AuthScreenState extends State<AuthScreen> {
   String? info;
   bool needVerify = false;
 
+  @override
+  void dispose() {
+    emailC.dispose();
+    passC.dispose();
+    super.dispose();
+  }
+
   String _friendly(Object e) {
     final s = e.toString();
     if (s.contains('Failed host lookup')) {
       return 'Tidak bisa menghubungi server (${SupabaseConfig.host}). Cek internet / matikan VPN-adblock, lalu Coba Lagi.';
     }
-    if (s.contains('SocketException') || s.contains('ClientException') || s.contains('Connection')) {
+    if (s.contains('SocketException') ||
+        s.contains('ClientException') ||
+        s.contains('Connection')) {
       return 'Jaringan bermasalah. Cek internet lalu Coba Lagi.';
     }
     if (s.contains('Email not confirmed')) {
@@ -37,21 +48,31 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _submit() async {
-    setState(() { loading = true; err = null; info = null; needVerify = false; });
+    setState(() {
+      loading = true;
+      err = null;
+      info = null;
+      needVerify = false;
+    });
     try {
       final auth = AuthService();
       if (isLogin) {
         final res = await auth.signIn(emailC.text.trim(), passC.text);
         if (res.session == null) {
           setState(() {
-            err = 'Masuk gagal — sesi kosong. Kalau baru daftar, verifikasi email dulu.';
+            err = 'Masuk gagal, sesi kosong. Kalau baru daftar, verifikasi email dulu.';
             needVerify = true;
           });
           return;
         }
         if (!mounted) return;
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => SplashScreen(session: widget.session, skipAuth: true)));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                SplashScreen(session: widget.session, skipAuth: true),
+          ),
+        );
       } else {
         final res = await auth.signUp(emailC.text.trim(), passC.text);
         if (res.session == null) {
@@ -63,14 +84,20 @@ class _AuthScreenState extends State<AuthScreen> {
           return;
         }
         if (!mounted) return;
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => SplashScreen(session: widget.session, skipAuth: true)));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                SplashScreen(session: widget.session, skipAuth: true),
+          ),
+        );
       }
     } catch (e) {
       final m = _friendly(e);
       setState(() {
         err = m;
-        if (m.contains('verifikasi') || m.contains('confirm')) needVerify = true;
+        if (m.contains('verifikasi') || m.contains('confirm'))
+          needVerify = true;
       });
     } finally {
       if (mounted) setState(() => loading = false);
@@ -86,30 +113,106 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  Widget _messageRow({
+    required String text,
+    required Color bg,
+    required Color fg,
+    required IconData icon,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: SsrSpace.md,
+        vertical: SsrSpace.md,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(SsrRadius.chip),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: fg),
+          const SizedBox(width: SsrSpace.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: fg, fontSize: 13, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(isLogin ? 'Masuk SSR SPACE' : 'Daftar SSR SPACE')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(children: [
-          TextField(controller: emailC, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email')),
-          TextField(controller: passC, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
-          if (err != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(err!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
-          if (info != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(info!, style: const TextStyle(color: Colors.green))),
-          if (needVerify && emailC.text.isNotEmpty)
-            TextButton(onPressed: _resend, child: const Text('Kirim ulang verifikasi')),
-          const SizedBox(height: 12),
-          loading
-              ? const CircularProgressIndicator()
-              : ElevatedButton(onPressed: _submit, child: Text(isLogin ? 'Masuk' : 'Daftar')),
-          TextButton(
-            onPressed: () => setState(() => isLogin = !isLogin),
-            child: Text(isLogin ? 'Belum punya akun? Daftar' : 'Sudah punya akun? Masuk'),
-          ),
-          const Spacer(),
-          Text('server: ${SupabaseConfig.host}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-        ]),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(SsrSpace.xxl),
+          children: [
+            const SizedBox(height: SsrSpace.xxl),
+            Text('SSR SPACE', style: Theme.of(context).textTheme.displaySmall),
+            const SizedBox(height: SsrSpace.sm),
+            Text(
+              'Masuk untuk lanjut catat harian.',
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: SsrColors.secondary),
+            ),
+            const SizedBox(height: SsrSpace.xxl),
+            TextField(
+              controller: emailC,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.email],
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            const SizedBox(height: SsrSpace.md),
+            TextField(
+              controller: passC,
+              obscureText: true,
+              onSubmitted: (_) => _submit(),
+              decoration: const InputDecoration(labelText: 'Password'),
+            ),
+            if (err != null) ...[
+              const SizedBox(height: SsrSpace.md),
+              _messageRow(
+                text: err!,
+                bg: SsrColors.dangerSoft,
+                fg: SsrColors.danger,
+                icon: Icons.error_outline,
+              ),
+            ],
+            if (info != null) ...[
+              const SizedBox(height: SsrSpace.md),
+              _messageRow(
+                text: info!,
+                bg: SsrColors.accentSoft,
+                fg: SsrColors.accent,
+                icon: Icons.mark_email_read_outlined,
+              ),
+            ],
+            if (needVerify && emailC.text.isNotEmpty)
+              TextButton(
+                onPressed: _resend,
+                child: const Text('Kirim ulang verifikasi'),
+              ),
+            const SizedBox(height: SsrSpace.lg),
+            PrimaryButton(
+              label: isLogin ? 'Masuk' : 'Daftar',
+              loading: loading,
+              onPressed: _submit,
+            ),
+            TextButton(
+              onPressed: () => setState(() => isLogin = !isLogin),
+              child: Text(
+                isLogin
+                    ? 'Belum punya akun? Daftar'
+                    : 'Sudah punya akun? Masuk',
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

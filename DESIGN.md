@@ -4,8 +4,8 @@ Aplikasi pencatatan pemasukan dan pengeluaran multi-workspace untuk Indonesia. D
 
 ## Dials
 
-Dial: ENERGY 1 / RHYTHM 2 / MOTION 1.
-Design Read: aplikasi keuangan phone-first untuk pemakai Indonesia, bahasa visual buku kas yang tenang, dial ENERGY 1 / RHYTHM 2 / MOTION 1.
+Dial: ENERGY 2 / RHYTHM 2 / MOTION 2.
+Design Read: aplikasi keuangan phone-first untuk pemakai Indonesia, bahasa visual buku kas yang tenang tapi hidup: hierarki tegas, variasi section wajar, transisi Material halus. Dial ENERGY 2 / RHYTHM 2 / MOTION 2.
 
 ## Palette
 
@@ -25,7 +25,7 @@ Garis ledger: daftar transaksi berupa baris ber-lineup hairline seperti buku kas
 
 ## Gerak
 
-MOTION 1. Tanpa animasi kustom, hanya bawaan Material. Tidak ada loop tanpa akhir.
+MOTION 2. Transisi bawaan Material + easing halus (150-250ms): ganti loading/konten anti-blink, progress bar ease, ketuk primary. Tanpa loop tanpa akhir, tanpa parallax.
 
 ## Navigasi
 

@@ -12,14 +12,14 @@ import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/saas/transaction_service.dart';
 import 'package:ssr_space/core/saas/wallet_service.dart';
 
-/// Channel mentah plugin — API `isServiceConnected` / `reconnectService` /
+/// Channel mentah plugin: API `isServiceConnected` / `reconnectService` /
 /// `forceRequestRebind` / `getActiveNotifications` TIDAK diekspose ke Dart API
 /// pub.dev, hanya ke MethodChannel.
 const MethodChannel nlsChannel = MethodChannel(
   'x-slayer/notifications_channel',
 );
 
-/// Status scan dari kode error MethodChannel — jangan palsu jadi
+/// Status scan dari kode error MethodChannel: jangan palsu jadi
 /// “tidak ada notif” bila service memang mati.
 String scanErrorStatus(String code, {String? message}) {
   if (code == 'ServiceUnavailable') {
@@ -121,7 +121,7 @@ class NotifTrack {
     await ensureListening(force: true);
   }
 
-  /// (Re)subscribe stream. Aman dipanggil ulang — subscription lama dibatalkan
+  /// (Re)subscribe stream. Aman dipanggil ulang, subscription lama dibatalkan
   /// bila handle sudah basi (mis. setelah grant izin / resume).
   static Future<void> ensureListening({bool force = false}) async {
     if (!Platform.isAndroid) return;
@@ -164,7 +164,7 @@ class NotifTrack {
   static bool get isListening => _started;
 
   /// Scan notifikasi yang masih aktif di shade. Return status singkat
-  /// untuk UI — bedakan “service mati” vs “shade kosong”.
+  /// untuk UI, bedakan “service mati” vs “shade kosong”.
   static Future<String> refreshActive() async {
     if (!Platform.isAndroid) return 'Bukan Android';
     if (!await permissionGranted()) return 'Izin baca notifikasi belum aktif';
@@ -355,7 +355,7 @@ class NotifTrack {
   }
 
   /// Simpan paksa. `forceType` dipakai bila classifier tidak yakin
-  /// (type null) — user pilih Masuk/Keluar di UI.
+  /// (type null), user pilih Masuk/Keluar di UI.
   static Future<String> forceSave(CapturedNotif n, {String? forceType}) async {
     final prefs = await SharedPreferences.getInstance();
     final orgId = prefs.getString('active_org_id') ?? '';

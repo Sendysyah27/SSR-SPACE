@@ -71,7 +71,9 @@ class TransactionService {
         .order('date', ascending: false)
         .order('created_at', ascending: false)
         .limit(100);
-    return List<Map<String, dynamic>>.from(rows).map(SaasTransaction.fromMap).toList();
+    return List<Map<String, dynamic>>.from(rows)
+        .map(SaasTransaction.fromMap)
+        .toList();
   }
 
   Future<List<SaasTransaction>> listMonth(String orgId, String month) async {
@@ -84,15 +86,20 @@ class TransactionService {
         .order('date', ascending: false)
         .order('created_at', ascending: false)
         .limit(200);
-    return List<Map<String, dynamic>>.from(rows).map(SaasTransaction.fromMap).toList();
+    return List<Map<String, dynamic>>.from(rows)
+        .map(SaasTransaction.fromMap)
+        .toList();
   }
 
   Future<String> mintCode(String orgId) async {
-    final res = await SupabaseConfig.client.rpc('mint_tx_code', params: {'p_org_id': orgId});
+    final res = await SupabaseConfig.client.rpc(
+      'mint_tx_code',
+      params: {'p_org_id': orgId},
+    );
     return res.toString();
   }
 
-  /// Insert dulu (code nullable), baru mint + update — supaya nomor TX tidak
+  /// Insert dulu (code nullable), baru mint + update, supaya nomor TX tidak
   /// terbakar bila insert gagal (duplikat hash, RLS, dll).
   Future<String?> add({
     required String orgId,
@@ -110,20 +117,22 @@ class TransactionService {
     assert(amount > 0);
     final row = await SupabaseConfig.client
         .from('transactions')
-        .insert(txInsertPayload(
-          orgId: orgId,
-          type: type,
-          amount: amount,
-          walletId: walletId,
-          toWalletId: toWalletId,
-          category: category,
-          note: note,
-          code: code,
-          date: date,
-          sourcePackage: sourcePackage,
-          sourceHash: sourceHash,
-          createdBy: SupabaseConfig.client.auth.currentUser?.id,
-        ))
+        .insert(
+          txInsertPayload(
+            orgId: orgId,
+            type: type,
+            amount: amount,
+            walletId: walletId,
+            toWalletId: toWalletId,
+            category: category,
+            note: note,
+            code: code,
+            date: date,
+            sourcePackage: sourcePackage,
+            sourceHash: sourceHash,
+            createdBy: SupabaseConfig.client.auth.currentUser?.id,
+          ),
+        )
         .select('id')
         .single();
     final id = row['id'].toString();
@@ -132,9 +141,10 @@ class TransactionService {
       final minted = await mintCode(orgId);
       await SupabaseConfig.client
           .from('transactions')
-          .update({'code': minted}).eq('id', id);
+          .update({'code': minted})
+          .eq('id', id);
     } catch (_) {
-      // kode nomor opsional — transaksi tetap tersimpan
+      // kode nomor opsional, transaksi tetap tersimpan
     }
     return id;
   }
@@ -153,15 +163,17 @@ class TransactionService {
     assert(amount > 0);
     await SupabaseConfig.client
         .from('transactions')
-        .update(txUpdatePayload(
-          type: type,
-          amount: amount,
-          walletId: walletId,
-          toWalletId: toWalletId,
-          category: category,
-          note: note,
-          date: date,
-        ))
+        .update(
+          txUpdatePayload(
+            type: type,
+            amount: amount,
+            walletId: walletId,
+            toWalletId: toWalletId,
+            category: category,
+            note: note,
+            date: date,
+          ),
+        )
         .eq('id', id)
         .eq('org_id', orgId);
   }

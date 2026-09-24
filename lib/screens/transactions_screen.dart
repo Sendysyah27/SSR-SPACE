@@ -3,7 +3,6 @@ import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/core/format/money.dart';
-import 'package:ssr_space/core/saas/category_icons.dart';
 import 'package:ssr_space/core/saas/month.dart';
 import 'package:ssr_space/core/saas/transaction_service.dart';
 import 'package:ssr_space/core/saas/tx_validation.dart';
@@ -13,7 +12,10 @@ import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
+import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
+import 'package:ssr_space/widgets/tx_row.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -50,14 +52,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     _load();
   }
 
-  Future<String> _orgId() async => (await SharedPreferences.getInstance()).getString('active_org_id') ?? '';
+  Future<String> _orgId() async =>
+      (await SharedPreferences.getInstance()).getString('active_org_id') ?? '';
 
   Future<void> _load() async {
-    setState(() { loading = true; err = null; });
+    setState(() {
+      loading = true;
+      err = null;
+    });
     try {
       final orgId = await _orgId();
       if (orgId.isEmpty) {
-        setState(() { noOrg = true; loading = false; });
+        setState(() {
+          noOrg = true;
+          loading = false;
+        });
         return;
       }
       final w = await WalletService().list(orgId);
@@ -78,7 +87,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() { loading = false; err = 'Gagal memuat transaksi. Periksa koneksi.'; });
+      setState(() {
+        loading = false;
+        err = 'Gagal memuat transaksi. Periksa koneksi.';
+      });
     }
   }
 
@@ -105,7 +117,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = formKey.currentContext;
       if (ctx != null) {
-        Scrollable.ensureVisible(ctx, duration: Duration.zero);
+        Scrollable.ensureVisible(
+          ctx,
+          duration: SsrMotion.base,
+          curve: SsrMotion.curve,
+        );
       }
     });
   }
@@ -145,7 +161,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       setState(() => formErr = v);
       return;
     }
-    setState(() { saving = true; formErr = null; });
+    setState(() {
+      saving = true;
+      formErr = null;
+    });
     try {
       final orgId = await _orgId();
       final cat = catC.text.trim().isEmpty ? null : catC.text.trim();
@@ -165,9 +184,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         );
         if (!mounted) return;
         _cancelEdit();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transaksi diperbarui')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Transaksi diperbarui')));
       } else {
         await svc.add(
           orgId: orgId,
@@ -242,9 +261,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       await TransactionService().delete(editing!.id, orgId);
       if (!mounted) return;
       _cancelEdit();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transaksi dihapus')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Transaksi dihapus')));
       await _load();
     } catch (e) {
       if (!mounted) return;
@@ -262,153 +280,246 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         style: bal == null
             ? null
             : theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF5F5E5B),
+                color: SsrColors.secondary,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
       ),
     );
   }
 
+  void _scrollToForm() {
+    final ctx = formKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: SsrMotion.base,
+        curve: SsrMotion.curve,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     if (noOrg) {
       return Scaffold(
         appBar: AppBar(title: const Text('Transaksi')),
-        body: const Center(child: Text('Pilih atau buat workspace dulu')),
+        body: EmptyView(
+          icon: Icons.business_outlined,
+          title: 'Belum ada workspace',
+          subtitle: 'Pilih atau buat workspace dulu di menu Lainnya.',
+          actionLabel: 'Muat ulang',
+          onAction: _load,
+        ),
       );
     }
     if (loading) {
-      return Scaffold(appBar: AppBar(title: const Text('Transaksi')), body: const LoadingView(label: 'Memuat transaksi...'));
+      return Scaffold(
+        appBar: AppBar(title: const Text('Transaksi')),
+        body: const LoadingView(label: 'Memuat transaksi...'),
+      );
     }
     if (err != null) {
-      return Scaffold(appBar: AppBar(title: const Text('Transaksi')), body: ErrorView(message: err!, onRetry: _load));
+      return Scaffold(
+        appBar: AppBar(title: const Text('Transaksi')),
+        body: ErrorView(message: err!, onRetry: _load),
+      );
     }
-    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Transaksi')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
-        MonthPicker(month: month, onChanged: (m) { setState(() => month = m); _load(); }),
-        Text(
-          editing != null ? 'Mengubah transaksi' : 'Catat transaksi',
-          style: theme.textTheme.titleMedium,
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          SsrSpace.lg,
+          SsrSpace.lg,
+          SsrSpace.lg,
+          96,
         ),
-        if (editing != null) ...[
-          const SizedBox(height: 8),
-          Container(
+        children: [
+          MonthPicker(
+            month: month,
+            onChanged: (m) {
+              setState(() => month = m);
+              _load();
+            },
+          ),
+          const SizedBox(height: SsrSpace.md),
+          SectionCard(
             key: formKey,
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: SsrColors.accent.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Text(
-                    'Mengubah ${editing!.code ?? 'transaksi'}',
-                    style: theme.textTheme.bodyMedium,
+                if (editing != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(SsrSpace.md),
+                    decoration: BoxDecoration(
+                      color: SsrColors.accentSoft,
+                      borderRadius: BorderRadius.circular(SsrRadius.tile),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Mengubah ${editing!.code ?? 'transaksi'}',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _cancelEdit,
+                          child: const Text('Batalkan edit'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: SsrSpace.md),
+                ],
+                Text(
+                  editing != null ? 'Mengubah transaksi' : 'Catat transaksi',
+                  style: theme.textTheme.titleMedium,
+                ),
+                const SizedBox(height: SsrSpace.md),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'in', label: Text('Masuk')),
+                    ButtonSegment(value: 'out', label: Text('Keluar')),
+                    ButtonSegment(value: 'transfer', label: Text('Transfer')),
+                  ],
+                  selected: {type},
+                  onSelectionChanged: (v) => setState(() => type = v.first),
+                  showSelectedIcon: false,
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return SsrColors.accent;
+                      }
+                      return Colors.white;
+                    }),
+                    foregroundColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return Colors.white;
+                      }
+                      return SsrColors.ink;
+                    }),
+                    side: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return const BorderSide(color: SsrColors.accent);
+                      }
+                      return BorderSide(color: theme.colorScheme.outline);
+                    }),
+                    textStyle: WidgetStateProperty.all(
+                      const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
-                TextButton(
-                  onPressed: _cancelEdit,
-                  child: const Text('Batalkan edit'),
+                const SizedBox(height: SsrSpace.lg),
+                TextField(
+                  controller: amountC,
+                  keyboardType: TextInputType.number,
+                  style: SsrTheme.moneyLarge,
+                  decoration: const InputDecoration(
+                    labelText: 'Nominal',
+                    prefixText: 'Rp ',
+                    prefixStyle: SsrTheme.moneyLarge,
+                  ),
                 ),
+                const SizedBox(height: SsrSpace.md),
+                TextField(
+                  controller: catC,
+                  decoration: const InputDecoration(
+                    labelText: 'Kategori (misal Makan)',
+                  ),
+                ),
+                const SizedBox(height: SsrSpace.md),
+                TextField(
+                  controller: noteC,
+                  decoration: const InputDecoration(labelText: 'Catatan'),
+                ),
+                const SizedBox(height: SsrSpace.md),
+                DropdownButtonFormField<String>(
+                  value: walletId,
+                  decoration: const InputDecoration(labelText: 'Dompet'),
+                  items: [for (final w in wallets) _walletItem(w, theme)],
+                  onChanged: (v) => setState(() => walletId = v),
+                ),
+                if (type == 'transfer') ...[
+                  const SizedBox(height: SsrSpace.md),
+                  DropdownButtonFormField<String>(
+                    value: toWalletId,
+                    decoration: const InputDecoration(
+                      labelText: 'Dompet tujuan',
+                    ),
+                    items: [for (final w in wallets) _walletItem(w, theme)],
+                    onChanged: (v) => setState(() => toWalletId = v),
+                  ),
+                ],
+                if (formErr != null) ...[
+                  const SizedBox(height: SsrSpace.md),
+                  Text(
+                    formErr!,
+                    style: const TextStyle(
+                      color: SsrColors.danger,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: SsrSpace.lg),
+                PrimaryButton(
+                  label: editing != null
+                      ? 'Simpan perubahan'
+                      : 'Simpan transaksi',
+                  onPressed: _save,
+                  loading: saving,
+                ),
+                if (editing != null) ...[
+                  const SizedBox(height: SsrSpace.sm),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: _confirmDelete,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: SsrColors.danger,
+                        side: const BorderSide(color: SsrColors.danger),
+                      ),
+                      child: const Text('Hapus'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-        ],
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: type,
-          decoration: const InputDecoration(labelText: 'Jenis'),
-          items: const [
-            DropdownMenuItem(value: 'in', child: Text('Pemasukan')),
-            DropdownMenuItem(value: 'out', child: Text('Pengeluaran')),
-            DropdownMenuItem(value: 'transfer', child: Text('Transfer antar dompet')),
-          ],
-          onChanged: (v) => setState(() => type = v ?? 'out'),
-        ),
-        const SizedBox(height: 8),
-        TextField(controller: amountC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Nominal (Rp)', prefixText: 'Rp ')),
-        const SizedBox(height: 8),
-        TextField(controller: catC, decoration: const InputDecoration(labelText: 'Kategori (misal Makan)')),
-        const SizedBox(height: 8),
-        TextField(controller: noteC, decoration: const InputDecoration(labelText: 'Catatan')),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: walletId,
-          decoration: const InputDecoration(labelText: 'Dompet'),
-          items: [for (final w in wallets) _walletItem(w, theme)],
-          onChanged: (v) => setState(() => walletId = v),
-        ),
-        if (type == 'transfer') ...[
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: toWalletId,
-            decoration: const InputDecoration(labelText: 'Dompet tujuan'),
-            items: [for (final w in wallets) _walletItem(w, theme)],
-            onChanged: (v) => setState(() => toWalletId = v),
+          const SizedBox(height: SsrSpace.xl),
+          Text(
+            'Riwayat ${monthLabel(month).toLowerCase()}',
+            style: theme.textTheme.titleMedium,
           ),
-        ],
-        if (formErr != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(formErr!, style: TextStyle(color: theme.colorScheme.error)),
-          ),
-        const SizedBox(height: 12),
-        if (saving)
-          const Center(child: CircularProgressIndicator())
-        else ...[
-          ElevatedButton(
-            onPressed: _save,
-            child: Text(editing != null ? 'Simpan perubahan' : 'Simpan transaksi'),
-          ),
-          if (editing != null) ...[
-            const SizedBox(height: 8),
+          const SizedBox(height: SsrSpace.sm),
+          if (items.isEmpty)
             SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton(
-                onPressed: _confirmDelete,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFB3261E),
-                  side: const BorderSide(color: Color(0xFFB3261E)),
-                ),
-                child: const Text('Hapus'),
+              height: 260,
+              child: EmptyView(
+                icon: Icons.receipt_long_outlined,
+                title: 'Belum ada transaksi bulan ini',
+                subtitle:
+                    'Catat pemasukan atau pengeluaran lewat form di atas.',
+                actionLabel: 'Isi form catat',
+                onAction: _scrollToForm,
               ),
-            ),
-          ],
+            )
+          else
+            for (final t in items) ...[
+              TxRow(
+                tx: t,
+                selected: editing?.id == t.id,
+                onTap: () => _startEdit(t),
+              ),
+              const Divider(height: 1),
+            ],
         ],
-        const SizedBox(height: 16),
-        const Divider(),
-        Text('Riwayat ${monthLabel(month).toLowerCase()}', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        if (items.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              'Belum ada transaksi bulan ini. Catat pemasukan atau pengeluaran di form di atas.',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
-        for (final t in items) ...[
-          ListTile(
-            selected: editing?.id == t.id,
-            onTap: () => _startEdit(t),
-            contentPadding: EdgeInsets.zero,
-            leading: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(color: SsrColors.accent.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-              child: Icon(iconForCategory(t.category), color: SsrColors.accent),
-            ),
-            title: Text('${t.type == 'in' ? 'Masuk' : t.type == 'transfer' ? 'Transfer' : 'Keluar'}: ${rp(t.amount)}', style: SsrTheme.money),
-            subtitle: Text('${t.code ?? '-'}${t.sourcePackage != null ? ' | Otomatis' : ''} | ${t.category ?? '-'} ${t.note?.isNotEmpty ?? false ? '| ${t.note}' : ''}'),
-          ),
-          const Divider(height: 1),
-        ],
-      ]),
+      ),
     );
   }
 }
