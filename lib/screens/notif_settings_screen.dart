@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/core/format/money.dart';
+import 'package:ssr_space/core/saas/foreground_track.dart';
 import 'package:ssr_space/core/saas/notif_parse.dart';
 import 'package:ssr_space/core/saas/notif_track_service.dart';
 import 'package:ssr_space/core/saas/wallet_service.dart';
@@ -24,6 +25,7 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
   bool master = false;
   bool granted = false;
   bool serviceConnected = false;
+  bool foregroundRunning = false;
   Map<String, bool> perApp = {};
   Map<String, String?> walletFor = {};
   Map<String, String> catFor = {};
@@ -42,6 +44,7 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     final g = await NotifTrack.permissionGranted();
     final conn = g ? await NotifTrack.isServiceConnected() : false;
+    final fr = await ForegroundTrack.isRunning;
     List<Wallet> ws = [];
     try {
       final orgId = prefs.getString('active_org_id') ?? '';
@@ -54,6 +57,7 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
       master = prefs.getBool('track_master') ?? false;
       granted = g;
       serviceConnected = conn;
+      foregroundRunning = fr;
       wallets = ws;
       perApp = {
         for (final a in watchedApps)
@@ -89,6 +93,10 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('track_master', v);
     setState(() => master = v);
+    await ForegroundTrack.syncFromPrefs();
+    final fr = await ForegroundTrack.isRunning;
+    if (!mounted) return;
+    setState(() => foregroundRunning = fr);
   }
 
   Future<void> _setApp(String label, bool v) async {
@@ -185,6 +193,40 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
                   subtitle: const Text('Mati = tidak ada yang dicatat'),
                   value: master,
                   onChanged: _setMaster,
+                ),
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pemantauan latar',
+                              style: Theme.of(context).textTheme.labelLarge,
+                            ),
+                            const SizedBox(height: 2),
+                            StatusChip(
+                              label: foregroundRunning ? 'Aktif' : 'Mati',
+                              tone: foregroundRunning
+                                  ? StatusTone.accent
+                                  : StatusTone.neutral,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Flexible(
+                        child: Text(
+                          foregroundRunning
+                              ? 'Transaksi tetap tercatat walau app ditutup'
+                              : 'Buka app agar pelacakan berjalan',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const Divider(height: 1),
                 Padding(

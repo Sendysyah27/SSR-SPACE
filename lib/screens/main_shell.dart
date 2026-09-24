@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:ssr_space/core/saas/foreground_track.dart';
 import 'package:ssr_space/core/saas/notif_track_service.dart';
 import 'package:ssr_space/core/session/session_service.dart';
 import 'package:ssr_space/core/theme/app_theme.dart';
@@ -27,6 +30,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // force: resubscribe bila stream sempat error / app resume dari background
     NotifTrack.ensureListening(force: true);
+    unawaited(ForegroundTrack.syncFromPrefs());
   }
 
   @override
@@ -40,6 +44,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       NotifTrack.ensureListening(force: true);
+      unawaited(ForegroundTrack.syncFromPrefs());
     }
   }
 

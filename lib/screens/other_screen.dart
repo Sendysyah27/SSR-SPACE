@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/core/saas/billing_service.dart';
+import 'package:ssr_space/core/saas/foreground_track.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
 import 'package:ssr_space/core/theme/app_theme.dart';
@@ -86,6 +87,7 @@ class _OtherScreenState extends State<OtherScreen> {
     await SupabaseConfig.client.auth.signOut();
     final p = await SharedPreferences.getInstance();
     await p.remove('active_org_id');
+    await ForegroundTrack.stop();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
