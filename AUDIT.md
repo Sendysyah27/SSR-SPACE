@@ -194,8 +194,8 @@ supabase/migration_07 + 08
 
 | # | Item | Detail “done when” |
 |---|------|---------------------|
-| A1 | **Edit transaksi** (wallet, kategori, tanggal, amount) | User bisa perbaiki “Tersimpan (dompet belum cocok)” tanpa duplikat; UI form edit + UPDATE RLS member |
-| A2 | **Saldo dompet** | Kolom terhitung / view `wallet_balance`: Σ in − Σ out per wallet; tampil di layar Dompet & dropdown transaksi |
+| A1 | **Edit transaksi** (wallet, kategori, tanggal, amount) | ✅ done `2.3.4+16` edit in-place + hapus berkonfirmasi (`transactions_screen`, `TransactionService.update`/`delete`) |
+| A2 | **Saldo dompet** | ✅ done `2.3.4+16` view `wallet_balance` (`migration_09`, `security_invoker`); tampil di Dompet + dropdown form |
 | A3 | **Rate limit auto-insert** | Mis. max N insert / menit / org (prefer: RPC insert terkontrol atau Supabase rate limit); status “Dibatasi” |
 | A4 | **Audit log server** | Tabel `audit_logs(org_id, session/app, event, meta)` untuk insert otomatis & join org |
 | A5 | **Invite workspace** | Ganti “self-join by created_by” menjadi token invite / approve owner; UX Lainnya → Undang anggota |
@@ -251,6 +251,19 @@ Setelah install APK v2.3.3+ & migration 07+08:
 - [ ] User kedua **tidak** bisa insert membership org pertama (cek via SQL / API)
 - [ ] `mint_tx_code` org lain → error “not a member”
 - [ ] Budget kategori belanja terisi bila set `track_cat_*`
+- [ ] Jalankan `migration_09_wallet_balance.sql` di Supabase Dashboard
+- [ ] Install APK `2.3.4+16` → Dompet: saldo tampil per baris; wallet baru = `Rp0`
+- [ ] Tambah transaksi in 100.000 ke DANA → saldo DANA `Rp100.000`
+- [ ] Tap baris → ubah wallet ke Bank → simpan → kode TX sama, saldo DANA/Bank berubah
+- [ ] Transfer DANA→Bank 30.000 → DANA −30.000, Bank +30.000
+- [ ] Hapus transaksi dengan konfirmasi → hilang dari list, saldo balik
+- [ ] Form transaksi: dropdown menampilkan `nama · Rp…`
+- [ ] Auto-track “dompet belum cocok” → tap → pilih dompet → simpan → baris “Otomatis” tetap, saldo benar
+- [ ] User kedua: query `select * from wallet_balance` → hanya row org sendiri (atau kosong)
+- [ ] Balances gagal load: Dompet tetap tampil nama, nominal “Belum termuat”, bukan 0
+- [ ] Empty list Transaksi: teks ajakan catat, bukan layar kosong tanpa keterangan
+- [ ] Tombol Hapus / Simpan / Batalkan edit: mudah ditekan satu tangan, tanpa overflow horizontal di layar kecil
+- [ ] Tidak ada `—` (em dash) di copy UI hasil build
 
 ---
 
