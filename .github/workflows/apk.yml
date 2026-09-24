@@ -58,16 +58,16 @@ jobs:
           if kts.exists():
               s = kts.read_text()
               assert 'ssr-release.jks' not in s, 'signing already injected'
-              block = '''
-      signingConfigs {
-          create("release") {
-              storeFile = file("ssr-release.jks")
-              storePassword = System.getenv("SSR_KEYSTORE_PASS")
-              keyAlias = System.getenv("SSR_KEY_ALIAS")
-              keyPassword = System.getenv("SSR_KEY_PASS")
-          }
-      }
-  '''
+              block = (
+                  '\n      signingConfigs {\n'
+                  '          create("release") {\n'
+                  '              storeFile = file("ssr-release.jks")\n'
+                  '              storePassword = System.getenv("SSR_KEYSTORE_PASS")\n'
+                  '              keyAlias = System.getenv("SSR_KEY_ALIAS")\n'
+                  '              keyPassword = System.getenv("SSR_KEY_PASS")\n'
+                  '          }\n'
+                  '      }\n'
+              )
               assert 'android {' in s
               s = s.replace('android {', 'android {' + block, 1)
               old = 'signingConfig = signingConfigs.getByName("debug")'
@@ -77,16 +77,16 @@ jobs:
           else:
               s = groovy.read_text()
               assert 'ssr-release.jks' not in s, 'signing already injected'
-              block = '''
-      signingConfigs {
-          release {
-              storeFile file("ssr-release.jks")
-              storePassword System.getenv("SSR_KEYSTORE_PASS")
-              keyAlias System.getenv("SSR_KEY_ALIAS")
-              keyPassword System.getenv("SSR_KEY_PASS")
-          }
-      }
-  '''
+              block = (
+                  '\n      signingConfigs {\n'
+                  '          release {\n'
+                  '              storeFile file("ssr-release.jks")\n'
+                  '              storePassword System.getenv("SSR_KEYSTORE_PASS")\n'
+                  '              keyAlias System.getenv("SSR_KEY_ALIAS")\n'
+                  '              keyPassword System.getenv("SSR_KEY_PASS")\n'
+                  '          }\n'
+                  '      }\n'
+              )
               assert 'android {' in s
               s = s.replace('android {', 'android {' + block, 1)
               old = 'signingConfig signingConfigs.debug'
