@@ -15,10 +15,10 @@ import 'package:ssr_space/widgets/state_views.dart';
 class BerandaScreen extends StatefulWidget {
   const BerandaScreen({super.key});
   @override
-  State<BerandaScreen> createState() => _BerandaScreenState();
+  State<BerandaScreen> createState() => BerandaScreenState();
 }
 
-class _BerandaScreenState extends State<BerandaScreen> {
+class BerandaScreenState extends State<BerandaScreen> {
   String month = currentMonth();
   String orgName = '-';
   List<SaasTransaction> items = [];
@@ -30,6 +30,8 @@ class _BerandaScreenState extends State<BerandaScreen> {
     super.initState();
     _load();
   }
+
+  Future<void> reload() => _load();
 
   Future<void> _load() async {
     setState(() { loading = true; err = null; });

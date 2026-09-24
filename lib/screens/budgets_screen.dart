@@ -9,10 +9,10 @@ import 'package:ssr_space/widgets/state_views.dart';
 class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({super.key});
   @override
-  State<BudgetsScreen> createState() => _BudgetsScreenState();
+  State<BudgetsScreen> createState() => BudgetsScreenState();
 }
 
-class _BudgetsScreenState extends State<BudgetsScreen> {
+class BudgetsScreenState extends State<BudgetsScreen> {
   List<Budget> items = [];
   bool loading = true;
   String? err;
@@ -23,6 +23,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   void initState() { super.initState(); _load(); }
 
   Future<String> _orgId() async => (await SharedPreferences.getInstance()).getString('active_org_id') ?? '';
+
+  Future<void> reload() => _load();
 
   Future<void> _load() async {
     setState(() { loading = true; err = null; });

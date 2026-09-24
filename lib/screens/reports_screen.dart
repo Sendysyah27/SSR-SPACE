@@ -16,10 +16,10 @@ import 'package:ssr_space/widgets/state_views.dart';
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
   @override
-  State<ReportsScreen> createState() => _ReportsScreenState();
+  State<ReportsScreen> createState() => ReportsScreenState();
 }
 
-class _ReportsScreenState extends State<ReportsScreen> {
+class ReportsScreenState extends State<ReportsScreen> {
   late String month;
   List<SaasTransaction> items = [];
   bool loading = true;
@@ -27,6 +27,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   void initState() { super.initState(); month = currentMonth(); _load(); }
+
+  Future<void> reload() => _load();
 
   Future<void> _load() async {
     setState(() { loading = true; err = null; });

@@ -15,21 +15,30 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int index = 0;
+  final berandaKey = GlobalKey<BerandaScreenState>();
+  final budgetKey = GlobalKey<BudgetsScreenState>();
+  final reportsKey = GlobalKey<ReportsScreenState>();
+
+  void _select(int i) {
+    setState(() => index = i);
+    if (i == 0) berandaKey.currentState?.reload();
+    if (i == 2) budgetKey.currentState?.reload();
+    if (i == 3) reportsKey.currentState?.reload();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      const BerandaScreen(),
-      const TransactionsScreen(),
-      const BudgetsScreen(),
-      const ReportsScreen(),
-      OtherScreen(session: widget.session),
-    ];
     return Scaffold(
-      body: IndexedStack(index: index, children: pages),
+      body: IndexedStack(index: index, children: [
+        BerandaScreen(key: berandaKey),
+        const TransactionsScreen(),
+        BudgetsScreen(key: budgetKey),
+        ReportsScreen(key: reportsKey),
+        OtherScreen(session: widget.session),
+      ]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
-        onDestinationSelected: (i) => setState(() => index = i),
+        onDestinationSelected: _select,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Beranda'),
           NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'Transaksi'),
