@@ -42,6 +42,29 @@ jobs:
               m.write_text(s)
           assert 'NotificationListenerService' in m.read_text()
           EOF
+      - run: |
+          python3 - <<'EOF'
+          import pathlib
+          m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
+          s = m.read_text()
+          if 'FOREGROUND_SERVICE_SPECIAL_USE' not in s:
+              perms = (
+                  '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>\n'
+              )
+              s = s.replace('</manifest>', perms + '</manifest>')
+          if 'com.pravera.flutter_foreground_task.service.ForegroundService' not in s:
+              svc = '''    <service android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property android:name="android.app.PROPERTY_FOREGROUND_SERVICE_SPECIAL_USE"
+                      android:value="Pencatatan transaksi keuangan dari notifikasi bank saat aplikasi di latar belakang"/>
+          </service>
+          '''
+              s = s.replace('</application>', svc + '</application>')
+          m.write_text(s)
+          assert 'FOREGROUND_SERVICE_SPECIAL_USE' in m.read_text()
+          assert 'com.pravera.flutter_foreground_task.service.ForegroundService' in m.read_text()
+          EOF
       - run: flutter test
       - name: Setup release signing
         env:
