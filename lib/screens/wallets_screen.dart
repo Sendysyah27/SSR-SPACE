@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/core/format/money.dart';
 import 'package:ssr_space/core/saas/wallet_service.dart';
 import 'package:ssr_space/core/session/session_service.dart';
+import 'package:ssr_space/core/theme/app_theme.dart';
 import 'package:ssr_space/models/wallet.dart';
+import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 
 class WalletsScreen extends StatefulWidget {
@@ -14,6 +17,8 @@ class WalletsScreen extends StatefulWidget {
 
 class _WalletsScreenState extends State<WalletsScreen> {
   List<Wallet> items = [];
+  List<WalletBalance> balances = [];
+  bool balancesOk = false;
   bool noOrg = false;
   bool loading = true;
   String? err;
@@ -34,8 +39,23 @@ class _WalletsScreenState extends State<WalletsScreen> {
         return;
       }
       final data = await WalletService().list(orgId);
+      List<WalletBalance> bals = [];
+      var bOk = false;
+      try {
+        bals = await WalletService().balances(orgId);
+        bOk = true;
+      } catch (_) {
+        bals = [];
+        bOk = false;
+      }
       if (!mounted) return;
-      setState(() { noOrg = false; items = data; loading = false; });
+      setState(() {
+        noOrg = false;
+        items = data;
+        balances = bals;
+        balancesOk = bOk;
+        loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
       final msg = e.toString();
@@ -46,6 +66,14 @@ class _WalletsScreenState extends State<WalletsScreen> {
               : 'Gagal memuat dompet. Periksa koneksi.';
       setState(() { loading = false; err = short; });
     }
+  }
+
+  String _balanceLabel(String walletId) {
+    if (!balancesOk) return 'Belum termuat';
+    for (final b in balances) {
+      if (b.walletId == walletId) return rp(b.balance);
+    }
+    return rp(0);
   }
 
   @override
@@ -76,6 +104,10 @@ class _WalletsScreenState extends State<WalletsScreen> {
             leading: const Icon(Icons.account_balance_wallet_outlined),
             title: Text(w.name, style: Theme.of(context).textTheme.titleMedium),
             subtitle: Text(w.type),
+            trailing: Text(
+              _balanceLabel(w.id),
+              style: SsrTheme.money.copyWith(color: const Color(0xFF1C1B1A)),
+            ),
           ),
           const Divider(height: 1),
         ],
