@@ -74,7 +74,7 @@ void main() {
     );
     expect(
       connectionLabel(permissionGranted: true, serviceConnected: true),
-      contains('Terhubung'),
+      contains('terhubung'),
     );
   });
 }
