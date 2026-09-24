@@ -9,11 +9,27 @@ void main() {
     expect(parseNotifAmount('Halo apa kabar'), null);
   });
 
+  test('parse nominal format IDR (gaya barat koma ribuan)', () {
+    expect(parseNotifAmount('Pengeluaran sebesar IDR 88,655.00 di kategori'), 88655);
+    expect(parseNotifAmount('Pengeluaran sebesar IDR88,655.00 di kat...'), 88655);
+    expect(parseNotifAmount('IDR 1,234,567 transfer masuk'), 1234567);
+    expect(parseNotifAmount('IDR 88,655 pengeluaran'), 88655);
+  });
+
   test('classify in vs out vs ambiguous', () {
     expect(classifyNotif('Dana masuk Rp100 ke DANA'), 'in');
     expect(classifyNotif('Pembayaran berhasil Rp50 di merchant'), 'out');
     expect(classifyNotif('Info promo akhir bulan'), null);
     expect(classifyNotif('Dana masuk lalu berhasil ditransfer'), null);
+  });
+
+  test('classify frasa asli bank: top up, pengeluaran, menerima', () {
+    expect(classifyNotif('Berhasil top up saldo Rp88.655 d...'), 'in');
+    expect(classifyNotif('Pengeluaran sebesar IDR 88,655.00 di kat...'), 'out');
+    expect(classifyNotif('Pengeluaran sebesar Rp88.655,00 di kategori Belanja'), 'out');
+    expect(classifyNotif('Anda menerima transfer Rp100.000'), 'in');
+    expect(classifyNotif('Transfer Rp50.000 berhasil'), 'out');
+    expect(classifyNotif('Pembayaran sebesar Rp10.000 berhasil'), 'out');
   });
 
   test('hash stable same day, differs across day', () {

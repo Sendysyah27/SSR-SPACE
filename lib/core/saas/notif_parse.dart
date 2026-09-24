@@ -1,19 +1,55 @@
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 
-final _amountRe = RegExp(r'Rp\.?\s?([\d\.]+(?:,\d{1,2})?)');
+/// Cocok `Rp88.655`, `Rp 10.800,00`, `IDR 88,655.00`, `IDR88,655`.
+final _amountRe = RegExp(r'(?:Rp|IDR)\.?\s*([\d][\d.,]*)', caseSensitive: false);
+
+/// Normalisasi angka:
+/// - `88.655` / `1.234.567` → gaya Indonesia (titik = ribuan)
+/// - `88,655.00` → gaya barat (koma = ribuan, titik = desimal)
+/// - `10.800,00` → titik ribuan + koma desimal
+/// - `10,80` → desimal; `88,655` → ribuan
+double? _normalizeAmount(String raw) {
+  final g = raw.replaceAll(RegExp(r'[^\d.,]'), '');
+  if (g.isEmpty) return null;
+  final hasDot = g.contains('.');
+  final hasComma = g.contains(',');
+  String normalized;
+  if (hasDot && hasComma) {
+    if (g.lastIndexOf('.') > g.lastIndexOf(',')) {
+      normalized = g.replaceAll(',', '');
+    } else {
+      normalized = g.replaceAll('.', '').replaceAll(',', '.');
+    }
+  } else if (hasComma) {
+    final parts = g.split(',');
+    if (parts.length == 2 && parts[1].length <= 2 && parts[1].isNotEmpty) {
+      normalized = '${parts[0]}.${parts[1]}';
+    } else {
+      normalized = g.replaceAll(',', '');
+    }
+  } else if (hasDot) {
+    final parts = g.split('.');
+    final allThousands = parts.length > 1 && parts.skip(1).every((p) => p.length == 3);
+    normalized = allThousands ? g.replaceAll('.', '') : g;
+  } else {
+    normalized = g;
+  }
+  return double.tryParse(normalized);
+}
 
 double? parseNotifAmount(String text) {
   final m = _amountRe.firstMatch(text);
   if (m == null) return null;
-  final cleaned = m.group(1)!.replaceAll('.', '').replaceAll(',', '.');
-  return double.tryParse(cleaned);
+  return _normalizeAmount(m.group(1)!);
 }
 
 const _inKeys = [
   'dana masuk', 'uang masuk', 'telah diterima', 'diterima sebesar',
-  'pengkreditan', 'top up masuk', 'refund', 'dana kembali', 'cashback',
-  'transfer masuk', 'masuk sebesar', 'telah masuk', 'gaji telah',
+  'pengkreditan', 'top up masuk', 'top up', 'topup', 'refund',
+  'dana kembali', 'cashback', 'transfer masuk', 'masuk sebesar',
+  'telah masuk', 'gaji telah', 'pemasukan', 'menerima', 'diterima',
+  'berhasil top up', 'isi saldo',
 ];
 
 const _outKeys = [
@@ -21,12 +57,27 @@ const _outKeys = [
   'berhasil dibayar', 'telah dibayar', 'berhasil terkirim',
   'dana keluar', 'saldo berkurang', 'pendebetan', 'penarikan berhasil',
   'pembelian berhasil', 'qris berhasil', 'berhasil ditarik',
+  'pengeluaran', 'penarikan', 'pembayaran', 'dibebankan',
 ];
+
+/// Cocokkan frasa multi-kata: kata berurutan, boleh ada jeda
+/// (nominal / kata penghubung) di antaranya — mis. `Transfer Rp50.000 berhasil`.
+bool _phraseHit(String t, String phrase) {
+  if (!phrase.contains(' ')) return t.contains(phrase);
+  final words = phrase.split(RegExp(r'\s+'));
+  var idx = 0;
+  for (final w in words) {
+    final i = t.indexOf(w, idx);
+    if (i < 0) return false;
+    idx = i + w.length;
+  }
+  return true;
+}
 
 String? classifyNotif(String text) {
   final t = text.toLowerCase();
-  final isIn = _inKeys.any(t.contains);
-  final isOut = _outKeys.any(t.contains);
+  final isIn = _inKeys.any((k) => _phraseHit(t, k));
+  final isOut = _outKeys.any((k) => _phraseHit(t, k));
   if (isIn && isOut) return null;
   if (isIn) return 'in';
   if (isOut) return 'out';

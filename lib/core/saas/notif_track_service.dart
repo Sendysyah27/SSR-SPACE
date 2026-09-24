@@ -17,7 +17,7 @@ class CapturedNotif {
   final String content;
   final DateTime at;
   final double? amount;
-  final String? type;
+  String? type;
   String? status;
   CapturedNotif(this.package, this.appLabel, this.title, this.content, {DateTime? at})
       : at = at ?? DateTime.now(),
@@ -27,6 +27,7 @@ class CapturedNotif {
 
 class NotifTrack {
   static bool _started = false;
+  static StreamSubscription<ServiceNotificationEvent>? _sub;
   static final List<CapturedNotif> recent = [];
   static const ownPackage = 'com.ssr.space.ssr_space';
 
@@ -43,26 +44,59 @@ class NotifTrack {
     try {
       await NotificationListenerService.requestPermission();
     } catch (_) {}
+    await ensureListening(force: true);
   }
 
-  static Future<void> ensureListening() async {
-    if (_started || !Platform.isAndroid) return;
-    _started = true;
+  /// (Re)subscribe stream. Aman dipanggil ulang — subscription lama dibatalkan
+  /// bila handle sudah basi (mis. setelah grant izin / resume).
+  static Future<void> ensureListening({bool force = false}) async {
+    if (!Platform.isAndroid) return;
+    if (_started && !force) return;
     try {
-      NotificationListenerService.notificationsStream.listen(_onEvent, onError: (_) {});
-    } catch (_) {
+      await _sub?.cancel();
+    } catch (_) {}
+    _sub = null;
+    _started = false;
+    try {
+      _sub = NotificationListenerService.notificationsStream.listen(
+        _onEvent,
+        onError: (Object err) {
+          debugPrint('track stream error: $err');
+          _started = false;
+        },
+        onDone: () {
+          _started = false;
+        },
+      );
+      _started = true;
+    } catch (err) {
+      debugPrint('track listen gagal: $err');
       _started = false;
     }
   }
 
-  static Future<void> refreshActive() async {
-    if (!Platform.isAndroid) return;
+  static bool get isListening => _started;
+
+  /// Scan notifikasi yang masih aktif di shade. Return status singkat
+  /// untuk UI — jangan telan error senyap.
+  static Future<String> refreshActive() async {
+    if (!Platform.isAndroid) return 'Bukan Android';
+    final ok = await permissionGranted();
+    if (!ok) return 'Izin baca notifikasi belum aktif';
     try {
       final active = await NotificationListenerService.getActiveNotifications();
+      var seen = 0;
       for (final e in active) {
+        seen++;
         await _onEvent(e);
       }
-    } catch (_) {}
+      return seen == 0
+          ? 'Tidak ada notifikasi aktif di shade'
+          : 'Memindai $seen notifikasi aktif';
+    } catch (err) {
+      debugPrint('refreshActive: $err');
+      return 'Gagal memindai notifikasi aktif';
+    }
   }
 
   static void _remember(CapturedNotif n) {
@@ -171,12 +205,15 @@ class NotifTrack {
     }
   }
 
-  static Future<String> forceSave(CapturedNotif n) async {
+  /// Simpan paksa. `forceType` dipakai bila classifier tidak yakin
+  /// (type null) — user pilih Masuk/Keluar di UI.
+  static Future<String> forceSave(CapturedNotif n, {String? forceType}) async {
     final prefs = await SharedPreferences.getInstance();
     final orgId = prefs.getString('active_org_id') ?? '';
     if (orgId.isEmpty) return 'Workspace belum dipilih';
     if (SupabaseConfig.client.auth.currentSession == null) return 'Belum masuk di aplikasi';
-    if (n.amount == null || n.amount! <= 0 || n.type == null) {
+    final type = forceType ?? n.type;
+    if (n.amount == null || n.amount! <= 0 || type == null) {
       return 'Nominal atau jenis tidak terbaca';
     }
     final label = n.appLabel ?? n.package;
@@ -185,7 +222,7 @@ class NotifTrack {
     try {
       await TransactionService().add(
         orgId: orgId,
-        type: n.type!,
+        type: type,
         amount: n.amount!,
         walletId: walletId,
         category: (category == null || category.isEmpty) ? null : category,
@@ -194,6 +231,7 @@ class NotifTrack {
         sourcePackage: n.package,
         sourceHash: notifHash(n.package, n.title, n.content, at: n.at),
       );
+      n.type = type;
       n.status = 'Tersimpan';
       return 'Tersimpan';
     } on PostgrestException catch (err) {

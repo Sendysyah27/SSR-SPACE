@@ -23,7 +23,16 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
-    NotifTrack.ensureListening();
+    // force: resubscribe bila stream sempat error / app resume dari background
+    NotifTrack.ensureListening(force: true);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      NotifTrack.ensureListening(force: true);
+    }
   }
 
   void _select(int i) {

@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/core/format/money.dart';
 import 'package:ssr_space/core/saas/notif_parse.dart';
 import 'package:ssr_space/core/saas/notif_track_service.dart';
-import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/saas/wallet_service.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/widgets/state_views.dart';
@@ -23,6 +24,8 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
   Map<String, String> catFor = {};
   List<Wallet> wallets = [];
   bool loading = true;
+  String scanStatus = '';
+  bool scanning = false;
 
   @override
   void initState() {
@@ -55,6 +58,20 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
           a.label: prefs.getString(NotifTrack.catPrefKey(a.label)) ?? '',
       };
       loading = false;
+    });
+    // Auto-scan shade tiap kali screen dibuka — recent RAM bisa kosong
+    // walau notif masih ada di notification shade.
+    unawaited(_scan());
+  }
+
+  Future<void> _scan() async {
+    if (scanning) return;
+    setState(() => scanning = true);
+    final msg = await NotifTrack.refreshActive();
+    if (!mounted) return;
+    setState(() {
+      scanning = false;
+      scanStatus = msg;
     });
   }
 
@@ -191,17 +208,19 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
         const Divider(height: 1),
         const SizedBox(height: 8),
         Text('Terakhir terlihat', style: Theme.of(context).textTheme.titleMedium),
-        TextButton(
-          onPressed: () async {
-            await NotifTrack.refreshActive();
-            setState(() {});
-          },
-          child: const Text('Pindai notifikasi aktif sekarang'),
+        TextButton.icon(
+          onPressed: scanning ? null : _scan,
+          icon: scanning
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.refresh),
+          label: Text(scanning ? 'Memindai...' : 'Pindai notifikasi aktif sekarang'),
         ),
+        if (scanStatus.isNotEmpty)
+          Text(scanStatus, style: Theme.of(context).textTheme.bodySmall),
         Builder(builder: (_) {
-          final shown = NotifTrack.recent
-              .where((n) => n.appLabel != null || n.amount != null)
-              .toList();
+          // Tampilkan SEMUA hasil scan (termasuk non-allowlist) supaya user
+          // tahu notif masuk tapi ditolak gate — jangan disembunyikan.
+          final shown = NotifTrack.recent;
           if (shown.isEmpty) {
             return Text(
               'Belum ada notifikasi keuangan tertangkap sesi ini.',
@@ -215,21 +234,13 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
                   contentPadding: EdgeInsets.zero,
                   title: Text(n.title.isEmpty ? (n.appLabel ?? n.package) : n.title),
                   subtitle: Text(
-                    '${n.appLabel ?? n.package} | ${time.format(n.at)}\n${n.content}\nStatus: ${n.status ?? 'melewati filter'}',
+                    '${n.appLabel ?? n.package} | ${time.format(n.at)}\n${n.content}\n'
+                    'Status: ${n.status ?? 'melewati filter'}'
+                    '${n.amount != null ? ' · ${rp(n.amount!)}' : ''}'
+                    '${n.type != null ? ' · ${n.type == 'in' ? 'Masuk' : 'Keluar'}' : ''}',
                   ),
                   isThreeLine: true,
-                  trailing: (n.status != 'Tersimpan' &&
-                          !(n.status?.startsWith('Tersimpan') ?? false) &&
-                          n.amount != null &&
-                          n.type != null)
-                      ? TextButton(
-                          onPressed: () async {
-                            await NotifTrack.forceSave(n);
-                            setState(() {});
-                          },
-                          child: const Text('Simpan'),
-                        )
-                      : null,
+                  trailing: _saveButton(n),
                 ),
             ],
           );
@@ -237,4 +248,65 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
       ]),
     );
   }
+
+  Widget? _saveButton(CapturedNotif n) {
+    final saved = n.status == 'Tersimpan' || (n.status?.startsWith('Tersimpan') ?? false);
+    if (saved) return null;
+    if (n.amount == null || n.amount! <= 0) return null;
+    if (n.type != null) {
+      return TextButton(
+        onPressed: () async {
+          final msg = await NotifTrack.forceSave(n);
+          if (!mounted) return;
+          setState(() {});
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        },
+        child: const Text('Simpan'),
+      );
+    }
+    // Type tidak terbaca → minta user pilih Masuk / Keluar.
+    return TextButton(
+      onPressed: () => _pickTypeAndSave(n),
+      child: const Text('Simpan...'),
+    );
+  }
+
+  Future<void> _pickTypeAndSave(CapturedNotif n) async {
+    final type = await showModalSheetOfType(context, n);
+    if (type == null || !mounted) return;
+    final msg = await NotifTrack.forceSave(n, forceType: type);
+    if (!mounted) return;
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+}
+
+Future<String?> showModalSheetOfType(BuildContext context, CapturedNotif n) {
+  return showModalBottomSheet<String>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Jenis transaksi untuk ${rp(n.amount ?? 0)}',
+              style: Theme.of(ctx).textTheme.titleMedium,
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.arrow_downward),
+            title: const Text('Masuk (pemasukan)'),
+            onTap: () => Navigator.pop(ctx, 'in'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.arrow_upward),
+            title: const Text('Keluar (pengeluaran)'),
+            onTap: () => Navigator.pop(ctx, 'out'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
