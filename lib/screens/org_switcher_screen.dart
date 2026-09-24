@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
 import 'package:ssr_space/screens/home_screen.dart';
@@ -46,18 +47,20 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
   }
 
   Future<void> _create() async {
-    if (nameC.text.trim().isEmpty || busy) return;
+    final name = nameC.text.trim();
+    if (name.isEmpty || busy) return;
     setState(() { busy = true; err = null; });
     try {
       final c = SupabaseConfig.client;
-      final org = await c.from('organizations').insert({'name': nameC.text.trim()}).select().single();
+      final newId = const Uuid().v4();
+      await c.from('organizations').insert({'id': newId, 'name': name});
       await c.from('org_members').insert({
-        'org_id': org['id'],
+        'org_id': newId,
         'user_id': c.auth.currentUser!.id,
         'role': 'owner',
       });
       nameC.clear();
-      await _select(org);
+      await _select({'id': newId, 'name': name});
     } catch (e) {
       _fail(e);
     } finally {
