@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:notification_listener_service/notification_listener_service.dart';
+import 'package:notification_listener_service/notification_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/core/saas/notif_parse.dart';
@@ -45,6 +46,16 @@ class NotifTrack {
     } catch (_) {
       _started = false;
     }
+  }
+
+  static Future<void> refreshActive() async {
+    if (!Platform.isAndroid) return;
+    try {
+      final active = await NotificationListenerService.getActiveNotifications();
+      for (final e in active) {
+        await _onEvent(e);
+      }
+    } catch (_) {}
   }
 
   static Future<void> _onEvent(ServiceNotificationEvent e) async {

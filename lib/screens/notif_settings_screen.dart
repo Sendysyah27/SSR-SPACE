@@ -93,6 +93,13 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
         const Divider(height: 1),
         const SizedBox(height: 8),
         Text('Terakhir terlihat', style: Theme.of(context).textTheme.titleMedium),
+        TextButton(
+          onPressed: () async {
+            await NotifTrack.refreshActive();
+            setState(() {});
+          },
+          child: const Text('Pindai notifikasi aktif sekarang'),
+        ),
         if (NotifTrack.recent.isEmpty)
           Text('Belum ada notifikasi tertangkap sesi ini.', style: Theme.of(context).textTheme.bodyMedium),
         for (final n in NotifTrack.recent)
