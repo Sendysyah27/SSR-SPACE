@@ -6,6 +6,8 @@ create table if not exists tx_sequences (
   last_number int not null default 0
 );
 
+alter table tx_sequences enable row level security;
+
 create or replace function mint_tx_code(p_org_id uuid)
 returns text language plpgsql security definer as $$
 declare n int;
