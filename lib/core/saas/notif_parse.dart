@@ -51,6 +51,14 @@ const watchedApps = [
   WatchedApp('GoPay', ['gojek', 'gopay']),
   WatchedApp('ShopeePay', ['shopee']),
   WatchedApp('SeaBank', ['seabank']),
+  WatchedApp('BRI', ['brimo', '.bri']),
+  WatchedApp('BNI', ['bni']),
+  WatchedApp('BTN', ['btn']),
+  WatchedApp('Jenius', ['jenius']),
+  WatchedApp('Jago', ['jago']),
+  WatchedApp('Blu', ['blu']),
+  WatchedApp('CIMB', ['cimb', 'octo']),
+  WatchedApp('KEB Hana', ['keb', 'hana', 'bankbke']),
 ];
 
 String? matchWatchedApp(String package) {

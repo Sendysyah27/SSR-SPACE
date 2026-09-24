@@ -84,7 +84,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       amountC.clear(); noteC.clear(); catC.clear();
       setState(() => walletId = null);
       await _load();
-    } catch (e) {
+    } catch (_) {
       setState(() => formErr = 'Gagal menyimpan. Coba lagi.');
     } finally {
       if (mounted) setState(() => saving = false);
@@ -109,26 +109,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       appBar: AppBar(title: const Text('Transaksi')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         MonthPicker(month: month, onChanged: (m) { setState(() => month = m); _load(); }),
-        if (items.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text('Belum ada transaksi ${monthLabel(month).toLowerCase()}.', style: Theme.of(context).textTheme.bodyMedium),
-          ),
-        for (final t in items) ...[
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(color: SsrColors.accent.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-              child: Icon(iconForCategory(t.category), color: SsrColors.accent),
-            ),
-            title: Text('${t.type == 'in' ? 'Masuk' : t.type == 'transfer' ? 'Transfer' : 'Keluar'}: ${rp(t.amount)}', style: SsrTheme.money),
-            subtitle: Text('${t.code ?? '-'}${t.sourcePackage != null ? ' | Otomatis' : ''} | ${t.category ?? '-'} ${t.note?.isNotEmpty ?? false ? '| ${t.note}' : ''}'),
-          ),
-          const Divider(height: 1),
-        ],
-        const SizedBox(height: 16),
         Text('Catat transaksi', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
@@ -172,6 +152,29 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         saving
             ? const Center(child: CircularProgressIndicator())
             : ElevatedButton(onPressed: _save, child: const Text('Simpan transaksi')),
+        const SizedBox(height: 16),
+        const Divider(),
+        Text('Riwayat ${monthLabel(month).toLowerCase()}', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        if (items.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('Belum ada transaksi bulan ini.', style: Theme.of(context).textTheme.bodyMedium),
+          ),
+        for (final t in items) ...[
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: SsrColors.accent.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+              child: Icon(iconForCategory(t.category), color: SsrColors.accent),
+            ),
+            title: Text('${t.type == 'in' ? 'Masuk' : t.type == 'transfer' ? 'Transfer' : 'Keluar'}: ${rp(t.amount)}', style: SsrTheme.money),
+            subtitle: Text('${t.code ?? '-'}${t.sourcePackage != null ? ' | Otomatis' : ''} | ${t.category ?? '-'} ${t.note?.isNotEmpty ?? false ? '| ${t.note}' : ''}'),
+          ),
+          const Divider(height: 1),
+        ],
       ]),
     );
   }
