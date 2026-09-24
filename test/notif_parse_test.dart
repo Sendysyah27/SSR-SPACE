@@ -16,12 +16,34 @@ void main() {
     expect(classifyNotif('Dana masuk lalu berhasil ditransfer'), null);
   });
 
-  test('hash stable and app matching', () {
-    expect(notifHash('a', 'b', 'c'), notifHash('a', 'b', 'c'));
+  test('hash stable same day, differs across day', () {
+    final d1 = DateTime(2026, 9, 24, 10, 0);
+    final d2 = DateTime(2026, 9, 25, 10, 0);
+    expect(
+      notifHash('a', 'b', 'c', at: d1),
+      notifHash('a', 'b', 'c', at: DateTime(2026, 9, 24, 23, 59)),
+    );
+    expect(
+      notifHash('a', 'b', 'c', at: d1) == notifHash('a', 'b', 'c', at: d2),
+      false,
+    );
+  });
+
+  test('match watched app by exact package prefix', () {
     expect(matchWatchedApp('com.bca.mybca.omni.android'), 'myBCA');
     expect(matchWatchedApp('com.gojek.app'), 'GoPay');
     expect(matchWatchedApp('com.isaku.app'), 'ISAKU');
     expect(matchWatchedApp('id.co.bankbkemobile.digitalbank'), 'KEB Hana');
+    expect(matchWatchedApp('id.dana.debug'), 'DANA');
     expect(matchWatchedApp('com.game.asing'), null);
+    expect(matchWatchedApp('com.example.danagame'), null);
+    expect(matchWatchedApp('com.bluetooth.something'), null);
+    expect(matchWatchedApp('org.blurnotbank'), null);
+    expect(matchWatchedApp(''), null);
+  });
+
+  test('ymd formats local date', () {
+    expect(ymd(DateTime(2026, 9, 4)), '2026-09-04');
+    expect(ymd(DateTime(2026, 12, 31)), '2026-12-31');
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/core/format/datetime.dart';
 import 'package:ssr_space/core/format/money.dart';
 import 'package:ssr_space/core/saas/category_icons.dart';
 import 'package:ssr_space/core/saas/month.dart';
@@ -179,7 +180,12 @@ class BerandaScreenState extends State<BerandaScreen> {
           child: Icon(iconForCategory(t.category), color: SsrColors.accent),
         ),
         title: Text(t.note?.isNotEmpty ?? false ? t.note! : (t.category ?? '-')),
-        subtitle: Text('${t.code ?? '-'}${t.sourcePackage != null ? ' | Otomatis' : ''} | ${t.category ?? '-'}'),
+        subtitle: Text([
+          t.code ?? '-',
+          if (t.sourcePackage != null) 'Otomatis',
+          t.category ?? '-',
+          if (txTime(t.createdAt).isNotEmpty) txTime(t.createdAt),
+        ].join(' | ')),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(

@@ -2,9 +2,9 @@
 
 **Nama:** SSR SPACE
 **Tipe:** Aplikasi Android pencatatan pengeluaran & pemasukan
-**Pendekatan disetujui:** A Flutter + sqflite offline + GitHub Actions APK
-**Storage:** Offline penuh (SQLite lokal, tanpa login server)
-**Eksekusi:** via gh CLI
+**Pendekatan (update 2026-09-24):** Flutter + Supabase (auth + Postgres RLS) + notif listener auto-track
+**Storage:** Cloud workspace per user; listrik / UI tetap ringan. Bukan lagi sqflite offline penuh.
+**Eksekusi:** via gh CLI + GitHub Actions
 
 ## 1. Arsitektur
 Flutter (stable) + sqflite + shared_preferences + flutter_secure_storage.

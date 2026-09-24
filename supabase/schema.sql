@@ -3,6 +3,7 @@ create table if not exists organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   plan text not null default 'free',
+  created_by uuid references auth.users(id),
   created_at timestamptz default now()
 );
 
@@ -56,12 +57,41 @@ create policy "member tx" on transactions for all
 
 drop policy if exists "auth create org" on organizations;
 create policy "auth create org" on organizations
-  for insert to authenticated with check (true);
+  for insert to authenticated
+  with check (created_by = auth.uid());
 
 drop policy if exists "own memberships" on org_members;
 create policy "own memberships" on org_members
   for select to authenticated using (user_id = auth.uid());
 
+drop policy if exists "member read org_members" on org_members;
+create policy "member read org_members" on org_members
+  for select to authenticated
+  using (
+    user_id = auth.uid()
+    or exists (
+      select 1 from org_members m
+      where m.org_id = org_id
+        and m.user_id = auth.uid()
+        and m.role in ('owner', 'admin')
+    )
+  );
+
 drop policy if exists "join own org" on org_members;
 create policy "join own org" on org_members
-  for insert to authenticated with check (user_id = auth.uid());
+  for insert to authenticated
+  with check (
+    (
+      user_id = auth.uid()
+      and exists (
+        select 1 from organizations o
+        where o.id = org_id and o.created_by = auth.uid()
+      )
+    )
+    or exists (
+      select 1 from org_members m
+      where m.org_id = org_id
+        and m.user_id = auth.uid()
+        and m.role in ('owner', 'admin')
+    )
+  );

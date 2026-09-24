@@ -12,6 +12,13 @@ create or replace function mint_tx_code(p_org_id uuid)
 returns text language plpgsql security definer as $$
 declare n int;
 begin
+  if not exists (
+    select 1 from org_members m
+    where m.org_id = p_org_id and m.user_id = auth.uid()
+  ) then
+    raise exception 'not a member of workspace';
+  end if;
+
   insert into tx_sequences(org_id, last_number)
     values (p_org_id, 0) on conflict (org_id) do nothing;
   select last_number + 1 into n from tx_sequences

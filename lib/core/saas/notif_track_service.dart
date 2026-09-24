@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/core/saas/notif_parse.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/saas/transaction_service.dart';
+import 'package:ssr_space/core/saas/wallet_service.dart';
 
 class CapturedNotif {
   final String package;
@@ -18,8 +19,8 @@ class CapturedNotif {
   final double? amount;
   final String? type;
   String? status;
-  CapturedNotif(this.package, this.appLabel, this.title, this.content)
-      : at = DateTime.now(),
+  CapturedNotif(this.package, this.appLabel, this.title, this.content, {DateTime? at})
+      : at = at ?? DateTime.now(),
         amount = parseNotifAmount('$title $content'),
         type = classifyNotif('$title $content');
 }
@@ -71,6 +72,38 @@ class NotifTrack {
     if (recent.length > 20) recent.removeLast();
   }
 
+  /// Pref key: wallet yang menerima transaksi dari app ini.
+  static String walletPrefKey(String label) => 'track_wallet_$label';
+
+  /// Pref key: kategori belanja (opsional), bukan nama app.
+  static String catPrefKey(String label) => 'track_cat_$label';
+
+  static Future<String?> resolveWalletId(String orgId, String label, SharedPreferences prefs) async {
+    final mapped = prefs.getString(walletPrefKey(label));
+    if (mapped != null && mapped.isNotEmpty) return mapped;
+    try {
+      final wallets = await WalletService().list(orgId);
+      final target = label.toLowerCase();
+      for (final w in wallets) {
+        final n = w.name.toLowerCase();
+        if (n == target || n.contains(target)) return w.id;
+      }
+      final aliases = <String, List<String>>{
+        'mybca': ['bca'],
+        'livin mandiri': ['mandiri'],
+        'blu': ['blu', 'bca digital'],
+        'gopay': ['gopay', 'gojek'],
+        'shopeepay': ['shopee'],
+      };
+      for (final keys in aliases[label.toLowerCase()] ?? const <String>[]) {
+        for (final w in wallets) {
+          if (w.name.toLowerCase().contains(keys)) return w.id;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   static Future<void> _onEvent(ServiceNotificationEvent e) async {
     try {
       if (e.hasRemoved ?? false) return;
@@ -112,20 +145,23 @@ class NotifTrack {
         _remember(n);
         return;
       }
-      final hash = notifHash(pkg, title, content);
+      final walletId = await resolveWalletId(orgId, n.appLabel!, prefs);
+      final category = prefs.getString(catPrefKey(n.appLabel!))?.trim();
       try {
-        final code = await TransactionService().mintCode(orgId);
         await TransactionService().add(
           orgId: orgId,
           type: n.type!,
           amount: n.amount!,
-          category: n.appLabel,
+          walletId: walletId,
+          category: (category == null || category.isEmpty) ? null : category,
           note: 'Otomatis dari ${n.appLabel}',
-          code: code,
+          date: ymd(n.at),
           sourcePackage: pkg,
-          sourceHash: hash,
+          sourceHash: notifHash(pkg, title, content, at: n.at),
         );
-        n.status = 'Tersimpan';
+        n.status = walletId == null
+            ? 'Tersimpan (dompet belum cocok)'
+            : 'Tersimpan';
       } on PostgrestException catch (err) {
         n.status = err.code == '23505' ? 'Sudah pernah dicatat' : 'Gagal simpan: ${err.code}';
       }
@@ -140,18 +176,23 @@ class NotifTrack {
     final orgId = prefs.getString('active_org_id') ?? '';
     if (orgId.isEmpty) return 'Workspace belum dipilih';
     if (SupabaseConfig.client.auth.currentSession == null) return 'Belum masuk di aplikasi';
-    if (n.amount == null || n.type == null) return 'Nominal atau jenis tidak terbaca';
+    if (n.amount == null || n.amount! <= 0 || n.type == null) {
+      return 'Nominal atau jenis tidak terbaca';
+    }
+    final label = n.appLabel ?? n.package;
+    final walletId = await resolveWalletId(orgId, label, prefs);
+    final category = prefs.getString(catPrefKey(label))?.trim();
     try {
-      final code = await TransactionService().mintCode(orgId);
       await TransactionService().add(
         orgId: orgId,
         type: n.type!,
         amount: n.amount!,
-        category: n.appLabel,
-        note: 'Otomatis dari ${n.appLabel}',
-        code: code,
+        walletId: walletId,
+        category: (category == null || category.isEmpty) ? null : category,
+        note: 'Otomatis dari $label',
+        date: ymd(n.at),
         sourcePackage: n.package,
-        sourceHash: notifHash(n.package, n.title, n.content),
+        sourceHash: notifHash(n.package, n.title, n.content, at: n.at),
       );
       n.status = 'Tersimpan';
       return 'Tersimpan';

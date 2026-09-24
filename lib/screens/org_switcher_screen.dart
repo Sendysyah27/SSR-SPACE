@@ -52,11 +52,16 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
     setState(() { busy = true; err = null; });
     try {
       final c = SupabaseConfig.client;
+      final uid = c.auth.currentUser!.id;
       final newId = const Uuid().v4();
-      await c.from('organizations').insert({'id': newId, 'name': name});
+      await c.from('organizations').insert({
+        'id': newId,
+        'name': name,
+        'created_by': uid,
+      });
       await c.from('org_members').insert({
         'org_id': newId,
-        'user_id': c.auth.currentUser!.id,
+        'user_id': uid,
         'role': 'owner',
       });
       nameC.clear();

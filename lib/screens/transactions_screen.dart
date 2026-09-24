@@ -74,12 +74,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     setState(() { saving = true; formErr = null; });
     try {
       final orgId = await _orgId();
-      final code = await TransactionService().mintCode(orgId);
       await TransactionService().add(
         orgId: orgId, type: type, amount: nominal,
         walletId: walletId, toWalletId: toWalletId,
         category: catC.text.trim().isEmpty ? null : catC.text.trim(),
-        note: noteC.text.trim(), code: code,
+        note: noteC.text.trim(),
       );
       amountC.clear(); noteC.clear(); catC.clear();
       setState(() => walletId = null);

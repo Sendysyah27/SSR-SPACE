@@ -33,39 +33,57 @@ String? classifyNotif(String text) {
   return null;
 }
 
-String notifHash(String package, String title, String content) =>
-    sha256.convert(utf8.encode('$package|$title|$content')).toString();
+/// Hash dedup per hari + isi notif. Notif identik di hari beda tetap bisa dicatat.
+String notifHash(String package, String title, String content, {DateTime? at}) {
+  final day = (at ?? DateTime.now()).toIso8601String().substring(0, 10);
+  return sha256
+      .convert(utf8.encode('$day|$package|$title|$content'))
+      .toString();
+}
+
+String ymd(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 class WatchedApp {
   final String label;
-  final List<String> keys;
-  const WatchedApp(this.label, this.keys);
+  final List<String> packagePrefixes;
+  const WatchedApp(this.label, this.packagePrefixes);
+
+  bool matches(String package) {
+    for (final p in packagePrefixes) {
+      if (package == p || package.startsWith('$p.')) return true;
+    }
+    return false;
+  }
 }
 
+/// Allowlist package (prefix titik / exact), bukan substring bebas.
+/// Urutan penting: myBCA sebelum BCA.
 const watchedApps = [
-  WatchedApp('myBCA', ['mybca']),
-  WatchedApp('BCA', ['com.bca']),
-  WatchedApp('Livin Mandiri', ['mandiri', 'livin']),
-  WatchedApp('DANA', ['dana']),
-  WatchedApp('OVO', ['ovo']),
-  WatchedApp('GoPay', ['gojek', 'gopay']),
-  WatchedApp('ShopeePay', ['shopee']),
-  WatchedApp('SeaBank', ['seabank']),
-  WatchedApp('BRI', ['brimo', '.bri']),
-  WatchedApp('BNI', ['bni']),
-  WatchedApp('BTN', ['btn']),
-  WatchedApp('Jenius', ['jenius']),
-  WatchedApp('Jago', ['jago']),
-  WatchedApp('Blu', ['blu']),
-  WatchedApp('CIMB', ['cimb', 'octo']),
-  WatchedApp('KEB Hana', ['keb', 'hana', 'bankbke']),
-  WatchedApp('ISAKU', ['isaku', 'saku']),
+  WatchedApp('myBCA', ['com.bca.mybca']),
+  WatchedApp('BCA', ['com.bankcentralasia', 'com.bca.main']),
+  WatchedApp('Livin Mandiri', ['com.mandiri.mobile', 'com.bankmandiri']),
+  WatchedApp('DANA', ['id.dana']),
+  WatchedApp('OVO', ['com.vnoo.ovo', 'com.ovo']),
+  WatchedApp('GoPay', ['com.gojek.app', 'com.gojek.gojek']),
+  WatchedApp('ShopeePay', ['com.shopee']),
+  WatchedApp('SeaBank', ['com.seabank', 'id.co.seabank']),
+  WatchedApp('BRI', ['com.bri.brimo', 'id.co.bri.brimo', 'com.bri.browser']),
+  WatchedApp('BNI', ['com.bni', 'id.co.bni']),
+  WatchedApp('BTN', ['com.btn', 'id.co.btn']),
+  WatchedApp('Jenius', ['com.btpn', 'id.co.btpn']),
+  WatchedApp('Jago', ['id.co.jago', 'com.bankjago']),
+  WatchedApp('Blu', ['com.bca.digital', 'id.co.bca.blu']),
+  WatchedApp('CIMB', ['com.cimb', 'com.octo']),
+  WatchedApp('KEB Hana', ['id.co.bankbke', 'id.co.kebhana']),
+  WatchedApp('ISAKU', ['com.isaku']),
 ];
 
 String? matchWatchedApp(String package) {
-  final p = package.toLowerCase();
+  final p = package.trim().toLowerCase();
+  if (p.isEmpty) return null;
   for (final app in watchedApps) {
-    if (app.keys.any(p.contains)) return app.label;
+    if (app.matches(p)) return app.label;
   }
   return null;
 }
