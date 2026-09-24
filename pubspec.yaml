@@ -1,7 +1,7 @@
 name: ssr_space
 description: SSR SPACE - pencatatan pengeluaran dan pemasukan offline multi-dompet.
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.3.2+14
 environment:
   sdk: '>=3.2.0 <4.0.0'
 dependencies:

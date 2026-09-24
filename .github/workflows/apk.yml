@@ -43,7 +43,63 @@ jobs:
           assert 'NotificationListenerService' in m.read_text()
           EOF
       - run: flutter test
+      - name: Setup release signing
+        env:
+          SSR_KEYSTORE_B64: ${{ secrets.SSR_KEYSTORE_B64 }}
+          SSR_KEYSTORE_PASS: ${{ secrets.SSR_KEYSTORE_PASS }}
+          SSR_KEY_ALIAS: ${{ secrets.SSR_KEY_ALIAS }}
+          SSR_KEY_PASS: ${{ secrets.SSR_KEY_PASS }}
+        run: |
+          echo "$SSR_KEYSTORE_B64" | base64 -d > android/app/ssr-release.jks
+          python3 - <<'EOF'
+          import pathlib
+          kts = pathlib.Path('android/app/build.gradle.kts')
+          groovy = pathlib.Path('android/app/build.gradle')
+          if kts.exists():
+              s = kts.read_text()
+              assert 'ssr-release.jks' not in s, 'signing already injected'
+              block = '''
+      signingConfigs {
+          create("release") {
+              storeFile = file("ssr-release.jks")
+              storePassword = System.getenv("SSR_KEYSTORE_PASS")
+              keyAlias = System.getenv("SSR_KEY_ALIAS")
+              keyPassword = System.getenv("SSR_KEY_PASS")
+          }
+      }
+  '''
+              assert 'android {' in s
+              s = s.replace('android {', 'android {' + block, 1)
+              old = 'signingConfig = signingConfigs.getByName("debug")'
+              assert old in s, 'release signing line not found'
+              s = s.replace(old, 'signingConfig = signingConfigs.getByName("release")')
+              kts.write_text(s)
+          else:
+              s = groovy.read_text()
+              assert 'ssr-release.jks' not in s, 'signing already injected'
+              block = '''
+      signingConfigs {
+          release {
+              storeFile file("ssr-release.jks")
+              storePassword System.getenv("SSR_KEYSTORE_PASS")
+              keyAlias System.getenv("SSR_KEY_ALIAS")
+              keyPassword System.getenv("SSR_KEY_PASS")
+          }
+      }
+  '''
+              assert 'android {' in s
+              s = s.replace('android {', 'android {' + block, 1)
+              old = 'signingConfig signingConfigs.debug'
+              assert old in s, 'release signing line not found'
+              s = s.replace(old, 'signingConfig signingConfigs.release')
+              groovy.write_text(s)
+          print('signing injected')
+          EOF
       - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+        env:
+          SSR_KEYSTORE_PASS: ${{ secrets.SSR_KEYSTORE_PASS }}
+          SSR_KEY_ALIAS: ${{ secrets.SSR_KEY_ALIAS }}
+          SSR_KEY_PASS: ${{ secrets.SSR_KEY_PASS }}
       - uses: actions/upload-artifact@v4
         with:
           name: ssr-space-apk
