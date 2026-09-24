@@ -37,4 +37,44 @@ void main() {
     expect(NotifTrack.walletPrefKey('DANA'), 'track_wallet_DANA');
     expect(NotifTrack.catPrefKey('DANA'), 'track_cat_DANA');
   });
+
+  test('scanErrorStatus jujur saat service mati', () {
+    expect(scanErrorStatus('ServiceUnavailable'), contains('tidak nyambung'));
+    expect(
+      scanErrorStatus('ServiceUnavailable'),
+      isNot(contains('tidak ada notif')),
+    );
+    expect(scanErrorStatus('REBIND_ERROR'), contains('Gagal sambung'));
+    expect(scanErrorStatus('RECONNECT_ERROR'), contains('Gagal sambung'));
+    expect(scanErrorStatus('custom', message: 'oops'), contains('oops'));
+    expect(scanErrorStatus('custom'), contains('custom'));
+  });
+
+  test('eventTime pakai postTime plugin bila valid', () {
+    final ms = DateTime(2026, 9, 24, 19, 5).millisecondsSinceEpoch;
+    final t = eventTime(ms);
+    expect(ymd(t), '2026-09-24');
+    expect(t.hour, 19);
+    expect(t.minute, 5);
+
+    final fb = DateTime(2026, 1, 1, 8, 0);
+    expect(eventTime(0, fallback: fb), fb);
+    expect(eventTime(-1, fallback: fb), fb);
+    expect(eventTime(0).year, DateTime.now().year);
+  });
+
+  test('connectionLabel bedakan izin vs service', () {
+    expect(
+      connectionLabel(permissionGranted: false, serviceConnected: false),
+      contains('Izin'),
+    );
+    expect(
+      connectionLabel(permissionGranted: true, serviceConnected: false),
+      contains('terputus'),
+    );
+    expect(
+      connectionLabel(permissionGranted: true, serviceConnected: true),
+      contains('Terhubung'),
+    );
+  });
 }

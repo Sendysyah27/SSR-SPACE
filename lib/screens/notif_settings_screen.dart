@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -19,6 +20,7 @@ class NotifSettingsScreen extends StatefulWidget {
 class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
   bool master = false;
   bool granted = false;
+  bool serviceConnected = false;
   Map<String, bool> perApp = {};
   Map<String, String?> walletFor = {};
   Map<String, String> catFor = {};
@@ -36,6 +38,7 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final g = await NotifTrack.permissionGranted();
+    final conn = g ? await NotifTrack.isServiceConnected() : false;
     List<Wallet> ws = [];
     try {
       final orgId = prefs.getString('active_org_id') ?? '';
@@ -47,8 +50,12 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
     setState(() {
       master = prefs.getBool('track_master') ?? false;
       granted = g;
+      serviceConnected = conn;
       wallets = ws;
-      perApp = {for (final a in watchedApps) a.label: prefs.getBool('track_${a.label}') ?? true};
+      perApp = {
+        for (final a in watchedApps)
+          a.label: prefs.getBool('track_${a.label}') ?? true,
+      };
       walletFor = {
         for (final a in watchedApps)
           a.label: prefs.getString(NotifTrack.walletPrefKey(a.label)),
@@ -68,10 +75,12 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
     if (scanning) return;
     setState(() => scanning = true);
     final msg = await NotifTrack.refreshActive();
+    final conn = await NotifTrack.isServiceConnected();
     if (!mounted) return;
     setState(() {
       scanning = false;
       scanStatus = msg;
+      serviceConnected = conn;
     });
   }
 
@@ -126,131 +135,197 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return Scaffold(appBar: AppBar(title: const Text('Pelacakan otomatis')), body: const LoadingView(label: 'Memuat pengaturan...'));
+      return Scaffold(
+        appBar: AppBar(title: const Text('Pelacakan otomatis')),
+        body: const LoadingView(label: 'Memuat pengaturan...'),
+      );
     }
     final time = DateFormat('HH:mm');
     return Scaffold(
       appBar: AppBar(title: const Text('Pelacakan otomatis')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
-        Text(
-          'Aplikasi membaca notifikasi bank dan dompet di HP ini saja, lalu mencatatnya otomatis ke workspace aktif. Isi pesan tidak diunggah; yang dikirim: nominal, jenis, nama app, dan hash.',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 12),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Izin baca notifikasi'),
-          subtitle: Text(granted ? 'Aktif' : 'Belum aktif'),
-          trailing: ElevatedButton(
-            onPressed: () async {
-              await NotifTrack.requestPermission();
-              await _load();
-            },
-            child: Text(granted ? 'Cek lagi' : 'Aktifkan'),
-          ),
-        ),
-        const Divider(height: 1),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Pelacakan otomatis'),
-          subtitle: const Text('Mati = tidak ada yang dicatat'),
-          value: master,
-          onChanged: _setMaster,
-        ),
-        const Divider(height: 1),
-        Text('App, dompet tujuan, kategori', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 4),
-        if (wallets.isEmpty)
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
           Text(
-            'Belum ada dompet. Buat dulu di Lainnya → Dompet, lalu petakan di sini.',
-            style: Theme.of(context).textTheme.bodySmall,
+            'Aplikasi membaca notifikasi bank dan dompet di HP ini saja, lalu mencatatnya otomatis ke workspace aktif. Isi pesan tidak diunggah; yang dikirim: nominal, jenis, nama app, dan hash.',
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
-        for (final app in watchedApps) ...[
+          const SizedBox(height: 12),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Izin baca notifikasi'),
+            subtitle: Text(granted ? 'Aktif' : 'Belum aktif'),
+            trailing: ElevatedButton(
+              onPressed: () async {
+                await NotifTrack.requestPermission();
+                await _load();
+              },
+              child: Text(granted ? 'Cek lagi' : 'Aktifkan'),
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Service listener'),
+            subtitle: Text(
+              connectionLabel(
+                permissionGranted: granted,
+                serviceConnected: serviceConnected,
+              ),
+            ),
+            trailing: (granted && !serviceConnected)
+                ? TextButton(
+                    onPressed: scanning
+                        ? null
+                        : () async {
+                            await NotifTrack.reconnectService();
+                            await Future.delayed(
+                              const Duration(milliseconds: 900),
+                            );
+                            if (!mounted) return;
+                            await _load();
+                          },
+                    child: const Text('Sambung'),
+                  )
+                : null,
+          ),
           const Divider(height: 1),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(app.label),
-            subtitle: Text([
-              'Dompet: ${_autoMatchLabel(app.label) ?? 'belum cocok'}',
-              if ((catFor[app.label] ?? '').isNotEmpty) 'Kategori: ${catFor[app.label]}',
-            ].join(' · ')),
-            value: perApp[app.label] ?? true,
-            onChanged: (v) => _setApp(app.label, v),
+            title: const Text('Pelacakan otomatis'),
+            subtitle: const Text('Mati = tidak ada yang dicatat'),
+            value: master,
+            onChanged: _setMaster,
           ),
-          if (wallets.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 8),
-              child: Row(children: [
-                Expanded(
-                  child: DropdownButtonFormField<String?>(
-                    value: walletFor[app.label],
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Masuk ke dompet', isDense: true),
-                    items: [
-                      const DropdownMenuItem<String?>(value: null, child: Text('Otomatis / ikut nama')),
-                      for (final w in wallets)
-                        DropdownMenuItem<String?>(value: w.id, child: Text(w.name)),
-                    ],
-                    onChanged: (v) => _setWallet(app.label, v),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    initialValue: catFor[app.label] ?? '',
-                    decoration: const InputDecoration(labelText: 'Kategori', isDense: true),
-                    onChanged: (v) => _setCat(app.label, v),
-                  ),
-                ),
-              ]),
+          const Divider(height: 1),
+          Text(
+            'App, dompet tujuan, kategori',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          if (wallets.isEmpty)
+            Text(
+              'Belum ada dompet. Buat dulu di Lainnya → Dompet, lalu petakan di sini.',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-        ],
-        const Divider(height: 1),
-        const SizedBox(height: 8),
-        Text('Terakhir terlihat', style: Theme.of(context).textTheme.titleMedium),
-        TextButton.icon(
-          onPressed: scanning ? null : _scan,
-          icon: scanning
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.refresh),
-          label: Text(scanning ? 'Memindai...' : 'Pindai notifikasi aktif sekarang'),
-        ),
-        if (scanStatus.isNotEmpty)
-          Text(scanStatus, style: Theme.of(context).textTheme.bodySmall),
-        Builder(builder: (_) {
-          // Tampilkan SEMUA hasil scan (termasuk non-allowlist) supaya user
-          // tahu notif masuk tapi ditolak gate — jangan disembunyikan.
-          final shown = NotifTrack.recent;
-          if (shown.isEmpty) {
-            return Text(
-              'Belum ada notifikasi keuangan tertangkap sesi ini.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            );
-          }
-          return Column(
-            children: [
-              for (final n in shown)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(n.title.isEmpty ? (n.appLabel ?? n.package) : n.title),
-                  subtitle: Text(
-                    '${n.appLabel ?? n.package} | ${time.format(n.at)}\n${n.content}\n'
-                    'Status: ${n.status ?? 'melewati filter'}'
-                    '${n.amount != null ? ' · ${rp(n.amount!)}' : ''}'
-                    '${n.type != null ? ' · ${n.type == 'in' ? 'Masuk' : 'Keluar'}' : ''}',
-                  ),
-                  isThreeLine: true,
-                  trailing: _saveButton(n),
+          for (final app in watchedApps) ...[
+            const Divider(height: 1),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(app.label),
+              subtitle: Text(
+                [
+                  'Dompet: ${_autoMatchLabel(app.label) ?? 'belum cocok'}',
+                  if ((catFor[app.label] ?? '').isNotEmpty)
+                    'Kategori: ${catFor[app.label]}',
+                ].join(' · '),
+              ),
+              value: perApp[app.label] ?? true,
+              onChanged: (v) => _setApp(app.label, v),
+            ),
+            if (wallets.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 16, bottom: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String?>(
+                        value: walletFor[app.label],
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Masuk ke dompet',
+                          isDense: true,
+                        ),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('Otomatis / ikut nama'),
+                          ),
+                          for (final w in wallets)
+                            DropdownMenuItem<String?>(
+                              value: w.id,
+                              child: Text(w.name),
+                            ),
+                        ],
+                        onChanged: (v) => _setWallet(app.label, v),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        initialValue: catFor[app.label] ?? '',
+                        decoration: const InputDecoration(
+                          labelText: 'Kategori',
+                          isDense: true,
+                        ),
+                        onChanged: (v) => _setCat(app.label, v),
+                      ),
+                    ),
+                  ],
                 ),
-            ],
-          );
-        }),
-      ]),
+              ),
+          ],
+          const Divider(height: 1),
+          const SizedBox(height: 8),
+          Text(
+            'Terakhir terlihat',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          TextButton.icon(
+            onPressed: scanning ? null : _scan,
+            icon: scanning
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+            label: Text(
+              scanning ? 'Memindai...' : 'Pindai notifikasi aktif sekarang',
+            ),
+          ),
+          if (scanStatus.isNotEmpty)
+            Text(scanStatus, style: Theme.of(context).textTheme.bodySmall),
+          Builder(
+            builder: (_) {
+              // Tampilkan SEMUA hasil scan (termasuk non-allowlist) supaya user
+              // tahu notif masuk tapi ditolak gate — jangan disembunyikan.
+              final shown = NotifTrack.recent;
+              if (shown.isEmpty) {
+                return Text(
+                  'Belum ada notifikasi keuangan tertangkap sesi ini.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                );
+              }
+              return Column(
+                children: [
+                  for (final n in shown)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        n.title.isEmpty ? (n.appLabel ?? n.package) : n.title,
+                      ),
+                      subtitle: Text(
+                        '${n.appLabel ?? n.package} | ${time.format(n.at)}\n${n.content}\n'
+                        'Status: ${n.status ?? 'melewati filter'}'
+                        '${n.amount != null ? ' · ${rp(n.amount!)}' : ''}'
+                        '${n.type != null ? ' · ${n.type == 'in' ? 'Masuk' : 'Keluar'}' : ''}',
+                      ),
+                      isThreeLine: true,
+                      trailing: _saveButton(n),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
   Widget? _saveButton(CapturedNotif n) {
-    final saved = n.status == 'Tersimpan' || (n.status?.startsWith('Tersimpan') ?? false);
+    final saved =
+        n.status == 'Tersimpan' || (n.status?.startsWith('Tersimpan') ?? false);
     if (saved) return null;
     if (n.amount == null || n.amount! <= 0) return null;
     if (n.type != null) {
@@ -259,7 +334,8 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
           final msg = await NotifTrack.forceSave(n);
           if (!mounted) return;
           setState(() {});
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(msg)));
         },
         child: const Text('Simpan'),
       );
