@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,7 +37,9 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
     try {
       final orgId = prefs.getString('active_org_id') ?? '';
       if (orgId.isNotEmpty) ws = await WalletService().list(orgId);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('wallet map load: $e');
+    }
     if (!mounted) return;
     setState(() {
       master = prefs.getBool('track_master') ?? false;

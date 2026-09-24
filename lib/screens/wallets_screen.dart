@@ -36,9 +36,15 @@ class _WalletsScreenState extends State<WalletsScreen> {
       final data = await WalletService().list(orgId);
       if (!mounted) return;
       setState(() { noOrg = false; items = data; loading = false; });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() { loading = false; err = 'Gagal memuat dompet. Periksa koneksi.'; });
+      final msg = e.toString();
+      final short = msg.contains('recursion')
+          ? 'Gagal memuat dompet: RLS recursion. Jalankan migration_08 di Supabase.'
+          : msg.contains('permission')
+              ? 'Gagal memuat dompet: izin RLS. Cek membership workspace.'
+              : 'Gagal memuat dompet. Periksa koneksi.';
+      setState(() { loading = false; err = short; });
     }
   }
 

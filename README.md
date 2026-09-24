@@ -10,8 +10,10 @@ Allowlist package prefix (bukan substring). Dedup hash per hari. Tanggal = waktu
 
 ## Migrasi Supabase (wajib)
 Jalankan berurutan di SQL Editor bila belum:
-`schema.sql` → `migration_02` … `migration_07_security.sql`
-(migration 07: join workspace hanya pembuat/owner-admin + `mint_tx_code` wajib member)
+`schema.sql` → `migration_02` … `migration_08_fix_rls_recursion.sql`
+
+- migration 07: join workspace hanya pembuat/owner-admin + `mint_tx_code` wajib member
+- migration 08: **wajib jika sudah jalan 07** — hapus policy SELECT org_members yang bikin RLS recursion ("Gagal memuat dompet")
 
 ## Build via gh
 ```bash

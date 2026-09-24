@@ -64,18 +64,24 @@ drop policy if exists "own memberships" on org_members;
 create policy "own memberships" on org_members
   for select to authenticated using (user_id = auth.uid());
 
-drop policy if exists "member read org_members" on org_members;
-create policy "member read org_members" on org_members
-  for select to authenticated
-  using (
-    user_id = auth.uid()
-    or exists (
-      select 1 from org_members m
-      where m.org_id = org_id
-        and m.user_id = auth.uid()
-        and m.role in ('owner', 'admin')
-    )
+-- Helper security definer (tanpa RLS org_members) utk cek owner/admin.
+-- Jangan bikin policy SELECT org_members yang subquery ke org_members → recursion.
+create or replace function public.is_org_admin(p_org_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from org_members
+    where org_id = p_org_id
+      and user_id = auth.uid()
+      and role in ('owner', 'admin')
   );
+$$;
+
+revoke execute on function public.is_org_admin(uuid) from public, anon;
+grant execute on function public.is_org_admin(uuid) to authenticated;
 
 drop policy if exists "join own org" on org_members;
 create policy "join own org" on org_members
@@ -88,10 +94,5 @@ create policy "join own org" on org_members
         where o.id = org_id and o.created_by = auth.uid()
       )
     )
-    or exists (
-      select 1 from org_members m
-      where m.org_id = org_id
-        and m.user_id = auth.uid()
-        and m.role in ('owner', 'admin')
-    )
+    or public.is_org_admin(org_id)
   );
