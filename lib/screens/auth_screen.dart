@@ -95,7 +95,7 @@ class _AuthScreenState extends State<AuthScreen> {
         child: Column(children: [
           TextField(controller: emailC, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email')),
           TextField(controller: passC, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
-          if (err != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(err!, style: const TextStyle(color: Colors.red))),
+          if (err != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(err!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
           if (info != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(info!, style: const TextStyle(color: Colors.green))),
           if (needVerify && emailC.text.isNotEmpty)
             TextButton(onPressed: _resend, child: const Text('Kirim ulang verifikasi')),

@@ -60,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Center(
         child: error == null
             ? const Column(mainAxisSize: MainAxisSize.min, children: [
-                Text('SSR SPACE', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                Text('SSR SPACE', style: Theme.of(context).textTheme.displaySmall),
                 SizedBox(height: 12),
                 CircularProgressIndicator(),
               ])

@@ -85,6 +85,11 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(padding: const EdgeInsets.all(16), children: [
+              if (orgs.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text('Belum ada workspace. Buat yang pertama di bawah.', style: Theme.of(context).textTheme.bodyMedium),
+                ),
               for (final m in orgs)
                 ListTile(
                   title: Text((m['organizations']?['name'] ?? '-').toString()),

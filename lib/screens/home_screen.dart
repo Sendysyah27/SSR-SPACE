@@ -34,9 +34,14 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('SSR SPACE'),
         actions: [
-          IconButton(icon: const Icon(Icons.swap_horiz), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OrgSwitcherScreen(session: session)))),
           IconButton(
-            icon: const Icon(Icons.logout),
+            tooltip: 'Ganti workspace',
+            icon: const Icon(Icons.swap_horiz_outlined),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OrgSwitcherScreen(session: session))),
+          ),
+          IconButton(
+            tooltip: 'Keluar',
+            icon: const Icon(Icons.logout_outlined),
             onPressed: () async {
               await SupabaseConfig.client.auth.signOut();
               final p = await SharedPreferences.getInstance();
@@ -49,12 +54,19 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Center(
         child: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            FutureBuilder<String>(future: _orgName(), builder: (_, s) => Text('Org: ${s.data ?? '-'} | Sesi: ${session.sessionId.substring(0, 8)}...')),
-            const SizedBox(height: 12),
+          padding: const EdgeInsets.all(16),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            FutureBuilder<String>(
+              future: _orgName(),
+              builder: (_, s) => Text(
+                s.data ?? '-',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            const SizedBox(height: 16),
             _btn(context, 'Dashboard', const DashboardScreen()),
             _btn(context, 'Dompet', const WalletsScreen()),
-            _btn(context, 'Transaksi', const TransactionsScreen()),
             _btn(context, 'Budget', const BudgetsScreen()),
             _btn(context, 'Laporan', const ReportsScreen()),
             _btn(context, 'Billing', const BillingScreen()),
@@ -62,6 +74,7 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        tooltip: 'Catat transaksi',
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionsScreen())),
         child: const Icon(Icons.add),
       ),

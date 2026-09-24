@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
+import 'package:ssr_space/core/theme/app_theme.dart';
 import 'package:ssr_space/screens/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,8 +18,8 @@ class SsrSpaceApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SSR SPACE SaaS',
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.teal),
+      title: 'SSR SPACE',
+      theme: SsrTheme.light(),
       home: SplashScreen(session: session),
       debugShowCheckedModeBanner: false,
     );
