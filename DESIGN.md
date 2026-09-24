@@ -26,3 +26,11 @@ Garis ledger: daftar transaksi berupa baris ber-lineup hairline seperti buku kas
 ## Gerak
 
 MOTION 1. Tanpa animasi kustom, hanya bawaan Material. Tidak ada loop tanpa akhir.
+
+## Navigasi
+
+Bottom nav 5 tab (Beranda, Transaksi, Budget, Laporan, Lainnya). Alasan: pola ibu jari HP, tujuan utama satu ketukan.
+
+## Kartu gelap
+
+Satu kartu surplus gelap per Beranda sebagai titik fokus. Alasan: angka uang butuh panggung, bukan default mode gelap.

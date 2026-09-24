@@ -6,9 +6,11 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ssr_space/core/format/money.dart';
+import 'package:ssr_space/core/saas/month.dart';
 import 'package:ssr_space/core/saas/transaction_service.dart';
 import 'package:ssr_space/core/theme/app_theme.dart';
 import 'package:ssr_space/models/transaction.dart';
+import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -18,12 +20,13 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
+  late String month;
   List<SaasTransaction> items = [];
   bool loading = true;
   String? err;
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() { super.initState(); month = currentMonth(); _load(); }
 
   Future<void> _load() async {
     setState(() { loading = true; err = null; });
@@ -33,7 +36,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         setState(() => loading = false);
         return;
       }
-      final txs = await TransactionService().list(orgId);
+      final txs = await TransactionService().listMonth(orgId, month);
       if (!mounted) return;
       setState(() { items = txs; loading = false; });
     } catch (_) {
@@ -85,6 +88,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Laporan')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
+        MonthPicker(month: month, onChanged: (m) { setState(() => month = m); _load(); }),
         Text(rp(totalIn - totalOut), style: SsrTheme.moneyLarge),
         Text('Masuk ${rp(totalIn)}, keluar ${rp(totalOut)}', style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 12),

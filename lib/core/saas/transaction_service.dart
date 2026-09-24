@@ -1,3 +1,4 @@
+import 'package:ssr_space/core/saas/month.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/models/transaction.dart';
 
@@ -12,6 +13,23 @@ class TransactionService {
     return List<Map<String, dynamic>>.from(rows).map(SaasTransaction.fromMap).toList();
   }
 
+  Future<List<SaasTransaction>> listMonth(String orgId, String month) async {
+    final rows = await SupabaseConfig.client
+        .from('transactions')
+        .select()
+        .eq('org_id', orgId)
+        .gte('date', monthStart(month))
+        .lt('date', monthEnd(month))
+        .order('date', ascending: false)
+        .limit(200);
+    return List<Map<String, dynamic>>.from(rows).map(SaasTransaction.fromMap).toList();
+  }
+
+  Future<String> mintCode(String orgId) async {
+    final res = await SupabaseConfig.client.rpc('mint_tx_code', params: {'p_org_id': orgId});
+    return res.toString();
+  }
+
   Future<void> add({
     required String orgId,
     required String type,
@@ -20,6 +38,7 @@ class TransactionService {
     String? toWalletId,
     String? category,
     String? note,
+    String? code,
   }) async {
     assert(amount > 0);
     await SupabaseConfig.client.from('transactions').insert({
@@ -30,6 +49,7 @@ class TransactionService {
       'to_wallet_id': toWalletId,
       'category': category,
       'note': note,
+      'code': code,
       'created_by': SupabaseConfig.client.auth.currentUser?.id,
     });
   }

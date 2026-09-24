@@ -4,7 +4,7 @@ import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
 import 'package:ssr_space/screens/onboarding_screen.dart';
 import 'package:ssr_space/screens/lock_screen.dart';
-import 'package:ssr_space/screens/home_screen.dart';
+import 'package:ssr_space/screens/main_shell.dart';
 import 'package:ssr_space/screens/auth_screen.dart';
 import 'package:ssr_space/screens/org_switcher_screen.dart';
 
@@ -48,7 +48,7 @@ class _SplashScreenState extends State<SplashScreen> {
       } else if (widget.session.hasPin) {
         return _go(LockScreen(session: widget.session));
       }
-      return _go(HomeScreen(session: widget.session));
+      return _go(MainShell(session: widget.session));
     } catch (e) {
       setState(() => error = e.toString());
     }

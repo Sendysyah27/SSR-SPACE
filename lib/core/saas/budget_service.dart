@@ -1,3 +1,4 @@
+import 'package:ssr_space/core/saas/month.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/saas/transaction_service.dart';
 
@@ -12,11 +13,6 @@ class Budget {
   final double limit;
   final double spent;
   Budget({required this.category, required this.limit, required this.spent});
-}
-
-String currentMonth() {
-  final n = DateTime.now();
-  return '${n.year}-${n.month.toString().padLeft(2, '0')}';
 }
 
 Future<List<Budget>> fetchBudgets(String orgId) async {

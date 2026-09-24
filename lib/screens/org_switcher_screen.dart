@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
-import 'package:ssr_space/screens/home_screen.dart';
+import 'package:ssr_space/screens/main_shell.dart';
 
 class OrgSwitcherScreen extends StatefulWidget {
   final SessionService session;
@@ -75,7 +75,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
     await prefs.setString('active_org_name', (o['name'] ?? '-').toString());
     if (!mounted) return;
     Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (_) => HomeScreen(session: widget.session)));
+        MaterialPageRoute(builder: (_) => MainShell(session: widget.session)));
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ssr_space/core/saas/budget_service.dart';
+import 'package:ssr_space/core/saas/month.dart';
 
 void main() {
   test('budget progress caps at 1', () {
