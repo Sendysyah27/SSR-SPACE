@@ -39,6 +39,8 @@ class TransactionService {
     String? category,
     String? note,
     String? code,
+    String? sourcePackage,
+    String? sourceHash,
   }) async {
     assert(amount > 0);
     await SupabaseConfig.client.from('transactions').insert({
@@ -50,6 +52,8 @@ class TransactionService {
       'category': category,
       'note': note,
       'code': code,
+      'source_package': sourcePackage,
+      'source_hash': sourceHash,
       'created_by': SupabaseConfig.client.auth.currentUser?.id,
     });
   }

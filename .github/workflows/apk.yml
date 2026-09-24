@@ -26,6 +26,22 @@ jobs:
             sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>' "$M"
           fi
           grep -q "android.permission.INTERNET" "$M"
+      - run: |
+          python3 - <<'EOF'
+          import pathlib
+          m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
+          s = m.read_text()
+          if 'NotificationListenerService' not in s:
+              svc = '''    <service android:name="notification.listener.service.NotificationListener" android:label="notifications" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true">
+              <intent-filter>
+                  <action android:name="android.service.notification.NotificationListenerService" />
+              </intent-filter>
+          </service>
+          '''
+              s = s.replace('</application>', svc + '</application>')
+              m.write_text(s)
+          assert 'NotificationListenerService' in m.read_text()
+          EOF
       - run: flutter test
       - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
       - uses: actions/upload-artifact@v4

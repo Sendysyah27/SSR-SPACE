@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ssr_space/core/saas/notif_track_service.dart';
 import 'package:ssr_space/core/session/session_service.dart';
 import 'package:ssr_space/screens/beranda_screen.dart';
 import 'package:ssr_space/screens/budgets_screen.dart';
@@ -18,6 +19,12 @@ class _MainShellState extends State<MainShell> {
   final berandaKey = GlobalKey<BerandaScreenState>();
   final budgetKey = GlobalKey<BudgetsScreenState>();
   final reportsKey = GlobalKey<ReportsScreenState>();
+
+  @override
+  void initState() {
+    super.initState();
+    NotifTrack.ensureListening();
+  }
 
   void _select(int i) {
     setState(() => index = i);

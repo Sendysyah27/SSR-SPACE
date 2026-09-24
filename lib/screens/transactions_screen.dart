@@ -124,7 +124,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               child: Icon(iconForCategory(t.category), color: SsrColors.accent),
             ),
             title: Text('${t.type == 'in' ? 'Masuk' : t.type == 'transfer' ? 'Transfer' : 'Keluar'}: ${rp(t.amount)}', style: SsrTheme.money),
-            subtitle: Text('${t.code ?? '-'} | ${t.category ?? '-'} ${t.note?.isNotEmpty ?? false ? '| ${t.note}' : ''}'),
+            subtitle: Text('${t.code ?? '-'}${t.sourcePackage != null ? ' | Otomatis' : ''} | ${t.category ?? '-'} ${t.note?.isNotEmpty ?? false ? '| ${t.note}' : ''}'),
           ),
           const Divider(height: 1),
         ],

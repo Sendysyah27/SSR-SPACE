@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
 import 'package:ssr_space/screens/billing_screen.dart';
+import 'package:ssr_space/screens/notif_settings_screen.dart';
 import 'package:ssr_space/screens/org_switcher_screen.dart';
 import 'package:ssr_space/screens/splash_screen.dart';
 import 'package:ssr_space/screens/wallets_screen.dart';
@@ -45,6 +46,14 @@ class OtherScreen extends StatelessWidget {
           leading: const Icon(Icons.receipt_outlined),
           title: const Text('Billing'),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BillingScreen())),
+        ),
+        const Divider(height: 1),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.notifications_active_outlined),
+          title: const Text('Pelacakan otomatis'),
+          subtitle: const Text('Notifikasi bank jadi transaksi'),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotifSettingsScreen())),
         ),
         const Divider(height: 1),
         ListTile(

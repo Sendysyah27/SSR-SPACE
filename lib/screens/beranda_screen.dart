@@ -179,7 +179,7 @@ class BerandaScreenState extends State<BerandaScreen> {
           child: Icon(iconForCategory(t.category), color: SsrColors.accent),
         ),
         title: Text(t.note?.isNotEmpty ?? false ? t.note! : (t.category ?? '-')),
-        subtitle: Text('${t.code ?? '-'} | ${t.category ?? '-'}'),
+        subtitle: Text('${t.code ?? '-'}${t.sourcePackage != null ? ' | Otomatis' : ''} | ${t.category ?? '-'}'),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
