@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:ssr_space/core/saas/invite_service.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
 import 'package:ssr_space/core/theme/app_theme.dart';
@@ -23,8 +24,10 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
   bool busy = false;
   String? loadErr;
   String? formErr;
+  String? joinErr;
   final nameC = TextEditingController();
   final nameFocus = FocusNode();
+  final joinC = TextEditingController();
 
   @override
   void initState() {
@@ -36,6 +39,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
   void dispose() {
     nameC.dispose();
     nameFocus.dispose();
+    joinC.dispose();
     super.dispose();
   }
 
@@ -88,6 +92,36 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
       await _select({'id': newId, 'name': name});
     } catch (_) {
       formErr = 'Gagal membuat workspace. Periksa nama dan koneksi.';
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _join() async {
+    if (busy) return;
+    final code = joinC.text.trim();
+    if (code.isEmpty) {
+      setState(() => joinErr = 'Tempel kode undangan dulu.');
+      return;
+    }
+    setState(() {
+      busy = true;
+      joinErr = null;
+    });
+    try {
+      await InviteService().join(code);
+      joinC.clear();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Berhasil bergabung ke workspace.')),
+      );
+      await _load();
+    } on InviteException catch (err) {
+      if (!mounted) return;
+      setState(() => joinErr = err.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => joinErr = 'Gagal bergabung. Periksa koneksi.');
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -218,6 +252,33 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
                         label: 'Buat',
                         loading: busy,
                         onPressed: _create,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: SsrSpace.lg),
+                SectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Punya kode undangan?',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: SsrSpace.md),
+                      TextField(
+                        controller: joinC,
+                        onChanged: (_) => setState(() => joinErr = null),
+                        decoration: InputDecoration(
+                          labelText: 'Kode undangan',
+                          errorText: joinErr,
+                        ),
+                      ),
+                      const SizedBox(height: SsrSpace.lg),
+                      PrimaryButton(
+                        label: 'Gabung',
+                        loading: busy,
+                        onPressed: _join,
                       ),
                     ],
                   ),
