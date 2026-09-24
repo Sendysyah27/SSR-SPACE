@@ -14,6 +14,7 @@ import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/widgets/state_views.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final String? initialMonth;
@@ -187,12 +188,33 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         });
       }
       await _load();
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => formErr = 'Gagal menyimpan. Coba lagi.');
+      debugPrint('save tx: $e');
+      setState(() => formErr = _txError(e, 'menyimpan'));
     } finally {
       if (mounted) setState(() => saving = false);
     }
+  }
+
+  String _txError(Object e, String action) {
+    if (e is PostgrestException) {
+      switch (e.code) {
+        case '42501':
+          return 'Tidak punya akses ke workspace ini.';
+        case '23503':
+          return 'Dompet tidak valid. Muat ulang lalu pilih lagi.';
+        case '23514':
+          return 'Data tidak lolos validasi server.';
+        case '23505':
+          return 'Transaksi duplikat sudah tercatat.';
+        case 'PGRST116':
+          return 'Gagal $action: respons server tidak valid.';
+        default:
+          return 'Gagal $action (${e.code ?? 'error'}). Coba lagi.';
+      }
+    }
+    return 'Gagal $action. Coba lagi.';
   }
 
   Future<void> _confirmDelete() async {
@@ -224,9 +246,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         const SnackBar(content: Text('Transaksi dihapus')),
       );
       await _load();
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => formErr = 'Gagal menghapus. Coba lagi.');
+      debugPrint('delete tx: $e');
+      setState(() => formErr = _txError(e, 'menghapus'));
     }
   }
 

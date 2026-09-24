@@ -2,6 +2,66 @@ import 'package:ssr_space/core/saas/month.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/models/transaction.dart';
 
+String _ymd(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
+
+/// Payload INSERT transaksi. `date` tidak boleh null eksplisit:
+/// kolom `date date not null default current_date` hanya apply bila key diomit.
+Map<String, dynamic> txInsertPayload({
+  required String orgId,
+  required String type,
+  required double amount,
+  String? walletId,
+  String? toWalletId,
+  String? category,
+  String? note,
+  String? code,
+  String? date,
+  String? sourcePackage,
+  String? sourceHash,
+  String? createdBy,
+  DateTime? now,
+}) {
+  return {
+    'org_id': orgId,
+    'type': type,
+    'amount': amount,
+    'wallet_id': walletId,
+    'to_wallet_id': toWalletId,
+    'category': category,
+    'note': note,
+    'code': code,
+    'date': date ?? _ymd(now ?? DateTime.now()),
+    'source_package': sourcePackage,
+    'source_hash': sourceHash,
+    'created_by': createdBy,
+  };
+}
+
+/// Payload UPDATE. `date` null → key diomit (kolom tidak diubah, bukan di-NULL-kan).
+Map<String, dynamic> txUpdatePayload({
+  required String type,
+  required double amount,
+  String? walletId,
+  String? toWalletId,
+  String? category,
+  String? note,
+  String? date,
+}) {
+  final row = <String, dynamic>{
+    'type': type,
+    'amount': amount,
+    'wallet_id': walletId,
+    'to_wallet_id': toWalletId,
+    'category': category,
+    'note': note,
+  };
+  if (date != null) row['date'] = date;
+  return row;
+}
+
 class TransactionService {
   Future<List<SaasTransaction>> list(String orgId) async {
     final rows = await SupabaseConfig.client
@@ -50,20 +110,20 @@ class TransactionService {
     assert(amount > 0);
     final row = await SupabaseConfig.client
         .from('transactions')
-        .insert({
-          'org_id': orgId,
-          'type': type,
-          'amount': amount,
-          'wallet_id': walletId,
-          'to_wallet_id': toWalletId,
-          'category': category,
-          'note': note,
-          'code': code,
-          'date': date,
-          'source_package': sourcePackage,
-          'source_hash': sourceHash,
-          'created_by': SupabaseConfig.client.auth.currentUser?.id,
-        })
+        .insert(txInsertPayload(
+          orgId: orgId,
+          type: type,
+          amount: amount,
+          walletId: walletId,
+          toWalletId: toWalletId,
+          category: category,
+          note: note,
+          code: code,
+          date: date,
+          sourcePackage: sourcePackage,
+          sourceHash: sourceHash,
+          createdBy: SupabaseConfig.client.auth.currentUser?.id,
+        ))
         .select('id')
         .single();
     final id = row['id'].toString();
@@ -93,15 +153,15 @@ class TransactionService {
     assert(amount > 0);
     await SupabaseConfig.client
         .from('transactions')
-        .update({
-          'type': type,
-          'amount': amount,
-          'wallet_id': walletId,
-          'to_wallet_id': toWalletId,
-          'category': category,
-          'note': note,
-          'date': date,
-        })
+        .update(txUpdatePayload(
+          type: type,
+          amount: amount,
+          walletId: walletId,
+          toWalletId: toWalletId,
+          category: category,
+          note: note,
+          date: date,
+        ))
         .eq('id', id)
         .eq('org_id', orgId);
   }
