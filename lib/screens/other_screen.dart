@@ -5,6 +5,7 @@ import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
 import 'package:ssr_space/core/theme/app_theme.dart';
 import 'package:ssr_space/screens/billing_screen.dart';
+import 'package:ssr_space/screens/invite_screen.dart';
 import 'package:ssr_space/screens/notif_settings_screen.dart';
 import 'package:ssr_space/screens/org_switcher_screen.dart';
 import 'package:ssr_space/screens/splash_screen.dart';
@@ -181,6 +182,13 @@ class _OtherScreenState extends State<OtherScreen> {
                       title: 'Ganti workspace',
                       onTap: () =>
                           _push(OrgSwitcherScreen(session: widget.session)),
+                    ),
+                    const Divider(height: 1),
+                    _navTile(
+                      icon: Icons.person_add_alt_outlined,
+                      title: 'Undang anggota',
+                      subtitle: 'Bagikan kode untuk gabung workspace',
+                      onTap: () => _push(const InviteScreen()),
                     ),
                     const Divider(height: 1),
                     _navTile(
