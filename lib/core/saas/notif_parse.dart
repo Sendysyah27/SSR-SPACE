@@ -43,8 +43,8 @@ class WatchedApp {
 }
 
 const watchedApps = [
-  WatchedApp('BCA', ['com.bca']),
   WatchedApp('myBCA', ['mybca']),
+  WatchedApp('BCA', ['com.bca']),
   WatchedApp('Livin Mandiri', ['mandiri', 'livin']),
   WatchedApp('DANA', ['dana']),
   WatchedApp('OVO', ['ovo']),
@@ -55,15 +55,8 @@ const watchedApps = [
 
 String? matchWatchedApp(String package) {
   final p = package.toLowerCase();
-  String? best;
-  var bestLen = 0;
   for (final app in watchedApps) {
-    for (final key in app.keys) {
-      if (p.contains(key) && key.length > bestLen) {
-        best = app.label;
-        bestLen = key.length;
-      }
-    }
+    if (app.keys.any(p.contains)) return app.label;
   }
-  return best;
+  return null;
 }
