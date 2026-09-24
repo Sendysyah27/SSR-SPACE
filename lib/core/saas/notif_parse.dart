@@ -55,8 +55,15 @@ const watchedApps = [
 
 String? matchWatchedApp(String package) {
   final p = package.toLowerCase();
+  String? best;
+  var bestLen = 0;
   for (final app in watchedApps) {
-    if (app.keys.any(p.contains)) return app.label;
+    for (final key in app.keys) {
+      if (p.contains(key) && key.length > bestLen) {
+        best = app.label;
+        bestLen = key.length;
+      }
+    }
   }
-  return null;
+  return best;
 }
