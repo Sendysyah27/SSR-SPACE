@@ -14,7 +14,7 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int index = 0;
   final berandaKey = GlobalKey<BerandaScreenState>();
   final budgetKey = GlobalKey<BudgetsScreenState>();
@@ -23,8 +23,15 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // force: resubscribe bila stream sempat error / app resume dari background
     NotifTrack.ensureListening(force: true);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
