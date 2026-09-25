@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ssr_space/core/saas/category_icons.dart';
-import 'package:ssr_space/core/saas/month.dart';
+import 'package:ssr_space/services/category_icons.dart';
+import 'package:ssr_space/services/month.dart';
 import 'package:flutter/material.dart';
 
 void main() {

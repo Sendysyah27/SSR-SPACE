@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ssr_space/core/session/session_service.dart';
+import 'package:ssr_space/services/session_service.dart';
 
 void main() {
   test('PIN hash verify works', () async {

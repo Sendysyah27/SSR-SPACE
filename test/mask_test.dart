@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ssr_space/core/format/mask.dart';
+import 'package:ssr_space/utils/mask.dart';
 
 void main() {
   test('amt tampil asli saat mask mati', () {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ssr_space/core/theme/app_theme.dart';
+import 'package:ssr_space/theme/app_theme.dart';
 
 class SectionCard extends StatelessWidget {
   final Widget child;

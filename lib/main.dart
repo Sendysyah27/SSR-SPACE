@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:ssr_space/core/format/mask.dart';
-import 'package:ssr_space/core/saas/error_reporter.dart';
-import 'package:ssr_space/core/saas/foreground_track.dart';
-import 'package:ssr_space/core/saas/supabase_config.dart';
-import 'package:ssr_space/core/session/session_service.dart';
-import 'package:ssr_space/core/theme/app_theme.dart';
-import 'package:ssr_space/screens/splash_screen.dart';
+import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/foreground_track.dart';
+import 'package:ssr_space/services/supabase_config.dart';
+import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {

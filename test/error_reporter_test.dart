@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ssr_space/core/saas/error_reporter.dart';
+import 'package:ssr_space/services/error_reporter.dart';
 
 void main() {
   setUp(ErrorReporter.reset);

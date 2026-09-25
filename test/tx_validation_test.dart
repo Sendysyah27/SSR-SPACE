@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ssr_space/core/saas/tx_validation.dart';
+import 'package:ssr_space/services/tx_validation.dart';
 
 void main() {
   test('amount <= 0 ditolak', () {

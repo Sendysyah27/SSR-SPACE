@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ssr_space/core/saas/dashboard_service.dart';
+import 'package:ssr_space/services/dashboard_service.dart';
 import 'package:ssr_space/models/transaction.dart';
 
 SaasTransaction _t(String type, double amount, [String? cat]) => SaasTransaction(

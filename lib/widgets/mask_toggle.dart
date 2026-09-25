@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ssr_space/core/format/mask.dart';
+import 'package:ssr_space/utils/mask.dart';
 
 class MaskToggle extends StatelessWidget {
   const MaskToggle({super.key});

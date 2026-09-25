@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ssr_space/core/saas/notif_parse.dart';
+import 'package:ssr_space/services/notif_parse.dart';
 
 void main() {
   test('parse nominal Rp pertama', () {
