@@ -76,7 +76,7 @@ Arah pengembangan ke **skala banyak user** — urutan wajib dijaga, jangan melom
 |------|-----|--------|
 | **Fase 1** | **Fitur inti:** foreground service auto-track (`specialUse`) + invite workspace (token hash + RPC `join_org_by_invite`, `migration_10`) | ✅ done 2.3.6+19: kode selesai, CI milestone 2 hijau (run `36075349074`); catatan: `migration_10` masih dijalankan manual user, foreground service baru aktif setelah install APK baru |
 | Fase 2 | Hardening: rate limit auto-insert (A3), audit log (A4), error monitoring, backup DB (D5), `flutter analyze` di CI (D1) | ✅ **done 2.3.7+20** (2026-09-25): D1 analyze CI (`739fbb4`+`e7e88e8`, run `36090886163`); A3+A4+monitoring+D5 (`74d85c5`…`105beaf`), CI run `36098447278` hijau penuh. Catatan: `migration_11_hardening.sql` masih dijalankan manual user |
-| Fase 3 | Scale ops: cek limit plan Supabase, dependabot/pin actions SHA (D4), test RLS server-side | ⬜ |
+| Fase 3 | Scale ops: cek limit plan Supabase, dependabot/pin actions SHA (D4), test RLS server-side | 🟡 **sebagian 2026-09-25**: limit plan Supabase ✅ (spike, rekomendasi di AUDIT §4 — free cukup sementara, **waspada pause 7 hari inaktif**); D4 dependabot + pin SHA ✅ (`.github/dependabot.yml` + 4 action di-SHA; D2 sekalian: checkout v7.0.1 / setup-java v6.0.1). Sisa: **test RLS server-side** (F3-c) + retention pg_cron/backup otomatis (F3-d) |
 | Fase 4 | Monetisasi: billing Midtrans per plan + limit kuota | ⬜ |
 
 Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari `track_master`; parser/gate `_onEvent` TIDAK berubah.
@@ -242,6 +242,11 @@ Urutan list penting: **myBCA sebelum BCA**.
 - **A4 audit log:** tabel `audit_logs` + trigger SECURITY DEFINER: `tx_auto_insert` (meta: tx_id, amount, type, package, date) dan `org_join` (meta: role). RLS: SELECT member saja, **tanpa** INSERT/UPDATE/DELETE client. Tanpa UI (baca via Dashboard).
 - **Error monitoring in-house:** `lib/core/saas/error_reporter.dart` — `ErrorReporter.init()` di `main()` (`FlutterError.onError` + `PlatformDispatcher.onError` + `runZonedGuarded`), `capture()` dipanggil di catch pipeline notif/backup. Anti-flood murni Dart: dedupe `context|message` per 60 menit + maks 20 event/jam, gagal upload = drop senyap. Tabel `client_errors` (RLS tulis+baca milik sendiri). **Tanpa PII**: hanya message/stack/context/`app_version` (`AppInfo.version`, ikut bump pubspec).
 - **D5 backup manual:** Lainnya → **Cadangkan data** → 3 CSV (`dompet/transaksi/budget-ssr-space.csv`) via share sheet. Builder murni di `lib/core/saas/backup_export.dart`. Tanpa jadwal otomatis (pg_cron = backlog Fase 3).
+
+### 4.10 Fase 3 (mulai 2026-09-25) — scale ops
+
+- **Cek limit plan Supabase (spike):** free plan 2026 = 500 MB DB, 5 GB egress, 50k MAU, 500k edge fn invocations, max 2 project; **project pause setelah 7 hari inaktif** (diperketat 2026-02-01) — cegah via aktivitas harian DB/API atau email warning Supabase. Rekomendasi + trigger naik Pro: lihat AUDIT §4.
+- **D4 supply chain:** `.github/dependabot.yml` (github-actions, weekly, digroup jadi 1 PR) + semua action di `apk.yml` **di-pin ke commit SHA** dengan komentar versi (dependabot yang update). D2 ikut selesai: `checkout` v4→**v7.0.1**, `setup-java` v4→**v6.0.1**, `flutter-action`→**v2.23.0**, `upload-artifact` v4→**v7.0.1**. SHA via `git ls-remote` (jangan pernah karangan).
 
 ---
 

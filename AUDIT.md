@@ -15,6 +15,7 @@ Lensa: OWASP / RLS Supabase / input hostile (isi notif pihak ketiga).
 - APK rilis Fase 1: `/sdcard/Download/SSR-SPACE/SSR-SPACE-2.3.6-19-fase1-scale.apk` (diunduh dari run CI setelah push docs ini)
 - **Fase 2 D1** (2026-09-25): CI kini wajib lulus `flutter analyze` sebelum test; 26 temuan lama dibersihkan sekali jalan (`739fbb4` + `e7e88e8`), run `36090886163` hijau penuh (analyze → test → APK).
 - **Fase 2 hardening** (2026-09-25): A3 rate limit auto-insert + A4 audit log (`migration_11_hardening.sql`), error monitoring in-house (`client_errors` + `ErrorReporter`), D5 backup manual multi-CSV. CI run `36098447278` hijau penuh; APK `SSR-SPACE-2.3.7-20-fase2-hardening.apk`. **User wajib jalankan migration_11 di Supabase.**
+- **Fase 3 awal** (2026-09-25): spike limit plan Supabase (hasil §4) + D4 dependabot & pin actions by SHA (D2 sekalian selesai).
 
 ---
 
@@ -244,12 +245,36 @@ supabase/migration_07 + 08
 | # | Item | Detail |
 |---|------|--------|
 | D1 | CI: `flutter analyze` step | ✅ done 2026-09-25: langkah `flutter analyze` blocking sebelum test (`739fbb4`); 26 temuan lama (5 warning `unawaited_return_in_try_block`, 21 info: deprecation `withOpacity`/`DropdownButtonFormField.value`/`anonKey`, curly braces, unnecessary import, const) dibersihkan di `e7e88e8`; CI run `36090886163` hijau |
-| D2 | Setup-java v5 + checkout v5 | Hilangkan deprecation warning Actions |
+| D2 | Setup-java v5 + checkout v5 | ✅ done 2026-09-25 (sekalian D4): `checkout` **v7.0.1**, `setup-java` **v6.0.1** (lewat v5 — versi terbaru 2026), di-pin SHA |
 | D3 | Pubspec description masih “offline multi-dompet” | Samakan dengan reality SaaS |
-| D4 | Dependabot / pin actions by SHA | Supply chain |
+| D4 | Dependabot / pin actions by SHA | ✅ done 2026-09-25: `.github/dependabot.yml` (github-actions, weekly, digroup 1 PR) + 4 action di `apk.yml` di-pin commit SHA + komentar versi (`checkout` v7.0.1, `setup-java` v6.0.1, `flutter-action` v2.23.0, `upload-artifact` v7.0.1) |
 | D5 | Backup export DB | ✅ done `2.3.7+20`: **manual** multi-CSV (dompet/transaksi/budget) dari Lainnya → Cadangkan data (`backup_export.dart`); jadwal otomatis (pg_cron + Storage) = backlog Fase 3 |
 | D6 | Retention `client_errors` + `audit_logs` | ⬜ Baru: cleanup baris lama (pg_cron Fase 3); UI baca `audit_logs` opsional |
 | D7 | Error monitoring lanjutan | ⬜ Baru: eksplorasi alert/DSN Sentry bila volume error in-house mulai besar |
+| D8 | Anti-pause heartbeat free plan | ⬜ Baru: workflow GitHub Actions cron (mis. 2×/minggu) hit query ringan ke project → cegah pause 7 hari (lihat §4 Fase 3). Alternatif: email warning dibaca, atau naik Pro |
+
+### Fase 3 — Cek limit plan Supabase (spike, 2026-09-25)
+
+Sumber: `supabase.com/pricing` + docs *Project Pausing* (nilai 2026; bisa berubah — cek ulang sebelum Fase 4).
+
+| Kuota | Free | Pro ($25/bln) | Pemakaian kita (free, user sedikit) |
+|-------|------|---------------|-------------------------------------|
+| DB size | 500 MB | 8 GB (+$0,125/GB) | Baris kecil: transaksi/audit/error ~ratusan baris/org → **jauh di bawah** |
+| Egress | 5 GB | 250 GB | Fetch list per sesi (KB-an) → cukup untuk ribuan sesi/bln |
+| MAU auth | 50.000 | 100.000 | Puluhan–ratusan |
+| Edge fn | 500k invocations | 2 jt | `create-snap` hanya saat checkout (Fase 4) |
+| Realtime | 200 koneksi, 2 jt msg | 500 / 5 jt | **Tidak dipakai** (app reload per pindah tab) |
+| File storage | 1 GB | 100 GB | Tidak dipakai |
+| Project | maks 2 aktif | bayar per project | 1 project |
+| **Pause inaktif** | **ya, 7 hari** (diperketat 2026-02-01) | tidak pernah | **RISIKO UTAMA** |
+| Backup otomatis | tidak ada | harian, simpan 7 hari | Manual CSV (D5) saja — lemah untuk data finansial |
+| Log retention | 1 hari | 7 hari | `client_errors`/`audit_logs` = tabel kita (aman), tapi log platform cuma 1 hari |
+| pg_cron | ✅ tersedia | ✅ | Untuk F3-d retention |
+
+**Kesimpulan:**
+1. **Free cukup untuk skala sekarang → Fase 4 aman dimulai di free.** Kuota utama semua >10× kebutuhan.
+2. **Risiko #1 = pause 7 hari inaktif**: tanpa user buka app / API dipanggil selama seminggu, project berhenti → semua user error. Supabase kirim email peringatan ~1 minggu sebelumnya; pulihkan = 1 klik (backup disimpan max 1 tahun). Mitigasi: **D8 heartbeat cron**, baca email warning, atau Pro.
+3. **Trigger naik Pro ($25/bln):** (a) DB > ~400 MB, (b) mulai ada revenue Midtrans → backup harian otomatis wajib untuk data finansial, (c) pause jadi berulang/panic, (d) butuh log platform >1 hari untuk debugging. **Disarankan: naik Pro bersamaan dengan launch Fase 4 publik**, bukan sebelumnya.
 
 ---
 
@@ -297,6 +322,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 - [ ] Flood ≥11 notif cepat → status "Dibatasi, terlalu banyak. Coba lagi."; setelah >60 detik auto-track bisa lagi
 - [ ] `client_errors` terisi setelah error uji → cek di Dashboard: ada `app_version`, **tidak ada** nominal/note/isi notif di kolom mana pun
 - [ ] Install APK `2.3.7+20` → Lainnya → Cadangkan data → share sheet berisi 3 CSV; buka di Sheets → kolom lengkap, angka benar
+- [ ] Push Fase 3 → run CI hijau walau semua action sudah di-pin SHA; cek Dependabot → muncul PR update github-actions (weekly)
 
 ---
 
@@ -348,6 +374,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `105beaf` | **D5 backup**: `backup_export.dart` (3 CSV builder) + tile Lainnya → Cadangkan data + test |
 | `0ba570b` | Fix temuan analyze pertama: `LineSplitter` static, hapus `dart:ui`, `const` test. Run `36098447278` hijau penuh → APK `2.3.7+20` |
 | `12d1a26` | Spec + implementation plan Fase 2 hardening |
+| (Fase 3) | **D4 supply chain**: `.github/dependabot.yml` + pin 4 action ke commit SHA di `apk.yml`; D2 sekalian (checkout v7.0.1, setup-java v6.0.1, flutter-action v2.23.0, upload-artifact v7.0.1). Spike limit plan Supabase → §4 |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 
