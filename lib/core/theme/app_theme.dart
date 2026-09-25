@@ -36,6 +36,12 @@ class SsrSpace {
   static const xxl = 24.0;
 }
 
+class SsrFonts {
+  static const body = 'PlusJakartaSans';
+  static const display = 'Anton';
+  static const icon = 'PhosphorFill';
+}
+
 class SsrTheme {
   static ThemeData light() {
     const scheme = ColorScheme.light(
@@ -49,6 +55,7 @@ class SsrTheme {
     );
     return ThemeData(
       useMaterial3: true,
+      fontFamily: SsrFonts.body,
       scaffoldBackgroundColor: SsrColors.paper,
       colorScheme: scheme,
       appBarTheme: const AppBarTheme(
@@ -57,6 +64,7 @@ class SsrTheme {
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
+          fontFamily: SsrFonts.body,
           fontSize: 22,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.3,
@@ -65,30 +73,45 @@ class SsrTheme {
       ),
       textTheme: const TextTheme(
         displaySmall: TextStyle(
+          fontFamily: SsrFonts.display,
           fontSize: 32,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w400,
           letterSpacing: -0.5,
           color: SsrColors.ink,
         ),
         titleLarge: TextStyle(
+          fontFamily: SsrFonts.body,
           fontSize: 20,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.2,
           color: SsrColors.ink,
         ),
         titleMedium: TextStyle(
+          fontFamily: SsrFonts.body,
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: SsrColors.ink,
         ),
-        bodyLarge: TextStyle(fontSize: 16, height: 1.5, color: SsrColors.ink),
-        bodyMedium: TextStyle(fontSize: 14, height: 1.5, color: SsrColors.ink),
+        bodyLarge: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 16,
+          height: 1.5,
+          color: SsrColors.ink,
+        ),
+        bodyMedium: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 14,
+          height: 1.5,
+          color: SsrColors.ink,
+        ),
         bodySmall: TextStyle(
+          fontFamily: SsrFonts.body,
           fontSize: 12,
           height: 1.4,
           color: SsrColors.secondary,
         ),
         labelLarge: TextStyle(
+          fontFamily: SsrFonts.body,
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: SsrColors.ink,
@@ -103,7 +126,11 @@ class SsrTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(SsrRadius.button),
           ),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+            fontFamily: SsrFonts.body,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -146,7 +173,11 @@ class SsrTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: SsrColors.ink,
-        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
+        contentTextStyle: const TextStyle(
+          fontFamily: SsrFonts.body,
+          color: Colors.white,
+          fontSize: 14,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(SsrRadius.tile),
         ),
@@ -172,12 +203,14 @@ class SsrTheme {
   }
 
   static const money = TextStyle(
+    fontFamily: SsrFonts.body,
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: SsrColors.ink,
     fontFeatures: [FontFeature.tabularFigures()],
   );
   static const moneyLarge = TextStyle(
+    fontFamily: SsrFonts.body,
     fontSize: 26,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.3,
@@ -185,6 +218,7 @@ class SsrTheme {
     fontFeatures: [FontFeature.tabularFigures()],
   );
   static const moneyOnDark = TextStyle(
+    fontFamily: SsrFonts.body,
     fontSize: 32,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.5,

@@ -7,6 +7,7 @@ import 'package:ssr_space/screens/onboarding_screen.dart';
 import 'package:ssr_space/screens/lock_screen.dart';
 import 'package:ssr_space/screens/main_shell.dart';
 import 'package:ssr_space/screens/auth_screen.dart';
+import 'package:ssr_space/screens/intro_consent_screen.dart';
 import 'package:ssr_space/screens/org_switcher_screen.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/state_views.dart';
@@ -48,7 +49,18 @@ class _SplashScreenState extends State<SplashScreen> {
           await _go(AuthScreen(session: widget.session));
           return;
         }
-        final prefs = await SharedPreferences.getInstance();
+      }
+      final prefs = await SharedPreferences.getInstance();
+      if ((prefs.getString('consent_v1') ?? '').isEmpty) {
+        await _go(
+          IntroConsentScreen(
+            session: widget.session,
+            skipAuth: widget.skipAuth,
+          ),
+        );
+        return;
+      }
+      if (SupabaseConfig.isConfigured) {
         if ((prefs.getString('active_org_id') ?? '').isEmpty) {
           await _go(OrgSwitcherScreen(session: widget.session));
           return;
@@ -91,7 +103,8 @@ class _SplashScreenState extends State<SplashScreen> {
                             ),
                             const SizedBox(height: SsrSpace.sm),
                             Text(
-                              'Buku kas harian.',
+                              'Simple. Secure. Reliable.\nYour Finance Space.',
+                              textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],

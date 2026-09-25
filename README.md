@@ -1,4 +1,6 @@
 # SSR SPACE
+**Simple. Secure. Reliable. Your Finance Space.**
+
 Aplikasi Android pencatatan pengeluaran & pemasukan — multi-dompet, workspace Supabase, auto-track notif bank.
 
 ## Sesi awal enterprise

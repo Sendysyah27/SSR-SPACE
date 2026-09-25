@@ -1,5 +1,7 @@
 # DESIGN.md — SSR SPACE
 
+**Simple. Secure. Reliable. Your Finance Space.**
+
 Aplikasi pencatatan pemasukan dan pengeluaran multi-workspace untuk Indonesia. Dipakai tiap hari, sering malam, satu tangan.
 
 ## Dials
@@ -16,8 +18,15 @@ Design Read: aplikasi keuangan phone-first untuk pemakai Indonesia, bahasa visua
 
 ## Tipografi
 
-- Bawaan Material (Roboto) tanpa dependensi font, supaya tetap jalan offline.
-- Hierarki dari bobot dan spasi, bukan banyak ukuran. Uang selalu tabular agar digit sejajar.
+- **Plus Jakarta Sans** (`SsrFonts.body`): body & judul, bobot 400-700, dibundel di `assets/fonts/` (jalan offline). Humanis dan memang dirancang untuk teks Indonesia; pengganti Roboto sejak 2.3.9+22.
+- **Anton** (`SsrFonts.display`): khusus wordmark "SSR SPACE" dan momen brand (splash, intro). Alasan: padat, berat, langsung dikenali.
+- Hierarki dari bobot dan spasi, bukan banyak ukuran. Uang selalu tabular (`FontFeature.tabularFigures`) agar digit sejajar.
+- Variabel italic PJS tersedia di assets tapi belum dipakai.
+
+## Ikon
+
+- **Phosphor Fill** (`SsrFonts.icon`) untuk layar intro/persetujuan (brand moment). Alasan bobot fill: berat dan solid, cocok dengan Anton di layar pembuka.
+- Layar aplikasi tetap Material icon. Backlog: migrasi bertahap ke Phosphor.
 
 ## Motif
 

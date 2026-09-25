@@ -18,6 +18,7 @@ Lensa: OWASP / RLS Supabase / input hostile (isi notif pihak ketiga).
 - **Fase 3 awal** (2026-09-25): spike limit plan Supabase (hasil §4) + D4 dependabot & pin actions by SHA (D2 sekalian selesai).
 - **A0 bug sisa pasca-redesign — SELESAI** (2026-09-25): root cause = **prefix package salah**. App **SeaBank** (Play Store) pakai `id.co.bankbkemobile.digitalbank` → kena label "KEB Hana"; **KEB Hana asli** (`co.id.myhana.app`) tidak terpantau sama sekali. Fix: pindahkan prefix BKE (`id.co.bankbkemobile`, `id.co.bankbke`) ke SeaBank, KEB Hana → `id.co.kebhana` + `co.id.myhana.app`, test dibalik. **Fitur baru: privacy mode "Samarkan nominal"** (`mask.dart` + `amt()`, toggle mata di Beranda + tile Lainnya, `test/mask_test.dart`).
 - **Fase 3 F3-c/F3-d** (2026-09-25): **test RLS server-side di CI** (`rls-test.yml` + `supabase/test/`, 40+ assert, lulus lokal + CI) → **nemukan 2 temuan** → `migration_12_join_fixes.sql` (**[P0] bikin workspace baru gagal sejak migration_07** — subquery `organizations` di policy `join own org` kena RLS "member read org" (chicken-and-egg); + [minor] `join_org_by_invite` cek EXHAUSTED sebelum idempoten); **F3-d**: `migration_13_retention.sql` (pg_cron retention) + `backup-db.yml` (pg_dump mingguan, butuh secret `SUPABASE_DB_URL`). **Migrasi 12 + 13 sudah dijalankan user (2026-09-25)**; secret `SUPABASE_DB_URL` diset → backup mingguan aktif (run `36110689118` hijau, artifact 63 KB).
+- **Sesi tagline + intro consent + font premium** (2026-09-25, v2.3.9+22): tagline resmi **"Simple. Secure. Reliable. Your Finance Space."** (kata Offline dibuang; D3 pubspec description ditutup); **IntroConsentScreen** carousel 4 halaman + checkbox persetujuan (prefs `consent_v1`, gate di splash sebelum workspace); **font global** Plus Jakarta Sans + Anton (wordmark) + Phosphor Fill (intro) dari `sdcard/Assets/` → `assets/fonts/`; DESIGN.md tipografi/ikon ditulis ulang. Changelog commit di §7.
 
 ---
 
@@ -250,7 +251,7 @@ supabase/migration_07 + 08
 |---|------|--------|
 | D1 | CI: `flutter analyze` step | ✅ done 2026-09-25: langkah `flutter analyze` blocking sebelum test (`739fbb4`); 26 temuan lama (5 warning `unawaited_return_in_try_block`, 21 info: deprecation `withOpacity`/`DropdownButtonFormField.value`/`anonKey`, curly braces, unnecessary import, const) dibersihkan di `e7e88e8`; CI run `36090886163` hijau |
 | D2 | Setup-java v5 + checkout v5 | ✅ done 2026-09-25 (sekalian D4): `checkout` **v7.0.1**, `setup-java` **v6.0.1** (lewat v5 — versi terbaru 2026), di-pin SHA |
-| D3 | Pubspec description masih “offline multi-dompet” | Samakan dengan reality SaaS |
+| D3 | Pubspec description masih “offline multi-dompet” | ✅ done 2.3.9+22: description = tagline + realita SaaS (workspace + auto-track), kata "offline" dibuang |
 | D4 | Dependabot / pin actions by SHA | ✅ done 2026-09-25: `.github/dependabot.yml` (github-actions, weekly, digroup 1 PR) + 4 action di `apk.yml` di-pin commit SHA + komentar versi (`checkout` v7.0.1, `setup-java` v6.0.1, `flutter-action` v2.23.0, `upload-artifact` v7.0.1) |
 | D5 | Backup export DB | ✅ **manual** multi-CSV (dompet/transaksi/budget) dari Lainnya → Cadangkan data (`backup_export.dart`); **otomatis ✅ 2026-09-25**: `backup-db.yml` pg_dump mingguan (cron Senin 02:00 UTC) → artifact 30 hari, butuh secret `SUPABASE_DB_URL` |
 | D6 | Retention `client_errors` + `audit_logs` | ✅ done 2026-09-25: `migration_13_retention.sql` (pg_cron harian: `client_errors` 30 hari, `audit_logs` 180 hari, `cron.job_run_details` 14 hari; idempotent). UI baca `audit_logs` opsional tetap backlog |
@@ -345,6 +346,13 @@ Setelah install APK v2.3.3+ & migration 07+08:
 - [ ] Notif **SeaBank** asli → status recent "…dari SeaBank", pref `track_wallet_SeaBank` (bukan KEB Hana)
 - [ ] Notif **MyHana/KEB Hana** → label "KEB Hana" (bila app terpasang)
 - [ ] Toggle samarkan nominal (mata di Beranda / tile Lainnya) → beranda, transaksi, dompet, budget, laporan, recent jadi `Rp ••••••`; mati lagi → normal; **restart app → state tetap**; harga plan Billing tidak ikut disembunyikan
+- [ ] Install APK `2.3.9+22` → splash menampilkan tagline baru (2 baris, center)
+- [ ] User lama buka app → carousel intro muncul 4 halaman, swipe/`Lanjut` jalan, dots sinkron
+- [ ] Halaman 4: tombol "Setuju & mulai" **mati** sebelum dicentang; centang → aktif → setuju → lanjut ke workspace/PIN
+- [ ] Force-kill app sebelum setuju → buka lagi → carousel muncul lagi (flag belum tersimpan)
+- [ ] Setuju sekali → restart app → carousel **tidak** muncul lagi
+- [ ] Visual font: seluruh layar pakai Plus Jakarta Sans; wordmark "SSR SPACE" (splash/auth) pakai Anton; **angka rupiah tetap sejajar (tabular)** dan tak ada overflow/terpotong di layar kecil
+- [ ] Carousel intro: ikon Phosphor Fill tampil (bukan kotak/huruf aneh); tombol/checkbox mudah ditekan
 
 ---
 
@@ -401,6 +409,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | (Fase 3) | **D4 supply chain**: `.github/dependabot.yml` + pin 4 action ke commit SHA di `apk.yml`; D2 sekalian (checkout v7.0.1, setup-java v6.0.1, flutter-action v2.23.0, upload-artifact v7.0.1). Spike limit plan Supabase → §4 |
 | (Fase 3 F3-c/d) | **Test RLS CI**: `rls-test.yml` + `supabase/test/{setup,run,rls_test}` (40+ assert) → temukan **[P0] bikin workspace gagal sejak 07** + [minor] re-join invite EXHAUSTED → `migration_12_join_fixes.sql`; **retention**: `migration_13_retention.sql` (pg_cron 3 job) + `backup-db.yml` pg_dump mingguan |
 | (A0) | **Fix allowlist SeaBank/KEB Hana** + **fitur privacy mode "Samarkan nominal"**: `notif_parse.dart` (SeaBank ← prefix BKE, KEB Hana ← `co.id.myhana.app`), `mask.dart`/`amt()`/`MaskToggle`, `MainShell` rebuild global, 7 layar + `tx_row`, tile Lainnya, `test/mask_test.dart`, docs |
+| (tagline+consent) | **Tagline resmi "Simple. Secure. Reliable. Your Finance Space."** + **IntroConsentScreen** carousel 4 halaman (brand → nilai → kesadaran finansial → syarat + checkbox, prefs `consent_v1`, gate splash) + **font global** PJS/Anton/Phosphor-Fill (`assets/fonts/`, `SsrFonts`) + pubspec D3 ditutup + v2.3.9+22 |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 

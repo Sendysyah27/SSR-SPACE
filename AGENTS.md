@@ -11,7 +11,7 @@ Panduan kerja untuk agent / contributor di repo ini. Baca dulu sebelum ubah kode
 | Nama | **SSR SPACE** |
 | Path | `/data/data/com.termux/files/home/SSR SPACE` |
 | Remote | `https://github.com/Sendysyah27/SSR-SPACE.git` |
-| Versi | `2.3.7+20` (`pubspec.yaml`) |
+| Versi | `2.3.9+22` (`pubspec.yaml`) |
 | Stack | Flutter (stable) + Supabase (Auth + Postgres RLS) + Notification Listener |
 | Bahasa UI | Indonesia |
 | Build | GitHub Actions (`.github/workflows/apk.yml`), **bukan** lokal Termux |
@@ -23,6 +23,9 @@ Panduan kerja untuk agent / contributor di repo ini. Baca dulu sebelum ubah kode
 ---
 
 ## 2. Tujuan produk (goal)
+
+**Tagline resmi (keputusan 2026-09-25):** ***Simple. Secure. Reliable. Your Finance Space.***
+(Kata "Offline" dibuang dari tagline lama; storage tetap Supabase cloud. Posisi = ruang keuangan pribadi yang tenang, bukan klaim teknis offline.)
 
 Aplikasi Android pencatatan keuangan harian untuk user Indonesia:
 
@@ -130,7 +133,8 @@ migration_13_retention.sql           ← Fase 3 (pg_cron retention; di test suit
 ## 4. Fitur yang telah update (detail per 2026-09-25, v2.3.7+20)
 
 ### 4.1 Sesi & auth
-- Splash → (opsional onboarding PIN) → Auth email/password Supabase → pilih/buat workspace → `MainShell`.
+- Splash → **intro + persetujuan (user baru / belum setuju)** → Auth email/password Supabase → pilih/buat workspace → `MainShell`.
+- **IntroConsentScreen** (`lib/screens/intro_consent_screen.dart`): PageView 4 halaman (brand tagline → 3 nilai fitur → kesadaran finansial → syarat & persetujuan + checkbox). Centang wajib sebelum "Setuju & mulai". Disimpan di prefs `consent_v1` (timestamp ISO); gate ada di `SplashScreen._boot` **sebelum** cek workspace. User lama juga lihat sekali (flag belum pernah ada). Gagal tulis prefs → snackbar, tetap di layar.
 - PIN: hash SHA-256 + salt 16 byte di storage; 5 salah → lockout 60 detik; auto-lock 5 menit.
 - Verifikasi email wajib (resend tersedia).
 
@@ -231,6 +235,7 @@ Urutan list penting: **myBCA sebelum BCA**.
 
 ### 4.7 Design system
 - Lihat `DESIGN.md` — wajib dipatuhi untuk UI baru.
+- **Font global (2.3.9+22):** Plus Jakarta Sans (`SsrFonts.body`, semua layar) + Anton (`SsrFonts.display`, wordmark) + Phosphor Fill (`SsrFonts.icon`, layar intro) — dibundel di `assets/fonts/`, tetap jalan offline. Jangan tambah `fontFamily` hardcoded (kecuali monospace kode invite yang sengaja).
 - Uang selalu `rp()` + `FontFeature.tabularFigures`.
 - Aksen zamrud `#0F766E`, danger bata `#B3261E`, kertas `#FAFAF7`.
 - Bottom nav 5 tab; reload beranda/budget/laporan tiap pindah tab (`MainShell._select`).
@@ -275,6 +280,7 @@ SSR SPACE/
 ├── DESIGN.md                 ← arah visual (wajib)
 ├── README.md
 ├── pubspec.yaml
+├── assets/fonts/             ← PJS variable + Anton + Phosphor-Fill (bundled)
 ├── .github/workflows/apk.yml
 ├── lib/
 │   ├── main.dart
