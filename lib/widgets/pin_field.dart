@@ -31,10 +31,12 @@ class _PinFieldState extends State<PinField> {
   void initState() {
     super.initState();
     _focus = FocusNode();
-    widget.controller.addListener(_maybeComplete);
+    widget.controller.addListener(_onChanged);
+    _focus.addListener(_onChanged);
   }
 
-  void _maybeComplete() {
+  void _onChanged() {
+    if (mounted) setState(() {});
     final v = widget.controller.text;
     if (v.length >= widget.length) {
       widget.onCompleted?.call(v);
@@ -43,21 +45,17 @@ class _PinFieldState extends State<PinField> {
 
   @override
   void dispose() {
-    widget.controller.removeListener(_maybeComplete);
+    widget.controller.removeListener(_onChanged);
+    _focus.removeListener(_onChanged);
     _focus.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final text = widget.controller.text;
-    final boxes = List.generate(widget.length, (i) {
-      final filled = i < text.length;
-      final isCurrent = i == text.length && _focus.hasFocus;
-      return AnimatedContainer(
+  Widget _box(int i, bool filled, bool isCurrent) {
+    return Expanded(
+      child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOutCubic,
-        width: 44,
         height: 52,
         margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
@@ -74,16 +72,20 @@ class _PinFieldState extends State<PinField> {
         ),
         alignment: Alignment.center,
         child: Text(
-          filled ? (widget.obscure ? '•' : text[i]) : '',
+          filled ? (widget.obscure ? '•' : widget.controller.text[i]) : '',
           style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
             color: SsrColors.ink,
           ),
         ),
-      );
-    });
+      ),
+    );
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    final text = widget.controller.text;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -105,8 +107,18 @@ class _PinFieldState extends State<PinField> {
                 ),
               ),
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () => _focus.requestFocus(),
-                child: Row(children: boxes),
+                child: Row(
+                  children: [
+                    for (var i = 0; i < widget.length; i++)
+                      _box(
+                        i,
+                        i < text.length,
+                        i == text.length && _focus.hasFocus,
+                      ),
+                  ],
+                ),
               ),
             ],
           ),

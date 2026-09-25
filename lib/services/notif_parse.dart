@@ -3,8 +3,10 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 
 /// Cocok `Rp88.655`, `Rp 10.800,00`, `IDR 88,655.00`, `IDR88,655`.
+/// Grup wajib berakhir digit agar titik/koma akhir kalimat
+/// (`Rp. 17.000. Ref`) tidak ikut tertangkap.
 final _amountRe = RegExp(
-  r'(?:Rp|IDR)\.?\s*([\d][\d.,]*)',
+  r'(?:Rp|IDR)\.?\s*([\d](?:[\d.,]*\d)?)',
   caseSensitive: false,
 );
 
@@ -70,6 +72,9 @@ const _inKeys = [
   'diterima',
   'berhasil top up',
   'isi saldo',
+  'isi ulang',
+  'cash in',
+  'cashin',
 ];
 
 const _outKeys = [

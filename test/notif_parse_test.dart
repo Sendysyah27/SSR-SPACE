@@ -10,10 +10,25 @@ void main() {
   });
 
   test('parse nominal format IDR (gaya barat koma ribuan)', () {
-    expect(parseNotifAmount('Pengeluaran sebesar IDR 88,655.00 di kategori'), 88655);
-    expect(parseNotifAmount('Pengeluaran sebesar IDR88,655.00 di kat...'), 88655);
+    expect(
+      parseNotifAmount('Pengeluaran sebesar IDR 88,655.00 di kategori'),
+      88655,
+    );
+    expect(
+      parseNotifAmount('Pengeluaran sebesar IDR88,655.00 di kat...'),
+      88655,
+    );
     expect(parseNotifAmount('IDR 1,234,567 transfer masuk'), 1234567);
     expect(parseNotifAmount('IDR 88,655 pengeluaran'), 88655);
+  });
+
+  test('parse nominal abaikan titik/koma akhir kalimat', () {
+    expect(
+      parseNotifAmount('Berhasil Sebesar Rp. 17.000. Ref T99920260926'),
+      17000,
+    );
+    expect(parseNotifAmount('Saldo Rp10.000, terima kasih.'), 10000);
+    expect(parseNotifAmount('Diskon Rp15 ribu'), 15);
   });
 
   test('classify in vs out vs ambiguous', () {
@@ -26,10 +41,23 @@ void main() {
   test('classify frasa asli bank: top up, pengeluaran, menerima', () {
     expect(classifyNotif('Berhasil top up saldo Rp88.655 d...'), 'in');
     expect(classifyNotif('Pengeluaran sebesar IDR 88,655.00 di kat...'), 'out');
-    expect(classifyNotif('Pengeluaran sebesar Rp88.655,00 di kategori Belanja'), 'out');
+    expect(
+      classifyNotif('Pengeluaran sebesar Rp88.655,00 di kategori Belanja'),
+      'out',
+    );
     expect(classifyNotif('Anda menerima transfer Rp100.000'), 'in');
     expect(classifyNotif('Transfer Rp50.000 berhasil'), 'out');
     expect(classifyNotif('Pembayaran sebesar Rp10.000 berhasil'), 'out');
+  });
+
+  test('classify format ISAKU cash in', () {
+    expect(
+      classifyNotif(
+        'Transaksi Cash In Transaksi Isi Ulang Di PT INDOMARCO PRISMATAMA '
+        'tgl 26-09-2026 01:32 Berhasil Sebesar Rp. 17.000. Ref T999',
+      ),
+      'in',
+    );
   });
 
   test('hash stable same day, differs across day', () {
