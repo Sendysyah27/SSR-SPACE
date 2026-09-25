@@ -1,6 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/core/saas/backup_export.dart';
 import 'package:ssr_space/core/saas/billing_service.dart';
+import 'package:ssr_space/core/saas/error_reporter.dart';
 import 'package:ssr_space/core/saas/foreground_track.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/session/session_service.dart';
@@ -101,6 +107,60 @@ class _OtherScreenState extends State<OtherScreen> {
     if (mounted) _refreshMeta();
   }
 
+  bool backingUp = false;
+
+  Future<void> _backup() async {
+    if (backingUp) return;
+    setState(() => backingUp = true);
+    try {
+      final p = await SharedPreferences.getInstance();
+      final orgId = p.getString('active_org_id') ?? '';
+      if (orgId.isEmpty) throw StateError('org kosong');
+      final c = SupabaseConfig.client;
+      final List<Map<String, dynamic>> wallets = await c
+          .from('wallets')
+          .select()
+          .eq('org_id', orgId)
+          .order('created_at');
+      final List<Map<String, dynamic>> txs = await c
+          .from('transactions')
+          .select()
+          .eq('org_id', orgId)
+          .order('date')
+          .limit(10000);
+      final List<Map<String, dynamic>> budgets = await c
+          .from('budgets')
+          .select()
+          .eq('org_id', orgId)
+          .order('month');
+      final contents = [
+        walletsCsv(wallets),
+        transactionsCsv(txs),
+        budgetsCsv(budgets),
+      ];
+      final dir = await getTemporaryDirectory();
+      final files = <XFile>[];
+      for (var i = 0; i < contents.length; i++) {
+        final f = File('${dir.path}/${backupFileNames()[i]}');
+        await f.writeAsString(contents[i]);
+        files.add(XFile(f.path));
+      }
+      await Share.shareXFiles(files, text: 'Cadangan data SSR SPACE (CSV)');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('File cadangan siap dibagikan.')),
+      );
+    } catch (err, st) {
+      ErrorReporter.capture(err, st, context: 'backup');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal membuat cadangan. Coba lagi.')),
+      );
+    } finally {
+      if (mounted) setState(() => backingUp = false);
+    }
+  }
+
   Widget _iconTile(IconData icon) {
     return Container(
       width: 44,
@@ -118,7 +178,7 @@ class _OtherScreenState extends State<OtherScreen> {
     required String title,
     String? subtitle,
     StatusChip? chip,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -222,6 +282,25 @@ class _OtherScreenState extends State<OtherScreen> {
                             : StatusTone.neutral,
                       ),
                       onTap: () => _push(const NotifSettingsScreen()),
+                    ),
+                  ],
+                ),
+              ),
+              SectionCard(
+                margin: const EdgeInsets.only(bottom: SsrSpace.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Data',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: SsrSpace.xs),
+                    _navTile(
+                      icon: Icons.save_alt_outlined,
+                      title: 'Cadangkan data',
+                      subtitle: 'Ekspor seluruh workspace ke CSV',
+                      onTap: backingUp ? null : _backup,
                     ),
                   ],
                 ),
