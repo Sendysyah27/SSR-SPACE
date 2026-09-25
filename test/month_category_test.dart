@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/month.dart';
-import 'package:flutter/material.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 
 void main() {
   test('month helpers move correctly', () {
@@ -13,9 +13,9 @@ void main() {
   });
 
   test('category icons fall back honestly', () {
-    expect(iconForCategory('jajan makan'), Icons.restaurant_outlined);
-    expect(iconForCategory('bensin motor'), Icons.directions_car_outlined);
-    expect(iconForCategory('zzz-tak dikenal'), Icons.category_outlined);
-    expect(iconForCategory(null), Icons.category_outlined);
+    expect(iconForCategory('jajan makan'), AppIcons.food);
+    expect(iconForCategory('bensin motor'), AppIcons.transport);
+    expect(iconForCategory('zzz-tak dikenal'), AppIcons.categoryFallback);
+    expect(iconForCategory(null), AppIcons.categoryFallback);
   });
 }
