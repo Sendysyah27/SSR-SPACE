@@ -270,62 +270,118 @@ class _StatusCard extends StatelessWidget {
             onChanged: onMasterChanged,
           ),
           const Divider(height: 1),
-          _StatusLine(
-            label: 'Pemantauan latar',
-            below: StatusChip(
-              label: foregroundRunning ? 'Aktif' : 'Mati',
-              tone: foregroundRunning ? StatusTone.accent : StatusTone.neutral,
-            ),
-            trailing: Flexible(
-              child: Text(
-                foregroundRunning
-                    ? 'Transaksi tetap tercatat walau app ditutup'
-                    : 'Buka app agar pelacakan berjalan',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          _StatusLine(
-            label: 'Izin baca notifikasi',
-            below: StatusChip(
-              label: granted ? 'Aktif' : 'Belum aktif',
-              tone: granted ? StatusTone.accent : StatusTone.neutral,
-            ),
-            trailing: OutlinedButton(
-              onPressed: onRequestPermission,
-              child: Text(granted ? 'Cek lagi' : 'Aktifkan'),
-            ),
-          ),
-          const Divider(height: 1),
-          _StatusLine(
-            label: 'Service listener',
-            below: Text(
-              connectionLabel(
-                permissionGranted: granted,
-                serviceConnected: serviceConnected,
-              ),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            trailing: granted && !serviceConnected
-                ? OutlinedButton(
-                    onPressed: scanning ? null : onReconnect,
-                    child: const Text('Sambung'),
-                  )
-                : granted
-                ? StatusChip(
-                    label: serviceConnected ? 'Terhubung' : 'Terputus',
-                    tone: serviceConnected
-                        ? StatusTone.accent
-                        : StatusTone.danger,
-                  )
-                : const StatusChip(
-                    label: 'Belum siap',
-                    tone: StatusTone.neutral,
-                  ),
+          _StatusLines(
+            foregroundRunning: foregroundRunning,
+            granted: granted,
+            serviceConnected: serviceConnected,
+            scanning: scanning,
+            onRequestPermission: onRequestPermission,
+            onReconnect: onReconnect,
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Tiga baris detail status: pemantauan latar, izin listener, koneksi service.
+class _StatusLines extends StatelessWidget {
+  final bool foregroundRunning;
+  final bool granted;
+  final bool serviceConnected;
+  final bool scanning;
+  final VoidCallback onRequestPermission;
+  final VoidCallback onReconnect;
+
+  const _StatusLines({
+    required this.foregroundRunning,
+    required this.granted,
+    required this.serviceConnected,
+    required this.scanning,
+    required this.onRequestPermission,
+    required this.onReconnect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _StatusLine(
+          label: 'Pemantauan latar',
+          below: StatusChip(
+            label: foregroundRunning ? 'Aktif' : 'Mati',
+            tone: foregroundRunning ? StatusTone.accent : StatusTone.neutral,
+          ),
+          trailing: Flexible(
+            child: Text(
+              foregroundRunning
+                  ? 'Transaksi tetap tercatat walau app ditutup'
+                  : 'Buka app agar pelacakan berjalan',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        _StatusLine(
+          label: 'Izin baca notifikasi',
+          below: StatusChip(
+            label: granted ? 'Aktif' : 'Belum aktif',
+            tone: granted ? StatusTone.accent : StatusTone.neutral,
+          ),
+          trailing: OutlinedButton(
+            onPressed: onRequestPermission,
+            child: Text(granted ? 'Cek lagi' : 'Aktifkan'),
+          ),
+        ),
+        const Divider(height: 1),
+        _ServiceLine(
+          granted: granted,
+          serviceConnected: serviceConnected,
+          scanning: scanning,
+          onReconnect: onReconnect,
+        ),
+      ],
+    );
+  }
+}
+
+/// Baris status koneksi service listener (sambung / chip koneksi / belum siap).
+class _ServiceLine extends StatelessWidget {
+  final bool granted;
+  final bool serviceConnected;
+  final bool scanning;
+  final VoidCallback onReconnect;
+
+  const _ServiceLine({
+    required this.granted,
+    required this.serviceConnected,
+    required this.scanning,
+    required this.onReconnect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _StatusLine(
+      label: 'Service listener',
+      below: Text(
+        connectionLabel(
+          permissionGranted: granted,
+          serviceConnected: serviceConnected,
+        ),
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      trailing: granted && !serviceConnected
+          ? OutlinedButton(
+              onPressed: scanning ? null : onReconnect,
+              child: const Text('Sambung'),
+            )
+          : granted
+          ? StatusChip(
+              label: serviceConnected ? 'Terhubung' : 'Terputus',
+              tone: serviceConnected ? StatusTone.accent : StatusTone.danger,
+            )
+          : const StatusChip(label: 'Belum siap', tone: StatusTone.neutral),
     );
   }
 }
@@ -477,30 +533,38 @@ class _RecentCard extends StatelessWidget {
           ),
           if (scanStatus.isNotEmpty)
             Text(scanStatus, style: Theme.of(context).textTheme.bodySmall),
-          Builder(
-            builder: (_) {
-              final shown = NotifTrack.recent;
-              if (shown.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.only(top: SsrSpace.sm),
-                  child: Text(
-                    'Belum ada notifikasi keuangan tertangkap sesi ini.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                );
-              }
-              return Column(
-                children: [
-                  for (var i = 0; i < shown.length; i++) ...[
-                    if (i > 0) const Divider(height: 1),
-                    RecentNotifTile(n: shown[i], onSaved: onSaved),
-                  ],
-                ],
-              );
-            },
-          ),
+          _RecentList(onSaved: onSaved),
         ],
       ),
+    );
+  }
+}
+
+/// Daftar recent notif sesi ini (atau pesan kosong bila belum ada).
+class _RecentList extends StatelessWidget {
+  final ValueChanged<String> onSaved;
+
+  const _RecentList({required this.onSaved});
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = NotifTrack.recent;
+    if (shown.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(top: SsrSpace.sm),
+        child: Text(
+          'Belum ada notifikasi keuangan tertangkap sesi ini.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
+    }
+    return Column(
+      children: [
+        for (var i = 0; i < shown.length; i++) ...[
+          if (i > 0) const Divider(height: 1),
+          RecentNotifTile(n: shown[i], onSaved: onSaved),
+        ],
+      ],
     );
   }
 }
@@ -512,8 +576,6 @@ class RecentNotifTile extends StatelessWidget {
   final ValueChanged<String> onSaved;
 
   const RecentNotifTile({super.key, required this.n, required this.onSaved});
-
-  StatusTone get _statusTone => _statusToneFor(n.status);
 
   Future<void> _forceSave({String? forceType}) async {
     final msg = await NotifTrack.forceSave(n, forceType: forceType);
@@ -546,9 +608,6 @@ class RecentNotifTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final time = DateFormat('HH:mm');
-    final statusLabel = (n.status == null || n.status!.isEmpty)
-        ? 'Melewati filter'
-        : n.status!;
     final saveBtn = _saveButton(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
@@ -571,31 +630,43 @@ class RecentNotifTile extends StatelessWidget {
                 if (n.content.isNotEmpty)
                   Text(n.content, style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: SsrSpace.xs),
-                Wrap(
-                  spacing: SsrSpace.sm,
-                  runSpacing: SsrSpace.xs,
-                  children: [
-                    StatusChip(label: statusLabel, tone: _statusTone),
-                    if (n.amount != null)
-                      StatusChip(
-                        label: amt(n.amount!),
-                        tone: StatusTone.neutral,
-                      ),
-                    if (n.type != null)
-                      StatusChip(
-                        label: n.type == 'in' ? 'Masuk' : 'Keluar',
-                        tone: n.type == 'in'
-                            ? StatusTone.accent
-                            : StatusTone.danger,
-                      ),
-                  ],
-                ),
+                _RecentChips(n: n),
               ],
             ),
           ),
           if (saveBtn != null) ...[const SizedBox(width: SsrSpace.sm), saveBtn],
         ],
       ),
+    );
+  }
+}
+
+/// Chip status + nominal + jenis untuk satu notif recent.
+class _RecentChips extends StatelessWidget {
+  final CapturedNotif n;
+
+  const _RecentChips({required this.n});
+
+  StatusTone get _statusTone => _statusToneFor(n.status);
+
+  @override
+  Widget build(BuildContext context) {
+    final statusLabel = (n.status == null || n.status!.isEmpty)
+        ? 'Melewati filter'
+        : n.status!;
+    return Wrap(
+      spacing: SsrSpace.sm,
+      runSpacing: SsrSpace.xs,
+      children: [
+        StatusChip(label: statusLabel, tone: _statusTone),
+        if (n.amount != null)
+          StatusChip(label: amt(n.amount!), tone: StatusTone.neutral),
+        if (n.type != null)
+          StatusChip(
+            label: n.type == 'in' ? 'Masuk' : 'Keluar',
+            tone: n.type == 'in' ? StatusTone.accent : StatusTone.danger,
+          ),
+      ],
     );
   }
 }
