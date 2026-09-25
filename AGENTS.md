@@ -90,9 +90,12 @@ Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari
 5. bila hijau: gh run download <run-id> -n ssr-space-apk
 6. file final → /sdcard/Download/SSR-SPACE/ (rapi, nama jelas)
 7. bila ubah SQL: JELASKAN migration apa yang harus user jalankan di Supabase
+8. **SELESAI → wajib catat hasil kerja di AGENTS.md (status/fitur) + AUDIT.md (changelog §7)** — jangan diakhiri sebelum doc diupdate
 ```
 
 **Jangan commit tanpa diminta user** (peraturan global HP ini), kecuali user sudah bilang “commit” / “lanjut push”.
+
+**Aturan wajib (2026-09-25):** setiap pekerjaan yang sudah selesai (fix, fitur, redesign, migration) **harus dibaca ulang doc-nya lalu dicatat** di `AGENTS.md` + `AUDIT.md` — minimal changelog commit di AUDIT.md §7 dan baris status terkait di AGENTS.md. Doc boleh tertinggal ≤1 sesi, jangan lebih.
 
 ### 3.4 Workflow Supabase migration
 Semua SQL di `supabase/`. User jalankan manual di **Dashboard → SQL Editor**.

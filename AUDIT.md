@@ -322,6 +322,9 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `a0cf623` | **Redesign UI/UX** anti-slop ENERGY 2 / RHYTHM 2 / MOTION 2, 16 layar + 5 widget, hapus dashboard + v2.3.5+18 |
 | `4693c88` | Fix build APK: `FloatingActionButton.extended` + `NavigationBarTheme.iconTheme` |
 | `2e849c6`…`0c8132b` | **Fase 1 scale**: invite workspace (migration_10, token hash, RPC `join_org_by_invite`, layar Undang anggota) + foreground service `specialUse` (`ForegroundTrack`, wiring lifecycle, CI inject Manifest) + v2.3.6+19 |
+| `83f10b4` | migration_10 hardening: gerbang `used_count` atomik (`INVITE_EXHAUSTED` + rollback), hash invite di-`upper()` sinkron dgn client, revoke execute dari `public`/`anon` |
+| `4642d52` | Invite UI: guard tombol utk non-admin, map RLS `42501` ke pesan jelas (bukan error generik) |
+| `b2703ad` | Foreground: telan error stop service saat logout; fix fakta di AGENTS/AUDIT. CI run `36086384993` hijau |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 
