@@ -1,8 +1,18 @@
 # AUDIT.md — SSR SPACE
 
 Audit keamanan & kualitas fitur **auto-track notifikasi bank / dompet digital**.  
-Tanggal audit: **2026-09-24** · Versi saat audit: 2.3.2+14 → dieksekusi sampai **2.3.3+15**.  
+Tanggal audit: **2026-09-24** · Versi saat audit: 2.3.2+14 → dieksekusi sampai **2.3.6+19**.  
 Lensa: OWASP / RLS Supabase / input hostile (isi notif pihak ketiga).
+
+**Update 2026-09-24/25 (sesi lanjutan):**
+- Bug **input manual gagal** (`date` null eksplisit → default `current_date` tak dipakai) fixed di `385489a` + test `tx_payload_test.dart`.
+- **Redesign UI/UX** anti-slop selesai (`a0cf623`): dial `ENERGY 2 / RHYTHM 2 / MOTION 2`, 5 widget baru (`SectionCard`, `StatusChip`, `TxRow`, `PrimaryButton`, `PinField`), 16 layar diredesain, `dashboard_screen` dihapus (dead code), kontras hero zamrud diperbaiki (WCAG AA). Delivery Gate antislop PASS.
+- Fix build CI (`4693c88`): `ExtendedFloatingActionButton` sudah tak ada di Flutter stable + `NavigationBar` tak punya param `iconTheme` (dipindah ke `NavigationBarTheme`). **Pelajaran: `flutter test` tak menangkap error layar yang tak di-import test; `flutter build apk` wajib hijau sebelum dibilang selesai.**
+- **BRI**: diverifikasi user di device → deteksi notif **aman** (sebagian A6).
+- **Bug sisa belum diidentifikasi** — BRI lolos tapi user masih melaporkan bug; detail + root cause = sesi baru.
+- APK rilis: `/sdcard/Download/SSR-SPACE/SSR-SPACE-2.3.5-18-redesign.apk`
+- **Fase 1 scale** (invite workspace + foreground service): kode + docs commit lokal; CI milestone 1 run `36069820717` dan milestone 2 run `36075349074` hijau. Changelog commit di §7.
+- APK rilis Fase 1: `/sdcard/Download/SSR-SPACE/SSR-SPACE-2.3.6-19-fase1-scale.apk` (diunduh dari run CI setelah push docs ini)
 
 ---
 
@@ -20,7 +30,7 @@ Lensa: OWASP / RLS Supabase / input hostile (isi notif pihak ketiga).
 | Urutan TX code | Mint dulu → insert bisa gagal → lubang nomor | Insert dulu → mint → update |
 | Regression 07 | — | Policy SELECT org_members self-ref → recursion dompet → **migration_08** |
 
-**Status CI setelah fix:** green · 19 tests · APK `ssr-space-apk` sukses.
+**Status CI setelah fix:** green · 11 file test · APK `ssr-space-apk` sukses (run `4693c88`).
 
 ---
 
@@ -144,6 +154,8 @@ Dulu: `mintCode()` → `add()`; insert gagal (23505 / RLS) → nomor hilang.
 | C3 | Test hanya parse amount | ✅ + hash hari, allowlist, ymd, CapturedNotif, pref key |
 | C4 | Spec docs bilang offline sqflite | ✅ header spec diupdate |
 | C5 | `forceSave` skip gate amount≤0 | ✅ dipersempit; master toggle masih bisa “manual save” (by design) |
+| C6 | Input manual gagal “Gagal menyimpan” (2.3.4+) | ✅ `385489a`: `txInsertPayload` selalu isi `date` (default hari ini), error Postgrest transparan, test `tx_payload_test.dart` |
+| C7 | Build APK gagal di CI padahal test hijau | ✅ `4693c88`: API Flutter stable (`FloatingActionButton.extended` + `NavigationBarTheme`) |
 
 ---
 
@@ -194,12 +206,13 @@ supabase/migration_07 + 08
 
 | # | Item | Detail “done when” |
 |---|------|---------------------|
+| A0 | **Bug sisa pasca-redesign** | ⬜ **Prioritas pertama sesi baru.** BRI sudah aman, tapi user masih melaporkan bug. Langkah: minta detail gejala + screenshot, reproduksi, systematic-debugging (root cause dulu). |
 | A1 | **Edit transaksi** (wallet, kategori, tanggal, amount) | ✅ done `2.3.4+16` edit in-place + hapus berkonfirmasi (`transactions_screen`, `TransactionService.update`/`delete`) |
 | A2 | **Saldo dompet** | ✅ done `2.3.4+16` view `wallet_balance` (`migration_09`, `security_invoker`); tampil di Dompet + dropdown form |
 | A3 | **Rate limit auto-insert** | Mis. max N insert / menit / org (prefer: RPC insert terkontrol atau Supabase rate limit); status “Dibatasi” |
 | A4 | **Audit log server** | Tabel `audit_logs(org_id, session/app, event, meta)` untuk insert otomatis & join org |
-| A5 | **Invite workspace** | Ganti “self-join by created_by” menjadi token invite / approve owner; UX Lainnya → Undang anggota |
-| A6 | **Verifikasi package Play Store** | Di device: catat `packageName` asli tiap bank di allowlist; perbaiki prefix yang meleset |
+| A5 | **Invite workspace** | ✅ done `2.3.6+19` (migration_10, token hash + RPC `join_org_by_invite`); UX Lainnya → Undang anggota |
+| A6 | **Verifikasi package Play Store** | Di device: catat `packageName` asli tiap bank di allowlist; perbaiki prefix yang meleset. **BRI ✅ aman (user device, 2026-09-24)**; sisa: myBCA/BCA/DANA/OVO/dst |
 
 ### Sprint B — Kualitas auto-track
 
@@ -207,7 +220,7 @@ supabase/migration_07 + 08
 |---|------|--------|
 | B1 | **Tanggal dari isi notif** | Regex `dd/MM/yyyy` / `yyyyMMdd` di title-content → `date` lebih akurat untuk scan ulang |
 | B2 | **Ganti / fork plugin notif** | Plugin sekarang tanpa timestamp; eval `flutter_notification_listener` (ada `timestamp`) atau native |
-| B3 | **Foreground service / boot receiver** | Tracking jalan walau app di background (izin + UX battery) — **keputusan product**: privacy vs “otomatis penuh” |
+| B3 | **Foreground service / boot receiver** | ✅ done `2.3.6+19` (`flutter_foreground_task` specialUse, start/stop dari `track_master`) |
 | B4 | **Parser nominal lebih cerdas** | Ambil kandidat `Rp` **terakhir** / kandidat terbesar; handle `IDR`; tolak promo “Rp0” |
 | B5 | **Classifier dua-arah** | Bila in+out → coba urutkan frasa / minta user pilih di recent (sudah ada Simpan manual) |
 | B6 | **Persist recent notif** | Table lokal / prefs agar history tidak hilang restart |
@@ -264,6 +277,15 @@ Setelah install APK v2.3.3+ & migration 07+08:
 - [ ] Empty list Transaksi: teks ajakan catat, bukan layar kosong tanpa keterangan
 - [ ] Tombol Hapus / Simpan / Batalkan edit: mudah ditekan satu tangan, tanpa overflow horizontal di layar kecil
 - [ ] Tidak ada `—` (em dash) di copy UI hasil build
+- [ ] Install APK `2.3.5+18` → splash → login → semua tab terbuka, FAB “Catat” muncul, nav bawah 5 tab warna zamrud saat aktif
+- [ ] Onboarding PIN: dua field tak rebutan fokus (field kedua fokus saat diketuk)
+- [ ] Catat transaksi manual (in/out/transfer) dari FAB → tersimpan, saldo berubah
+- [ ] Reproduksi **bug sisa** yang dilaporkan user → catat gejala + screenshot di sesi baru (A0)
+- [ ] Jalankan migration_10_org_invites.sql di Supabase Dashboard
+- [ ] Lainnya → Undang anggota → Buat undangan → salin kode → org switcher (device/user kedua) → Gabung → masuk workspace
+- [ ] Kode invite kedaluwarsa/dipakai → pesan spesifik, bukan error generik
+- [ ] Master ON → notif persist "SSR SPACE aktif" muncul; swipe app dari recents → buka lagi → transaksi notif tercatat
+- [ ] Master OFF / logout → notif persist hilang
 
 ---
 
@@ -279,6 +301,9 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `test/month_category_test.dart` | helper bulan + icon fallback |
 | `test/org_select_test.dart` | persist org |
 | `test/wallet_model_test.dart` | fromMap |
+| `test/tx_payload_test.dart` | `date` null → default hari ini (bukan null), `now` injectable |
+| `test/tx_validation_test.dart` | `validateTxInput` |
+| `test/wallet_balance_test.dart` | kalkulasi saldo `wallet_balance` |
 
 **Belum ada test:** RLS server-side (butuh local stack / testcontainers), pipeline `_onEvent` penuh.
 
@@ -291,6 +316,12 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `9634116` | P0 RLS+mint + P1 auto-track (wallet/date/allowlist/hash/insert-order) + tests + v2.3.3+15 |
 | `1c401ef` | Fix prefix KEB Hana `id.co.bankbkemobile` (CI test merah) |
 | `d4aec58` | **migration_08** fix RLS recursion “Gagal memuat dompet” |
+| `bfc2017`…`d8d5953` | wallet_balance + edit/delete tx + validateTxInput + v2.3.4+16 |
+| `30787f2`…`776b764` | auto-track: parser IDR, classifier fleksibel, deteksi service disconnect, postTime |
+| `385489a` | **Fix input manual gagal**: `txInsertPayload` + test + error transparan + v2.3.4+17 |
+| `a0cf623` | **Redesign UI/UX** anti-slop ENERGY 2 / RHYTHM 2 / MOTION 2, 16 layar + 5 widget, hapus dashboard + v2.3.5+18 |
+| `4693c88` | Fix build APK: `FloatingActionButton.extended` + `NavigationBarTheme.iconTheme` |
+| `2e849c6`…`0c8132b` | **Fase 1 scale**: invite workspace (migration_10, token hash, RPC `join_org_by_invite`, layar Undang anggota) + foreground service `specialUse` (`ForegroundTrack`, wiring lifecycle, CI inject Manifest) + v2.3.6+19 |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 

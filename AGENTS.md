@@ -11,7 +11,7 @@ Panduan kerja untuk agent / contributor di repo ini. Baca dulu sebelum ubah kode
 | Nama | **SSR SPACE** |
 | Path | `/data/data/com.termux/files/home/SSR SPACE` |
 | Remote | `https://github.com/Sendysyah27/SSR-SPACE.git` |
-| Versi | `2.3.3+15` (`pubspec.yaml`) |
+| Versi | `2.3.6+19` (`pubspec.yaml`) |
 | Stack | Flutter (stable) + Supabase (Auth + Postgres RLS) + Notification Listener |
 | Bahasa UI | Indonesia |
 | Build | GitHub Actions (`.github/workflows/apk.yml`), **bukan** lokal Termux |
@@ -68,6 +68,19 @@ Temuan utama yang dieksekusi:
 | **P2** | Test hanya parse | ✅ ditambah `notif_track_test` |
 | **P0 regression** | `migration_07` policy SELECT `org_members` self-ref → **RLS recursion** → “Gagal memuat dompet” | ✅ fixed (`migration_08`) |
 
+### 3.2b Roadmap scale (disepakati 2026-09-24, sesi brainstorm)
+
+Arah pengembangan ke **skala banyak user** — urutan wajib dijaga, jangan melompat:
+
+| Fase | Isi | Status |
+|------|-----|--------|
+| **Fase 1** | **Fitur inti:** foreground service auto-track (`specialUse`) + invite workspace (token hash + RPC `join_org_by_invite`, `migration_10`) | ✅ done 2.3.6+19: kode selesai, CI milestone 2 hijau (run `36075349074`); catatan: `migration_10` masih dijalankan manual user, foreground service baru aktif setelah install APK baru |
+| Fase 2 | Hardening: rate limit auto-insert (A3), audit log (A4), error monitoring, backup DB (D5), `flutter analyze` di CI (D1) | ⬜ |
+| Fase 3 | Scale ops: cek limit plan Supabase, dependabot/pin actions SHA (D4), test RLS server-side | ⬜ |
+| Fase 4 | Monetisasi: billing Midtrans per plan + limit kuota | ⬜ |
+
+Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari `track_master`; parser/gate `_onEvent` TIDAK berubah.
+
 ### 3.3 Workflow teknis wajib setiap perubahan
 ```
 1. Analisa / baca file terkait
@@ -94,12 +107,17 @@ migration_05_tx_codes.sql
 migration_06_notif_source.sql
 migration_07_security.sql
 migration_08_fix_rls_recursion.sql   ← wajib bila pernah jalan 07 versi lama
+migration_09_wallet_balance.sql
+migration_10_org_invites.sql         ← Fase 1 (invite workspace)
 ```
 
 **Aturan RLS (jangan dilanggar):**
 - Policy SELECT di `org_members` **TIDAK BOLEH** subquery ke `org_members` lagi → infinite recursion.
 - Cek owner/admin pakai helper `public.is_org_admin(org_id)` (SECURITY DEFINER).
 - Semua akses data org lewat `exists (select from org_members where org_id=... and user_id=auth.uid())` di tabel tsb.
+- Policy di **`org_invites`** juga wajib lewat `is_org_admin` saja — jangan subquery `org_members`.
+- Join workspace lain **HANYA** lewat RPC `join_org_by_invite`; jangan bikin jalur insert `org_members` baru selain `join own org` (created_by) dan RPC itu.
+- `org_invites` menyimpan **hash sha256 token** saja, tidak pernah token asli.
 
 ---
 
@@ -192,9 +210,9 @@ Urutan list penting: **myBCA sebelum BCA**.
 - Master switch  
 - Per app: toggle + dropdown dompet + field kategori  
 - “Pindai notifikasi aktif” + daftar recent + tombol Simpan manual  
-
 **Batasan sadar (by design / sisa backlog):**
-- Listener hidup **selama proses app hidup** (start di MainShell). App di-swipe away = tracking berhenti. Belum ada foreground service.
+
+- **Foreground service (Fase 1):** `lib/core/saas/foreground_track.dart` menjaga proses hidup selama `track_master` ON + session aktif (Android saja, service type `specialUse`), mati saat master OFF / logout. Start/stop dipanggil dari `main.dart` (init), `notif_settings` (toggle), `main_shell` (init/resume), `other_screen` (logout). Gate `_onEvent` TIDAK berubah karenanya. Izin Manifest (`FOREGROUND_SERVICE_SPECIAL_USE` + service) di-inject CI (`apk.yml`); `android/` tidak di-commit. OEM agresif masih bisa kill → status jujur via `ForegroundTrack.isRunning`, jangan janji "selalu aktif".
 - Plugin **tidak mengekspos timestamp notif asli** → tanggal = waktu diterima event.
 - Isi pesan full **tidak diupload**; yang dikirim: amount, type, package, hash, category, note, date, wallet_id.
 
@@ -231,7 +249,8 @@ SSR SPACE/
 │   ├── core/
 │   │   ├── format/  (money, datetime)
 │   │   ├── saas/    (auth, wallet, transaction, budget, dashboard,
-│   │   │             notif_parse, notif_track_service, supabase_config, …)
+│   │   │             notif_parse, notif_track_service, invite_service,
+│   │   │             invite_token, foreground_track, supabase_config, …)
 │   │   ├── session/ (session_service, PIN)
 │   │   └── theme/
 │   ├── models/      (wallet, transaction)
@@ -240,7 +259,7 @@ SSR SPACE/
 ├── test/            (session, notif_parse, notif_track, budget, dashboard, …)
 ├── supabase/
 │   ├── schema.sql
-│   ├── migration_02 … migration_08
+│   ├── migration_02 … migration_10
 │   └── functions/create-snap/
 └── docs/superpowers/ (spec + plan historis)
 ```
