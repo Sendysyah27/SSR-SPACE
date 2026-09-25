@@ -75,7 +75,7 @@ Arah pengembangan ke **skala banyak user** — urutan wajib dijaga, jangan melom
 | Fase | Isi | Status |
 |------|-----|--------|
 | **Fase 1** | **Fitur inti:** foreground service auto-track (`specialUse`) + invite workspace (token hash + RPC `join_org_by_invite`, `migration_10`) | ✅ done 2.3.6+19: kode selesai, CI milestone 2 hijau (run `36075349074`); catatan: `migration_10` masih dijalankan manual user, foreground service baru aktif setelah install APK baru |
-| Fase 2 | Hardening: rate limit auto-insert (A3), audit log (A4), error monitoring, backup DB (D5), `flutter analyze` di CI (D1) | ⬜ |
+| Fase 2 | Hardening: rate limit auto-insert (A3), audit log (A4), error monitoring, backup DB (D5), `flutter analyze` di CI (D1) | 🔄 **D1 ✅ 2026-09-25**: CI wajib lulus `flutter analyze` sebelum test (run `36090886163`), 26 temuan lama dibersihkan (`e7e88e8`); sisa A3/A4/monitoring/D5 ⬜ |
 | Fase 3 | Scale ops: cek limit plan Supabase, dependabot/pin actions SHA (D4), test RLS server-side | ⬜ |
 | Fase 4 | Monetisasi: billing Midtrans per plan + limit kuota | ⬜ |
 
@@ -231,7 +231,7 @@ Urutan list penting: **myBCA sebelum BCA**.
 - Bottom nav 5 tab; reload beranda/budget/laporan tiap pindah tab (`MainShell._select`).
 
 ### 4.8 Build & release
-- Push `main` → Actions: `flutter pub get` → generate `android/` bila belum → inject NotificationListenerService ke Manifest → `flutter test` → inject signing dari secrets → `flutter build apk --release --dart-define=SUPABASE_*` → upload artifact.
+- Push `main` → Actions: `flutter pub get` → generate `android/` bila belum → inject NotificationListenerService ke Manifest → `flutter analyze` (wajib 0 issue, tambahan Fase 2 D1) → `flutter test` → inject signing dari secrets → `flutter build apk --release --dart-define=SUPABASE_*` → upload artifact.
 - Secrets: `SSR_KEYSTORE_B64`, `SSR_KEYSTORE_PASS`, `SSR_KEY_ALIAS`, `SSR_KEY_PASS`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
 - Folder `android/` **tidak di-commit** (di-generate CI).
 

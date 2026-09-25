@@ -13,6 +13,7 @@ Lensa: OWASP / RLS Supabase / input hostile (isi notif pihak ketiga).
 - APK rilis: `/sdcard/Download/SSR-SPACE/SSR-SPACE-2.3.5-18-redesign.apk`
 - **Fase 1 scale** (invite workspace + foreground service): kode + docs commit lokal; CI milestone 1 run `36069820717` dan milestone 2 run `36075349074` hijau. Changelog commit di §7.
 - APK rilis Fase 1: `/sdcard/Download/SSR-SPACE/SSR-SPACE-2.3.6-19-fase1-scale.apk` (diunduh dari run CI setelah push docs ini)
+- **Fase 2 D1** (2026-09-25): CI kini wajib lulus `flutter analyze` sebelum test; 26 temuan lama dibersihkan sekali jalan (`739fbb4` + `e7e88e8`), run `36090886163` hijau penuh (analyze → test → APK).
 
 ---
 
@@ -241,7 +242,7 @@ supabase/migration_07 + 08
 
 | # | Item | Detail |
 |---|------|--------|
-| D1 | CI: `flutter analyze` step | Tangkap warning sebelum test |
+| D1 | CI: `flutter analyze` step | ✅ done 2026-09-25: langkah `flutter analyze` blocking sebelum test (`739fbb4`); 26 temuan lama (5 warning `unawaited_return_in_try_block`, 21 info: deprecation `withOpacity`/`DropdownButtonFormField.value`/`anonKey`, curly braces, unnecessary import, const) dibersihkan di `e7e88e8`; CI run `36090886163` hijau |
 | D2 | Setup-java v5 + checkout v5 | Hilangkan deprecation warning Actions |
 | D3 | Pubspec description masih “offline multi-dompet” | Samakan dengan reality SaaS |
 | D4 | Dependabot / pin actions by SHA | Supply chain |
@@ -325,6 +326,9 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `83f10b4` | migration_10 hardening: gerbang `used_count` atomik (`INVITE_EXHAUSTED` + rollback), hash invite di-`upper()` sinkron dgn client, revoke execute dari `public`/`anon` |
 | `4642d52` | Invite UI: guard tombol utk non-admin, map RLS `42501` ke pesan jelas (bukan error generik) |
 | `b2703ad` | Foreground: telan error stop service saat logout; fix fakta di AGENTS/AUDIT. CI run `36086384993` hijau |
+| `3658b2c` | Docs: changelog 3 commit hardening + aturan wajib catat hasil kerja di AGENTS/AUDIT |
+| `739fbb4` | **Fase 2 D1**: langkah `flutter analyze` blocking di CI sebelum test |
+| `e7e88e8` | Bersihkan **26 temuan analyze**: await di splash `_boot`, curly braces, `withValues`, `initialValue` dropdown, `publishableKey`, hapus import sisa, `const pw.TextStyle`. Run `36090886163` hijau (analyze+test+APK) |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 
