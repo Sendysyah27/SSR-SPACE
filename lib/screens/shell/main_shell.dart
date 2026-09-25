@@ -6,6 +6,7 @@ import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
@@ -85,7 +86,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
               backgroundColor: SsrColors.accent,
               foregroundColor: Colors.white,
               icon: const DuoIcon(AppIcons.add),
-              label: const Text('Catat'),
+              label: Text(tr('act_catat')),
             ),
       bottomNavigationBar: _MainBottomBar(index: index, onSelect: _select),
     );
@@ -99,15 +100,27 @@ class _MainBottomBar extends StatelessWidget {
 
   const _MainBottomBar({required this.index, required this.onSelect});
 
-  static const List<NavigationDestination> _destinations = [
-    NavigationDestination(icon: DuoIcon(AppIcons.home), label: 'Beranda'),
+  static List<NavigationDestination> get _destinations => [
+    NavigationDestination(
+      icon: DuoIcon(AppIcons.home),
+      label: tr('nav_beranda'),
+    ),
     NavigationDestination(
       icon: DuoIcon(AppIcons.transactions),
-      label: 'Transaksi',
+      label: tr('nav_transaksi'),
     ),
-    NavigationDestination(icon: DuoIcon(AppIcons.budget), label: 'Budget'),
-    NavigationDestination(icon: DuoIcon(AppIcons.reports), label: 'Laporan'),
-    NavigationDestination(icon: DuoIcon(AppIcons.menu), label: 'Lainnya'),
+    NavigationDestination(
+      icon: DuoIcon(AppIcons.budget),
+      label: tr('nav_budget'),
+    ),
+    NavigationDestination(
+      icon: DuoIcon(AppIcons.reports),
+      label: tr('nav_laporan'),
+    ),
+    NavigationDestination(
+      icon: DuoIcon(AppIcons.menu),
+      label: tr('nav_lainnya'),
+    ),
   ];
 
   @override

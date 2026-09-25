@@ -10,6 +10,7 @@ import 'package:ssr_space/screens/auth/auth_screen.dart';
 import 'package:ssr_space/screens/auth/intro_consent_screen.dart';
 import 'package:ssr_space/screens/workspace/org_switcher_screen.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -114,12 +115,12 @@ class _SplashLoading extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                'SSR SPACE',
+                tr('au_title'),
                 style: Theme.of(context).textTheme.displaySmall,
               ),
               const SizedBox(height: SsrSpace.sm),
               Text(
-                'Simple. Secure. Reliable.\nYour Finance Space.',
+                tr('sp_tagline'),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
@@ -127,7 +128,7 @@ class _SplashLoading extends StatelessWidget {
           ),
         ),
         const SizedBox(height: SsrSpace.xxl),
-        const LoadingView(label: 'Menyiapkan buku kas...'),
+        LoadingView(label: tr('sp_loading')),
       ],
     );
   }
@@ -150,12 +151,12 @@ class _SplashError extends StatelessWidget {
         ),
         const SizedBox(height: SsrSpace.md),
         Text(
-          'Gagal menyiapkan buku kas. Periksa koneksi lalu coba lagi.',
+          tr('sp_err'),
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: SsrSpace.lg),
-        PrimaryButton(label: 'Coba lagi', onPressed: onRetry),
+        PrimaryButton(label: tr('retry'), onPressed: onRetry),
       ],
     );
   }

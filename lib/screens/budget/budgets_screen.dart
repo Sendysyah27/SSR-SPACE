@@ -1,14 +1,19 @@
 import 'dart:async';
 
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/month.dart';
+import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/services/currency.dart';
+import 'package:ssr_space/services/app_settings.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
+import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
@@ -48,6 +53,8 @@ class BudgetsScreenState extends State<BudgetsScreen> {
 
   Future<void> reload() => _load();
 
+  String get _title => '${tr('nav_budget')} ${monthLabel(currentMonth())}';
+
   Future<void> _load() async {
     setState(() {
       loading = true;
@@ -69,20 +76,21 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       if (!mounted) return;
       setState(() {
         loading = false;
-        err = 'Gagal memuat budget. Periksa koneksi.';
+        err = tr('b_err_load');
       });
     }
   }
 
   Future<void> _save() async {
     final cat = catC.text.trim();
-    final limit = double.tryParse(limitC.text);
+    final typedLimit = double.tryParse(limitC.text);
+    final limit = typedLimit == null ? null : CurrencyService.toIdr(typedLimit);
     if (cat.isEmpty) {
-      setState(() => formErr = 'Isi nama kategori dulu.');
+      setState(() => formErr = tr('b_err_cat'));
       return;
     }
     if (limit == null || limit <= 0) {
-      setState(() => formErr = 'Batas harus angka lebih dari 0.');
+      setState(() => formErr = tr('b_err_limit'));
       return;
     }
     setState(() {
@@ -97,11 +105,11 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       if (mounted) {
         unawaited(showSuccessFlash(context));
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Budget disimpan.')));
+            .showSnackBar(SnackBar(content: Text(tr('b_saved'))));
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() => formErr = 'Gagal menyimpan. Periksa koneksi.');
+      setState(() => formErr = tr('b_err_save'));
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -113,22 +121,145 @@ class BudgetsScreenState extends State<BudgetsScreen> {
     });
   }
 
+  Future<void> _openEdit(Budget b) async {
+    final whole = b.limit.truncateToDouble() == b.limit;
+    final limitC = TextEditingController(
+      text: b.limit.toStringAsFixed(whole ? 0 : 2),
+    );
+    try {
+      final value = await showDialog<double>(
+        context: context,
+        builder: (ctx) {
+          String? err;
+          return StatefulBuilder(
+            builder: (ctx, setD) => AlertDialog(
+              title: Text(tr('b_edit_title').replaceFirst('{c}', b.category)),
+              content: TextField(
+                controller: limitC,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: tr('b_f_limit'),
+                  prefixText:
+                      '${kCurrencySymbols[currencyCode.value] ?? 'Rp'} ',
+                  errorText: err,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(tr('cancel')),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final v = double.tryParse(limitC.text);
+                    if (v == null || v <= 0) {
+                      setD(() => err = tr('b_err_limit'));
+                      return;
+                    }
+                    Navigator.pop(ctx, v);
+                  },
+                  child: Text(tr('save')),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+      if (value == null || !mounted) return;
+      final ok = await _confirmPin();
+      if (!ok || !mounted) return;
+      try {
+        await setBudget(await activeOrgId(), b.category, value);
+        await _load();
+        if (!mounted) return;
+        unawaited(showSuccessFlash(context));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(tr('b_updated'))));
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(tr('b_err_save'))));
+      }
+    } finally {
+      limitC.dispose();
+    }
+  }
+
+  Future<bool> _confirmPin() async {
+    final pinC = TextEditingController();
+    try {
+      return await showDialog<bool>(
+            context: context,
+            builder: (ctx) {
+              String? err;
+              return StatefulBuilder(
+                builder: (ctx, setD) => AlertDialog(
+                  title: Text(tr('b_pin_title')),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(tr('b_pin_body')),
+                      const SizedBox(height: SsrSpace.md),
+                      PinField(
+                        controller: pinC,
+                        length: 6,
+                        autofocus: true,
+                        error: err,
+                        onCompleted: (_) =>
+                            _submitPin(ctx, setD, pinC, (String? e) => err = e),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(tr('cancel')),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ) ??
+          false;
+    } finally {
+      pinC.dispose();
+    }
+  }
+
+  Future<void> _submitPin(
+    BuildContext ctx,
+    StateSetter setD,
+    TextEditingController pinC,
+    void Function(String? err) setErr,
+  ) async {
+    final ok = await SessionService(await SharedPreferences.getInstance())
+        .verifyPin(pinC.text);
+    if (!ctx.mounted) return;
+    if (ok) {
+      Navigator.pop(ctx, true);
+      return;
+    }
+    pinC.clear();
+    setD(() => setErr(tr('b_pin_wrong')));
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
       return Scaffold(
-        appBar: AppBar(title: Text('Budget ${currentMonth()}')),
+        appBar: AppBar(title: Text(_title)),
         body: const BudgetListSkeleton(),
       );
     }
     if (err != null) {
       return Scaffold(
-        appBar: AppBar(title: Text('Budget ${currentMonth()}')),
+        appBar: AppBar(title: Text(_title)),
         body: ErrorView(message: err!, onRetry: _load),
       );
     }
     return Scaffold(
-      appBar: AppBar(title: Text('Budget ${currentMonth()}')),
+      appBar: AppBar(title: Text(_title)),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
@@ -136,12 +267,16 @@ class BudgetsScreenState extends State<BudgetsScreen> {
             EmptyView(
               icon: AppIcons.budget,
               illustration: 'assets/illustrations/empty_budget.svg',
-              title: 'Belum ada budget bulan ini.',
-              subtitle: 'Pasang batas pertama lewat form di bawah.',
-              actionLabel: 'Isi budget',
+              title: tr('b_empty_t'),
+              subtitle: tr('b_empty_s'),
+              actionLabel: tr('b_empty_a'),
               onAction: _focusForm,
             ),
-          for (final b in items) _BudgetCard(budget: b),
+          for (final b in items)
+            GestureDetector(
+              onTap: () => _openEdit(b),
+              child: _BudgetCard(budget: b),
+            ),
           const SizedBox(height: SsrSpace.md),
           _BudgetForm(
             catC: catC,
@@ -184,7 +319,7 @@ class _BudgetCard extends StatelessWidget {
                 ),
               ),
               if (over)
-                const StatusChip(label: 'Lebih batas', tone: StatusTone.danger)
+                StatusChip(label: tr('b_over'), tone: StatusTone.danger)
               else
                 StatusChip(label: '$pct%', tone: StatusTone.accent),
             ],
@@ -296,22 +431,23 @@ class _BudgetForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Batas baru', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            tr('b_form_title'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: SsrSpace.md),
           TextField(
             controller: catC,
             focusNode: catFocus,
-            decoration: const InputDecoration(
-              labelText: 'Kategori (misal Makan)',
-            ),
+            decoration: const InputDecoration(labelText: tr('b_f_cat')),
           ),
           const SizedBox(height: SsrSpace.md),
           TextField(
             controller: limitC,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: 'Batas (Rp)',
-              prefixText: 'Rp ',
+              labelText: tr('b_f_limit'),
+              prefixText: '${kCurrencySymbols[currencyCode.value] ?? 'Rp'} ',
             ),
           ),
           if (formErr != null) ...[
@@ -324,7 +460,7 @@ class _BudgetForm extends StatelessWidget {
           ],
           const SizedBox(height: SsrSpace.lg),
           PrimaryButton(
-            label: 'Simpan budget',
+            label: tr('b_save'),
             loading: saving,
             onPressed: onSave,
           ),

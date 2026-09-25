@@ -3,15 +3,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/supabase_config.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 String? foregroundGate({
   required bool isAndroid,
   required bool masterOn,
   required bool hasSession,
 }) {
-  if (!isAndroid) return 'Bukan Android';
-  if (!masterOn) return 'Pelacakan mati';
-  if (!hasSession) return 'Belum masuk';
+  if (!isAndroid) return tr('fg_notandroid');
+  if (!masterOn) return tr('fg_off');
+  if (!hasSession) return tr('fg_nologin');
   return null;
 }
 

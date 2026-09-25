@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 class LoadingView extends StatelessWidget {
   final String label;
@@ -113,7 +114,7 @@ class ErrorView extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: onRetry, child: const Text('Coba lagi')),
+            ElevatedButton(onPressed: onRetry, child: Text(tr('retry'))),
           ],
         ),
       ),

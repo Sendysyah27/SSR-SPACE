@@ -14,6 +14,7 @@ import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/widgets/bank_track_row.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
 class NotifSettingsScreen extends StatefulWidget {
@@ -164,12 +165,12 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
   Widget build(BuildContext context) {
     if (loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Pelacakan otomatis')),
+        appBar: AppBar(title: Text(tr('nt_title'))),
         body: const NotifSettingsSkeleton(),
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Pelacakan otomatis')),
+      appBar: AppBar(title: Text(tr('nt_title'))),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
@@ -213,8 +214,10 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
 /// Tone chip untuk status recent notif: sukses → accent, ada "gagal" → danger.
 StatusTone _statusToneFor(String? status) {
   final s = (status ?? '').toLowerCase();
-  if (s.startsWith('tersimpan')) return StatusTone.accent;
-  if (s.contains('gagal')) return StatusTone.danger;
+  if (s.startsWith('tersimpan') || s.startsWith('saved')) {
+    return StatusTone.accent;
+  }
+  if (s.contains('gagal') || s.contains('fail')) return StatusTone.danger;
   return StatusTone.neutral;
 }
 
@@ -252,12 +255,12 @@ class _StatusCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Status pelacakan',
+                  tr('nt_card_status'),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
               StatusChip(
-                label: master ? 'Menyala' : 'Mati',
+                label: master ? tr('nt_on') : tr('nt_off'),
                 tone: master ? StatusTone.accent : StatusTone.neutral,
               ),
             ],
@@ -265,8 +268,8 @@ class _StatusCard extends StatelessWidget {
           const SizedBox(height: SsrSpace.xs),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Pelacakan otomatis'),
-            subtitle: const Text('Mati = tidak ada yang dicatat'),
+            title: Text(tr('nt_title')),
+            subtitle: Text(tr('nt_sub')),
             value: master,
             onChanged: onMasterChanged,
           ),
@@ -309,30 +312,28 @@ class _StatusLines extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _StatusLine(
-          label: 'Pemantauan latar',
+          label: tr('nt_bg'),
           below: StatusChip(
-            label: foregroundRunning ? 'Aktif' : 'Mati',
+            label: foregroundRunning ? tr('nt_active') : tr('nt_off'),
             tone: foregroundRunning ? StatusTone.accent : StatusTone.neutral,
           ),
           trailing: Flexible(
             child: Text(
-              foregroundRunning
-                  ? 'Transaksi tetap tercatat walau app ditutup'
-                  : 'Buka app agar pelacakan berjalan',
+              foregroundRunning ? tr('nt_bg_on') : tr('nt_bg_off'),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
         ),
         const Divider(height: 1),
         _StatusLine(
-          label: 'Izin baca notifikasi',
+          label: tr('nt_perm'),
           below: StatusChip(
-            label: granted ? 'Aktif' : 'Belum aktif',
+            label: granted ? tr('nt_active') : tr('nt_notactive'),
             tone: granted ? StatusTone.accent : StatusTone.neutral,
           ),
           trailing: OutlinedButton(
             onPressed: onRequestPermission,
-            child: Text(granted ? 'Cek lagi' : 'Aktifkan'),
+            child: Text(granted ? tr('nt_recheck') : tr('nt_enable')),
           ),
         ),
         const Divider(height: 1),
@@ -364,7 +365,7 @@ class _ServiceLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _StatusLine(
-      label: 'Service listener',
+      label: tr('nt_svc'),
       below: Text(
         connectionLabel(
           permissionGranted: granted,
@@ -375,14 +376,14 @@ class _ServiceLine extends StatelessWidget {
       trailing: granted && !serviceConnected
           ? OutlinedButton(
               onPressed: scanning ? null : onReconnect,
-              child: const Text('Sambung'),
+              child: Text(tr('nt_reconnect')),
             )
           : granted
           ? StatusChip(
-              label: serviceConnected ? 'Terhubung' : 'Terputus',
+              label: serviceConnected ? tr('nt_conn') : tr('nt_disconn'),
               tone: serviceConnected ? StatusTone.accent : StatusTone.danger,
             )
-          : const StatusChip(label: 'Belum siap', tone: StatusTone.neutral),
+          : StatusChip(label: tr('nt_notready'), tone: StatusTone.neutral),
     );
   }
 }
@@ -453,11 +454,11 @@ class _BankMappingCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Bank & dompet', style: Theme.of(context).textTheme.titleMedium),
+          Text(tr('nt_banks'), style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: SsrSpace.xs),
           if (wallets.isEmpty)
             Text(
-              'Belum ada dompet. Buat dulu di menu Lainnya, lalu Dompet, lalu petakan di sini.',
+              tr('nt_nowallet'),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           for (final app in watchedApps) ...[
@@ -465,9 +466,12 @@ class _BankMappingCard extends StatelessWidget {
             BankTrackRow(
               label: app.label,
               subtitle: [
-                'Dompet: ${resolveWalletName(app.label) ?? 'belum cocok'}',
+                tr('nt_wallet').replaceFirst(
+                  '{w}',
+                  resolveWalletName(app.label) ?? tr('nt_wallet_unset'),
+                ),
                 if ((catFor[app.label] ?? '').isNotEmpty)
-                  'Kategori: ${catFor[app.label]}',
+                  tr('nt_cat').replaceFirst('{c}', catFor[app.label] ?? ''),
               ].join(' | '),
               value: perApp[app.label] ?? true,
               onChanged: (v) => onToggle(app.label, v),
@@ -507,12 +511,12 @@ class _RecentCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Terakhir terlihat',
+            tr('nt_lastseen'),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SsrSpace.xs),
           Text(
-            'Pindai notifikasi yang masih ada di panel HP.',
+            tr('nt_scan_hint'),
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: SsrSpace.sm),
@@ -527,9 +531,7 @@ class _RecentCard extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const DuoIcon(AppIcons.scan),
-              label: Text(
-                scanning ? 'Memindai...' : 'Pindai notifikasi aktif sekarang',
-              ),
+              label: Text(scanning ? tr('nt_scanning') : tr('nt_scan')),
             ),
           ),
           if (scanStatus.isNotEmpty)
@@ -554,7 +556,7 @@ class _RecentList extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.only(top: SsrSpace.sm),
         child: Text(
-          'Belum ada notifikasi keuangan tertangkap sesi ini.',
+          tr('nt_recent_none'),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       );
@@ -590,19 +592,20 @@ class RecentNotifTile extends StatelessWidget {
   }
 
   Widget? _saveButton(BuildContext ctx) {
+    final savedLabel = tr('st_saved');
     final saved =
-        n.status == 'Tersimpan' || (n.status?.startsWith('Tersimpan') ?? false);
+        n.status == savedLabel || (n.status?.startsWith(savedLabel) ?? false);
     if (saved) return null;
     if (n.amount == null || n.amount! <= 0) return null;
     if (n.type != null) {
       return TextButton(
         onPressed: () async => _forceSave(),
-        child: const Text('Simpan'),
+        child: Text(tr('nt_save')),
       );
     }
     return TextButton(
       onPressed: () => _pickTypeAndSave(ctx),
-      child: const Text('Simpan...'),
+      child: Text(tr('nt_saving')),
     );
   }
 
@@ -653,7 +656,7 @@ class _RecentChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusLabel = (n.status == null || n.status!.isEmpty)
-        ? 'Melewati filter'
+        ? tr('nt_skipped')
         : n.status!;
     return Wrap(
       spacing: SsrSpace.sm,
@@ -664,7 +667,7 @@ class _RecentChips extends StatelessWidget {
           StatusChip(label: amt(n.amount!), tone: StatusTone.neutral),
         if (n.type != null)
           StatusChip(
-            label: n.type == 'in' ? 'Masuk' : 'Keluar',
+            label: n.type == 'in' ? tr('tx_in') : tr('tx_out'),
             tone: n.type == 'in' ? StatusTone.accent : StatusTone.danger,
           ),
       ],
@@ -682,18 +685,18 @@ Future<String?> showModalSheetOfType(BuildContext context, CapturedNotif n) {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Jenis transaksi untuk ${amt(n.amount ?? 0)}',
+              tr('nt_type_t').replaceFirst('{a}', amt(n.amount ?? 0)),
               style: Theme.of(ctx).textTheme.titleMedium,
             ),
           ),
           ListTile(
             leading: const DuoIcon(AppIcons.arrowDown),
-            title: const Text('Masuk (pemasukan)'),
+            title: Text(tr('nt_in')),
             onTap: () => Navigator.pop(ctx, 'in'),
           ),
           ListTile(
             leading: const DuoIcon(AppIcons.arrowUp),
-            title: const Text('Keluar (pengeluaran)'),
+            title: Text(tr('nt_out')),
             onTap: () => Navigator.pop(ctx, 'out'),
           ),
         ],

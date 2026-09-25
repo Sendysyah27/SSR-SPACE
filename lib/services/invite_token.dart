@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 const _inviteAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -35,24 +36,24 @@ String inviteStatusLabel({
   required int maxUses,
   required DateTime now,
 }) {
-  if (revoked) return 'Dicabut';
-  if (expiresAt.isBefore(now)) return 'Kedaluwarsa';
-  if (usedCount >= maxUses) return 'Habis';
-  return 'Aktif';
+  if (revoked) return tr('iv_st_revoked');
+  if (expiresAt.isBefore(now)) return tr('iv_st_expired');
+  if (usedCount >= maxUses) return tr('iv_st_used');
+  return tr('iv_st_active');
 }
 
 String inviteErrorMessage(String rpcMessage) {
   if (rpcMessage.contains('INVITE_EXPIRED')) {
-    return 'Kode undangan kedaluwarsa.';
+    return tr('iv_expired');
   }
   if (rpcMessage.contains('INVITE_EXHAUSTED')) {
-    return 'Kode undangan sudah habis.';
+    return tr('iv_exhausted');
   }
   if (rpcMessage.contains('INVITE_INVALID')) {
-    return 'Kode undangan tidak valid.';
+    return tr('iv_invalid');
   }
   if (rpcMessage.contains('NOT_AUTHENTICATED')) {
-    return 'Masuk dulu ke aplikasi.';
+    return tr('iv_needlogin');
   }
-  return 'Gagal bergabung. Coba lagi.';
+  return tr('iv_joinfail');
 }

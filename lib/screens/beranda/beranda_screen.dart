@@ -7,6 +7,8 @@ import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
+import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/laporan/reports_screen.dart';
@@ -71,7 +73,7 @@ class BerandaScreenState extends State<BerandaScreen> {
       if (!mounted) return;
       setState(() {
         loading = false;
-        err = 'Gagal memuat beranda. Periksa koneksi.';
+        err = tr('beranda_err');
       });
     }
   }
@@ -125,7 +127,7 @@ class BerandaScreenState extends State<BerandaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Beranda'),
+        title: Text(tr('nav_beranda')),
         actions: const [MaskToggle()],
       ),
       body: AnimatedSwitcher(
@@ -135,6 +137,11 @@ class BerandaScreenState extends State<BerandaScreen> {
         child: _body(),
       ),
     );
+  }
+
+  String _monthLower() {
+    final m = monthLabel(month);
+    return localeCode.value == 'en' ? m : m.toLowerCase();
   }
 
   Widget _body() {
@@ -210,27 +217,27 @@ class BerandaScreenState extends State<BerandaScreen> {
         const SizedBox(height: SsrSpace.sm),
         _surplusCard(totalIn, totalOut, surplus, inShare, pctOut),
         const SizedBox(height: SsrSpace.xl),
-        PrimaryButton(label: 'Catat', onPressed: _goCatat),
+        PrimaryButton(label: tr('act_catat'), onPressed: _goCatat),
         const SizedBox(height: SsrSpace.sm),
         Row(
           children: [
             Expanded(
               child: OutlinedButton(
                 onPressed: _goBudget,
-                child: const Text('Budget'),
+                child: Text(tr('nav_budget')),
               ),
             ),
             const SizedBox(width: SsrSpace.sm),
             Expanded(
               child: OutlinedButton(
                 onPressed: _goLaporan,
-                child: const Text('Laporan'),
+                child: Text(tr('nav_laporan')),
               ),
             ),
           ],
         ),
         const SizedBox(height: SsrSpace.xl),
-        Text('Transaksi terbaru', style: theme.textTheme.titleMedium),
+        Text(tr('beranda_recent'), style: theme.textTheme.titleMedium),
         if (items.isNotEmpty) ...[
           const SizedBox(height: SsrSpace.xs),
           InkWell(
@@ -239,7 +246,9 @@ class BerandaScreenState extends State<BerandaScreen> {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                '${items.length} transaksi ${monthLabel(month).toLowerCase()}',
+                tr('beranda_tx_line')
+                    .replaceFirst('{n}', '${items.length}')
+                    .replaceFirst('{m}', _monthLower()),
                 style: TextStyle(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w600,
@@ -254,10 +263,9 @@ class BerandaScreenState extends State<BerandaScreen> {
             child: EmptyView(
               icon: AppIcons.transactions,
               illustration: 'assets/illustrations/empty_transaksi.svg',
-              title: 'Belum ada transaksi bulan ini',
-              subtitle:
-                  'Catat pemasukan atau pengeluaran untuk mengisi buku kas.',
-              actionLabel: 'Catat transaksi',
+              title: tr('beranda_empty_t'),
+              subtitle: tr('beranda_empty_s'),
+              actionLabel: tr('beranda_empty_a'),
               onAction: _goCatat,
             ),
           )
@@ -323,7 +331,9 @@ class BerandaScreenState extends State<BerandaScreen> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: StatusChip(
-                  label: positive ? 'SURPLUS' : 'DEFISIT',
+                  label: positive
+                      ? tr('beranda_surplus')
+                      : tr('beranda_defisit'),
                   tone: positive ? StatusTone.accent : StatusTone.danger,
                 ),
               ),
@@ -331,7 +341,7 @@ class BerandaScreenState extends State<BerandaScreen> {
               Text(amt(surplus), style: SsrType.heroMoney),
               const SizedBox(height: SsrSpace.xs),
               Text(
-                'Selisih ${monthLabel(month).toLowerCase()}',
+                tr('beranda_diff').replaceFirst('{m}', _monthLower()),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 13,
@@ -340,7 +350,8 @@ class BerandaScreenState extends State<BerandaScreen> {
               if (pctOut != null) ...[
                 const SizedBox(height: SsrSpace.sm),
                 Text(
-                  '${pctOut >= 0 ? '+' : ''}$pctOut% dari pengeluaran',
+                  tr('beranda_vs_out')
+                      .replaceFirst('{p}', '${pctOut >= 0 ? '+' : ''}$pctOut'),
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
               ],
@@ -352,7 +363,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Masuk',
+                          tr('tx_in'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 12,
@@ -376,7 +387,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'Keluar',
+                          tr('tx_out'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 12,

@@ -14,6 +14,7 @@ import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 class InviteScreen extends StatefulWidget {
   const InviteScreen({super.key});
@@ -72,7 +73,7 @@ class _InviteScreenState extends State<InviteScreen> {
       setState(() => invites = rows);
     } catch (_) {
       if (!mounted) return;
-      setState(() => loadErr = 'Gagal memuat undangan. Periksa koneksi.');
+      setState(() => loadErr = tr('iv_err_load'));
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -89,7 +90,7 @@ class _InviteScreenState extends State<InviteScreen> {
         setState(() => creating = false);
         await requirePro(
           context,
-          'Paket Gratis maks ${PlanLimits.freeMembers} anggota per workspace.',
+          tr('q_members').replaceFirst('{n}', '${PlanLimits.freeMembers}'),
         );
         return;
       }
@@ -102,9 +103,7 @@ class _InviteScreenState extends State<InviteScreen> {
       await _load();
     } catch (err) {
       if (!mounted) return;
-      final msg = err is InviteException
-          ? err.message
-          : 'Gagal membuat undangan. Coba lagi.';
+      final msg = err is InviteException ? err.message : tr('iv_err_create');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } finally {
       if (mounted) setState(() => creating = false);
@@ -115,16 +114,12 @@ class _InviteScreenState extends State<InviteScreen> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Kode undangan'),
+        title: Text(tr('iv_code')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Bagikan kode ini sekali. Kode tidak bisa dilihat lagi setelah '
-              'dialog ditutup.',
-              style: Theme.of(ctx).textTheme.bodySmall,
-            ),
+            Text(tr('iv_share_once'), style: Theme.of(ctx).textTheme.bodySmall),
             const SizedBox(height: SsrSpace.md),
             SelectableText(
               token,
@@ -138,22 +133,21 @@ class _InviteScreenState extends State<InviteScreen> {
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: token));
               if (ctx.mounted) {
-                ScaffoldMessenger.of(
-                  ctx,
-                ).showSnackBar(const SnackBar(content: Text('Kode disalin.')));
+                ScaffoldMessenger.of(ctx)
+                    .showSnackBar(SnackBar(content: Text(tr('iv_copied'))));
               }
             },
-            child: const Text('Salin'),
+            child: Text(tr('iv_copy')),
           ),
           TextButton(
             onPressed: () {
-              Share.share('Gabung workspace di SSR SPACE dengan kode: $token');
+              Share.share(tr('iv_share_text').replaceFirst('{c}', token));
             },
-            child: const Text('Bagikan'),
+            child: Text(tr('iv_share')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Selesai'),
+            child: Text(tr('iv_done')),
           ),
         ],
       ),
@@ -164,16 +158,16 @@ class _InviteScreenState extends State<InviteScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cabut undangan?'),
-        content: const Text('Kode yang sudah dicabut tidak bisa dipakai lagi.'),
+        title: Text(tr('iv_revoke_t')),
+        content: Text(tr('iv_revoke_b')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+            child: Text(tr('cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Cabut'),
+            child: Text(tr('iv_revoke')),
           ),
         ],
       ),
@@ -184,16 +178,15 @@ class _InviteScreenState extends State<InviteScreen> {
       await _load();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal mencabut. Coba lagi.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('iv_revoke_fail'))));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Undang anggota')),
+      appBar: AppBar(title: Text(tr('o_invite'))),
       body: loading
           ? const InviteListSkeleton()
           : loadErr != null
@@ -201,17 +194,17 @@ class _InviteScreenState extends State<InviteScreen> {
           : orgId.isEmpty
           ? EmptyView(
               icon: AppIcons.workspace,
-              title: 'Belum ada workspace.',
-              subtitle: 'Pilih atau buat workspace dulu untuk mengundang.',
-              actionLabel: 'Muat ulang',
+              title: tr('iv_noorg_t'),
+              subtitle: tr('iv_noorg_s'),
+              actionLabel: tr('reload'),
               onAction: _load,
             )
           : !isAdmin
           ? EmptyView(
               icon: AppIcons.lock,
-              title: 'Hanya admin workspace yang bisa mengundang anggota.',
-              subtitle: 'Minta owner atau admin membuat kode undangan.',
-              actionLabel: 'Muat ulang',
+              title: tr('iv_notadmin_t'),
+              subtitle: tr('iv_notadmin_s'),
+              actionLabel: tr('reload'),
               onAction: _load,
             )
           : ListView(
@@ -258,28 +251,28 @@ class _InviteCreateCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            orgName.isEmpty ? 'Workspace aktif' : orgName,
+            orgName.isEmpty ? tr('iv_noorg_t') : orgName,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SsrSpace.sm),
           Text(
-            'Bagikan kode agar anggota lain bisa masuk ke buku kas ini.',
+            tr('iv_share_hint'),
             style: Theme.of(context).textTheme.bodyMedium
                 ?.copyWith(color: SsrColors.secondary),
           ),
           const SizedBox(height: SsrSpace.md),
           DropdownButtonFormField<String>(
             initialValue: role,
-            decoration: const InputDecoration(labelText: 'Peran anggota'),
-            items: const [
-              DropdownMenuItem(value: 'member', child: Text('Anggota')),
-              DropdownMenuItem(value: 'admin', child: Text('Admin')),
+            decoration: InputDecoration(labelText: tr('iv_role')),
+            items: [
+              DropdownMenuItem(value: 'member', child: Text(tr('iv_member'))),
+              DropdownMenuItem(value: 'admin', child: Text(tr('iv_admin'))),
             ],
             onChanged: onRoleChanged,
           ),
           const SizedBox(height: SsrSpace.lg),
           PrimaryButton(
-            label: 'Buat undangan',
+            label: tr('iv_create'),
             loading: creating,
             onPressed: canCreate ? onCreate : null,
           ),
@@ -308,23 +301,18 @@ class _InviteListCard extends StatelessWidget {
   }
 
   static StatusTone _tone(String status) {
-    switch (status) {
-      case 'Aktif':
-        return StatusTone.accent;
-      case 'Habis':
-        return StatusTone.neutral;
-      default:
-        return StatusTone.danger;
-    }
+    if (status == tr('iv_st_active')) return StatusTone.accent;
+    if (status == tr('iv_st_used')) return StatusTone.neutral;
+    return StatusTone.danger;
   }
 
   Widget _inviteRow(BuildContext context, Map<String, dynamic> row) {
     final status = _status(row);
-    final canRevoke = status == 'Aktif';
+    final canRevoke = status == tr('iv_st_active');
     final remaining =
         ((row['max_uses'] as num?)?.toInt() ?? 1) -
         ((row['used_count'] as num?)?.toInt() ?? 0);
-    final roleName = row['role'] == 'admin' ? 'Admin' : 'Anggota';
+    final roleName = row['role'] == 'admin' ? tr('iv_admin') : tr('iv_member');
     final createdAt = DateTime.parse(row['created_at'].toString()).toLocal();
     final createdLabel =
         '${createdAt.day.toString().padLeft(2, '0')}/'
@@ -343,7 +331,7 @@ class _InviteListCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '$roleName · sisa pemakaian $remaining',
+                  '$roleName · ${tr('iv_remaining').replaceFirst('{n}', '$remaining')}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -353,7 +341,7 @@ class _InviteListCard extends StatelessWidget {
           if (canRevoke) ...[
             const SizedBox(width: SsrSpace.xs),
             IconButton(
-              tooltip: 'Cabut undangan',
+              tooltip: tr('iv_unrevoke'),
               onPressed: () => onRevoke(row),
               icon: const DuoIcon(AppIcons.revoke, size: 20),
             ),
@@ -376,7 +364,7 @@ class _InviteListCard extends StatelessWidget {
             ),
             const SizedBox(height: SsrSpace.md),
             Text(
-              'Belum ada undangan aktif. Buat kode di atas untuk mengundang anggota.',
+              tr('iv_list_empty'),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
             ),

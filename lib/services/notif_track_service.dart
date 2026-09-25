@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/notif_parse.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -26,15 +27,15 @@ const MethodChannel nlsChannel = MethodChannel(
 /// “tidak ada notif” bila service memang mati.
 String scanErrorStatus(String code, {String? message}) {
   if (code == 'ServiceUnavailable') {
-    return 'Service listener tidak nyambung. Izin aktif tapi service mati.';
+    return tr('svc_scan_unavail');
   }
   if (code == 'REBIND_ERROR' || code == 'RECONNECT_ERROR') {
-    return 'Gagal sambung ulang service listener';
+    return tr('svc_rebind');
   }
   if (code == 'API_LEVEL') {
-    return 'Perangkat terlalu lama untuk sambung ulang otomatis';
+    return tr('svc_apilevel');
   }
-  return 'Gagal memindai: ${message ?? code}';
+  return tr('svc_scanfail').replaceFirst('{m}', message ?? code);
 }
 
 /// Pilih waktu notif: `postTime` plugin bila valid, selain itu `fallback`.
@@ -50,21 +51,21 @@ String connectionLabel({
   required bool permissionGranted,
   required bool serviceConnected,
 }) {
-  if (!permissionGranted) return 'Izin baca notifikasi belum aktif';
+  if (!permissionGranted) return tr('svc_noperm');
   if (!serviceConnected) {
-    return 'Izin aktif, service terputus. Pindai untuk sambung ulang.';
+    return tr('svc_disconnected');
   }
-  return 'Service terhubung';
+  return tr('svc_connected');
 }
 
 /// Status baris recent saat insert transaksi ditolak server.
 /// RATE_LIMITED = trigger rate limit auto-insert (migration_11).
 String saveErrorStatus(PostgrestException err) {
   if (err.message.contains('RATE_LIMITED')) {
-    return 'Dibatasi, terlalu banyak. Coba lagi.';
+    return tr('svc_rate');
   }
-  if (err.code == '23505') return 'Sudah pernah dicatat';
-  return 'Gagal simpan: ${err.code}';
+  if (err.code == '23505') return tr('svc_dup');
+  return tr('svc_savefail').replaceFirst('{c}', err.code ?? 'error');
 }
 
 class CapturedNotif {
@@ -180,8 +181,8 @@ class NotifTrack {
   /// Scan notifikasi yang masih aktif di shade. Return status singkat
   /// untuk UI, bedakan “service mati” vs “shade kosong”.
   static Future<String> refreshActive() async {
-    if (!Platform.isAndroid) return 'Bukan Android';
-    if (!await permissionGranted()) return 'Izin baca notifikasi belum aktif';
+    if (!Platform.isAndroid) return tr('svc_notandroid');
+    if (!await permissionGranted()) return tr('svc_noperm');
 
     if (!await isServiceConnected()) {
       await reconnectService();
@@ -198,7 +199,7 @@ class NotifTrack {
       final dynamic raw = await nlsChannel.invokeMethod(
         'getActiveNotifications',
       );
-      if (raw is! List) return 'Gagal memindai notifikasi aktif';
+      if (raw is! List) return tr('svc_scan_fail');
       var seen = 0;
       for (final item in raw) {
         if (item is! Map) continue;
@@ -209,8 +210,8 @@ class NotifTrack {
         return scanErrorStatus('ServiceUnavailable');
       }
       return seen == 0
-          ? 'Tidak ada notifikasi aktif di shade'
-          : 'Memindai $seen notifikasi aktif';
+          ? tr('svc_scan_active_none')
+          : tr('svc_scan_found').replaceFirst('{n}', '$seen');
     } on PlatformException catch (err) {
       if (!await isServiceConnected()) {
         return scanErrorStatus('ServiceUnavailable');
@@ -221,7 +222,7 @@ class NotifTrack {
       if (!await isServiceConnected()) {
         return scanErrorStatus('ServiceUnavailable');
       }
-      return 'Gagal memindai notifikasi aktif';
+      return tr('svc_scan_fail');
     }
   }
 
@@ -311,34 +312,34 @@ class NotifTrack {
         at: eventTime(e.timestamp),
       );
       if (n.appLabel == null) {
-        n.status = 'Bukan app terpantau';
+        n.status = tr('st_notwatched');
         _remember(n);
         return;
       }
       final prefs = await SharedPreferences.getInstance();
       if (!(prefs.getBool('track_master') ?? false)) {
-        n.status = 'Master pelacakan mati';
+        n.status = tr('st_masteroff');
         _remember(n);
         return;
       }
       if (!(prefs.getBool('track_${n.appLabel}') ?? true)) {
-        n.status = 'Toggle ${n.appLabel} mati';
+        n.status = tr('st_toggleoff').replaceFirst('{a}', n.appLabel ?? '');
         _remember(n);
         return;
       }
       if (SupabaseConfig.client.auth.currentSession == null) {
-        n.status = 'Belum masuk di aplikasi';
+        n.status = tr('st_nologin');
         _remember(n);
         return;
       }
       final orgId = prefs.getString('active_org_id') ?? '';
       if (orgId.isEmpty) {
-        n.status = 'Workspace belum dipilih';
+        n.status = tr('st_noorg');
         _remember(n);
         return;
       }
       if (n.amount == null || n.amount! <= 0 || n.type == null) {
-        n.status = 'Nominal atau jenis tidak terbaca';
+        n.status = tr('st_unread');
         _remember(n);
         return;
       }
@@ -346,8 +347,7 @@ class NotifTrack {
         final plan = await currentPlan(orgId);
         final used = await autoUsedThisMonth(orgId, ymd(n.at).substring(0, 7));
         if (!canAutoTrack(plan: plan, used: used)) {
-          n.status =
-              'Batas auto-track Gratis (${PlanLimits.freeAutoPerMonth}/bln). Naik ke Pro.';
+          n.status = tr('q_auto').replaceFirst('{n}', '${PlanLimits.freeAutoPerMonth}');
           _remember(n);
           return;
         }
@@ -363,14 +363,12 @@ class NotifTrack {
           amount: n.amount!,
           walletId: walletId,
           category: (category == null || category.isEmpty) ? null : category,
-          note: 'Otomatis dari ${n.appLabel}',
+          note: tr('nt_auto_from').replaceFirst('{a}', n.appLabel ?? ''),
           date: ymd(n.at),
           sourcePackage: pkg,
           sourceHash: notifHash(pkg, title, content, at: n.at),
         );
-        n.status = walletId == null
-            ? 'Tersimpan (dompet belum cocok)'
-            : 'Tersimpan';
+        n.status = walletId == null ? tr('st_saved_nowallet') : tr('st_saved');
       } on PostgrestException catch (err) {
         ErrorReporter.capture(
           err,
@@ -391,13 +389,13 @@ class NotifTrack {
   static Future<String> forceSave(CapturedNotif n, {String? forceType}) async {
     final prefs = await SharedPreferences.getInstance();
     final orgId = prefs.getString('active_org_id') ?? '';
-    if (orgId.isEmpty) return 'Workspace belum dipilih';
+    if (orgId.isEmpty) return tr('st_noorg');
     if (SupabaseConfig.client.auth.currentSession == null) {
-      return 'Belum masuk di aplikasi';
+      return tr('st_nologin');
     }
     final type = forceType ?? n.type;
     if (n.amount == null || n.amount! <= 0 || type == null) {
-      return 'Nominal atau jenis tidak terbaca';
+      return tr('st_unread');
     }
     final label = n.appLabel ?? n.package;
     final walletId = await resolveWalletId(orgId, label, prefs);
@@ -409,14 +407,14 @@ class NotifTrack {
         amount: n.amount!,
         walletId: walletId,
         category: (category == null || category.isEmpty) ? null : category,
-        note: 'Otomatis dari $label',
+        note: tr('nt_auto_from').replaceFirst('{a}', label),
         date: ymd(n.at),
         sourcePackage: n.package,
         sourceHash: notifHash(n.package, n.title, n.content, at: n.at),
       );
       n.type = type;
-      n.status = 'Tersimpan';
-      return 'Tersimpan';
+      n.status = tr('st_saved');
+      return tr('st_saved');
     } on PostgrestException catch (err) {
       ErrorReporter.capture(err, StackTrace.current, context: 'notif_force');
       final msg = saveErrorStatus(err);
@@ -424,7 +422,7 @@ class NotifTrack {
       return msg;
     } catch (err, st) {
       ErrorReporter.capture(err, st, context: 'notif_force');
-      return 'Gagal simpan. Coba lagi.';
+      return tr('svc_savefail').replaceFirst('{c}', 'error');
     }
   }
 }

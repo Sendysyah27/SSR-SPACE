@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/utils/money.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 const _ink = PdfColor.fromInt(0xFF1C1B1A);
 const _accent = PdfColor.fromInt(0xFF0F766E);
@@ -24,9 +25,9 @@ Future<pw.Font?> _bundledFont() async {
 }
 
 String _typeLabel(String type) {
-  if (type == 'in') return 'Masuk';
-  if (type == 'out') return 'Keluar';
-  return 'Transfer';
+  if (type == 'in') return tr('tx_in');
+  if (type == 'out') return tr('tx_out');
+  return tr('tx_transfer');
 }
 
 PdfColor _typeColor(String type) {
@@ -58,7 +59,7 @@ Future<Uint8List> buildReportPdf({
   final byCat = <String, double>{};
   for (final t in items.where((t) => t.type == 'out')) {
     final c = (t.category == null || t.category!.trim().isEmpty)
-        ? 'Lainnya'
+        ? tr('cat_other')
         : t.category!.trim();
     byCat[c] = (byCat[c] ?? 0) + t.amount;
   }
@@ -85,7 +86,7 @@ Future<Uint8List> buildReportPdf({
           ),
           pw.SizedBox(height: 2),
           pw.Text(
-            'Laporan Keuangan',
+            tr('pdf_title'),
             style: const pw.TextStyle(
               fontSize: 22,
               fontWeight: pw.FontWeight.bold,
@@ -103,11 +104,13 @@ Future<Uint8List> buildReportPdf({
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
           pw.Text(
-            'Dibuat $made',
+            tr('pdf_made').replaceFirst('{d}', made),
             style: const pw.TextStyle(fontSize: 9, color: _muted),
           ),
           pw.Text(
-            'Halaman ${ctx.pageNumber} dari ${ctx.pagesCount}',
+            tr('pdf_page')
+                .replaceFirst('{p}', '${ctx.pageNumber}')
+                .replaceFirst('{t}', '${ctx.pagesCount}'),
             style: const pw.TextStyle(fontSize: 9, color: _muted),
           ),
         ],
@@ -116,7 +119,7 @@ Future<Uint8List> buildReportPdf({
         _summary(totalIn, totalOut),
         pw.SizedBox(height: 16),
         pw.Text(
-          'Transaksi (${items.length})',
+          tr('pdf_txs').replaceFirst('{n}', '${items.length}'),
           style: const pw.TextStyle(
             fontSize: 13,
             fontWeight: pw.FontWeight.bold,
@@ -126,7 +129,7 @@ Future<Uint8List> buildReportPdf({
         pw.SizedBox(height: 6),
         if (items.isEmpty)
           pw.Text(
-            'Belum ada transaksi bulan ini.',
+            tr('pdf_empty'),
             style: const pw.TextStyle(fontSize: 11, color: _muted),
           )
         else
@@ -134,7 +137,7 @@ Future<Uint8List> buildReportPdf({
         if (topCats.isNotEmpty) ...[
           pw.SizedBox(height: 16),
           pw.Text(
-            'Keluar per kategori',
+            tr('pdf_cats'),
             style: const pw.TextStyle(
               fontSize: 13,
               fontWeight: pw.FontWeight.bold,
@@ -184,11 +187,11 @@ pw.Widget _summary(double totalIn, double totalOut) {
   final net = totalIn - totalOut;
   return pw.Row(
     children: [
-      box('Masuk', rp(totalIn), _accentSoft, _accent),
+      box(tr('tx_in'), rp(totalIn), _accentSoft, _accent),
       pw.SizedBox(width: 8),
-      box('Keluar', rp(totalOut), _dangerSoft, _danger),
+      box(tr('tx_out'), rp(totalOut), _dangerSoft, _danger),
       pw.SizedBox(width: 8),
-      box('Selisih', rp(net), _paper, net >= 0 ? _accent : _danger),
+      box(tr('pdf_diff'), rp(net), _paper, net >= 0 ? _accent : _danger),
     ],
   );
 }
@@ -219,16 +222,16 @@ pw.Widget _table(List<SaasTransaction> items) {
     pw.TableRow(
       decoration: const pw.BoxDecoration(color: _ink),
       children: [
-        cell('Tgl', color: PdfColors.white, bold: true),
-        cell('Jenis', color: PdfColors.white, bold: true),
-        cell('Kategori', color: PdfColors.white, bold: true),
+        cell(tr('pdf_h_date'), color: PdfColors.white, bold: true),
+        cell(tr('pdf_h_type'), color: PdfColors.white, bold: true),
+        cell(tr('bt_cat'), color: PdfColors.white, bold: true),
         cell(
-          'Nominal',
+          tr('pdf_h_amount'),
           color: PdfColors.white,
           bold: true,
           align: pw.TextAlign.right,
         ),
-        cell('Catatan', color: PdfColors.white, bold: true),
+        cell(tr('pdf_h_note'), color: PdfColors.white, bold: true),
       ],
     ),
     for (var i = 0; i < items.length; i++)
@@ -243,7 +246,7 @@ pw.Widget _table(List<SaasTransaction> items) {
             color: _typeColor(items[i].type),
             bold: true,
           ),
-          cell(items[i].category ?? 'Lainnya'),
+          cell(items[i].category ?? tr('cat_other')),
           cell(
             rp(items[i].amount),
             color: _typeColor(items[i].type),

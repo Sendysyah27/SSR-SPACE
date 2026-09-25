@@ -4,6 +4,7 @@ import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/transaction.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
 class TxRow extends StatelessWidget {
@@ -16,11 +17,11 @@ class TxRow extends StatelessWidget {
   String get _kindLabel {
     switch (tx.type) {
       case 'in':
-        return 'Masuk';
+        return tr('tx_in');
       case 'transfer':
-        return 'Transfer';
+        return tr('tx_transfer');
       default:
-        return 'Keluar';
+        return tr('tx_out');
     }
   }
 
@@ -41,10 +42,10 @@ class TxRow extends StatelessWidget {
     final theme = Theme.of(context);
     final auto = tx.sourcePackage != null;
     final chips = <Widget>[
-      StatusChip(label: tx.code ?? 'Tanpa kode', tone: StatusTone.neutral),
+      StatusChip(label: tx.code ?? tr('tx_nocode'), tone: StatusTone.neutral),
       if (auto)
-        const StatusChip(
-          label: 'Otomatis',
+        StatusChip(
+          label: tr('tx_auto'),
           tone: StatusTone.accent,
           icon: AppIcons.autoBadge,
         ),

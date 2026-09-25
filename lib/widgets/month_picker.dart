@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/theme/app_icons.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 class MonthPicker extends StatelessWidget {
   final String month;
@@ -13,13 +14,13 @@ class MonthPicker extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
-          tooltip: 'Bulan lalu',
+          tooltip: tr('mp_prev'),
           icon: const DuoIcon(AppIcons.monthPrev),
           onPressed: () => onChanged(prevMonth(month)),
         ),
         Text(monthLabel(month), style: Theme.of(context).textTheme.titleMedium),
         IconButton(
-          tooltip: 'Bulan depan',
+          tooltip: tr('mp_next'),
           icon: const DuoIcon(AppIcons.monthNext),
           onPressed: isCurrent ? null : () => onChanged(nextMonth(month)),
         ),

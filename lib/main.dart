@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/app_settings.dart';
+import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/supabase_config.dart';
@@ -17,6 +19,9 @@ Future<void> main() async {
   ForegroundTrack.initOnce();
   final prefs = await SharedPreferences.getInstance();
   await loadMaskAmounts(prefs);
+  await loadAppSettings(prefs);
+  await CurrencyService.loadCache(prefs);
+  unawaited(CurrencyService.refresh());
   final app = SsrSpaceApp(session: SessionService(prefs));
   runZonedGuarded(
     () => runApp(app),
@@ -29,11 +34,26 @@ class SsrSpaceApp extends StatelessWidget {
   const SsrSpaceApp({super.key, required this.session});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SSR SPACE',
-      theme: SsrTheme.light(),
-      home: SplashScreen(session: session),
-      debugShowCheckedModeBanner: false,
+    return ValueListenableBuilder<String>(
+      valueListenable: localeCode,
+      builder: (_, __, ___) => ValueListenableBuilder<String>(
+        valueListenable: currencyCode,
+        builder: (_, __, ___) => ValueListenableBuilder<double>(
+          valueListenable: fontScale,
+          builder: (_, scale, ___) => MaterialApp(
+            title: 'SSR SPACE',
+            theme: SsrTheme.light(),
+            home: SplashScreen(session: session),
+            debugShowCheckedModeBanner: false,
+            builder: (ctx, child) => MediaQuery(
+              data: MediaQuery.of(ctx).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

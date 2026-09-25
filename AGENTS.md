@@ -82,6 +82,13 @@ Arah pengembangan ke **skala banyak user** — urutan wajib dijaga, jangan melom
 | Fase 3 | Scale ops: cek limit plan Supabase, dependabot/pin actions SHA (D4), test RLS server-side | ✅ **done 2026-09-25**: limit plan ✅ (spike, rekomendasi AUDIT §4 — free cukup, **waspada pause 7 hari inaktif**, naik Pro $25/bln saat launch Fase 4); D4 dependabot + pin SHA ✅ (`.github/dependabot.yml` + 4 action di-SHA, D2 sekalian: checkout v7.0.1 / setup-java v6.0.1); **F3-c test RLS CI** ✅ (`rls-test.yml` + `supabase/test/`, 40+ assert — **nemukan 2 P0/penting → migration_12**); **F3-d retention + backup** ✅ (migration_13 pg_cron + `backup-db.yml` mingguan). Sisa backlog: D8 heartbeat anti-pause |
 | Fase 4 | Monetisasi: billing Midtrans per plan + limit kuota | 🟡 jalan (2026-09-25): kuota locked (Gratis: workspace 2, anggota 3, auto 150/bln, CSV saja) + `plan_limits.dart` + template PDF premium (`report_pdf.dart`, run `36153839333` hijau, 62 test) + **tegak 4 titik** (`89080a1`, run `36155923567` hijau, 67 test, APK `kuota-gratis`). Sisa: bayar Midtrans (snap→webhook→upgrade) |
 
+### 4.14 Diskusi baru: riwayat dompet, kelompok laporan, PIN budget, settings (2026-09-25/26)
+
+- **F1 riwayat dompet** (`3e089b6`, run `36186962893` hijau): ketuk baris → `WalletDetailScreen` + `listByWallet`.
+- **F2 kelompok laporan:** chip filter Semua/Masuk/Keluar/Transfer + `transfer_detect.dart` (out+in nominal sama, dompet beda, ≤10 mnt, suggest-only badge, tanpa merge) + test.
+- **F3 edit budget:** ketuk kartu → dialog edit limit → popup PIN (`verifyPin`) → simpan.
+- **F4 settings:** `SettingsScreen` (ID/EN, kurs API `open.er-api.com` + cache, font 0.85–1.3, ganti PIN via OTP email) + `strings.dart` (seluruh copy UI), `currency.dart` (`amt()` sadar kurs, input dikonversi balik ke IDR), `monthLabel`/`dayLabel` & status notif mengikuti bahasa. PDF ikut bahasa app, angka tetap IDR. Material bawaan (dialog sistem) ikut bahasa HP, bukan app — batas sadar.
+
 Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari `track_master`; parser/gate `_onEvent` TIDAK berubah.
 
 ### 3.3 Workflow teknis wajib setiap perubahan

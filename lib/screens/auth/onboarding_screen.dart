@@ -4,6 +4,7 @@ import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final SessionService session;
@@ -46,9 +47,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _submit() async {
-    final eName = nameC.text.isEmpty ? 'Nama wajib diisi.' : null;
-    final ePin = pinC.text.length < 4 ? 'PIN minimal 4 digit.' : null;
-    final ePin2 = pinC.text != pin2C.text ? 'PIN tidak sama.' : null;
+    final eName = nameC.text.isEmpty ? tr('ob_name_err') : null;
+    final ePin = pinC.text.length < 4 ? tr('ob_pin_err') : null;
+    final ePin2 = pinC.text != pin2C.text ? tr('ob_pin2_err') : null;
     if (eName != null || ePin != null || ePin2 != null) {
       setState(() {
         errName = eName;
@@ -153,30 +154,30 @@ class _OnboardingBody extends StatelessWidget {
       padding: const EdgeInsets.all(SsrSpace.xxl),
       children: [
         Text(
-          'Selamat datang di SSR SPACE',
+          tr('ob_welcome'),
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: SsrSpace.xs),
         Text(
-          'Isi profil lalu buat PIN untuk mulai mencatat.',
+          tr('ob_sub'),
           style: Theme.of(context).textTheme.bodyMedium
               ?.copyWith(color: SsrColors.secondary),
         ),
         const SizedBox(height: SsrSpace.xl),
         _stepDots(),
         const SizedBox(height: SsrSpace.xl),
-        Text('Profil', style: Theme.of(context).textTheme.titleMedium),
+        Text(tr('ob_profile'), style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: SsrSpace.md),
         TextField(
           controller: nameC,
           focusNode: nameFocus,
           textInputAction: TextInputAction.next,
           onChanged: onNameChanged,
-          decoration: InputDecoration(labelText: 'Nama', errorText: errName),
+          decoration: InputDecoration(labelText: tr('ob_name'), errorText: errName),
         ),
         const SizedBox(height: SsrSpace.xl),
         Text(
-          'PIN keamanan (6 digit)',
+          tr('ob_pin'),
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: SsrSpace.md),
@@ -184,7 +185,7 @@ class _OnboardingBody extends StatelessWidget {
         const SizedBox(height: SsrSpace.md),
         PinField(controller: pin2C, length: 6, error: errPin2),
         const SizedBox(height: SsrSpace.xxl),
-        PrimaryButton(label: 'Mulai', loading: saving, onPressed: onSubmit),
+        PrimaryButton(label: tr('ob_start'), loading: saving, onPressed: onSubmit),
       ],
     );
   }

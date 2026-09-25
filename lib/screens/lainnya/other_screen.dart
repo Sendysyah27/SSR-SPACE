@@ -14,6 +14,7 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/lainnya/billing_screen.dart';
+import 'package:ssr_space/screens/lainnya/settings_screen.dart';
 import 'package:ssr_space/screens/workspace/invite_screen.dart';
 import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
 import 'package:ssr_space/screens/workspace/org_switcher_screen.dart';
@@ -21,6 +22,7 @@ import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:ssr_space/screens/dompet/wallets_screen.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/nav_tile.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
 class _OtherMeta {
@@ -75,19 +77,19 @@ class _OtherScreenState extends State<OtherScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Keluar dari akun?'),
+        title: Text(tr('o_logout_t')),
         content: const Text(
           'Sesi berakhir. Workspace aktif di HP ini ikut dilepas.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+            child: Text(tr('cancel')),
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: SsrColors.danger),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Keluar'),
+            child: Text(tr('o_logout')),
           ),
         ],
       ),
@@ -150,15 +152,13 @@ class _OtherScreenState extends State<OtherScreen> {
       }
       await Share.shareXFiles(files, text: 'Cadangan data SSR SPACE (CSV)');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('File cadangan siap dibagikan.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('o_backup_ok'))));
     } catch (err, st) {
       ErrorReporter.capture(err, st, context: 'backup');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal membuat cadangan. Coba lagi.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('o_backup_fail'))));
     } finally {
       if (mounted) setState(() => backingUp = false);
     }
@@ -167,7 +167,7 @@ class _OtherScreenState extends State<OtherScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Lainnya')),
+      appBar: AppBar(title: Text(tr('nav_lainnya'))),
       body: FutureBuilder<_OtherMeta>(
         future: _metaFuture,
         builder: (_, snap) {
@@ -175,8 +175,8 @@ class _OtherScreenState extends State<OtherScreen> {
           final planLabel = meta == null || meta.plan.isEmpty
               ? '-'
               : meta.plan == 'pro'
-              ? 'Pro'
-              : 'Gratis';
+              ? tr('o_pro')
+              : tr('o_free');
           return ListView(
             padding: const EdgeInsets.all(SsrSpace.lg),
             children: [
@@ -194,7 +194,9 @@ class _OtherScreenState extends State<OtherScreen> {
                 onOpen: () => _push(const NotifSettingsScreen()),
               ),
               _DataSection(onBackup: backingUp ? null : _backup),
-              const _AppearanceSection(),
+              _AppearanceSection(
+                onSettings: () => _push(const SettingsScreen()),
+              ),
               _AccountSection(
                 planLabel: planLabel,
                 onBilling: () => _push(const BillingScreen()),
@@ -230,7 +232,7 @@ class _WorkspaceSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: 'Workspace',
+      label: tr('o_sec_workspace'),
       children: [
         Row(
           children: [
@@ -249,20 +251,20 @@ class _WorkspaceSection extends StatelessWidget {
         const Divider(height: SsrSpace.xl),
         NavTile(
           icon: AppIcons.workspaceSwitch,
-          title: 'Ganti workspace',
+          title: tr('o_switch'),
           onTap: onSwitch,
         ),
         const Divider(height: 1),
         NavTile(
           icon: AppIcons.invite,
-          title: 'Undang anggota',
-          subtitle: 'Bagikan kode untuk gabung workspace',
+          title: tr('o_invite'),
+          subtitle: tr('o_invite_s'),
           onTap: onInvite,
         ),
         const Divider(height: 1),
         NavTile(
           icon: AppIcons.wallet,
-          title: 'Dompet',
+          title: tr('o_wallets'),
           onTap: onWallets,
         ),
       ],
@@ -281,14 +283,14 @@ class _TrackingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: 'Pelacakan',
+      label: tr('o_sec_tracking'),
       children: [
         NavTile(
           icon: AppIcons.tracking,
-          title: 'Pelacakan otomatis',
-          subtitle: 'Notifikasi bank jadi transaksi',
+          title: tr('o_tracking'),
+          subtitle: tr('o_tracking_s'),
           chip: StatusChip(
-            label: tracking ? 'Menyala' : 'Mati',
+            label: tracking ? tr('nt_on') : tr('nt_off'),
             tone: tracking ? StatusTone.accent : StatusTone.neutral,
           ),
           onTap: onOpen,
@@ -308,12 +310,12 @@ class _DataSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: 'Data',
+      label: tr('o_sec_data'),
       children: [
         NavTile(
           icon: AppIcons.backup,
-          title: 'Cadangkan data',
-          subtitle: 'Ekspor seluruh workspace ke CSV',
+          title: tr('o_backup'),
+          subtitle: tr('o_backup_s'),
           onTap: onBackup,
         ),
       ],
@@ -321,25 +323,34 @@ class _DataSection extends StatelessWidget {
   }
 }
 
-/// Kartu "Tampilan": toggle privacy mode samarkan nominal (state global).
+/// Kartu "Tampilan": toggle privacy mode + pintu ke Pengaturan.
 class _AppearanceSection extends StatelessWidget {
-  const _AppearanceSection();
+  final VoidCallback onSettings;
+
+  const _AppearanceSection({required this.onSettings});
 
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: 'Tampilan',
+      label: tr('o_sec_display'),
       children: [
         ValueListenableBuilder<bool>(
           valueListenable: maskAmounts,
           builder: (context, masked, _) => SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Samarkan nominal'),
-            subtitle: const Text('Sembunyikan saldo & nominal transaksi'),
+            title: Text(tr('o_mask')),
+            subtitle: Text(tr('o_mask_s')),
             value: masked,
             onChanged: setMaskAmounts,
           ),
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.menu,
+          title: tr('st_title'),
+          subtitle: tr('o_settings_s'),
+          onTap: onSettings,
         ),
       ],
     );
@@ -361,16 +372,16 @@ class _AccountSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      label: 'Akun',
+      label: tr('o_sec_account'),
       children: [
         NavTile(
           icon: AppIcons.billing,
-          title: 'Billing',
-          subtitle: 'Paket $planLabel',
+          title: tr('o_billing'),
+          subtitle: tr('o_plan').replaceFirst('{p}', planLabel),
           onTap: onBilling,
         ),
         const Divider(height: 1),
-        NavTile(icon: AppIcons.logout, title: 'Keluar', onTap: onLogout),
+        NavTile(icon: AppIcons.logout, title: tr('o_logout'), onTap: onLogout),
       ],
     );
   }

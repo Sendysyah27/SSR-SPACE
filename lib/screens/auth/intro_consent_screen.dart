@@ -4,6 +4,7 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 class IntroConsentScreen extends StatefulWidget {
   final SessionService session;
@@ -31,13 +32,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
   bool _agreed = false;
   bool _saving = false;
 
-  static const _terms = [
-    'SSR SPACE alat pencatat. Tanggung jawab keputusan keuangan tetap di tanganmu.',
-    'Data disimpan aman di cloud dan hanya bisa diakses dalam workspace-mu.',
-    'Pelacakan otomatis butuh izin akses notifikasi. Kamu bisa mematikannya kapan saja.',
-    'PIN dan password adalah tanggung jawabmu. Jangan dibagikan ke siapa pun.',
-    'Aplikasi ini bukan nasihat keuangan atau kebijakan investasi.',
-  ];
+  static List<String> get _terms => [tr('in_term_1'), tr('in_term_2'), tr('in_term_3'), tr('in_term_4'), tr('in_term_5')];
 
   @override
   void dispose() {
@@ -67,7 +62,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Gagal menyimpan persetujuan. Coba lagi.'),
+          content: Text(tr('in_save_fail')),
         ),
       );
     }
@@ -146,7 +141,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
             ),
             const SizedBox(height: SsrSpace.xl),
             Text(
-              'Buku kas harian yang tenang, rapi, dan bisa dipercaya.',
+              tr('in_brand_sub'),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium
                   ?.copyWith(color: SsrColors.secondary),
@@ -196,14 +191,14 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Semua urusan uang, satu ruang',
+            tr('in_values_t'),
             style: t.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: SsrSpace.sm),
           Text(
-            'Tiga hal yang bikin catatan harian terasa ringan.',
+            tr('in_values_s'),
             style: t.textTheme.bodyMedium?.copyWith(color: SsrColors.secondary),
           ),
           const SizedBox(height: SsrSpace.xl),
@@ -224,13 +219,12 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Catatan otomatis dari notifikasi',
+                        tr('in_auto_t'),
                         style: t.textTheme.titleMedium,
                       ),
                       const SizedBox(height: SsrSpace.xs),
                       Text(
-                        'Notifikasi bank dan e-wallet terbaca jadi '
-                        'transaksi. Kamu tinggal cek, bukan ketik ulang.',
+                        tr('in_auto_s'),
                         style: t.textTheme.bodyMedium?.copyWith(
                           color: SsrColors.secondary,
                         ),
@@ -245,18 +239,14 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
           _hairline(),
           _valueRow(
             icon: _iconWallet,
-            title: 'Dompet multi',
-            desc:
-                'Kas, bank, dan e-wallet. Tiap dompet punya saldo '
-                'sendiri, semuanya rapi dalam satu buku kas.',
+            title: tr('in_wallets_t'),
+            desc: tr('in_wallets_s'),
           ),
           _hairline(),
           _valueRow(
             icon: _iconUsers,
-            title: 'Workspace bersama',
-            desc:
-                'Satu buku kas bisa dipakai bareng pasangan atau tim, '
-                'lewat undangan aman.',
+            title: tr('in_org_t'),
+            desc: tr('in_org_s'),
           ),
           _hairline(),
           const SizedBox(height: SsrSpace.xl),
@@ -276,7 +266,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
             const Icon(_iconBrain, size: 40, color: SsrColors.accent),
             const SizedBox(height: SsrSpace.lg),
             Text(
-              'Kelola keuangan dengan sadar',
+              tr('in_mind_t'),
               textAlign: TextAlign.center,
               style: t.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
@@ -286,7 +276,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
             _hairline(width: 80, color: SsrColors.accent),
             const SizedBox(height: SsrSpace.lg),
             Text(
-              'SSR SPACE mencatat, kamu yang memutuskan.',
+              tr('in_mind_s1'),
               textAlign: TextAlign.center,
               style: t.textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w600,
@@ -294,10 +284,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
             ),
             const SizedBox(height: SsrSpace.md),
             Text(
-              'Aplikasi ini membantu kamu melihat ke mana uangmu pergi. '
-              'Setiap angka berasal dari catatanmu sendiri, jadi keputusan '
-              'tetap di tanganmu. Data yang jujur hari ini jadi laporan '
-              'yang akurat bulan depan.',
+              tr('in_mind_s2'),
               textAlign: TextAlign.center,
               style: t.textTheme.bodyMedium?.copyWith(
                 color: SsrColors.secondary,
@@ -350,7 +337,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
               const SizedBox(width: SsrSpace.md),
               Expanded(
                 child: Text(
-                  'Syarat & persetujuan',
+                  tr('in_terms_t'),
                   style: t.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -360,7 +347,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
           ),
           const SizedBox(height: SsrSpace.sm),
           Text(
-            'Baca sekali, setujui untuk mulai mencatat.',
+            tr('in_terms_s'),
             style: t.textTheme.bodyMedium?.copyWith(color: SsrColors.secondary),
           ),
           const SizedBox(height: SsrSpace.lg),
@@ -387,7 +374,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: SsrSpace.md),
                     child: Text(
-                      'Saya paham dan setuju',
+                      tr('in_agree'),
                       style: t.textTheme.titleMedium,
                     ),
                   ),
@@ -457,7 +444,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                   SizedBox(
                     width: 170,
                     child: PrimaryButton(
-                      label: onLast ? 'Setuju & mulai' : 'Lanjut',
+                      label: onLast ? tr('in_go') : tr('in_next'),
                       loading: _saving,
                       onPressed: onLast ? (_agreed ? _agree : null) : _next,
                     ),

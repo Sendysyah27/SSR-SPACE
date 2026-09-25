@@ -1,6 +1,7 @@
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 double budgetProgress(double spent, double limit) {
   if (limit <= 0) return 0;
@@ -22,7 +23,7 @@ Future<List<Budget>> fetchBudgets(String orgId) async {
   final spent = <String, double>{};
   for (final t in txs) {
     if (t.type == 'out' && (t.date ?? '').startsWith(currentMonth())) {
-      final k = (t.category?.isNotEmpty ?? false) ? t.category! : 'Lainnya';
+      final k = (t.category?.isNotEmpty ?? false) ? t.category! : tr('cat_other');
       spent[k] = (spent[k] ?? 0) + t.amount;
     }
   }

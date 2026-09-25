@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 /// Satu baris pengaturan app bank/dompet di layar "Pelacakan otomatis":
 /// switch on/off app + (bila daftar dompet tersedia) dropdown dompet tujuan
@@ -52,13 +53,13 @@ class BankTrackRow extends StatelessWidget {
                     initialValue: walletValue,
                     isExpanded: true,
                     decoration: const InputDecoration(
-                      labelText: 'Masuk ke dompet',
+                      labelText: tr('bt_wallet'),
                       isDense: true,
                     ),
                     items: [
                       const DropdownMenuItem<String?>(
                         value: null,
-                        child: Text('Otomatis / ikut nama'),
+                        child: Text(tr('bt_auto')),
                       ),
                       for (final w in wallets)
                         DropdownMenuItem<String?>(
@@ -74,7 +75,7 @@ class BankTrackRow extends StatelessWidget {
                   child: TextFormField(
                     initialValue: categoryValue,
                     decoration: const InputDecoration(
-                      labelText: 'Kategori',
+                      labelText: tr('bt_cat'),
                       isDense: true,
                     ),
                     onChanged: onCategoryChanged,

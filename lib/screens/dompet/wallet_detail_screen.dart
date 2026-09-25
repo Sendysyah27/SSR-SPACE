@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -62,7 +63,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       if (!mounted) return;
       setState(() {
         loading = false;
-        err = 'Gagal memuat riwayat. Periksa koneksi.';
+        err = tr('wd_err');
       });
     }
   }
@@ -77,7 +78,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   Widget _body() {
     if (loading) {
-      return const LoadingView(label: 'Memuat riwayat dompet...');
+      return LoadingView(label: tr('wd_loading'));
     }
     if (err != null) {
       return ErrorView(message: err!, onRetry: _load);
@@ -95,9 +96,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           EmptyView(
             icon: AppIcons.wallet,
             illustration: 'assets/illustrations/empty_riwayat.svg',
-            title: 'Belum ada transaksi di dompet ini.',
-            subtitle: 'Catat atau tunggu pelacakan otomatis mengisinya.',
-            actionLabel: 'Kembali',
+            title: tr('wd_empty_t'),
+            subtitle: tr('wd_empty_s'),
+            actionLabel: tr('back'),
             onAction: () => Navigator.pop(context),
           )
         else
@@ -130,7 +131,7 @@ class _SummaryCard extends StatelessWidget {
           Text(balanceText, style: SsrTheme.moneyLarge),
           const SizedBox(height: SsrSpace.xs),
           Text(
-            '$count transaksi membentuk saldo ini',
+            tr('wd_count').replaceFirst('{n}', '$count'),
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],

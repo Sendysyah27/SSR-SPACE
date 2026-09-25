@@ -7,6 +7,7 @@ import 'package:ssr_space/services/invite_service.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/shell/main_shell.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
@@ -60,7 +61,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
       setState(() => orgs = List<Map<String, dynamic>>.from(rows));
     } catch (_) {
       setState(() => orgs = []);
-      loadErr = 'Gagal memuat workspace. Periksa koneksi lalu coba lagi.';
+      loadErr = tr('org_err_load');
     } finally {
       setState(() => loading = false);
     }
@@ -70,7 +71,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
     if (busy) return;
     final name = nameC.text.trim();
     if (name.isEmpty) {
-      setState(() => formErr = 'Nama workspace wajib diisi.');
+      setState(() => formErr = tr('org_err_name'));
       return;
     }
     setState(() {
@@ -85,7 +86,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
         setState(() => busy = false);
         await requirePro(
           context,
-          'Paket Gratis maks ${PlanLimits.freeWorkspaces} workspace.',
+          tr('q_ws').replaceFirst('{n}', '${PlanLimits.freeWorkspaces}'),
         );
         return;
       }
@@ -105,7 +106,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
       nameC.clear();
       await _select({'id': newId, 'name': name});
     } catch (_) {
-      formErr = 'Gagal membuat workspace. Periksa nama dan koneksi.';
+      formErr = tr('org_err_create');
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -115,7 +116,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
     if (busy) return;
     final code = joinC.text.trim();
     if (code.isEmpty) {
-      setState(() => joinErr = 'Tempel kode undangan dulu.');
+      setState(() => joinErr = tr('org_err_code'));
       return;
     }
     setState(() {
@@ -127,7 +128,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
       joinC.clear();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Berhasil bergabung ke workspace.')),
+        SnackBar(content: Text(tr('org_joined'))),
       );
       await _load();
     } on InviteException catch (err) {
@@ -135,7 +136,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
       setState(() => joinErr = err.message);
     } catch (_) {
       if (!mounted) return;
-      setState(() => joinErr = 'Gagal bergabung. Periksa koneksi.');
+      setState(() => joinErr = tr('org_err_join'));
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -162,8 +163,8 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const _OrgSwitcherScaffold(
-        LoadingView(label: 'Memuat workspace...'),
+      return _OrgSwitcherScaffold(
+        LoadingView(label: tr('org_loading')),
       );
     }
     if (loadErr != null) {
@@ -197,7 +198,7 @@ class _OrgSwitcherScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pilih workspace')),
+      appBar: AppBar(title: Text(tr('org_title'))),
       body: body,
     );
   }
@@ -242,7 +243,7 @@ class _OrgPickerBody extends StatelessWidget {
       padding: const EdgeInsets.all(SsrSpace.lg),
       children: [
         Text(
-          'Pilih ruang catat atau buat baru.',
+          tr('org_pick'),
           style: Theme.of(context).textTheme.bodyMedium
               ?.copyWith(color: SsrColors.secondary),
         ),
@@ -250,9 +251,9 @@ class _OrgPickerBody extends StatelessWidget {
         if (orgs.isEmpty)
           EmptyView(
             icon: Icons.workspaces_outlined,
-            title: 'Belum ada workspace.',
-            subtitle: 'Buat workspace pertama di bawah untuk mulai mencatat.',
-            actionLabel: 'Buat workspace',
+            title: tr('org_empty_t'),
+            subtitle: tr('org_empty_s'),
+            actionLabel: tr('org_empty_a'),
             onAction: onFocusForm,
           )
         else
@@ -347,7 +348,7 @@ class _OrgRow extends StatelessWidget {
             ),
             const SizedBox(width: SsrSpace.sm),
             StatusChip(
-              label: isOwner ? 'Pemilik' : 'Anggota',
+              label: isOwner ? tr('org_owner') : tr('org_member'),
               tone: isOwner ? StatusTone.accent : StatusTone.neutral,
             ),
           ],
@@ -382,7 +383,7 @@ class _CreateOrgForm extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Buat workspace baru',
+            tr('org_new'),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SsrSpace.md),
@@ -391,12 +392,12 @@ class _CreateOrgForm extends StatelessWidget {
             focusNode: nameFocus,
             onChanged: onNameChanged,
             decoration: InputDecoration(
-              labelText: 'Nama workspace',
+              labelText: tr('org_f_name'),
               errorText: formErr,
             ),
           ),
           const SizedBox(height: SsrSpace.lg),
-          PrimaryButton(label: 'Buat', loading: busy, onPressed: onCreate),
+          PrimaryButton(label: tr('org_create'), loading: busy, onPressed: onCreate),
         ],
       ),
     );
@@ -434,12 +435,12 @@ class _JoinOrgForm extends StatelessWidget {
             controller: joinC,
             onChanged: onCodeChanged,
             decoration: InputDecoration(
-              labelText: 'Kode undangan',
+              labelText: tr('org_f_code'),
               errorText: joinErr,
             ),
           ),
           const SizedBox(height: SsrSpace.lg),
-          PrimaryButton(label: 'Gabung', loading: busy, onPressed: onJoin),
+          PrimaryButton(label: tr('org_join'), loading: busy, onPressed: onJoin),
         ],
       ),
     );

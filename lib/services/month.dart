@@ -1,7 +1,4 @@
-const _months = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
-];
+import 'package:ssr_space/utils/strings.dart';
 
 String _fmt(int year, int month) => '$year-${month.toString().padLeft(2, '0')}';
 
@@ -10,7 +7,10 @@ String currentMonth() {
   return _fmt(n.year, n.month);
 }
 
-List<int> _parts(String m) => [int.parse(m.substring(0, 4)), int.parse(m.substring(5, 7))];
+List<int> _parts(String m) => [
+  int.parse(m.substring(0, 4)),
+  int.parse(m.substring(5, 7)),
+];
 
 String prevMonth(String m) {
   final p = _parts(m);
@@ -26,7 +26,8 @@ String nextMonth(String m) {
 
 String monthLabel(String m) {
   final p = _parts(m);
-  return '${_months[p[1] - 1]} ${p[0]}';
+  final key = 'm${p[1].toString().padLeft(2, '0')}';
+  return '${tr(key)} ${p[0]}';
 }
 
 String monthStart(String m) => '$m-01';

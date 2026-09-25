@@ -6,6 +6,7 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 class AuthScreen extends StatefulWidget {
   final SessionService session;
@@ -33,15 +34,15 @@ class _AuthScreenState extends State<AuthScreen> {
   String _friendly(Object e) {
     final s = e.toString();
     if (s.contains('Failed host lookup')) {
-      return 'Tidak bisa menghubungi server (${SupabaseConfig.host}). Cek internet / matikan VPN-adblock, lalu Coba Lagi.';
+      return tr('au_err_server').replaceFirst('{h}', SupabaseConfig.host);
     }
     if (s.contains('SocketException') ||
         s.contains('ClientException') ||
         s.contains('Connection')) {
-      return 'Jaringan bermasalah. Cek internet lalu Coba Lagi.';
+      return tr('au_err_net');
     }
     if (s.contains('Email not confirmed')) {
-      return 'Email belum verifikasi. Cek inbox lalu klik link, atau kirim ulang di bawah.';
+      return tr('au_err_unconfirmed');
     }
     if (e is AuthException) return e.message;
     return s;
@@ -60,7 +61,7 @@ class _AuthScreenState extends State<AuthScreen> {
         final res = await auth.signIn(emailC.text.trim(), passC.text);
         if (res.session == null) {
           setState(() {
-            err = 'Masuk gagal, sesi kosong. Kalau baru daftar, verifikasi email dulu.';
+            err = tr('au_err_empty');
             needVerify = true;
           });
           return;
@@ -77,7 +78,7 @@ class _AuthScreenState extends State<AuthScreen> {
         final res = await auth.signUp(emailC.text.trim(), passC.text);
         if (res.session == null) {
           setState(() {
-            info = 'Akun dibuat. Cek email, klik link verifikasi, lalu Masuk.';
+            info = tr('au_created');
             isLogin = true;
             needVerify = true;
           });
@@ -96,7 +97,11 @@ class _AuthScreenState extends State<AuthScreen> {
       final m = _friendly(e);
       setState(() {
         err = m;
-        if (m.contains('verifikasi') || m.contains('confirm')) {
+        final raw = e.toString();
+        if (raw.contains('Email not confirmed') ||
+            m.contains('verifikasi') ||
+            m.contains('not verified') ||
+            m.contains('confirm')) {
           needVerify = true;
         }
       });
@@ -108,7 +113,7 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _resend() async {
     try {
       await AuthService().resendVerification(emailC.text.trim());
-      setState(() => info = 'Link verifikasi dikirim ulang. Cek inbox/spam.');
+      setState(() => info = tr('au_resent'));
     } catch (e) {
       setState(() => err = _friendly(e));
     }
@@ -196,10 +201,10 @@ class _AuthHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: SsrSpace.xxl),
-        Text('SSR SPACE', style: Theme.of(context).textTheme.displaySmall),
+        Text(tr('au_title'), style: Theme.of(context).textTheme.displaySmall),
         const SizedBox(height: SsrSpace.sm),
         Text(
-          'Masuk untuk lanjut catat harian.',
+          tr('au_sub'),
           style: Theme.of(context).textTheme.bodyMedium
               ?.copyWith(color: SsrColors.secondary),
         ),
@@ -231,14 +236,14 @@ class _AuthFields extends StatelessWidget {
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
           autofillHints: const [AutofillHints.email],
-          decoration: const InputDecoration(labelText: 'Email'),
+          decoration: InputDecoration(labelText: tr('au_email')),
         ),
         const SizedBox(height: SsrSpace.md),
         TextField(
           controller: passC,
           obscureText: true,
           onSubmitted: (_) => onSubmit(),
-          decoration: const InputDecoration(labelText: 'Password'),
+          decoration: InputDecoration(labelText: tr('au_pass')),
         ),
       ],
     );
@@ -316,7 +321,7 @@ class _AuthMessages extends StatelessWidget {
         if (showResend)
           TextButton(
             onPressed: onResend,
-            child: const Text('Kirim ulang verifikasi'),
+            child: Text(tr('au_resend')),
           ),
       ],
     );
@@ -344,14 +349,14 @@ class _AuthActions extends StatelessWidget {
       children: [
         const SizedBox(height: SsrSpace.lg),
         PrimaryButton(
-          label: isLogin ? 'Masuk' : 'Daftar',
+          label: isLogin ? tr('au_login') : tr('au_register'),
           loading: loading,
           onPressed: onSubmit,
         ),
         TextButton(
           onPressed: onToggleMode,
           child: Text(
-            isLogin ? 'Belum punya akun? Daftar' : 'Sudah punya akun? Masuk',
+            isLogin ? tr('au_to_register') : tr('au_to_login'),
           ),
         ),
       ],

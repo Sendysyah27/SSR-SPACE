@@ -7,6 +7,8 @@ import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
+import 'package:ssr_space/services/plan_limits.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 class BillingScreen extends StatefulWidget {
   const BillingScreen({super.key});
@@ -48,7 +50,7 @@ class _BillingScreenState extends State<BillingScreen> {
       if (!mounted) return;
       setState(() {
         loading = false;
-        err = 'Gagal memuat paket. Periksa koneksi.';
+        err = tr('bl_err_load');
       });
     }
   }
@@ -63,11 +65,11 @@ class _BillingScreenState extends State<BillingScreen> {
       await requestUpgrade(await activeOrgId(), 'pro', proPrice);
       if (!mounted) return;
       setState(() {
-        msg = 'Permintaan Pro tercatat. Aktivasi menyusul setelah pembayaran terkonfirmasi.';
+        msg = tr('bl_req_ok');
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => msg = 'Gagal mengirim permintaan. Coba lagi nanti.');
+      setState(() => msg = tr('bl_req_fail'));
     } finally {
       if (mounted) setState(() => upgrading = false);
     }
@@ -76,7 +78,7 @@ class _BillingScreenState extends State<BillingScreen> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const _BillingScaffold(LoadingView(label: 'Memuat paket...'));
+      return _BillingScaffold(LoadingView(label: tr('bl_loading')));
     }
     if (err != null) {
       return _BillingScaffold(ErrorView(message: err!, onRetry: _load));
@@ -87,7 +89,7 @@ class _BillingScreenState extends State<BillingScreen> {
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
           Text(
-            'Paket aktif: ${plan.isEmpty ? '-' : (isPro ? 'Pro' : 'Gratis')}',
+            tr('bl_active').replaceFirst('{p}', plan.isEmpty ? '-' : (isPro ? tr('bl_pro') : tr('bl_free'))),
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: SsrSpace.lg),
@@ -112,7 +114,7 @@ class _BillingScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Billing')),
+      appBar: AppBar(title: Text(tr('o_billing'))),
       body: body,
     );
   }
@@ -128,12 +130,15 @@ class _FreePlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _PlanCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      title: 'Gratis',
+      title: tr('bl_free'),
       statusChip: !isPro
-          ? const StatusChip(label: 'Paket aktif', tone: StatusTone.accent)
+          ? StatusChip(label: tr('bl_active_chip'), tone: StatusTone.accent)
           : null,
       price: Text('Rp0', style: SsrTheme.money.copyWith(fontSize: 18)),
-      features: const ['Catat transaksi', '1 workspace'],
+      features: [
+        tr('bl_f_free1'),
+        tr('bl_f_free2').replaceFirst('{n}', '${PlanLimits.freeWorkspaces}'),
+      ],
     );
   }
 }
@@ -157,23 +162,21 @@ class _ProPlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _PlanCard(
       borderColor: SsrColors.accent,
-      title: 'Pro',
+      title: tr('bl_pro'),
       statusChip: isPro
-          ? const StatusChip(label: 'Paket aktif', tone: StatusTone.accent)
-          : const StatusChip(label: 'Upgrade', tone: StatusTone.neutral),
+          ? StatusChip(label: tr('bl_active_chip'), tone: StatusTone.accent)
+          : StatusChip(label: tr('bl_upgrade_chip'), tone: StatusTone.neutral),
       price: Text(
         '${rp(proPrice)}/bulan',
         style: SsrTheme.money.copyWith(fontSize: 18, color: SsrColors.accent),
       ),
-      features: const ['Workspace banyak', 'Export laporan', 'Tanpa batas'],
+      features: [tr('bl_f_pro1'), tr('bl_f_pro2'), tr('bl_f_pro3')],
       extra: [
         if (msg != null) ...[
           const SizedBox(height: SsrSpace.md),
           StatusChip(
-            label: msg!.startsWith('Permintaan')
-                ? 'Permintaan terkirim'
-                : 'Gagal',
-            tone: msg!.startsWith('Permintaan')
+            label: msg == tr('bl_req_ok') ? tr('bl_sent') : tr('bl_failed'),
+            tone: msg == tr('bl_req_ok')
                 ? StatusTone.accent
                 : StatusTone.danger,
           ),
@@ -182,7 +185,7 @@ class _ProPlanCard extends StatelessWidget {
         ],
         const SizedBox(height: SsrSpace.lg),
         PrimaryButton(
-          label: 'Naik ke Pro',
+          label: tr('bl_cta'),
           loading: upgrading,
           onPressed: isPro ? null : onUpgrade,
         ),

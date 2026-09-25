@@ -7,11 +7,15 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
+import 'package:ssr_space/utils/datetime.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/report_pdf.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/transfer_detect.dart';
+import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
@@ -31,6 +35,8 @@ class ReportsScreen extends StatefulWidget {
 class ReportsScreenState extends State<ReportsScreen> {
   late String month;
   List<SaasTransaction> items = [];
+  Map<String, String> walletNames = {};
+  String flowFilter = 'all';
   bool loading = true;
   bool exporting = false;
   String? err;
@@ -56,16 +62,18 @@ class ReportsScreenState extends State<ReportsScreen> {
         return;
       }
       final txs = await TransactionService().listMonth(orgId, month);
+      final ws = await WalletService().list(orgId);
       if (!mounted) return;
       setState(() {
         items = txs;
+        walletNames = {for (final w in ws) w.id: w.name};
         loading = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         loading = false;
-        err = 'Gagal memuat laporan. Periksa koneksi.';
+        err = tr('r_err_load');
       });
     }
   }
@@ -79,7 +87,7 @@ class ReportsScreenState extends State<ReportsScreen> {
     final dir = await getTemporaryDirectory();
     final f = File('${dir.path}/laporan-ssr-space.csv');
     await f.writeAsString(const ListToCsvConverter().convert(rows));
-    await Share.shareXFiles([XFile(f.path)], text: 'Laporan SSR SPACE (CSV)');
+    await Share.shareXFiles([XFile(f.path)], text: tr('r_share_csv'));
   }
 
   Future<void> _exportPdf() async {
@@ -91,7 +99,7 @@ class ReportsScreenState extends State<ReportsScreen> {
     final dir = await getTemporaryDirectory();
     final f = File('${dir.path}/laporan-ssr-space.pdf');
     await f.writeAsBytes(bytes);
-    await Share.shareXFiles([XFile(f.path)], text: 'Laporan SSR SPACE (PDF)');
+    await Share.shareXFiles([XFile(f.path)], text: tr('r_share_pdf'));
   }
 
   Future<void> _runExport(Future<void> Function() run, String label) async {
@@ -100,13 +108,13 @@ class ReportsScreenState extends State<ReportsScreen> {
     try {
       await run();
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('File $label siap dibagikan.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('r_export_ok').replaceFirst('{l}', label))),
+      );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal membuat file. Coba lagi.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('r_export_fail'))));
     } finally {
       if (mounted) setState(() => exporting = false);
     }
@@ -145,7 +153,7 @@ class ReportsScreenState extends State<ReportsScreen> {
     final plan = orgId.isEmpty ? 'free' : await currentPlan(orgId);
     if (!mounted) return;
     if (!canExportPdf(plan: plan)) {
-      await requirePro(context, 'Export PDF khusus paket Pro.');
+      await requirePro(context, tr('q_pdf'));
       return;
     }
     _runExport(_exportPdf, 'PDF');
@@ -174,19 +182,48 @@ class ReportsScreenState extends State<ReportsScreen> {
           const SizedBox(height: SsrSpace.md),
           _summarySection(totalIn, totalOut, net),
           const SizedBox(height: SsrSpace.lg),
-          if (items.isEmpty)
-            EmptyView(
-              icon: AppIcons.reports,
-              illustration: 'assets/illustrations/empty_laporan.svg',
-              title: 'Belum ada transaksi untuk bulan ini.',
-              subtitle: 'Pilih bulan lain atau catat transaksi dulu.',
-              actionLabel: 'Muat ulang',
-              onAction: _load,
-            )
-          else
-            _TxListCard(items: items),
+          _listSection(),
         ],
       ),
+    );
+  }
+
+  String _walletName(String? id) => walletNames[id] ?? tr('tx_f_wallet');
+
+  Widget _listSection() {
+    final visible = items
+        .where((t) => flowFilter == 'all' || t.type == flowFilter)
+        .toList();
+    final pairs = detectTransferPairs(items);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _FlowFilter(
+          value: flowFilter,
+          onChanged: (v) => setState(() => flowFilter = v),
+        ),
+        const SizedBox(height: SsrSpace.md),
+        if (pairs.isNotEmpty) ...[
+          _TransferHints(pairs: pairs, nameOf: _walletName),
+          const SizedBox(height: SsrSpace.md),
+        ],
+        if (items.isEmpty)
+          EmptyView(
+            icon: AppIcons.reports,
+            illustration: 'assets/illustrations/empty_laporan.svg',
+            title: tr('r_empty_t'),
+            subtitle: tr('r_empty_s'),
+            actionLabel: tr('reload'),
+            onAction: _load,
+          )
+        else if (visible.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: SsrSpace.xl),
+            child: Text(tr('r_noflow'), textAlign: TextAlign.center),
+          )
+        else
+          _TxListCard(items: visible),
+      ],
     );
   }
 }
@@ -213,14 +250,14 @@ class _MonthFlowChart extends StatelessWidget {
               Expanded(
                 child: _FlowLegend(
                   color: SsrColors.accent,
-                  label: 'Masuk',
+                  label: tr('tx_in'),
                   value: totalIn,
                 ),
               ),
               Expanded(
                 child: _FlowLegend(
                   color: SsrColors.danger,
-                  label: 'Keluar',
+                  label: tr('tx_out'),
                   value: totalOut,
                 ),
               ),
@@ -279,7 +316,10 @@ class _DonutDial extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text('$pctIn%', style: SsrTheme.money.copyWith(fontSize: 20)),
-                Text('masuk', style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  tr('r_center'),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
           ),
@@ -323,7 +363,66 @@ class _FlowLegend extends StatelessWidget {
   }
 }
 
+/// Filter jenis arus di daftar Laporan: semua / masuk / keluar / transfer.
+class _FlowFilter extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _FlowFilter({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<String>(
+      segments: const [
+        ButtonSegment(value: 'all', label: Text(tr('r_flow_all'))),
+        ButtonSegment(value: 'in', label: Text(tr('tx_in'))),
+        ButtonSegment(value: 'out', label: Text(tr('tx_out'))),
+        ButtonSegment(value: 'transfer', label: Text(tr('tx_transfer'))),
+      ],
+      selected: {value},
+      showSelectedIcon: false,
+      onSelectionChanged: (s) => onChanged(s.first),
+    );
+  }
+}
+
+/// Saran pasangan kemungkinan transfer antar dompet (baca saja,
+/// tak menggabung data): keluar + masuk nominal sama <=10 menit.
+class _TransferHints extends StatelessWidget {
+  final List<TransferPair> pairs;
+  final String Function(String? id) nameOf;
+
+  const _TransferHints({required this.pairs, required this.nameOf});
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('r_hints').replaceFirst('{n}', '${pairs.length}'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          for (final p in pairs)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text(
+                '${nameOf(p.outTx.walletId)} → ${nameOf(p.inTx.walletId ?? p.inTx.toWalletId)}'
+                ' · ${amt(p.amount)}'
+                ' · ${txTime(p.outTx.createdAt)} → ${txTime(p.inTx.createdAt)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Kerangka layar Laporan: AppBar "Laporan" + body (state / daftar).
+
 class _ReportsScaffold extends StatelessWidget {
   final Widget body;
   const _ReportsScaffold(this.body);
@@ -331,7 +430,7 @@ class _ReportsScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Laporan')),
+      appBar: AppBar(title: Text(tr('nav_laporan'))),
       body: body,
     );
   }
@@ -348,7 +447,7 @@ class _TxListCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Transaksi', style: Theme.of(context).textTheme.titleMedium),
+        Text(tr('r_tx_title'), style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: SsrSpace.xs),
         SectionCard(
           padding: const EdgeInsets.symmetric(
@@ -420,7 +519,7 @@ class _MonthlySummary extends StatelessWidget {
                 height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2.2),
               )
-            : Text('Unduh $label'),
+            : Text(tr('r_dl').replaceFirst('{l}', label)),
       ),
     );
   }
@@ -433,11 +532,16 @@ class _MonthlySummary extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _statCard(context, 'Masuk', totalIn, SsrColors.accent),
+              child: _statCard(context, tr('tx_in'), totalIn, SsrColors.accent),
             ),
             const SizedBox(width: SsrSpace.md),
             Expanded(
-              child: _statCard(context, 'Keluar', totalOut, SsrColors.danger),
+              child: _statCard(
+                context,
+                tr('tx_out'),
+                totalOut,
+                SsrColors.danger,
+              ),
             ),
           ],
         ),
@@ -447,7 +551,7 @@ class _MonthlySummary extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Selisih $monthLabel',
+                tr('beranda_diff').replaceFirst('{m}', monthLabel),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: SsrSpace.xs),

@@ -1,5 +1,6 @@
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/models/transaction.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 class DashboardData {
   final double totalIn;
@@ -19,7 +20,7 @@ DashboardData computeDashboard(List<SaasTransaction> txs) {
       totalIn += t.amount;
     } else if (t.type == 'out') {
       totalOut += t.amount;
-      final k = (t.category?.isNotEmpty ?? false) ? t.category! : 'Lainnya';
+      final k = (t.category?.isNotEmpty ?? false) ? t.category! : tr('cat_other');
       byCat[k] = (byCat[k] ?? 0) + t.amount;
     }
   }

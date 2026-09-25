@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
 /// Satu baris di daftar Dompet: ikon jenis + nama + chip jenis + nominal
@@ -64,7 +65,7 @@ class WalletRow extends StatelessWidget {
             child: Text(
               balanceText,
               textAlign: TextAlign.end,
-              style: balanceText == 'Belum termuat'
+              style: balanceText == tr('w_notloaded')
                   ? Theme.of(context).textTheme.bodySmall
                   : SsrTheme.money.copyWith(fontSize: 14),
             ),

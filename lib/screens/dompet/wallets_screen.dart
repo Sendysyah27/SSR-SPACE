@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -84,10 +85,10 @@ class _WalletsScreenState extends State<WalletsScreen> {
       if (!mounted) return;
       final msg = e.toString();
       final short = msg.contains('recursion')
-          ? 'Gagal memuat dompet: RLS recursion. Jalankan migration_08 di Supabase.'
+          ? tr('w_err_recursion')
           : msg.contains('permission')
-          ? 'Gagal memuat dompet: izin RLS. Cek membership workspace.'
-          : 'Gagal memuat dompet. Periksa koneksi.';
+          ? tr('w_err_perm')
+          : tr('w_err_load');
       setState(() {
         loading = false;
         err = short;
@@ -96,7 +97,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
   }
 
   String _balanceLabel(String walletId) {
-    if (!balancesOk) return 'Belum termuat';
+    if (!balancesOk) return tr('w_notloaded');
     for (final b in balances) {
       if (b.walletId == walletId) return amt(b.balance);
     }
@@ -115,11 +116,11 @@ class _WalletsScreenState extends State<WalletsScreen> {
   String _typeLabel(String t) {
     switch (t) {
       case 'cash':
-        return 'Tunai';
+        return tr('w_cash');
       case 'ewallet':
-        return 'E-wallet';
+        return tr('w_ewallet');
       case 'bank':
-        return 'Bank';
+        return tr('w_bank');
       default:
         return t;
     }
@@ -128,7 +129,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
   Future<void> _save() async {
     final name = nameC.text.trim();
     if (name.isEmpty) {
-      setState(() => formErr = 'Isi nama dompet dulu.');
+      setState(() => formErr = tr('w_err_name'));
       return;
     }
     setState(() {
@@ -142,11 +143,11 @@ class _WalletsScreenState extends State<WalletsScreen> {
       await _load();
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Dompet ditambahkan.')));
+            .showSnackBar(SnackBar(content: Text(tr('w_added'))));
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() => formErr = 'Gagal menyimpan. Periksa koneksi.');
+      setState(() => formErr = tr('w_err_save'));
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -164,9 +165,9 @@ class _WalletsScreenState extends State<WalletsScreen> {
       return _WalletsScaffold(
         EmptyView(
           icon: AppIcons.workspace,
-          title: 'Pilih atau buat workspace dulu.',
-          subtitle: 'Dompet selalu menempel pada satu workspace.',
-          actionLabel: 'Muat ulang',
+          title: tr('w_noorg_t'),
+          subtitle: tr('w_noorg_s'),
+          actionLabel: tr('reload'),
           onAction: _load,
         ),
       );
@@ -211,7 +212,7 @@ class _WalletsScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Dompet')),
+      appBar: AppBar(title: Text(tr('nav_dompet'))),
       body: body,
     );
   }
@@ -242,16 +243,16 @@ class _WalletOverview extends StatelessWidget {
         if (t != null)
           LabeledSectionCard(
             margin: const EdgeInsets.only(bottom: SsrSpace.md),
-            label: 'Total aset',
+            label: tr('w_total'),
             children: [Text(amt(t), style: SsrTheme.moneyLarge)],
           ),
         if (items.isEmpty)
           EmptyView(
             icon: AppIcons.wallet,
             illustration: 'assets/illustrations/empty_dompet.svg',
-            title: 'Belum ada dompet.',
-            subtitle: 'Tambah dompet pertama lewat form di bawah.',
-            actionLabel: 'Isi dompet',
+            title: tr('w_empty_t'),
+            subtitle: tr('w_empty_s'),
+            actionLabel: tr('w_empty_a'),
             onAction: onFocusForm,
           )
         else
@@ -291,23 +292,21 @@ class _NewWalletForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Dompet baru', style: Theme.of(context).textTheme.titleMedium),
+          Text(tr('w_new'), style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: SsrSpace.md),
           TextField(
             controller: nameC,
             focusNode: nameFocus,
-            decoration: const InputDecoration(
-              labelText: 'Nama dompet (Kas, Dana, Bank)',
-            ),
+            decoration: const InputDecoration(labelText: tr('w_f_name')),
           ),
           const SizedBox(height: SsrSpace.md),
           DropdownButtonFormField<String>(
             initialValue: type,
-            decoration: const InputDecoration(labelText: 'Jenis'),
+            decoration: InputDecoration(labelText: tr('w_f_type')),
             items: const [
-              DropdownMenuItem(value: 'cash', child: Text('Tunai')),
-              DropdownMenuItem(value: 'ewallet', child: Text('E-wallet')),
-              DropdownMenuItem(value: 'bank', child: Text('Bank')),
+              DropdownMenuItem(value: 'cash', child: Text(tr('w_cash'))),
+              DropdownMenuItem(value: 'ewallet', child: Text(tr('w_ewallet'))),
+              DropdownMenuItem(value: 'bank', child: Text(tr('w_bank'))),
             ],
             onChanged: onTypeChanged,
           ),
@@ -321,7 +320,7 @@ class _NewWalletForm extends StatelessWidget {
           ],
           const SizedBox(height: SsrSpace.lg),
           PrimaryButton(
-            label: 'Simpan dompet',
+            label: tr('w_save'),
             loading: saving,
             onPressed: onSave,
           ),

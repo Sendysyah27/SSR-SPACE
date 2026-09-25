@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'money.dart';
+import 'package:ssr_space/services/currency.dart';
 
 export 'money.dart';
 
@@ -20,5 +19,7 @@ Future<void> setMaskAmounts(bool value) async {
   await prefs.setBool(kMaskAmountsKey, value);
 }
 
-/// Nominal tampil asli, atau placeholder bila privacy mode menyala.
-String amt(num value) => maskAmounts.value ? maskPlaceholder : rp(value);
+/// Nominal tampil asli (mata uang aktif), atau placeholder bila privacy
+/// mode menyala. Default IDR identik dengan rp().
+String amt(num value) =>
+    maskAmounts.value ? CurrencyService.placeholder() : CurrencyService.format(value);

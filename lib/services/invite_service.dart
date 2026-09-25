@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/invite_token.dart';
 import 'package:ssr_space/services/supabase_config.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 class InviteException implements Exception {
   final String message;
@@ -34,7 +35,7 @@ class InviteService {
       return (token: token, id: row['id'] as String);
     } on PostgrestException catch (err) {
       if (err.code == '42501') {
-        throw InviteException('Hanya admin workspace yang bisa mengundang.');
+        throw InviteException(tr('iv_adminonly'));
       }
       rethrow;
     }

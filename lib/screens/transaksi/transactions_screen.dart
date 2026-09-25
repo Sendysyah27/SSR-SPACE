@@ -5,6 +5,9 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/currency.dart';
+import 'package:ssr_space/services/app_settings.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/tx_validation.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -90,7 +93,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       if (!mounted) return;
       setState(() {
         loading = false;
-        err = 'Gagal memuat transaksi. Periksa koneksi.';
+        err = tr('tx_err_load');
       });
     }
   }
@@ -146,12 +149,20 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       '${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')}';
 
+  String _historyTitle(String m) {
+    final label = localeCode.value == 'en'
+        ? monthLabel(m)
+        : monthLabel(m).toLowerCase();
+    return tr('tx_history').replaceFirst('{m}', label);
+  }
+
   Future<void> _save() async {
-    final nominal = double.tryParse(amountC.text);
-    if (nominal == null) {
-      setState(() => formErr = 'Isi nominal dengan angka yang benar.');
+    final typed = double.tryParse(amountC.text);
+    if (typed == null) {
+      setState(() => formErr = tr('tx_err_amount'));
       return;
     }
+    final nominal = CurrencyService.toIdr(typed);
     final v = validateTxInput(
       amount: nominal,
       walletId: walletId,
@@ -185,9 +196,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         );
         if (!mounted) return;
         _cancelEdit();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Transaksi diperbarui')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(tr('tx_updated'))));
         unawaited(showSuccessFlash(context));
       } else {
         await svc.add(
@@ -213,7 +223,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     } catch (e) {
       if (!mounted) return;
       debugPrint('save tx: $e');
-      setState(() => formErr = _txError(e, 'menyimpan'));
+      setState(() => formErr = _txError(e, tr('tx_act_save')));
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -223,20 +233,22 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     if (e is PostgrestException) {
       switch (e.code) {
         case '42501':
-          return 'Tidak punya akses ke workspace ini.';
+          return tr('tx_err_42501');
         case '23503':
-          return 'Dompet tidak valid. Muat ulang lalu pilih lagi.';
+          return tr('tx_err_23503');
         case '23514':
-          return 'Data tidak lolos validasi server.';
+          return tr('tx_err_23514');
         case '23505':
-          return 'Transaksi duplikat sudah tercatat.';
+          return tr('tx_err_23505');
         case 'PGRST116':
-          return 'Gagal $action: respons server tidak valid.';
+          return tr('tx_err_pgrst').replaceFirst('{a}', action);
         default:
-          return 'Gagal $action (${e.code ?? 'error'}). Coba lagi.';
+          return tr('tx_err_code')
+              .replaceFirst('{a}', action)
+              .replaceFirst('{c}', e.code ?? 'error');
       }
     }
-    return 'Gagal $action. Coba lagi.';
+    return tr('tx_err_generic').replaceFirst('{a}', action);
   }
 
   Future<void> _confirmDelete() async {
@@ -244,16 +256,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hapus transaksi'),
-        content: const Text('Hapus transaksi ini? Tidak bisa dibatalkan.'),
+        title: Text(tr('tx_del_title')),
+        content: Text(tr('tx_del_body')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+            child: Text(tr('cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hapus'),
+            child: Text(tr('tx_delete')),
           ),
         ],
       ),
@@ -265,12 +277,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       if (!mounted) return;
       _cancelEdit();
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Transaksi dihapus')));
+          .showSnackBar(SnackBar(content: Text(tr('tx_deleted'))));
       await _load();
     } catch (e) {
       if (!mounted) return;
       debugPrint('delete tx: $e');
-      setState(() => formErr = _txError(e, 'menghapus'));
+      setState(() => formErr = _txError(e, tr('tx_act_del')));
     }
   }
 
@@ -296,9 +308,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       return _TxStateScaffold(
         EmptyView(
           icon: AppIcons.workspace,
-          title: 'Belum ada workspace',
-          subtitle: 'Pilih atau buat workspace dulu di menu Lainnya.',
-          actionLabel: 'Muat ulang',
+          title: tr('tx_no_org_t'),
+          subtitle: tr('tx_no_org_s'),
+          actionLabel: tr('reload'),
           onAction: _load,
         ),
       );
@@ -394,13 +406,14 @@ class _TxFormCard extends StatelessWidget {
         children: [
           if (editing != null) ...[
             _EditBanner(
-              label: 'Mengubah ${editing!.code ?? 'transaksi'}',
+              label: tr('tx_editing')
+                  .replaceFirst('{c}', editing!.code ?? tr('tx_editing_tx')),
               onCancelEdit: onCancelEdit,
             ),
             const SizedBox(height: SsrSpace.md),
           ],
           Text(
-            editing != null ? 'Mengubah transaksi' : 'Catat transaksi',
+            editing != null ? tr('tx_form_edit') : tr('tx_form_add'),
             style: theme.textTheme.titleMedium,
           ),
           const SizedBox(height: SsrSpace.md),
@@ -452,7 +465,7 @@ class _TxHistorySection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Riwayat ${monthLabel(month).toLowerCase()}',
+          _historyTitle(month),
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: SsrSpace.sm),
@@ -462,9 +475,9 @@ class _TxHistorySection extends StatelessWidget {
             child: EmptyView(
               icon: AppIcons.transactions,
               illustration: 'assets/illustrations/empty_riwayat.svg',
-              title: 'Belum ada transaksi bulan ini',
-              subtitle: 'Catat pemasukan atau pengeluaran lewat form di atas.',
-              actionLabel: 'Isi form catat',
+              title: tr('tx_empty_t'),
+              subtitle: tr('tx_empty_s'),
+              actionLabel: tr('tx_empty_a'),
               onAction: onEmptyAction,
             ),
           )
@@ -486,7 +499,7 @@ class _TxStateScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Transaksi')),
+      appBar: AppBar(title: Text(tr('nav_transaksi'))),
       body: body,
     );
   }
@@ -613,7 +626,7 @@ class _EditBanner extends StatelessWidget {
           Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
           TextButton(
             onPressed: onCancelEdit,
-            child: const Text('Batalkan edit'),
+            child: Text(tr('tx_cancel_edit')),
           ),
         ],
       ),
@@ -643,22 +656,20 @@ class _TxBasicFields extends StatelessWidget {
           keyboardType: TextInputType.number,
           style: SsrTheme.moneyLarge,
           decoration: const InputDecoration(
-            labelText: 'Nominal',
-            prefixText: 'Rp ',
+            labelText: tr('tx_f_nominal'),
+            prefixText: '${kCurrencySymbols[currencyCode.value] ?? 'Rp'} ',
             prefixStyle: SsrTheme.moneyLarge,
           ),
         ),
         const SizedBox(height: SsrSpace.md),
         TextField(
           controller: catC,
-          decoration: const InputDecoration(
-            labelText: 'Kategori (misal Makan)',
-          ),
+          decoration: const InputDecoration(labelText: tr('tx_f_cat')),
         ),
         const SizedBox(height: SsrSpace.md),
         TextField(
           controller: noteC,
-          decoration: const InputDecoration(labelText: 'Catatan'),
+          decoration: const InputDecoration(labelText: tr('tx_f_note')),
         ),
       ],
     );
@@ -712,7 +723,7 @@ class _TxDropdowns extends StatelessWidget {
         const SizedBox(height: SsrSpace.md),
         DropdownButtonFormField<String>(
           initialValue: walletId,
-          decoration: const InputDecoration(labelText: 'Dompet'),
+          decoration: const InputDecoration(labelText: tr('tx_f_wallet')),
           items: [for (final w in wallets) _walletItem(w, theme)],
           onChanged: onWalletChanged,
         ),
@@ -720,7 +731,7 @@ class _TxDropdowns extends StatelessWidget {
           const SizedBox(height: SsrSpace.md),
           DropdownButtonFormField<String>(
             initialValue: toWalletId,
-            decoration: const InputDecoration(labelText: 'Dompet tujuan'),
+            decoration: const InputDecoration(labelText: tr('tx_f_towallet')),
             items: [for (final w in wallets) _walletItem(w, theme)],
             onChanged: onToWalletChanged,
           ),
@@ -757,7 +768,7 @@ class _TxFormActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         PrimaryButton(
-          label: editing != null ? 'Simpan perubahan' : 'Simpan transaksi',
+          label: editing != null ? tr('tx_save_edit') : tr('tx_save_add'),
           onPressed: onSave,
           loading: saving,
         ),
@@ -772,7 +783,7 @@ class _TxFormActions extends StatelessWidget {
                 foregroundColor: SsrColors.danger,
                 side: const BorderSide(color: SsrColors.danger),
               ),
-              child: const Text('Hapus'),
+              child: Text(tr('tx_delete')),
             ),
           ),
         ],

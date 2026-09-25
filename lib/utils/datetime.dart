@@ -1,13 +1,11 @@
-const _shortMonths = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-];
+import 'package:ssr_space/utils/strings.dart';
 
 String dayLabel(String? ymd) {
   if (ymd == null || ymd.length < 10) return '-';
   final m = int.tryParse(ymd.substring(5, 7)) ?? 0;
   if (m < 1 || m > 12) return ymd;
-  return '${ymd.substring(8, 10)} ${_shortMonths[m - 1]} ${ymd.substring(0, 4)}';
+  final key = 's${m.toString().padLeft(2, '0')}';
+  return '${ymd.substring(8, 10)} ${tr(key)} ${ymd.substring(0, 4)}';
 }
 
 String txTime(String? iso) {

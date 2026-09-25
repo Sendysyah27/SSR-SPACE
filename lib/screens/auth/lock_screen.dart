@@ -6,6 +6,7 @@ import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/shell/main_shell.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/utils/strings.dart';
 
 class LockScreen extends StatefulWidget {
   final SessionService session;
@@ -19,14 +20,11 @@ class _LockScreenState extends State<LockScreen> {
   String? err;
   Timer? _ticker;
 
-  static const _lockoutMsg =
-      'Terlalu banyak salah. Tunggu 60 detik lalu coba lagi.';
-
   @override
   void initState() {
     super.initState();
     if (widget.session.isLockedOut) {
-      err = _lockoutMsg;
+      err = tr('lk_lockout');
       _startTicker();
     }
   }
@@ -60,7 +58,7 @@ class _LockScreenState extends State<LockScreen> {
       return;
     }
     setState(() {
-      err = widget.session.isLockedOut ? _lockoutMsg : 'PIN salah. Coba lagi.';
+      err = widget.session.isLockedOut ? tr('lk_lockout') : tr('lk_wrong');
     });
     if (widget.session.isLockedOut) _startTicker();
   }
@@ -90,10 +88,13 @@ class _LockScreenState extends State<LockScreen> {
                   ),
                 ),
                 const SizedBox(height: SsrSpace.xl),
-                Text('Terkunci', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  tr('lk_title'),
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: SsrSpace.xs),
                 Text(
-                  'Masukkan PIN untuk buka sesi',
+                  tr('lk_sub'),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium
                       ?.copyWith(color: SsrColors.secondary),
@@ -106,7 +107,7 @@ class _LockScreenState extends State<LockScreen> {
                   autofocus: true,
                 ),
                 const SizedBox(height: SsrSpace.xl),
-                PrimaryButton(label: 'Buka', onPressed: _verify),
+                PrimaryButton(label: tr('lk_open'), onPressed: _verify),
               ],
             ),
           ),
