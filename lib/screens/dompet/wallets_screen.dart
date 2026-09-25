@@ -7,6 +7,7 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
+import 'package:ssr_space/screens/dompet/wallet_detail_screen.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
@@ -359,6 +360,16 @@ class _WalletListCard extends StatelessWidget {
               type: items[i].type,
               typeLabel: typeLabelOf(items[i].type),
               balanceText: balanceTextOf(items[i].id),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => WalletDetailScreen(
+                    wallet: items[i],
+                    balanceText: balanceTextOf(items[i].id),
+                    typeLabel: typeLabelOf(items[i].type),
+                  ),
+                ),
+              ),
             ),
           ],
         ],

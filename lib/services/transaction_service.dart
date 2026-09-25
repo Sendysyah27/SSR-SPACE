@@ -91,6 +91,25 @@ class TransactionService {
         .toList();
   }
 
+  /// Semua transaksi yang menyentuh satu dompet (sumber atau tujuan
+  /// transfer), terbaru dulu. Dasar layar riwayat per dompet.
+  Future<List<SaasTransaction>> listByWallet(
+    String orgId,
+    String walletId,
+  ) async {
+    final rows = await SupabaseConfig.client
+        .from('transactions')
+        .select()
+        .eq('org_id', orgId)
+        .or('wallet_id.eq.$walletId,to_wallet_id.eq.$walletId')
+        .order('date', ascending: false)
+        .order('created_at', ascending: false)
+        .limit(200);
+    return List<Map<String, dynamic>>.from(rows)
+        .map(SaasTransaction.fromMap)
+        .toList();
+  }
+
   Future<String> mintCode(String orgId) async {
     final res = await SupabaseConfig.client.rpc(
       'mint_tx_code',

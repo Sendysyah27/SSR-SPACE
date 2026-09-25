@@ -11,6 +11,7 @@ class WalletRow extends StatelessWidget {
   final String type;
   final String typeLabel;
   final String balanceText;
+  final VoidCallback? onTap;
 
   const WalletRow({
     super.key,
@@ -18,6 +19,7 @@ class WalletRow extends StatelessWidget {
     required this.type,
     required this.typeLabel,
     required this.balanceText,
+    this.onTap,
   });
 
   IconData get _typeIcon {
@@ -33,7 +35,7 @@ class WalletRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
       child: Row(
         children: [
@@ -69,6 +71,13 @@ class WalletRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+    final tap = onTap;
+    if (tap == null) return row;
+    return InkWell(
+      onTap: tap,
+      borderRadius: BorderRadius.circular(SsrRadius.tile),
+      child: row,
     );
   }
 }
