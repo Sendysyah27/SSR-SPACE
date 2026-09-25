@@ -88,53 +88,75 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: SsrSpace.xxl),
             child: !failed
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedOpacity(
-                        opacity: _visible ? 1 : 0,
-                        duration: SsrMotion.base,
-                        curve: SsrMotion.curve,
-                        child: Column(
-                          children: [
-                            Text(
-                              'SSR SPACE',
-                              style: Theme.of(context).textTheme.displaySmall,
-                            ),
-                            const SizedBox(height: SsrSpace.sm),
-                            Text(
-                              'Simple. Secure. Reliable.\nYour Finance Space.',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: SsrSpace.xxl),
-                      const LoadingView(label: 'Menyiapkan buku kas...'),
-                    ],
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.cloud_off_outlined,
-                        size: 40,
-                        color: SsrColors.secondary,
-                      ),
-                      const SizedBox(height: SsrSpace.md),
-                      Text(
-                        'Gagal menyiapkan buku kas. Periksa koneksi lalu coba lagi.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: SsrSpace.lg),
-                      PrimaryButton(label: 'Coba lagi', onPressed: _boot),
-                    ],
-                  ),
+                ? _SplashLoading(visible: _visible)
+                : _SplashError(onRetry: _boot),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Bagian splash saat boot: wordmark + tagline (fade-in) + indikator muat.
+class _SplashLoading extends StatelessWidget {
+  final bool visible;
+  const _SplashLoading({required this.visible});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          duration: SsrMotion.base,
+          curve: SsrMotion.curve,
+          child: Column(
+            children: [
+              Text(
+                'SSR SPACE',
+                style: Theme.of(context).textTheme.displaySmall,
+              ),
+              const SizedBox(height: SsrSpace.sm),
+              Text(
+                'Simple. Secure. Reliable.\nYour Finance Space.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: SsrSpace.xxl),
+        const LoadingView(label: 'Menyiapkan buku kas...'),
+      ],
+    );
+  }
+}
+
+/// Bagian splash saat gagal: ikon offline + pesan + tombol coba lagi.
+class _SplashError extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _SplashError({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.cloud_off_outlined,
+          size: 40,
+          color: SsrColors.secondary,
+        ),
+        const SizedBox(height: SsrSpace.md),
+        Text(
+          'Gagal menyiapkan buku kas. Periksa koneksi lalu coba lagi.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: SsrSpace.lg),
+        PrimaryButton(label: 'Coba lagi', onPressed: onRetry),
+      ],
     );
   }
 }
