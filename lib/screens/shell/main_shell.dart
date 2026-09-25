@@ -98,6 +98,34 @@ class _MainBottomBar extends StatelessWidget {
 
   const _MainBottomBar({required this.index, required this.onSelect});
 
+  static const List<NavigationDestination> _destinations = [
+    NavigationDestination(
+      icon: Icon(Icons.home_outlined),
+      selectedIcon: Icon(Icons.home),
+      label: 'Beranda',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.receipt_long_outlined),
+      selectedIcon: Icon(Icons.receipt_long),
+      label: 'Transaksi',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.savings_outlined),
+      selectedIcon: Icon(Icons.savings),
+      label: 'Budget',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.bar_chart_outlined),
+      selectedIcon: Icon(Icons.bar_chart),
+      label: 'Laporan',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.grid_view_outlined),
+      selectedIcon: Icon(Icons.grid_view),
+      label: 'Lainnya',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return NavigationBarTheme(
@@ -122,33 +150,7 @@ class _MainBottomBar extends StatelessWidget {
             color: selected ? SsrColors.accent : SsrColors.secondary,
           );
         }),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Beranda',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Transaksi',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.savings_outlined),
-            selectedIcon: Icon(Icons.savings),
-            label: 'Budget',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Laporan',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.grid_view_outlined),
-            selectedIcon: Icon(Icons.grid_view),
-            label: 'Lainnya',
-          ),
-        ],
+        destinations: _destinations,
       ),
     );
   }
