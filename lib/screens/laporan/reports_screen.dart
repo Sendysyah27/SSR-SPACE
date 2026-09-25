@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/services/month.dart';
+import 'package:ssr_space/services/report_pdf.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -81,31 +81,14 @@ class ReportsScreenState extends State<ReportsScreen> {
   }
 
   Future<void> _exportPdf() async {
-    final doc = pw.Document();
-    doc.addPage(
-      pw.Page(
-        build: (_) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              'Laporan SSR SPACE',
-              style: const pw.TextStyle(
-                fontSize: 20,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 12),
-            for (final t in items)
-              pw.Text(
-                '${t.date ?? '-'} | ${t.type} | ${t.amount} | ${t.category ?? '-'} | ${t.note ?? ''}',
-              ),
-          ],
-        ),
-      ),
+    final bytes = await buildReportPdf(
+      orgName: await activeOrgName(),
+      monthLabel: monthLabel(month),
+      items: items,
     );
     final dir = await getTemporaryDirectory();
     final f = File('${dir.path}/laporan-ssr-space.pdf');
-    await f.writeAsBytes(await doc.save());
+    await f.writeAsBytes(bytes);
     await Share.shareXFiles([XFile(f.path)], text: 'Laporan SSR SPACE (PDF)');
   }
 
