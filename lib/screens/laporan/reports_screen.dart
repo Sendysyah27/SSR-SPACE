@@ -123,19 +123,18 @@ class ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
+  void _onMonthChanged(String m) {
+    setState(() => month = m);
+    _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Laporan')),
-        body: const LoadingView(label: 'Menyusun laporan...'),
-      );
+      return const _ReportsScaffold(LoadingView(label: 'Menyusun laporan...'));
     }
     if (err != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Laporan')),
-        body: ErrorView(message: err!, onRetry: _load),
-      );
+      return _ReportsScaffold(ErrorView(message: err!, onRetry: _load));
     }
     final totalIn = items
         .where((t) => t.type == 'in')
@@ -144,18 +143,11 @@ class ReportsScreenState extends State<ReportsScreen> {
         .where((t) => t.type == 'out')
         .fold<double>(0, (s, t) => s + t.amount);
     final net = totalIn - totalOut;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Laporan')),
-      body: ListView(
+    return _ReportsScaffold(
+      ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
-          MonthPicker(
-            month: month,
-            onChanged: (m) {
-              setState(() => month = m);
-              _load();
-            },
-          ),
+          MonthPicker(month: month, onChanged: _onMonthChanged),
           const SizedBox(height: SsrSpace.md),
           _MonthlySummary(
             monthLabel: monthLabel(month),
@@ -176,26 +168,56 @@ class ReportsScreenState extends State<ReportsScreen> {
               actionLabel: 'Muat ulang',
               onAction: _load,
             )
-          else ...[
-            Text('Transaksi', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: SsrSpace.xs),
-            SectionCard(
-              padding: const EdgeInsets.symmetric(
-                horizontal: SsrSpace.sm,
-                vertical: SsrSpace.xs,
-              ),
-              child: Column(
-                children: [
-                  for (var i = 0; i < items.length; i++) ...[
-                    if (i > 0) const Divider(height: 1),
-                    TxRow(tx: items[i]),
-                  ],
-                ],
-              ),
-            ),
-          ],
+          else
+            _TxListCard(items: items),
         ],
       ),
+    );
+  }
+}
+
+/// Kerangka layar Laporan: AppBar "Laporan" + body (state / daftar).
+class _ReportsScaffold extends StatelessWidget {
+  final Widget body;
+  const _ReportsScaffold(this.body);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Laporan')),
+      body: body,
+    );
+  }
+}
+
+/// Kartu daftar transaksi bulan terpilih: judul + baris TxRow berdivider.
+class _TxListCard extends StatelessWidget {
+  final List<SaasTransaction> items;
+
+  const _TxListCard({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Transaksi', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: SsrSpace.xs),
+        SectionCard(
+          padding: const EdgeInsets.symmetric(
+            horizontal: SsrSpace.sm,
+            vertical: SsrSpace.xs,
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                if (i > 0) const Divider(height: 1),
+                TxRow(tx: items[i]),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
