@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/money.dart';
 import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -27,16 +27,13 @@ class _BillingScreenState extends State<BillingScreen> {
     _load();
   }
 
-  Future<String> _orgId() async =>
-      (await SharedPreferences.getInstance()).getString('active_org_id') ?? '';
-
   Future<void> _load() async {
     setState(() {
       loading = true;
       err = null;
     });
     try {
-      final orgId = await _orgId();
+      final orgId = await activeOrgId();
       if (orgId.isEmpty) {
         setState(() => loading = false);
         return;
@@ -63,7 +60,7 @@ class _BillingScreenState extends State<BillingScreen> {
       msg = null;
     });
     try {
-      await requestUpgrade(await _orgId(), 'pro', proPrice);
+      await requestUpgrade(await activeOrgId(), 'pro', proPrice);
       if (!mounted) return;
       setState(() {
         msg = 'Permintaan Pro tercatat. Aktivasi menyusul setelah pembayaran terkonfirmasi.';
@@ -74,21 +71,6 @@ class _BillingScreenState extends State<BillingScreen> {
     } finally {
       if (mounted) setState(() => upgrading = false);
     }
-  }
-
-  Widget _checkItem(BuildContext context, String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: SsrSpace.sm),
-      child: Row(
-        children: [
-          const Icon(Icons.check, size: 18, color: SsrColors.accent),
-          const SizedBox(width: SsrSpace.sm),
-          Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -116,93 +98,128 @@ class _BillingScreenState extends State<BillingScreen> {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: SsrSpace.lg),
-          SectionCard(
+          _PlanCard(
             margin: const EdgeInsets.only(bottom: SsrSpace.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Gratis',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    if (!isPro)
-                      const StatusChip(
-                        label: 'Paket aktif',
-                        tone: StatusTone.accent,
-                      ),
-                  ],
-                ),
-                const SizedBox(height: SsrSpace.xs),
-                Text('Rp0', style: SsrTheme.money.copyWith(fontSize: 18)),
-                const SizedBox(height: SsrSpace.md),
-                _checkItem(context, 'Catat transaksi'),
-                _checkItem(context, '1 workspace'),
-              ],
-            ),
+            title: 'Gratis',
+            statusChip: !isPro
+                ? const StatusChip(
+                    label: 'Paket aktif',
+                    tone: StatusTone.accent,
+                  )
+                : null,
+            price: Text('Rp0', style: SsrTheme.money.copyWith(fontSize: 18)),
+            features: const ['Catat transaksi', '1 workspace'],
           ),
-          SectionCard(
+          _PlanCard(
             borderColor: SsrColors.accent,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Pro',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    if (isPro)
-                      const StatusChip(
-                        label: 'Paket aktif',
-                        tone: StatusTone.accent,
-                      )
-                    else
-                      const StatusChip(
-                        label: 'Upgrade',
-                        tone: StatusTone.neutral,
-                      ),
-                  ],
-                ),
-                const SizedBox(height: SsrSpace.xs),
-                Text(
-                  '${rp(proPrice)}/bulan',
-                  style: SsrTheme.money.copyWith(
-                    fontSize: 18,
-                    color: SsrColors.accent,
-                  ),
-                ),
-                const SizedBox(height: SsrSpace.md),
-                _checkItem(context, 'Workspace banyak'),
-                _checkItem(context, 'Export laporan'),
-                _checkItem(context, 'Tanpa batas'),
-                if (msg != null) ...[
-                  const SizedBox(height: SsrSpace.md),
-                  StatusChip(
-                    label: msg!.startsWith('Permintaan')
-                        ? 'Permintaan terkirim'
-                        : 'Gagal',
-                    tone: msg!.startsWith('Permintaan')
-                        ? StatusTone.accent
-                        : StatusTone.danger,
-                  ),
-                  const SizedBox(height: SsrSpace.sm),
-                  Text(msg!, style: Theme.of(context).textTheme.bodySmall),
-                ],
-                const SizedBox(height: SsrSpace.lg),
-                PrimaryButton(
-                  label: 'Naik ke Pro',
-                  loading: upgrading,
-                  onPressed: isPro ? null : _upgrade,
-                ),
-              ],
+            title: 'Pro',
+            statusChip: isPro
+                ? const StatusChip(
+                    label: 'Paket aktif',
+                    tone: StatusTone.accent,
+                  )
+                : const StatusChip(label: 'Upgrade', tone: StatusTone.neutral),
+            price: Text(
+              '${rp(proPrice)}/bulan',
+              style: SsrTheme.money.copyWith(
+                fontSize: 18,
+                color: SsrColors.accent,
+              ),
             ),
+            features: const [
+              'Workspace banyak',
+              'Export laporan',
+              'Tanpa batas',
+            ],
+            extra: [
+              if (msg != null) ...[
+                const SizedBox(height: SsrSpace.md),
+                StatusChip(
+                  label: msg!.startsWith('Permintaan')
+                      ? 'Permintaan terkirim'
+                      : 'Gagal',
+                  tone: msg!.startsWith('Permintaan')
+                      ? StatusTone.accent
+                      : StatusTone.danger,
+                ),
+                const SizedBox(height: SsrSpace.sm),
+                Text(msg!, style: Theme.of(context).textTheme.bodySmall),
+              ],
+              const SizedBox(height: SsrSpace.lg),
+              PrimaryButton(
+                label: 'Naik ke Pro',
+                loading: upgrading,
+                onPressed: isPro ? null : _upgrade,
+              ),
+            ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu paket billing (Gratis / Pro): judul + chip status, harga,
+/// daftar fitur bertanda centang, dan blok opsional (pesan + tombol).
+class _PlanCard extends StatelessWidget {
+  final EdgeInsetsGeometry margin;
+  final Color? borderColor;
+  final String title;
+  final Widget? statusChip;
+  final Widget price;
+  final List<String> features;
+  final List<Widget> extra;
+
+  const _PlanCard({
+    this.margin = EdgeInsets.zero,
+    this.borderColor,
+    required this.title,
+    required this.statusChip,
+    required this.price,
+    required this.features,
+    this.extra = const [],
+  });
+
+  Widget _checkItem(BuildContext context, String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: SsrSpace.sm),
+      child: Row(
+        children: [
+          const Icon(Icons.check, size: 18, color: SsrColors.accent),
+          const SizedBox(width: SsrSpace.sm),
+          Expanded(
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chip = statusChip;
+    return SectionCard(
+      margin: margin,
+      borderColor: borderColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              if (chip != null) chip,
+            ],
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          price,
+          const SizedBox(height: SsrSpace.md),
+          for (final f in features) _checkItem(context, f),
+          ...extra,
         ],
       ),
     );

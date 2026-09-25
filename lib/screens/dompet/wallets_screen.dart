@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
+import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
-import 'package:ssr_space/widgets/status_chip.dart';
+import 'package:ssr_space/widgets/wallet_row.dart';
 
 class WalletsScreen extends StatefulWidget {
   final SessionService? session;
@@ -44,16 +45,13 @@ class _WalletsScreenState extends State<WalletsScreen> {
     super.dispose();
   }
 
-  Future<String> _orgId() async =>
-      (await SharedPreferences.getInstance()).getString('active_org_id') ?? '';
-
   Future<void> _load() async {
     setState(() {
       loading = true;
       err = null;
     });
     try {
-      final orgId = await _orgId();
+      final orgId = await activeOrgId();
       if (orgId.isEmpty) {
         setState(() {
           noOrg = true;
@@ -135,7 +133,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
       saving = true;
     });
     try {
-      final orgId = await _orgId();
+      final orgId = await activeOrgId();
       await WalletService().create(orgId, name, type);
       nameC.clear();
       await _load();
@@ -190,19 +188,10 @@ class _WalletsScreenState extends State<WalletsScreen> {
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
           if (total != null)
-            SectionCard(
+            LabeledSectionCard(
               margin: const EdgeInsets.only(bottom: SsrSpace.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total aset',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: SsrSpace.xs),
-                  Text(amt(total), style: SsrTheme.moneyLarge),
-                ],
-              ),
+              label: 'Total aset',
+              children: [Text(amt(total), style: SsrTheme.moneyLarge)],
             ),
           if (items.isEmpty)
             EmptyView(
@@ -213,110 +202,122 @@ class _WalletsScreenState extends State<WalletsScreen> {
               onAction: _focusForm,
             )
           else
-            SectionCard(
-              margin: const EdgeInsets.only(bottom: SsrSpace.md),
-              padding: const EdgeInsets.symmetric(
-                horizontal: SsrSpace.md,
-                vertical: SsrSpace.xs,
-              ),
-              child: Column(
-                children: [
-                  for (var i = 0; i < items.length; i++) ...[
-                    if (i > 0) const Divider(height: 1),
-                    _walletRow(items[i]),
-                  ],
-                ],
-              ),
+            _WalletListCard(
+              items: items,
+              typeLabelOf: _typeLabel,
+              balanceTextOf: _balanceLabel,
             ),
-          SectionCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Dompet baru',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: SsrSpace.md),
-                TextField(
-                  controller: nameC,
-                  focusNode: nameFocus,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama dompet (Kas, Dana, Bank)',
-                  ),
-                ),
-                const SizedBox(height: SsrSpace.md),
-                DropdownButtonFormField<String>(
-                  initialValue: type,
-                  decoration: const InputDecoration(labelText: 'Jenis'),
-                  items: const [
-                    DropdownMenuItem(value: 'cash', child: Text('Tunai')),
-                    DropdownMenuItem(value: 'ewallet', child: Text('E-wallet')),
-                    DropdownMenuItem(value: 'bank', child: Text('Bank')),
-                  ],
-                  onChanged: (v) => setState(() => type = v ?? 'cash'),
-                ),
-                if (formErr != null) ...[
-                  const SizedBox(height: SsrSpace.sm),
-                  Text(
-                    formErr!,
-                    style: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(color: SsrColors.danger),
-                  ),
-                ],
-                const SizedBox(height: SsrSpace.lg),
-                PrimaryButton(
-                  label: 'Simpan dompet',
-                  loading: saving,
-                  onPressed: _save,
-                ),
-              ],
-            ),
+          _NewWalletForm(
+            nameC: nameC,
+            nameFocus: nameFocus,
+            type: type,
+            formErr: formErr,
+            saving: saving,
+            onTypeChanged: (v) => setState(() => type = v ?? 'cash'),
+            onSave: _save,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _walletRow(Wallet w) {
-    final balance = _balanceLabel(w.id);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
-      child: Row(
+/// Kartu form "Dompet baru": nama + jenis + tombol simpan.
+class _NewWalletForm extends StatelessWidget {
+  final TextEditingController nameC;
+  final FocusNode nameFocus;
+  final String type;
+  final String? formErr;
+  final bool saving;
+  final ValueChanged<String?> onTypeChanged;
+  final VoidCallback onSave;
+
+  const _NewWalletForm({
+    required this.nameC,
+    required this.nameFocus,
+    required this.type,
+    required this.formErr,
+    required this.saving,
+    required this.onTypeChanged,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: SsrColors.accentSoft,
-              borderRadius: BorderRadius.circular(SsrRadius.tile),
-            ),
-            child: const Icon(
-              Icons.account_balance_wallet_outlined,
-              color: SsrColors.accent,
-              size: 22,
+          Text('Dompet baru', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: SsrSpace.md),
+          TextField(
+            controller: nameC,
+            focusNode: nameFocus,
+            decoration: const InputDecoration(
+              labelText: 'Nama dompet (Kas, Dana, Bank)',
             ),
           ),
-          const SizedBox(width: SsrSpace.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(w.name, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 2),
-                StatusChip(label: _typeLabel(w.type)),
-              ],
-            ),
+          const SizedBox(height: SsrSpace.md),
+          DropdownButtonFormField<String>(
+            initialValue: type,
+            decoration: const InputDecoration(labelText: 'Jenis'),
+            items: const [
+              DropdownMenuItem(value: 'cash', child: Text('Tunai')),
+              DropdownMenuItem(value: 'ewallet', child: Text('E-wallet')),
+              DropdownMenuItem(value: 'bank', child: Text('Bank')),
+            ],
+            onChanged: onTypeChanged,
           ),
-          const SizedBox(width: SsrSpace.sm),
-          Flexible(
-            child: Text(
-              balance,
-              textAlign: TextAlign.end,
-              style: balance == 'Belum termuat'
-                  ? Theme.of(context).textTheme.bodySmall
-                  : SsrTheme.money.copyWith(fontSize: 14),
+          if (formErr != null) ...[
+            const SizedBox(height: SsrSpace.sm),
+            Text(
+              formErr!,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: SsrColors.danger),
             ),
+          ],
+          const SizedBox(height: SsrSpace.lg),
+          PrimaryButton(
+            label: 'Simpan dompet',
+            loading: saving,
+            onPressed: onSave,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu daftar dompet: satu WalletRow per dompet, dipisah Divider.
+class _WalletListCard extends StatelessWidget {
+  final List<Wallet> items;
+  final String Function(String type) typeLabelOf;
+  final String Function(String walletId) balanceTextOf;
+
+  const _WalletListCard({
+    required this.items,
+    required this.typeLabelOf,
+    required this.balanceTextOf,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      padding: const EdgeInsets.symmetric(
+        horizontal: SsrSpace.md,
+        vertical: SsrSpace.xs,
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0) const Divider(height: 1),
+            WalletRow(
+              name: items[i].name,
+              typeLabel: typeLabelOf(items[i].type),
+              balanceText: balanceTextOf(items[i].id),
+            ),
+          ],
         ],
       ),
     );

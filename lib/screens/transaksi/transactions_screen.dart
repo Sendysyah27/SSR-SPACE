@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -14,6 +14,7 @@ import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
+import 'package:ssr_space/widgets/tx_type_selector.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -50,16 +51,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     _load();
   }
 
-  Future<String> _orgId() async =>
-      (await SharedPreferences.getInstance()).getString('active_org_id') ?? '';
-
   Future<void> _load() async {
     setState(() {
       loading = true;
       err = null;
     });
     try {
-      final orgId = await _orgId();
+      final orgId = await activeOrgId();
       if (orgId.isEmpty) {
         setState(() {
           noOrg = true;
@@ -164,7 +162,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       formErr = null;
     });
     try {
-      final orgId = await _orgId();
+      final orgId = await activeOrgId();
       final cat = catC.text.trim().isEmpty ? null : catC.text.trim();
       final note = noteC.text.trim();
       final svc = TransactionService();
@@ -255,7 +253,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
     if (ok != true || !mounted || editing == null) return;
     try {
-      final orgId = await _orgId();
+      final orgId = await activeOrgId();
       await TransactionService().delete(editing!.id, orgId);
       if (!mounted) return;
       _cancelEdit();
@@ -267,22 +265,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       debugPrint('delete tx: $e');
       setState(() => formErr = _txError(e, 'menghapus'));
     }
-  }
-
-  DropdownMenuItem<String> _walletItem(Wallet w, ThemeData theme) {
-    final bal = _balanceOf(w.id);
-    return DropdownMenuItem(
-      value: w.id,
-      child: Text(
-        bal == null ? w.name : '${w.name} · ${amt(bal)}',
-        style: bal == null
-            ? null
-            : theme.textTheme.bodyMedium?.copyWith(
-                color: SsrColors.secondary,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-      ),
-    );
   }
 
   void _scrollToForm() {
@@ -298,7 +280,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     if (noOrg) {
       return Scaffold(
         appBar: AppBar(title: const Text('Transaksi')),
@@ -341,183 +322,255 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             },
           ),
           const SizedBox(height: SsrSpace.md),
-          SectionCard(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (editing != null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(SsrSpace.md),
-                    decoration: BoxDecoration(
-                      color: SsrColors.accentSoft,
-                      borderRadius: BorderRadius.circular(SsrRadius.tile),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Mengubah ${editing!.code ?? 'transaksi'}',
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _cancelEdit,
-                          child: const Text('Batalkan edit'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: SsrSpace.md),
-                ],
-                Text(
-                  editing != null ? 'Mengubah transaksi' : 'Catat transaksi',
-                  style: theme.textTheme.titleMedium,
-                ),
-                const SizedBox(height: SsrSpace.md),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'in', label: Text('Masuk')),
-                    ButtonSegment(value: 'out', label: Text('Keluar')),
-                    ButtonSegment(value: 'transfer', label: Text('Transfer')),
-                  ],
-                  selected: {type},
-                  onSelectionChanged: (v) => setState(() => type = v.first),
-                  showSelectedIcon: false,
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return SsrColors.accent;
-                      }
-                      return Colors.white;
-                    }),
-                    foregroundColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return Colors.white;
-                      }
-                      return SsrColors.ink;
-                    }),
-                    side: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return const BorderSide(color: SsrColors.accent);
-                      }
-                      return BorderSide(color: theme.colorScheme.outline);
-                    }),
-                    textStyle: WidgetStateProperty.all(
-                      const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: SsrSpace.lg),
-                TextField(
-                  controller: amountC,
-                  keyboardType: TextInputType.number,
-                  style: SsrTheme.moneyLarge,
-                  decoration: const InputDecoration(
-                    labelText: 'Nominal',
-                    prefixText: 'Rp ',
-                    prefixStyle: SsrTheme.moneyLarge,
-                  ),
-                ),
-                const SizedBox(height: SsrSpace.md),
-                TextField(
-                  controller: catC,
-                  decoration: const InputDecoration(
-                    labelText: 'Kategori (misal Makan)',
-                  ),
-                ),
-                const SizedBox(height: SsrSpace.md),
-                TextField(
-                  controller: noteC,
-                  decoration: const InputDecoration(labelText: 'Catatan'),
-                ),
-                const SizedBox(height: SsrSpace.md),
-                DropdownButtonFormField<String>(
-                  initialValue: walletId,
-                  decoration: const InputDecoration(labelText: 'Dompet'),
-                  items: [for (final w in wallets) _walletItem(w, theme)],
-                  onChanged: (v) => setState(() => walletId = v),
-                ),
-                if (type == 'transfer') ...[
-                  const SizedBox(height: SsrSpace.md),
-                  DropdownButtonFormField<String>(
-                    initialValue: toWalletId,
-                    decoration: const InputDecoration(
-                      labelText: 'Dompet tujuan',
-                    ),
-                    items: [for (final w in wallets) _walletItem(w, theme)],
-                    onChanged: (v) => setState(() => toWalletId = v),
-                  ),
-                ],
-                if (formErr != null) ...[
-                  const SizedBox(height: SsrSpace.md),
-                  Text(
-                    formErr!,
-                    style: const TextStyle(
-                      color: SsrColors.danger,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: SsrSpace.lg),
-                PrimaryButton(
-                  label: editing != null
-                      ? 'Simpan perubahan'
-                      : 'Simpan transaksi',
-                  onPressed: _save,
-                  loading: saving,
-                ),
-                if (editing != null) ...[
-                  const SizedBox(height: SsrSpace.sm),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: _confirmDelete,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: SsrColors.danger,
-                        side: const BorderSide(color: SsrColors.danger),
-                      ),
-                      child: const Text('Hapus'),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          _TxFormCard(
+            formKey: formKey,
+            editing: editing,
+            type: type,
+            amountC: amountC,
+            catC: catC,
+            noteC: noteC,
+            walletId: walletId,
+            toWalletId: toWalletId,
+            wallets: wallets,
+            balanceOf: _balanceOf,
+            formErr: formErr,
+            saving: saving,
+            onTypeChanged: (v) => setState(() => type = v),
+            onWalletChanged: (v) => setState(() => walletId = v),
+            onToWalletChanged: (v) => setState(() => toWalletId = v),
+            onCancelEdit: _cancelEdit,
+            onConfirmDelete: _confirmDelete,
+            onSave: _save,
           ),
           const SizedBox(height: SsrSpace.xl),
-          Text(
-            'Riwayat ${monthLabel(month).toLowerCase()}',
-            style: theme.textTheme.titleMedium,
+          _TxHistorySection(
+            month: month,
+            items: items,
+            selectedId: editing?.id,
+            onTap: _startEdit,
+            onEmptyAction: _scrollToForm,
           ),
-          const SizedBox(height: SsrSpace.sm),
-          if (items.isEmpty)
-            SizedBox(
-              height: 260,
-              child: EmptyView(
-                icon: Icons.receipt_long_outlined,
-                title: 'Belum ada transaksi bulan ini',
-                subtitle:
-                    'Catat pemasukan atau pengeluaran lewat form di atas.',
-                actionLabel: 'Isi form catat',
-                onAction: _scrollToForm,
-              ),
-            )
-          else
-            for (final t in items) ...[
-              TxRow(
-                tx: t,
-                selected: editing?.id == t.id,
-                onTap: () => _startEdit(t),
-              ),
-              const Divider(height: 1),
-            ],
         ],
       ),
+    );
+  }
+}
+
+/// Kartu form "Catat transaksi": banner edit, pil jenis, field nominal /
+/// kategori / catatan, dropdown dompet (transfer punya dompet tujuan),
+/// pesan galat, dan tombol simpan (+ hapus saat mode edit).
+class _TxFormCard extends StatelessWidget {
+  final GlobalKey formKey;
+  final SaasTransaction? editing;
+  final String type;
+  final TextEditingController amountC;
+  final TextEditingController catC;
+  final TextEditingController noteC;
+  final String? walletId;
+  final String? toWalletId;
+  final List<Wallet> wallets;
+  final double? Function(String? id) balanceOf;
+  final String? formErr;
+  final bool saving;
+  final ValueChanged<String> onTypeChanged;
+  final ValueChanged<String?> onWalletChanged;
+  final ValueChanged<String?> onToWalletChanged;
+  final VoidCallback onCancelEdit;
+  final VoidCallback onConfirmDelete;
+  final VoidCallback onSave;
+
+  const _TxFormCard({
+    required this.formKey,
+    required this.editing,
+    required this.type,
+    required this.amountC,
+    required this.catC,
+    required this.noteC,
+    required this.walletId,
+    required this.toWalletId,
+    required this.wallets,
+    required this.balanceOf,
+    required this.formErr,
+    required this.saving,
+    required this.onTypeChanged,
+    required this.onWalletChanged,
+    required this.onToWalletChanged,
+    required this.onCancelEdit,
+    required this.onConfirmDelete,
+    required this.onSave,
+  });
+
+  DropdownMenuItem<String> _walletItem(Wallet w, ThemeData theme) {
+    final bal = balanceOf(w.id);
+    return DropdownMenuItem(
+      value: w.id,
+      child: Text(
+        bal == null ? w.name : '${w.name} · ${amt(bal)}',
+        style: bal == null
+            ? null
+            : theme.textTheme.bodyMedium?.copyWith(
+                color: SsrColors.secondary,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SectionCard(
+      key: formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (editing != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(SsrSpace.md),
+              decoration: BoxDecoration(
+                color: SsrColors.accentSoft,
+                borderRadius: BorderRadius.circular(SsrRadius.tile),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Mengubah ${editing!.code ?? 'transaksi'}',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: onCancelEdit,
+                    child: const Text('Batalkan edit'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: SsrSpace.md),
+          ],
+          Text(
+            editing != null ? 'Mengubah transaksi' : 'Catat transaksi',
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: SsrSpace.md),
+          TxTypeSelector(value: type, onChanged: onTypeChanged),
+          const SizedBox(height: SsrSpace.lg),
+          TextField(
+            controller: amountC,
+            keyboardType: TextInputType.number,
+            style: SsrTheme.moneyLarge,
+            decoration: const InputDecoration(
+              labelText: 'Nominal',
+              prefixText: 'Rp ',
+              prefixStyle: SsrTheme.moneyLarge,
+            ),
+          ),
+          const SizedBox(height: SsrSpace.md),
+          TextField(
+            controller: catC,
+            decoration: const InputDecoration(
+              labelText: 'Kategori (misal Makan)',
+            ),
+          ),
+          const SizedBox(height: SsrSpace.md),
+          TextField(
+            controller: noteC,
+            decoration: const InputDecoration(labelText: 'Catatan'),
+          ),
+          const SizedBox(height: SsrSpace.md),
+          DropdownButtonFormField<String>(
+            initialValue: walletId,
+            decoration: const InputDecoration(labelText: 'Dompet'),
+            items: [for (final w in wallets) _walletItem(w, theme)],
+            onChanged: onWalletChanged,
+          ),
+          if (type == 'transfer') ...[
+            const SizedBox(height: SsrSpace.md),
+            DropdownButtonFormField<String>(
+              initialValue: toWalletId,
+              decoration: const InputDecoration(labelText: 'Dompet tujuan'),
+              items: [for (final w in wallets) _walletItem(w, theme)],
+              onChanged: onToWalletChanged,
+            ),
+          ],
+          if (formErr != null) ...[
+            const SizedBox(height: SsrSpace.md),
+            Text(
+              formErr!,
+              style: const TextStyle(color: SsrColors.danger, fontSize: 13),
+            ),
+          ],
+          const SizedBox(height: SsrSpace.lg),
+          PrimaryButton(
+            label: editing != null ? 'Simpan perubahan' : 'Simpan transaksi',
+            onPressed: onSave,
+            loading: saving,
+          ),
+          if (editing != null) ...[
+            const SizedBox(height: SsrSpace.sm),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton(
+                onPressed: onConfirmDelete,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: SsrColors.danger,
+                  side: const BorderSide(color: SsrColors.danger),
+                ),
+                child: const Text('Hapus'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Blok riwayat: judul bulan + daftar TxRow (atau EmptyView bila kosong).
+class _TxHistorySection extends StatelessWidget {
+  final String month;
+  final List<SaasTransaction> items;
+  final String? selectedId;
+  final ValueChanged<SaasTransaction> onTap;
+  final VoidCallback onEmptyAction;
+
+  const _TxHistorySection({
+    required this.month,
+    required this.items,
+    required this.selectedId,
+    required this.onTap,
+    required this.onEmptyAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Riwayat ${monthLabel(month).toLowerCase()}',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        if (items.isEmpty)
+          SizedBox(
+            height: 260,
+            child: EmptyView(
+              icon: Icons.receipt_long_outlined,
+              title: 'Belum ada transaksi bulan ini',
+              subtitle: 'Catat pemasukan atau pengeluaran lewat form di atas.',
+              actionLabel: 'Isi form catat',
+              onAction: onEmptyAction,
+            ),
+          )
+        else
+          for (final t in items) ...[
+            TxRow(tx: t, selected: selectedId == t.id, onTap: () => onTap(t)),
+            const Divider(height: 1),
+          ],
+      ],
     );
   }
 }

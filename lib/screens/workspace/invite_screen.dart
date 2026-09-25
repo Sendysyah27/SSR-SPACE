@@ -89,9 +89,7 @@ class _InviteScreenState extends State<InviteScreen> {
       final msg = err is InviteException
           ? err.message
           : 'Gagal membuat undangan. Coba lagi.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } finally {
       if (mounted) setState(() => creating = false);
     }
@@ -114,10 +112,8 @@ class _InviteScreenState extends State<InviteScreen> {
             const SizedBox(height: SsrSpace.md),
             SelectableText(
               token,
-              style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                    fontFamily: 'monospace',
-                    letterSpacing: 1.2,
-                  ),
+              style: Theme.of(ctx).textTheme.titleMedium
+                  ?.copyWith(fontFamily: 'monospace', letterSpacing: 1.2),
             ),
           ],
         ),
@@ -126,18 +122,16 @@ class _InviteScreenState extends State<InviteScreen> {
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: token));
               if (ctx.mounted) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(content: Text('Kode disalin.')),
-                );
+                ScaffoldMessenger.of(
+                  ctx,
+                ).showSnackBar(const SnackBar(content: Text('Kode disalin.')));
               }
             },
             child: const Text('Salin'),
           ),
           TextButton(
             onPressed: () {
-              Share.share(
-                'Gabung workspace di SSR SPACE dengan kode: $token',
-              );
+              Share.share('Gabung workspace di SSR SPACE dengan kode: $token');
             },
             child: const Text('Bagikan'),
           ),
@@ -180,7 +174,113 @@ class _InviteScreenState extends State<InviteScreen> {
     }
   }
 
-  String _status(Map<String, dynamic> row) {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Undang anggota')),
+      body: loading
+          ? const LoadingView(label: 'Memuat undangan...')
+          : loadErr != null
+          ? ErrorView(message: loadErr!, onRetry: _load)
+          : orgId.isEmpty
+          ? EmptyView(
+              icon: Icons.person_add_alt_outlined,
+              title: 'Belum ada workspace.',
+              subtitle: 'Pilih atau buat workspace dulu untuk mengundang.',
+              actionLabel: 'Muat ulang',
+              onAction: _load,
+            )
+          : !isAdmin
+          ? EmptyView(
+              icon: Icons.lock_outline,
+              title: 'Hanya admin workspace yang bisa mengundang anggota.',
+              subtitle: 'Minta owner atau admin membuat kode undangan.',
+              actionLabel: 'Muat ulang',
+              onAction: _load,
+            )
+          : ListView(
+              padding: const EdgeInsets.all(SsrSpace.lg),
+              children: [
+                _InviteCreateCard(
+                  orgName: orgName,
+                  role: role,
+                  creating: creating,
+                  canCreate: orgId.isNotEmpty,
+                  onRoleChanged: (v) => setState(() => role = v ?? 'member'),
+                  onCreate: _create,
+                ),
+                const SizedBox(height: SsrSpace.lg),
+                _InviteListCard(invites: invites, onRevoke: _revoke),
+              ],
+            ),
+    );
+  }
+}
+
+/// Kartu "buat undangan": nama workspace, deskripsi, pilih peran, tombol.
+class _InviteCreateCard extends StatelessWidget {
+  final String orgName;
+  final String? role;
+  final bool creating;
+  final bool canCreate;
+  final ValueChanged<String?> onRoleChanged;
+  final VoidCallback onCreate;
+
+  const _InviteCreateCard({
+    required this.orgName,
+    required this.role,
+    required this.creating,
+    required this.canCreate,
+    required this.onRoleChanged,
+    required this.onCreate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            orgName.isEmpty ? 'Workspace aktif' : orgName,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: SsrSpace.sm),
+          Text(
+            'Bagikan kode agar anggota lain bisa masuk ke buku kas ini.',
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: SsrColors.secondary),
+          ),
+          const SizedBox(height: SsrSpace.md),
+          DropdownButtonFormField<String>(
+            initialValue: role,
+            decoration: const InputDecoration(labelText: 'Peran anggota'),
+            items: const [
+              DropdownMenuItem(value: 'member', child: Text('Anggota')),
+              DropdownMenuItem(value: 'admin', child: Text('Admin')),
+            ],
+            onChanged: onRoleChanged,
+          ),
+          const SizedBox(height: SsrSpace.lg),
+          PrimaryButton(
+            label: 'Buat undangan',
+            loading: creating,
+            onPressed: canCreate ? onCreate : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Daftar undangan aktif (atau pesan kosong): satu baris per kode.
+class _InviteListCard extends StatelessWidget {
+  final List<Map<String, dynamic>> invites;
+  final Future<void> Function(Map<String, dynamic> row) onRevoke;
+
+  const _InviteListCard({required this.invites, required this.onRevoke});
+
+  static String _status(Map<String, dynamic> row) {
     final expires = DateTime.parse(row['expires_at'].toString()).toLocal();
     return inviteStatusLabel(
       expiresAt: expires,
@@ -191,7 +291,7 @@ class _InviteScreenState extends State<InviteScreen> {
     );
   }
 
-  StatusTone _tone(String status) {
+  static StatusTone _tone(String status) {
     switch (status) {
       case 'Aktif':
         return StatusTone.accent;
@@ -202,118 +302,14 @@ class _InviteScreenState extends State<InviteScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Undang anggota')),
-      body: loading
-          ? const LoadingView(label: 'Memuat undangan...')
-          : loadErr != null
-              ? ErrorView(message: loadErr!, onRetry: _load)
-              : orgId.isEmpty
-                  ? EmptyView(
-                      icon: Icons.person_add_alt_outlined,
-                      title: 'Belum ada workspace.',
-                      subtitle: 'Pilih atau buat workspace dulu untuk mengundang.',
-                      actionLabel: 'Muat ulang',
-                      onAction: _load,
-                    )
-                  : !isAdmin
-                      ? EmptyView(
-                          icon: Icons.lock_outline,
-                          title:
-                              'Hanya admin workspace yang bisa mengundang anggota.',
-                          subtitle:
-                              'Minta owner atau admin membuat kode undangan.',
-                          actionLabel: 'Muat ulang',
-                          onAction: _load,
-                        )
-                      : ListView(
-                          padding: const EdgeInsets.all(SsrSpace.lg),
-                          children: [
-                            SectionCard(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    orgName.isEmpty ? 'Workspace aktif' : orgName,
-                                    style:
-                                        Theme.of(context).textTheme.titleMedium,
-                                  ),
-                                  const SizedBox(height: SsrSpace.sm),
-                                  Text(
-                                    'Bagikan kode agar anggota lain bisa masuk ke '
-                                    'buku kas ini.',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: SsrColors.secondary,
-                                        ),
-                                  ),
-                                  const SizedBox(height: SsrSpace.md),
-                                  DropdownButtonFormField<String>(
-                                    initialValue: role,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Peran anggota',
-                                    ),
-                                    items: const [
-                                      DropdownMenuItem(
-                                          value: 'member',
-                                          child: Text('Anggota')),
-                                      DropdownMenuItem(
-                                          value: 'admin', child: Text('Admin')),
-                                    ],
-                                    onChanged: (v) =>
-                                        setState(() => role = v ?? 'member'),
-                                  ),
-                                  const SizedBox(height: SsrSpace.lg),
-                                  PrimaryButton(
-                                    label: 'Buat undangan',
-                                    loading: creating,
-                                    onPressed: orgId.isEmpty ? null : _create,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: SsrSpace.lg),
-                            if (invites.isEmpty)
-                              SectionCard(
-                                child: Text(
-                                  'Belum ada undangan aktif. Buat kode di atas '
-                                  'untuk mengundang anggota.',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                              )
-                            else
-                              SectionCard(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: SsrSpace.md,
-                                  vertical: SsrSpace.xs,
-                                ),
-                                child: Column(
-                                  children: [
-                                    for (var i = 0; i < invites.length; i++) ...[
-                                      if (i > 0) const Divider(height: 1),
-                                      _inviteRow(invites[i]),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ),
-    );
-  }
-
-  Widget _inviteRow(Map<String, dynamic> row) {
+  Widget _inviteRow(BuildContext context, Map<String, dynamic> row) {
     final status = _status(row);
     final canRevoke = status == 'Aktif';
     final remaining =
         ((row['max_uses'] as num?)?.toInt() ?? 1) -
-            ((row['used_count'] as num?)?.toInt() ?? 0);
+        ((row['used_count'] as num?)?.toInt() ?? 0);
     final roleName = row['role'] == 'admin' ? 'Admin' : 'Anggota';
-    final createdAt =
-        DateTime.parse(row['created_at'].toString()).toLocal();
+    final createdAt = DateTime.parse(row['created_at'].toString()).toLocal();
     final createdLabel =
         '${createdAt.day.toString().padLeft(2, '0')}/'
         '${createdAt.month.toString().padLeft(2, '0')}';
@@ -342,9 +338,35 @@ class _InviteScreenState extends State<InviteScreen> {
             const SizedBox(width: SsrSpace.xs),
             IconButton(
               tooltip: 'Cabut undangan',
-              onPressed: () => _revoke(row),
+              onPressed: () => onRevoke(row),
               icon: const Icon(Icons.link_off, size: 20),
             ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (invites.isEmpty) {
+      return SectionCard(
+        child: Text(
+          'Belum ada undangan aktif. Buat kode di atas untuk mengundang anggota.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
+    }
+    return SectionCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: SsrSpace.md,
+        vertical: SsrSpace.xs,
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < invites.length; i++) ...[
+            if (i > 0) const Divider(height: 1),
+            _inviteRow(context, invites[i]),
           ],
         ],
       ),

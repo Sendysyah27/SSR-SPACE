@@ -4,9 +4,9 @@ import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -44,9 +44,7 @@ class ReportsScreenState extends State<ReportsScreen> {
       err = null;
     });
     try {
-      final orgId =
-          (await SharedPreferences.getInstance()).getString('active_org_id') ??
-          '';
+      final orgId = await activeOrgId();
       if (orgId.isEmpty) {
         setState(() => loading = false);
         return;
@@ -159,99 +157,15 @@ class ReportsScreenState extends State<ReportsScreen> {
             },
           ),
           const SizedBox(height: SsrSpace.md),
-          Row(
-            children: [
-              Expanded(
-                child: SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Masuk',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: SsrSpace.xs),
-                      Text(
-                        amt(totalIn),
-                        style: SsrTheme.money.copyWith(color: SsrColors.accent),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: SsrSpace.md),
-              Expanded(
-                child: SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Keluar',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: SsrSpace.xs),
-                      Text(
-                        amt(totalOut),
-                        style: SsrTheme.money.copyWith(color: SsrColors.danger),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: SsrSpace.md),
-          SectionCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Selisih ${monthLabel(month)}',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: SsrSpace.xs),
-                Text(
-                  amt(net),
-                  style: SsrTheme.moneyLarge.copyWith(
-                    color: net >= 0 ? SsrColors.accent : SsrColors.danger,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: SsrSpace.md),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: items.isEmpty || exporting
-                      ? null
-                      : () => _runExport(_exportCsv, 'CSV'),
-                  child: exporting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2.2),
-                        )
-                      : const Text('Unduh CSV'),
-                ),
-              ),
-              const SizedBox(width: SsrSpace.sm),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: items.isEmpty || exporting
-                      ? null
-                      : () => _runExport(_exportPdf, 'PDF'),
-                  child: exporting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2.2),
-                        )
-                      : const Text('Unduh PDF'),
-                ),
-              ),
-            ],
+          _MonthlySummary(
+            monthLabel: monthLabel(month),
+            totalIn: totalIn,
+            totalOut: totalOut,
+            net: net,
+            exporting: exporting,
+            hasItems: items.isNotEmpty,
+            onExportCsv: () => _runExport(_exportCsv, 'CSV'),
+            onExportPdf: () => _runExport(_exportPdf, 'PDF'),
           ),
           const SizedBox(height: SsrSpace.lg),
           if (items.isEmpty)
@@ -282,6 +196,110 @@ class ReportsScreenState extends State<ReportsScreen> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Ringkasan bulan berjalan: kartu Masuk + Keluar, kartu Selisih,
+/// dan tombol unduh CSV / PDF.
+class _MonthlySummary extends StatelessWidget {
+  final String monthLabel;
+  final double totalIn;
+  final double totalOut;
+  final double net;
+  final bool exporting;
+  final bool hasItems;
+  final VoidCallback onExportCsv;
+  final VoidCallback onExportPdf;
+
+  const _MonthlySummary({
+    required this.monthLabel,
+    required this.totalIn,
+    required this.totalOut,
+    required this.net,
+    required this.exporting,
+    required this.hasItems,
+    required this.onExportCsv,
+    required this.onExportPdf,
+  });
+
+  Widget _statCard(
+    BuildContext context,
+    String label,
+    double value,
+    Color color,
+  ) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: SsrSpace.xs),
+          Text(amt(value), style: SsrTheme.money.copyWith(color: color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _exportButton(String label, VoidCallback onTap) {
+    return Expanded(
+      child: OutlinedButton(
+        onPressed: hasItems && !exporting ? onTap : null,
+        child: exporting
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2.2),
+              )
+            : Text('Unduh $label'),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _statCard(context, 'Masuk', totalIn, SsrColors.accent),
+            ),
+            const SizedBox(width: SsrSpace.md),
+            Expanded(
+              child: _statCard(context, 'Keluar', totalOut, SsrColors.danger),
+            ),
+          ],
+        ),
+        const SizedBox(height: SsrSpace.md),
+        SectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Selisih $monthLabel',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: SsrSpace.xs),
+              Text(
+                amt(net),
+                style: SsrTheme.moneyLarge.copyWith(
+                  color: net >= 0 ? SsrColors.accent : SsrColors.danger,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: SsrSpace.md),
+        Row(
+          children: [
+            _exportButton('CSV', onExportCsv),
+            const SizedBox(width: SsrSpace.sm),
+            _exportButton('PDF', onExportPdf),
+          ],
+        ),
+      ],
     );
   }
 }

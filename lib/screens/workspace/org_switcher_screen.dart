@@ -145,48 +145,6 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
     });
   }
 
-  Widget _orgRow(Map<String, dynamic> m) {
-    final name = (m['organizations']?['name'] ?? '-').toString();
-    final isOwner = m['role'] == 'owner';
-    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
-    return InkWell(
-      onTap: () => _select(m),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: SsrColors.accentSoft,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  color: SsrColors.accent,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-            const SizedBox(width: SsrSpace.md),
-            Expanded(
-              child: Text(name, style: Theme.of(context).textTheme.titleMedium),
-            ),
-            const SizedBox(width: SsrSpace.sm),
-            StatusChip(
-              label: isOwner ? 'Pemilik' : 'Anggota',
-              tone: isOwner ? StatusTone.accent : StatusTone.neutral,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -223,68 +181,171 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
                       children: [
                         for (var i = 0; i < orgs.length; i++) ...[
                           if (i > 0) const Divider(height: 1),
-                          _orgRow(orgs[i]),
+                          _OrgRow(m: orgs[i], onSelect: _select),
                         ],
                       ],
                     ),
                   ),
                 const SizedBox(height: SsrSpace.lg),
-                SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Buat workspace baru',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: SsrSpace.md),
-                      TextField(
-                        controller: nameC,
-                        focusNode: nameFocus,
-                        onChanged: (_) => setState(() => formErr = null),
-                        decoration: InputDecoration(
-                          labelText: 'Nama workspace',
-                          errorText: formErr,
-                        ),
-                      ),
-                      const SizedBox(height: SsrSpace.lg),
-                      PrimaryButton(
-                        label: 'Buat',
-                        loading: busy,
-                        onPressed: _create,
-                      ),
-                    ],
-                  ),
+                _CreateOrgForm(
+                  nameC: nameC,
+                  nameFocus: nameFocus,
+                  formErr: formErr,
+                  busy: busy,
+                  onNameChanged: (_) => setState(() => formErr = null),
+                  onCreate: _create,
                 ),
                 const SizedBox(height: SsrSpace.lg),
-                SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Punya kode undangan?',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: SsrSpace.md),
-                      TextField(
-                        controller: joinC,
-                        onChanged: (_) => setState(() => joinErr = null),
-                        decoration: InputDecoration(
-                          labelText: 'Kode undangan',
-                          errorText: joinErr,
-                        ),
-                      ),
-                      const SizedBox(height: SsrSpace.lg),
-                      PrimaryButton(
-                        label: 'Gabung',
-                        loading: busy,
-                        onPressed: _join,
-                      ),
-                    ],
-                  ),
+                _JoinOrgForm(
+                  joinC: joinC,
+                  joinErr: joinErr,
+                  busy: busy,
+                  onCodeChanged: (_) => setState(() => joinErr = null),
+                  onJoin: _join,
                 ),
               ],
             ),
+    );
+  }
+}
+
+/// Satu baris daftar workspace: avatar inisial, nama, chip peran,
+/// ketuk untuk pindah ke workspace tsb.
+class _OrgRow extends StatelessWidget {
+  final Map<String, dynamic> m;
+  final Future<void> Function(Map<String, dynamic> org) onSelect;
+
+  const _OrgRow({required this.m, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (m['organizations']?['name'] ?? '-').toString();
+    final isOwner = m['role'] == 'owner';
+    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
+    return InkWell(
+      onTap: () => onSelect(m),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: SsrColors.accentSoft,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                initial,
+                style: const TextStyle(
+                  color: SsrColors.accent,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            const SizedBox(width: SsrSpace.md),
+            Expanded(
+              child: Text(name, style: Theme.of(context).textTheme.titleMedium),
+            ),
+            const SizedBox(width: SsrSpace.sm),
+            StatusChip(
+              label: isOwner ? 'Pemilik' : 'Anggota',
+              tone: isOwner ? StatusTone.accent : StatusTone.neutral,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Kartu form "Buat workspace baru".
+class _CreateOrgForm extends StatelessWidget {
+  final TextEditingController nameC;
+  final FocusNode nameFocus;
+  final String? formErr;
+  final bool busy;
+  final ValueChanged<String> onNameChanged;
+  final VoidCallback onCreate;
+
+  const _CreateOrgForm({
+    required this.nameC,
+    required this.nameFocus,
+    required this.formErr,
+    required this.busy,
+    required this.onNameChanged,
+    required this.onCreate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Buat workspace baru',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: SsrSpace.md),
+          TextField(
+            controller: nameC,
+            focusNode: nameFocus,
+            onChanged: onNameChanged,
+            decoration: InputDecoration(
+              labelText: 'Nama workspace',
+              errorText: formErr,
+            ),
+          ),
+          const SizedBox(height: SsrSpace.lg),
+          PrimaryButton(label: 'Buat', loading: busy, onPressed: onCreate),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu form "Punya kode undangan?".
+class _JoinOrgForm extends StatelessWidget {
+  final TextEditingController joinC;
+  final String? joinErr;
+  final bool busy;
+  final ValueChanged<String> onCodeChanged;
+  final VoidCallback onJoin;
+
+  const _JoinOrgForm({
+    required this.joinC,
+    required this.joinErr,
+    required this.busy,
+    required this.onCodeChanged,
+    required this.onJoin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Punya kode undangan?',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: SsrSpace.md),
+          TextField(
+            controller: joinC,
+            onChanged: onCodeChanged,
+            decoration: InputDecoration(
+              labelText: 'Kode undangan',
+              errorText: joinErr,
+            ),
+          ),
+          const SizedBox(height: SsrSpace.lg),
+          PrimaryButton(label: 'Gabung', loading: busy, onPressed: onJoin),
+        ],
+      ),
     );
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/month.dart';
@@ -39,9 +39,6 @@ class BudgetsScreenState extends State<BudgetsScreen> {
     super.dispose();
   }
 
-  Future<String> _orgId() async =>
-      (await SharedPreferences.getInstance()).getString('active_org_id') ?? '';
-
   Future<void> reload() => _load();
 
   Future<void> _load() async {
@@ -50,7 +47,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       err = null;
     });
     try {
-      final orgId = await _orgId();
+      final orgId = await activeOrgId();
       if (orgId.isEmpty) {
         setState(() => loading = false);
         return;
@@ -86,7 +83,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       saving = true;
     });
     try {
-      await setBudget(await _orgId(), cat, limit);
+      await setBudget(await activeOrgId(), cat, limit);
       catC.clear();
       limitC.clear();
       await _load();
@@ -135,56 +132,32 @@ class BudgetsScreenState extends State<BudgetsScreen> {
               actionLabel: 'Isi budget',
               onAction: _focusForm,
             ),
-          for (final b in items) _budgetCard(b),
+          for (final b in items) _BudgetCard(budget: b),
           const SizedBox(height: SsrSpace.md),
-          SectionCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Batas baru',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: SsrSpace.md),
-                TextField(
-                  controller: catC,
-                  focusNode: catFocus,
-                  decoration: const InputDecoration(
-                    labelText: 'Kategori (misal Makan)',
-                  ),
-                ),
-                const SizedBox(height: SsrSpace.md),
-                TextField(
-                  controller: limitC,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Batas (Rp)',
-                    prefixText: 'Rp ',
-                  ),
-                ),
-                if (formErr != null) ...[
-                  const SizedBox(height: SsrSpace.sm),
-                  Text(
-                    formErr!,
-                    style: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(color: SsrColors.danger),
-                  ),
-                ],
-                const SizedBox(height: SsrSpace.lg),
-                PrimaryButton(
-                  label: 'Simpan budget',
-                  loading: saving,
-                  onPressed: _save,
-                ),
-              ],
-            ),
+          _BudgetForm(
+            catC: catC,
+            limitC: limitC,
+            catFocus: catFocus,
+            formErr: formErr,
+            saving: saving,
+            onSave: _save,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _budgetCard(Budget b) {
+/// Kartu satu kategori: nama + chip (persen / lebih batas), angka
+/// "terpakai dari batas", dan bar progres.
+class _BudgetCard extends StatelessWidget {
+  final Budget budget;
+
+  const _BudgetCard({required this.budget});
+
+  @override
+  Widget build(BuildContext context) {
+    final b = budget;
     final over = b.spent > b.limit;
     final progress = budgetProgress(b.spent, b.limit);
     final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
@@ -226,6 +199,68 @@ class BudgetsScreenState extends State<BudgetsScreen> {
                 backgroundColor: SsrColors.accentSoft,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu form "Batas baru": kategori + nominal batas + tombol simpan.
+class _BudgetForm extends StatelessWidget {
+  final TextEditingController catC;
+  final TextEditingController limitC;
+  final FocusNode catFocus;
+  final String? formErr;
+  final bool saving;
+  final VoidCallback onSave;
+
+  const _BudgetForm({
+    required this.catC,
+    required this.limitC,
+    required this.catFocus,
+    required this.formErr,
+    required this.saving,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Batas baru', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: SsrSpace.md),
+          TextField(
+            controller: catC,
+            focusNode: catFocus,
+            decoration: const InputDecoration(
+              labelText: 'Kategori (misal Makan)',
+            ),
+          ),
+          const SizedBox(height: SsrSpace.md),
+          TextField(
+            controller: limitC,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Batas (Rp)',
+              prefixText: 'Rp ',
+            ),
+          ),
+          if (formErr != null) ...[
+            const SizedBox(height: SsrSpace.sm),
+            Text(
+              formErr!,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: SsrColors.danger),
+            ),
+          ],
+          const SizedBox(height: SsrSpace.lg),
+          PrimaryButton(
+            label: 'Simpan budget',
+            loading: saving,
+            onPressed: onSave,
           ),
         ],
       ),

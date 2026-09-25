@@ -18,7 +18,8 @@ import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
 import 'package:ssr_space/screens/workspace/org_switcher_screen.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:ssr_space/screens/dompet/wallets_screen.dart';
-import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/widgets/labeled_section_card.dart';
+import 'package:ssr_space/widgets/nav_tile.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
 class _OtherMeta {
@@ -162,41 +163,6 @@ class _OtherScreenState extends State<OtherScreen> {
     }
   }
 
-  Widget _iconTile(IconData icon) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: SsrColors.accentSoft,
-        borderRadius: BorderRadius.circular(SsrRadius.tile),
-      ),
-      child: Icon(icon, color: SsrColors.accent, size: 20),
-    );
-  }
-
-  Widget _navTile({
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    StatusChip? chip,
-    VoidCallback? onTap,
-  }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: _iconTile(icon),
-      title: Text(title),
-      subtitle: subtitle != null ? Text(subtitle) : null,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (chip != null) ...[chip, const SizedBox(width: SsrSpace.sm)],
-          const Icon(Icons.chevron_right, color: SsrColors.secondary),
-        ],
-      ),
-      onTap: onTap,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -213,149 +179,198 @@ class _OtherScreenState extends State<OtherScreen> {
           return ListView(
             padding: const EdgeInsets.all(SsrSpace.lg),
             children: [
-              SectionCard(
-                margin: const EdgeInsets.only(bottom: SsrSpace.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Workspace',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: SsrSpace.xs),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            meta?.orgName ?? '-',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                        StatusChip(
-                          label: planLabel,
-                          tone: meta?.plan == 'pro'
-                              ? StatusTone.accent
-                              : StatusTone.neutral,
-                        ),
-                      ],
-                    ),
-                    const Divider(height: SsrSpace.xl),
-                    _navTile(
-                      icon: Icons.swap_horiz_outlined,
-                      title: 'Ganti workspace',
-                      onTap: () =>
-                          _push(OrgSwitcherScreen(session: widget.session)),
-                    ),
-                    const Divider(height: 1),
-                    _navTile(
-                      icon: Icons.person_add_alt_outlined,
-                      title: 'Undang anggota',
-                      subtitle: 'Bagikan kode untuk gabung workspace',
-                      onTap: () => _push(const InviteScreen()),
-                    ),
-                    const Divider(height: 1),
-                    _navTile(
-                      icon: Icons.account_balance_wallet_outlined,
-                      title: 'Dompet',
-                      onTap: () => _push(const WalletsScreen()),
-                    ),
-                  ],
-                ),
+              _WorkspaceSection(
+                orgName: meta?.orgName ?? '-',
+                planLabel: planLabel,
+                isPro: meta?.plan == 'pro',
+                onSwitch: () =>
+                    _push(OrgSwitcherScreen(session: widget.session)),
+                onInvite: () => _push(const InviteScreen()),
+                onWallets: () => _push(const WalletsScreen()),
               ),
-              SectionCard(
-                margin: const EdgeInsets.only(bottom: SsrSpace.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pelacakan',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: SsrSpace.xs),
-                    _navTile(
-                      icon: Icons.notifications_active_outlined,
-                      title: 'Pelacakan otomatis',
-                      subtitle: 'Notifikasi bank jadi transaksi',
-                      chip: StatusChip(
-                        label: meta?.tracking == true ? 'Menyala' : 'Mati',
-                        tone: meta?.tracking == true
-                            ? StatusTone.accent
-                            : StatusTone.neutral,
-                      ),
-                      onTap: () => _push(const NotifSettingsScreen()),
-                    ),
-                  ],
-                ),
+              _TrackingSection(
+                tracking: meta?.tracking == true,
+                onOpen: () => _push(const NotifSettingsScreen()),
               ),
-              SectionCard(
-                margin: const EdgeInsets.only(bottom: SsrSpace.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Data',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: SsrSpace.xs),
-                    _navTile(
-                      icon: Icons.save_alt_outlined,
-                      title: 'Cadangkan data',
-                      subtitle: 'Ekspor seluruh workspace ke CSV',
-                      onTap: backingUp ? null : _backup,
-                    ),
-                  ],
-                ),
-              ),
-              SectionCard(
-                margin: const EdgeInsets.only(bottom: SsrSpace.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tampilan',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: SsrSpace.xs),
-                    ValueListenableBuilder<bool>(
-                      valueListenable: maskAmounts,
-                      builder: (context, masked, _) => SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Samarkan nominal'),
-                        subtitle: const Text(
-                          'Sembunyikan saldo & nominal transaksi',
-                        ),
-                        value: masked,
-                        onChanged: setMaskAmounts,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Akun', style: Theme.of(context).textTheme.bodySmall),
-                    const SizedBox(height: SsrSpace.xs),
-                    _navTile(
-                      icon: Icons.receipt_outlined,
-                      title: 'Billing',
-                      subtitle: 'Paket $planLabel',
-                      onTap: () => _push(const BillingScreen()),
-                    ),
-                    const Divider(height: 1),
-                    _navTile(
-                      icon: Icons.logout_outlined,
-                      title: 'Keluar',
-                      onTap: _confirmLogout,
-                    ),
-                  ],
-                ),
+              _DataSection(onBackup: backingUp ? null : _backup),
+              const _AppearanceSection(),
+              _AccountSection(
+                planLabel: planLabel,
+                onBilling: () => _push(const BillingScreen()),
+                onLogout: _confirmLogout,
               ),
             ],
           );
         },
       ),
+    );
+  }
+}
+
+/// Kartu "Workspace": nama org aktif, chip plan, dan 3 menu navigasi.
+class _WorkspaceSection extends StatelessWidget {
+  final String orgName;
+  final String planLabel;
+  final bool isPro;
+  final VoidCallback onSwitch;
+  final VoidCallback onInvite;
+  final VoidCallback onWallets;
+
+  const _WorkspaceSection({
+    required this.orgName,
+    required this.planLabel,
+    required this.isPro,
+    required this.onSwitch,
+    required this.onInvite,
+    required this.onWallets,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      label: 'Workspace',
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                orgName,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            StatusChip(
+              label: planLabel,
+              tone: isPro ? StatusTone.accent : StatusTone.neutral,
+            ),
+          ],
+        ),
+        const Divider(height: SsrSpace.xl),
+        NavTile(
+          icon: Icons.swap_horiz_outlined,
+          title: 'Ganti workspace',
+          onTap: onSwitch,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: Icons.person_add_alt_outlined,
+          title: 'Undang anggota',
+          subtitle: 'Bagikan kode untuk gabung workspace',
+          onTap: onInvite,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: Icons.account_balance_wallet_outlined,
+          title: 'Dompet',
+          onTap: onWallets,
+        ),
+      ],
+    );
+  }
+}
+
+/// Kartu "Pelacakan": satu menu dengan chip on/off status tracking.
+class _TrackingSection extends StatelessWidget {
+  final bool tracking;
+  final VoidCallback onOpen;
+
+  const _TrackingSection({required this.tracking, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      label: 'Pelacakan',
+      children: [
+        NavTile(
+          icon: Icons.notifications_active_outlined,
+          title: 'Pelacakan otomatis',
+          subtitle: 'Notifikasi bank jadi transaksi',
+          chip: StatusChip(
+            label: tracking ? 'Menyala' : 'Mati',
+            tone: tracking ? StatusTone.accent : StatusTone.neutral,
+          ),
+          onTap: onOpen,
+        ),
+      ],
+    );
+  }
+}
+
+/// Kartu "Data": ekspor CSV workspace (nonaktif saat proses berjalan).
+class _DataSection extends StatelessWidget {
+  final VoidCallback? onBackup;
+
+  const _DataSection({required this.onBackup});
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      label: 'Data',
+      children: [
+        NavTile(
+          icon: Icons.save_alt_outlined,
+          title: 'Cadangkan data',
+          subtitle: 'Ekspor seluruh workspace ke CSV',
+          onTap: onBackup,
+        ),
+      ],
+    );
+  }
+}
+
+/// Kartu "Tampilan": toggle privacy mode samarkan nominal (state global).
+class _AppearanceSection extends StatelessWidget {
+  const _AppearanceSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      label: 'Tampilan',
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: maskAmounts,
+          builder: (context, masked, _) => SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Samarkan nominal'),
+            subtitle: const Text('Sembunyikan saldo & nominal transaksi'),
+            value: masked,
+            onChanged: setMaskAmounts,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Kartu "Akun": billing + keluar.
+class _AccountSection extends StatelessWidget {
+  final String planLabel;
+  final VoidCallback onBilling;
+  final VoidCallback onLogout;
+
+  const _AccountSection({
+    required this.planLabel,
+    required this.onBilling,
+    required this.onLogout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: 'Akun',
+      children: [
+        NavTile(
+          icon: Icons.receipt_outlined,
+          title: 'Billing',
+          subtitle: 'Paket $planLabel',
+          onTap: onBilling,
+        ),
+        const Divider(height: 1),
+        NavTile(icon: Icons.logout_outlined, title: 'Keluar', onTap: onLogout),
+      ],
     );
   }
 }

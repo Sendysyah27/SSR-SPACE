@@ -114,6 +114,54 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: _AuthForm(
+          emailC: emailC,
+          passC: passC,
+          isLogin: isLogin,
+          loading: loading,
+          err: err,
+          info: info,
+          needVerify: needVerify,
+          onSubmit: _submit,
+          onResend: _resend,
+          onToggleMode: () => setState(() => isLogin = !isLogin),
+        ),
+      ),
+    );
+  }
+}
+
+/// Form login/daftar: brand, field email/sandi, pesan error/info,
+/// kirim ulang verifikasi, dan tombol submit + ganti mode.
+class _AuthForm extends StatelessWidget {
+  final TextEditingController emailC;
+  final TextEditingController passC;
+  final bool isLogin;
+  final bool loading;
+  final String? err;
+  final String? info;
+  final bool needVerify;
+  final Future<void> Function() onSubmit;
+  final Future<void> Function() onResend;
+  final VoidCallback onToggleMode;
+
+  const _AuthForm({
+    required this.emailC,
+    required this.passC,
+    required this.isLogin,
+    required this.loading,
+    required this.err,
+    required this.info,
+    required this.needVerify,
+    required this.onSubmit,
+    required this.onResend,
+    required this.onToggleMode,
+  });
+
   Widget _messageRow({
     required String text,
     required Color bg,
@@ -147,74 +195,68 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(SsrSpace.xxl),
-          children: [
-            const SizedBox(height: SsrSpace.xxl),
-            Text('SSR SPACE', style: Theme.of(context).textTheme.displaySmall),
-            const SizedBox(height: SsrSpace.sm),
-            Text(
-              'Masuk untuk lanjut catat harian.',
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: SsrColors.secondary),
-            ),
-            const SizedBox(height: SsrSpace.xxl),
-            TextField(
-              controller: emailC,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              autofillHints: const [AutofillHints.email],
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            const SizedBox(height: SsrSpace.md),
-            TextField(
-              controller: passC,
-              obscureText: true,
-              onSubmitted: (_) => _submit(),
-              decoration: const InputDecoration(labelText: 'Password'),
-            ),
-            if (err != null) ...[
-              const SizedBox(height: SsrSpace.md),
-              _messageRow(
-                text: err!,
-                bg: SsrColors.dangerSoft,
-                fg: SsrColors.danger,
-                icon: Icons.error_outline,
-              ),
-            ],
-            if (info != null) ...[
-              const SizedBox(height: SsrSpace.md),
-              _messageRow(
-                text: info!,
-                bg: SsrColors.accentSoft,
-                fg: SsrColors.accent,
-                icon: Icons.mark_email_read_outlined,
-              ),
-            ],
-            if (needVerify && emailC.text.isNotEmpty)
-              TextButton(
-                onPressed: _resend,
-                child: const Text('Kirim ulang verifikasi'),
-              ),
-            const SizedBox(height: SsrSpace.lg),
-            PrimaryButton(
-              label: isLogin ? 'Masuk' : 'Daftar',
-              loading: loading,
-              onPressed: _submit,
-            ),
-            TextButton(
-              onPressed: () => setState(() => isLogin = !isLogin),
-              child: Text(
-                isLogin
-                    ? 'Belum punya akun? Daftar'
-                    : 'Sudah punya akun? Masuk',
-              ),
-            ),
-          ],
+    return ListView(
+      padding: const EdgeInsets.all(SsrSpace.xxl),
+      children: [
+        const SizedBox(height: SsrSpace.xxl),
+        Text('SSR SPACE', style: Theme.of(context).textTheme.displaySmall),
+        const SizedBox(height: SsrSpace.sm),
+        Text(
+          'Masuk untuk lanjut catat harian.',
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: SsrColors.secondary),
         ),
-      ),
+        const SizedBox(height: SsrSpace.xxl),
+        TextField(
+          controller: emailC,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.email],
+          decoration: const InputDecoration(labelText: 'Email'),
+        ),
+        const SizedBox(height: SsrSpace.md),
+        TextField(
+          controller: passC,
+          obscureText: true,
+          onSubmitted: (_) => onSubmit(),
+          decoration: const InputDecoration(labelText: 'Password'),
+        ),
+        if (err != null) ...[
+          const SizedBox(height: SsrSpace.md),
+          _messageRow(
+            text: err!,
+            bg: SsrColors.dangerSoft,
+            fg: SsrColors.danger,
+            icon: Icons.error_outline,
+          ),
+        ],
+        if (info != null) ...[
+          const SizedBox(height: SsrSpace.md),
+          _messageRow(
+            text: info!,
+            bg: SsrColors.accentSoft,
+            fg: SsrColors.accent,
+            icon: Icons.mark_email_read_outlined,
+          ),
+        ],
+        if (needVerify && emailC.text.isNotEmpty)
+          TextButton(
+            onPressed: onResend,
+            child: const Text('Kirim ulang verifikasi'),
+          ),
+        const SizedBox(height: SsrSpace.lg),
+        PrimaryButton(
+          label: isLogin ? 'Masuk' : 'Daftar',
+          loading: loading,
+          onPressed: onSubmit,
+        ),
+        TextButton(
+          onPressed: onToggleMode,
+          child: Text(
+            isLogin ? 'Belum punya akun? Daftar' : 'Sudah punya akun? Masuk',
+          ),
+        ),
+      ],
     );
   }
 }
