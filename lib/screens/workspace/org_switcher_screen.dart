@@ -147,64 +147,146 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return const _OrgSwitcherScaffold(
+        LoadingView(label: 'Memuat workspace...'),
+      );
+    }
+    if (loadErr != null) {
+      return _OrgSwitcherScaffold(ErrorView(message: loadErr!, onRetry: _load));
+    }
+    return _OrgSwitcherScaffold(
+      _OrgPickerBody(
+        orgs: orgs,
+        nameC: nameC,
+        nameFocus: nameFocus,
+        joinC: joinC,
+        formErr: formErr,
+        joinErr: joinErr,
+        busy: busy,
+        onNameChanged: (_) => setState(() => formErr = null),
+        onCreate: _create,
+        onCodeChanged: (_) => setState(() => joinErr = null),
+        onJoin: _join,
+        onFocusForm: _focusForm,
+        onSelect: _select,
+      ),
+    );
+  }
+}
+
+/// Kerangka layar pilih workspace: AppBar "Pilih workspace" + body.
+class _OrgSwitcherScaffold extends StatelessWidget {
+  final Widget body;
+  const _OrgSwitcherScaffold(this.body);
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Pilih workspace')),
-      body: loading
-          ? const LoadingView(label: 'Memuat workspace...')
-          : loadErr != null
-          ? ErrorView(message: loadErr!, onRetry: _load)
-          : ListView(
-              padding: const EdgeInsets.all(SsrSpace.lg),
-              children: [
-                Text(
-                  'Pilih ruang catat atau buat baru.',
-                  style: Theme.of(context).textTheme.bodyMedium
-                      ?.copyWith(color: SsrColors.secondary),
-                ),
-                const SizedBox(height: SsrSpace.lg),
-                if (orgs.isEmpty)
-                  EmptyView(
-                    icon: Icons.workspaces_outlined,
-                    title: 'Belum ada workspace.',
-                    subtitle:
-                        'Buat workspace pertama di bawah untuk mulai mencatat.',
-                    actionLabel: 'Buat workspace',
-                    onAction: _focusForm,
-                  )
-                else
-                  SectionCard(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: SsrSpace.md,
-                      vertical: SsrSpace.xs,
-                    ),
-                    child: Column(
-                      children: [
-                        for (var i = 0; i < orgs.length; i++) ...[
-                          if (i > 0) const Divider(height: 1),
-                          _OrgRow(m: orgs[i], onSelect: _select),
-                        ],
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: SsrSpace.lg),
-                _CreateOrgForm(
-                  nameC: nameC,
-                  nameFocus: nameFocus,
-                  formErr: formErr,
-                  busy: busy,
-                  onNameChanged: (_) => setState(() => formErr = null),
-                  onCreate: _create,
-                ),
-                const SizedBox(height: SsrSpace.lg),
-                _JoinOrgForm(
-                  joinC: joinC,
-                  joinErr: joinErr,
-                  busy: busy,
-                  onCodeChanged: (_) => setState(() => joinErr = null),
-                  onJoin: _join,
-                ),
-              ],
-            ),
+      body: body,
+    );
+  }
+}
+
+/// Isi layar: ajakan singkat, daftar workspace (atau EmptyView), form buat
+/// workspace, dan form gabung via kode undangan.
+class _OrgPickerBody extends StatelessWidget {
+  final List<Map<String, dynamic>> orgs;
+  final TextEditingController nameC;
+  final FocusNode nameFocus;
+  final TextEditingController joinC;
+  final String? formErr;
+  final String? joinErr;
+  final bool busy;
+  final ValueChanged<String> onNameChanged;
+  final VoidCallback onCreate;
+  final ValueChanged<String> onCodeChanged;
+  final VoidCallback onJoin;
+  final VoidCallback onFocusForm;
+  final Future<void> Function(Map<String, dynamic> org) onSelect;
+
+  const _OrgPickerBody({
+    required this.orgs,
+    required this.nameC,
+    required this.nameFocus,
+    required this.joinC,
+    required this.formErr,
+    required this.joinErr,
+    required this.busy,
+    required this.onNameChanged,
+    required this.onCreate,
+    required this.onCodeChanged,
+    required this.onJoin,
+    required this.onFocusForm,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(SsrSpace.lg),
+      children: [
+        Text(
+          'Pilih ruang catat atau buat baru.',
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: SsrColors.secondary),
+        ),
+        const SizedBox(height: SsrSpace.lg),
+        if (orgs.isEmpty)
+          EmptyView(
+            icon: Icons.workspaces_outlined,
+            title: 'Belum ada workspace.',
+            subtitle: 'Buat workspace pertama di bawah untuk mulai mencatat.',
+            actionLabel: 'Buat workspace',
+            onAction: onFocusForm,
+          )
+        else
+          _OrgListCard(items: orgs, onSelect: onSelect),
+        const SizedBox(height: SsrSpace.lg),
+        _CreateOrgForm(
+          nameC: nameC,
+          nameFocus: nameFocus,
+          formErr: formErr,
+          busy: busy,
+          onNameChanged: onNameChanged,
+          onCreate: onCreate,
+        ),
+        const SizedBox(height: SsrSpace.lg),
+        _JoinOrgForm(
+          joinC: joinC,
+          joinErr: joinErr,
+          busy: busy,
+          onCodeChanged: onCodeChanged,
+          onJoin: onJoin,
+        ),
+      ],
+    );
+  }
+}
+
+/// Kartu daftar workspace: satu `_OrgRow` per workspace, berdivider.
+class _OrgListCard extends StatelessWidget {
+  final List<Map<String, dynamic>> items;
+  final Future<void> Function(Map<String, dynamic> org) onSelect;
+
+  const _OrgListCard({required this.items, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: SsrSpace.md,
+        vertical: SsrSpace.xs,
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0) const Divider(height: 1),
+            _OrgRow(m: items[i], onSelect: onSelect),
+          ],
+        ],
+      ),
     );
   }
 }
