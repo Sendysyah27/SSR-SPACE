@@ -16,7 +16,6 @@ dependencies:
   crypto: ^3.0.3
   provider: ^6.1.1
   fl_chart: ^1.2.0
-  phosphor_flutter: ^2.1.0
   flutter_svg: ^2.3.0
   lottie: ^3.6.1
   skeletonizer: ^3.0.0
@@ -59,6 +58,9 @@ flutter:
     - family: PhosphorFill
       fonts:
         - asset: assets/fonts/Phosphor-Fill.ttf
+    - family: PhosphorDuotone
+      fonts:
+        - asset: assets/fonts/Phosphor-Duotone.ttf
   assets:
     - assets/illustrations/
     - assets/lottie/

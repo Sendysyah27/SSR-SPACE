@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 
@@ -15,13 +14,13 @@ class MonthPicker extends StatelessWidget {
       children: [
         IconButton(
           tooltip: 'Bulan lalu',
-          icon: const PhosphorIcon(AppIcons.monthPrev),
+          icon: DuoIcon(AppIcons.monthPrev),
           onPressed: () => onChanged(prevMonth(month)),
         ),
         Text(monthLabel(month), style: Theme.of(context).textTheme.titleMedium),
         IconButton(
           tooltip: 'Bulan depan',
-          icon: const PhosphorIcon(AppIcons.monthNext),
+          icon: DuoIcon(AppIcons.monthNext),
           onPressed: isCurrent ? null : () => onChanged(nextMonth(month)),
         ),
       ],

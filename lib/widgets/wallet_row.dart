@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
@@ -45,11 +44,7 @@ class WalletRow extends StatelessWidget {
               color: SsrColors.accentSoft,
               borderRadius: BorderRadius.circular(SsrRadius.tile),
             ),
-            child: PhosphorIcon(
-              _typeIcon,
-              color: SsrColors.accent,
-              size: 22,
-            ),
+            child: DuoIcon(_typeIcon, color: SsrColors.accent, size: 22),
           ),
           const SizedBox(width: SsrSpace.md),
           Expanded(

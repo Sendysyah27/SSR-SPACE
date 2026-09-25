@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 
@@ -40,11 +39,8 @@ class _FlashCard extends StatelessWidget {
       child: Lottie.asset(
         'assets/lottie/check_pop.json',
         repeat: false,
-        errorBuilder: (context, error, stackTrace) => const PhosphorIcon(
-          AppIcons.success,
-          color: SsrColors.accent,
-          size: 48,
-        ),
+        errorBuilder: (context, error, stackTrace) =>
+            DuoIcon(AppIcons.success, color: SsrColors.accent, size: 48),
       ),
     );
   }

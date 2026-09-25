@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
@@ -85,7 +84,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
               onPressed: () => _select(1),
               backgroundColor: SsrColors.accent,
               foregroundColor: Colors.white,
-              icon: const PhosphorIcon(AppIcons.add),
+              icon: DuoIcon(AppIcons.add),
               label: const Text('Catat'),
             ),
       bottomNavigationBar: _MainBottomBar(index: index, onSelect: _select),
@@ -100,27 +99,15 @@ class _MainBottomBar extends StatelessWidget {
 
   const _MainBottomBar({required this.index, required this.onSelect});
 
-  static const List<NavigationDestination> _destinations = [
+  static final List<NavigationDestination> _destinations = [
+    NavigationDestination(icon: DuoIcon(AppIcons.home), label: 'Beranda'),
     NavigationDestination(
-      icon: PhosphorIcon(AppIcons.home),
-      label: 'Beranda',
-    ),
-    NavigationDestination(
-      icon: PhosphorIcon(AppIcons.transactions),
+      icon: DuoIcon(AppIcons.transactions),
       label: 'Transaksi',
     ),
-    NavigationDestination(
-      icon: PhosphorIcon(AppIcons.budget),
-      label: 'Budget',
-    ),
-    NavigationDestination(
-      icon: PhosphorIcon(AppIcons.reports),
-      label: 'Laporan',
-    ),
-    NavigationDestination(
-      icon: PhosphorIcon(AppIcons.menu),
-      label: 'Lainnya',
-    ),
+    NavigationDestination(icon: DuoIcon(AppIcons.budget), label: 'Budget'),
+    NavigationDestination(icon: DuoIcon(AppIcons.reports), label: 'Laporan'),
+    NavigationDestination(icon: DuoIcon(AppIcons.menu), label: 'Lainnya'),
   ];
 
   @override

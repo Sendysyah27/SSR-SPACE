@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/invite_service.dart';
@@ -343,7 +342,7 @@ class _InviteListCard extends StatelessWidget {
             IconButton(
               tooltip: 'Cabut undangan',
               onPressed: () => onRevoke(row),
-              icon: const PhosphorIcon(AppIcons.revoke, size: 20),
+              icon: DuoIcon(AppIcons.revoke, size: 20),
             ),
           ],
         ],

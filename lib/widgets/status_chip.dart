@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 
 enum StatusTone { neutral, accent, danger, ink }
@@ -54,7 +54,7 @@ class StatusChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            PhosphorIcon(icon!, size: 12, color: _fg),
+            DuoIcon(icon!, size: 12, color: _fg),
             const SizedBox(width: 4),
           ],
           Text(

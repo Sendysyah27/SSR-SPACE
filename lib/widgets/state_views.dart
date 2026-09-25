@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 
@@ -54,7 +53,7 @@ class EmptyView extends StatelessWidget {
         color: const Color(0xFFE6F3F1),
         borderRadius: BorderRadius.circular(SsrRadius.card),
       ),
-      child: PhosphorIcon(
+      child: DuoIcon(
         icon,
         size: 28,
         color: Theme.of(context).colorScheme.primary,
@@ -106,7 +105,7 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const PhosphorIcon(AppIcons.error, size: 40),
+            DuoIcon(AppIcons.error, size: 40),
             const SizedBox(height: 12),
             Text(
               message,

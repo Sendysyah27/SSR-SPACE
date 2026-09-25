@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/foreground_track.dart';
@@ -527,7 +526,7 @@ class _RecentCard extends StatelessWidget {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const PhosphorIcon(AppIcons.scan),
+                  : DuoIcon(AppIcons.scan),
               label: Text(
                 scanning ? 'Memindai...' : 'Pindai notifikasi aktif sekarang',
               ),
@@ -688,12 +687,12 @@ Future<String?> showModalSheetOfType(BuildContext context, CapturedNotif n) {
             ),
           ),
           ListTile(
-            leading: const PhosphorIcon(AppIcons.arrowDown),
+            leading: DuoIcon(AppIcons.arrowDown),
             title: const Text('Masuk (pemasukan)'),
             onTap: () => Navigator.pop(ctx, 'in'),
           ),
           ListTile(
-            leading: const PhosphorIcon(AppIcons.arrowUp),
+            leading: DuoIcon(AppIcons.arrowUp),
             title: const Text('Keluar (pengeluaran)'),
             onTap: () => Navigator.pop(ctx, 'out'),
           ),

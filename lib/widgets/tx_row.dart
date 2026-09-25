@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -69,7 +68,7 @@ class TxRow extends StatelessWidget {
                   color: SsrColors.accentSoft,
                   borderRadius: BorderRadius.circular(SsrRadius.tile),
                 ),
-                child: PhosphorIcon(
+                child: DuoIcon(
                   iconForCategory(tx.category),
                   color: SsrColors.accent,
                   size: 22,
@@ -82,11 +81,7 @@ class TxRow extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        PhosphorIcon(
-                          _directionIcon,
-                          size: 16,
-                          color: _amountColor,
-                        ),
+                        DuoIcon(_directionIcon, size: 16, color: _amountColor),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -94,7 +89,7 @@ class TxRow extends StatelessWidget {
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: _amountColor,
                               fontFeatures: const [
-                                FontFeature.tabularFigures()
+                                FontFeature.tabularFigures(),
                               ],
                             ),
                           ),
