@@ -18,7 +18,7 @@ class SupabaseConfig {
 
   static Future<void> init() async {
     if (!isConfigured) return;
-    await Supabase.initialize(url: safeUrl, anonKey: safeKey);
+    await Supabase.initialize(url: safeUrl, publishableKey: safeKey);
   }
 
   static SupabaseClient get client => Supabase.instance.client;

@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/core/format/datetime.dart';
@@ -315,7 +313,7 @@ class BerandaScreenState extends State<BerandaScreen> {
           Text(
             'Selisih ${monthLabel(month).toLowerCase()}',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               fontSize: 13,
             ),
           ),
@@ -336,7 +334,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                     Text(
                       'Masuk',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 12,
                       ),
                     ),
@@ -360,7 +358,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                     Text(
                       'Keluar',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 12,
                       ),
                     ),
@@ -387,7 +385,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                 Positioned.fill(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),

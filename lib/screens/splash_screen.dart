@@ -45,20 +45,24 @@ class _SplashScreenState extends State<SplashScreen> {
       if (SupabaseConfig.isConfigured) {
         if (!widget.skipAuth &&
             SupabaseConfig.client.auth.currentSession == null) {
-          return _go(AuthScreen(session: widget.session));
+          await _go(AuthScreen(session: widget.session));
+          return;
         }
         final prefs = await SharedPreferences.getInstance();
         if ((prefs.getString('active_org_id') ?? '').isEmpty) {
-          return _go(OrgSwitcherScreen(session: widget.session));
+          await _go(OrgSwitcherScreen(session: widget.session));
+          return;
         }
       }
       if (!mounted) return;
       if (widget.session.isFirstRun) {
-        return _go(OnboardingScreen(session: widget.session));
+        await _go(OnboardingScreen(session: widget.session));
+        return;
       } else if (widget.session.hasPin) {
-        return _go(LockScreen(session: widget.session));
+        await _go(LockScreen(session: widget.session));
+        return;
       }
-      return _go(MainShell(session: widget.session));
+      await _go(MainShell(session: widget.session));
     } catch (_) {
       if (mounted) setState(() => failed = true);
     }

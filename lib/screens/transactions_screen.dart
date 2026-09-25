@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/core/format/money.dart';
@@ -439,7 +437,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 ),
                 const SizedBox(height: SsrSpace.md),
                 DropdownButtonFormField<String>(
-                  value: walletId,
+                  initialValue: walletId,
                   decoration: const InputDecoration(labelText: 'Dompet'),
                   items: [for (final w in wallets) _walletItem(w, theme)],
                   onChanged: (v) => setState(() => walletId = v),
@@ -447,7 +445,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 if (type == 'transfer') ...[
                   const SizedBox(height: SsrSpace.md),
                   DropdownButtonFormField<String>(
-                    value: toWalletId,
+                    initialValue: toWalletId,
                     decoration: const InputDecoration(
                       labelText: 'Dompet tujuan',
                     ),

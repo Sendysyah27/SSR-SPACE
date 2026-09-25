@@ -48,8 +48,9 @@ String connectionLabel({
   required bool serviceConnected,
 }) {
   if (!permissionGranted) return 'Izin baca notifikasi belum aktif';
-  if (!serviceConnected)
+  if (!serviceConnected) {
     return 'Izin aktif, service terputus. Pindai untuk sambung ulang.';
+  }
   return 'Service terhubung';
 }
 
@@ -198,13 +199,15 @@ class NotifTrack {
           ? 'Tidak ada notifikasi aktif di shade'
           : 'Memindai $seen notifikasi aktif';
     } on PlatformException catch (err) {
-      if (!await isServiceConnected())
+      if (!await isServiceConnected()) {
         return scanErrorStatus('ServiceUnavailable');
+      }
       return scanErrorStatus(err.code, message: err.message);
     } catch (err) {
       debugPrint('refreshActive: $err');
-      if (!await isServiceConnected())
+      if (!await isServiceConnected()) {
         return scanErrorStatus('ServiceUnavailable');
+      }
       return 'Gagal memindai notifikasi aktif';
     }
   }
@@ -360,8 +363,9 @@ class NotifTrack {
     final prefs = await SharedPreferences.getInstance();
     final orgId = prefs.getString('active_org_id') ?? '';
     if (orgId.isEmpty) return 'Workspace belum dipilih';
-    if (SupabaseConfig.client.auth.currentSession == null)
+    if (SupabaseConfig.client.auth.currentSession == null) {
       return 'Belum masuk di aplikasi';
+    }
     final type = forceType ?? n.type;
     if (n.amount == null || n.amount! <= 0 || type == null) {
       return 'Nominal atau jenis tidak terbaca';

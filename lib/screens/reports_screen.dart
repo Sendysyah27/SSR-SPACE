@@ -87,7 +87,10 @@ class ReportsScreenState extends State<ReportsScreen> {
           children: [
             pw.Text(
               'Laporan SSR SPACE',
-              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+              style: const pw.TextStyle(
+                fontSize: 20,
+                fontWeight: pw.FontWeight.bold,
+              ),
             ),
             pw.SizedBox(height: 12),
             for (final t in items)

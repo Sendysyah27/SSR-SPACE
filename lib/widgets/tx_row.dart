@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 import 'package:ssr_space/core/format/money.dart';
 import 'package:ssr_space/core/saas/category_icons.dart';

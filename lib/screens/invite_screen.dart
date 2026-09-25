@@ -253,7 +253,7 @@ class _InviteScreenState extends State<InviteScreen> {
                                   ),
                                   const SizedBox(height: SsrSpace.md),
                                   DropdownButtonFormField<String>(
-                                    value: role,
+                                    initialValue: role,
                                     decoration: const InputDecoration(
                                       labelText: 'Peran anggota',
                                     ),

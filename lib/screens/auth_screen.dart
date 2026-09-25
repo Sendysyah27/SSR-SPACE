@@ -96,8 +96,9 @@ class _AuthScreenState extends State<AuthScreen> {
       final m = _friendly(e);
       setState(() {
         err = m;
-        if (m.contains('verifikasi') || m.contains('confirm'))
+        if (m.contains('verifikasi') || m.contains('confirm')) {
           needVerify = true;
+        }
       });
     } finally {
       if (mounted) setState(() => loading = false);

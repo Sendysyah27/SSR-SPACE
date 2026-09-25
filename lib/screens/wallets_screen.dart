@@ -246,7 +246,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
                 ),
                 const SizedBox(height: SsrSpace.md),
                 DropdownButtonFormField<String>(
-                  value: type,
+                  initialValue: type,
                   decoration: const InputDecoration(labelText: 'Jenis'),
                   items: const [
                     DropdownMenuItem(value: 'cash', child: Text('Tunai')),

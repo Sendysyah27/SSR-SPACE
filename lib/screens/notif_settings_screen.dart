@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -357,7 +356,7 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String?>(
-                              value: walletFor[app.label],
+                              initialValue: walletFor[app.label],
                               isExpanded: true,
                               decoration: const InputDecoration(
                                 labelText: 'Masuk ke dompet',
