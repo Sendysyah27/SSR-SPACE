@@ -49,7 +49,11 @@ begin
     raise exception 'NOT_AUTHENTICATED';
   end if;
 
-  v_hash := encode(sha256(convert_to(trim(both from p_token), 'UTF8')), 'hex');
+  -- upper() = sama dgn hashInviteToken() client (token selalu uppercase)
+  v_hash := encode(
+    sha256(convert_to(upper(trim(both from p_token)), 'UTF8')),
+    'hex'
+  );
 
   select * into inv
   from org_invites
@@ -77,11 +81,23 @@ begin
   insert into org_members(org_id, user_id, role)
   values (inv.org_id, v_uid, inv.role);
 
+  -- Increment = gerbang atomik (bukan sekadar counter).
+  -- Dua join bersamaan pada slot terakhir: baris invite dikunci transaksi,
+  -- yang kedua menunggu lalu WHERE gagal → INVITE_EXHAUSTED,
+  -- dan insert member di atas ikut ter-rollback.
   update org_invites
   set used_count = used_count + 1
-  where id = inv.id;
+  where id = inv.id
+    and not revoked
+    and used_count < max_uses
+    and expires_at > now();
+
+  if not found then
+    raise exception 'INVITE_EXHAUSTED';
+  end if;
 
   return inv.org_id;
 end $$;
 
+revoke execute on function public.join_org_by_invite(text) from public, anon;
 grant execute on function public.join_org_by_invite(text) to authenticated;
