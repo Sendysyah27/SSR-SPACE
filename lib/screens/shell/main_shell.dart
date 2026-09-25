@@ -100,20 +100,14 @@ class _MainBottomBar extends StatelessWidget {
   const _MainBottomBar({required this.index, required this.onSelect});
 
   static const List<NavigationDestination> _destinations = [
-    NavigationDestination(icon: const DuoIcon(AppIcons.home), label: 'Beranda'),
+    NavigationDestination(icon: DuoIcon(AppIcons.home), label: 'Beranda'),
     NavigationDestination(
-      icon: const DuoIcon(AppIcons.transactions),
+      icon: DuoIcon(AppIcons.transactions),
       label: 'Transaksi',
     ),
-    NavigationDestination(
-      icon: const DuoIcon(AppIcons.budget),
-      label: 'Budget',
-    ),
-    NavigationDestination(
-      icon: const DuoIcon(AppIcons.reports),
-      label: 'Laporan',
-    ),
-    NavigationDestination(icon: const DuoIcon(AppIcons.menu), label: 'Lainnya'),
+    NavigationDestination(icon: DuoIcon(AppIcons.budget), label: 'Budget'),
+    NavigationDestination(icon: DuoIcon(AppIcons.reports), label: 'Laporan'),
+    NavigationDestination(icon: DuoIcon(AppIcons.menu), label: 'Lainnya'),
   ];
 
   @override
