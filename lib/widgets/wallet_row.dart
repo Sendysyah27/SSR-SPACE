@@ -1,21 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
-/// Satu baris di daftar Dompet: ikon dompet + nama + chip jenis + nominal
+/// Satu baris di daftar Dompet: ikon jenis + nama + chip jenis + nominal
 /// kanan. `balanceText` wajib sudah diformat lewat amt() (atau teks
 /// 'Belum termuat') supaya privacy mode "Samarkan nominal" tetap bekerja.
 class WalletRow extends StatelessWidget {
   final String name;
+  final String type;
   final String typeLabel;
   final String balanceText;
 
   const WalletRow({
     super.key,
     required this.name,
+    required this.type,
     required this.typeLabel,
     required this.balanceText,
   });
+
+  IconData get _typeIcon {
+    switch (type) {
+      case 'bank':
+        return AppIcons.walletBank;
+      case 'ewallet':
+        return AppIcons.walletEwallet;
+      default:
+        return AppIcons.walletCash;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +45,8 @@ class WalletRow extends StatelessWidget {
               color: SsrColors.accentSoft,
               borderRadius: BorderRadius.circular(SsrRadius.tile),
             ),
-            child: const Icon(
-              Icons.account_balance_wallet_outlined,
+            child: PhosphorIcon(
+              _typeIcon,
               color: SsrColors.accent,
               size: 22,
             ),

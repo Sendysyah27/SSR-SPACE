@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:csv/csv.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
@@ -9,10 +10,13 @@ import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
 
@@ -128,10 +132,33 @@ class ReportsScreenState extends State<ReportsScreen> {
     _load();
   }
 
+  Widget _summarySection(double totalIn, double totalOut, double net) {
+    final hasFlow = totalIn + totalOut > 0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (hasFlow) ...[
+          _MonthFlowChart(totalIn: totalIn, totalOut: totalOut),
+          const SizedBox(height: SsrSpace.md),
+        ],
+        _MonthlySummary(
+          monthLabel: monthLabel(month),
+          totalIn: totalIn,
+          totalOut: totalOut,
+          net: net,
+          exporting: exporting,
+          hasItems: items.isNotEmpty,
+          onExportCsv: () => _runExport(_exportCsv, 'CSV'),
+          onExportPdf: () => _runExport(_exportPdf, 'PDF'),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const _ReportsScaffold(LoadingView(label: 'Menyusun laporan...'));
+      return const _ReportsScaffold(ReportSkeleton());
     }
     if (err != null) {
       return _ReportsScaffold(ErrorView(message: err!, onRetry: _load));
@@ -149,20 +176,12 @@ class ReportsScreenState extends State<ReportsScreen> {
         children: [
           MonthPicker(month: month, onChanged: _onMonthChanged),
           const SizedBox(height: SsrSpace.md),
-          _MonthlySummary(
-            monthLabel: monthLabel(month),
-            totalIn: totalIn,
-            totalOut: totalOut,
-            net: net,
-            exporting: exporting,
-            hasItems: items.isNotEmpty,
-            onExportCsv: () => _runExport(_exportCsv, 'CSV'),
-            onExportPdf: () => _runExport(_exportPdf, 'PDF'),
-          ),
+          _summarySection(totalIn, totalOut, net),
           const SizedBox(height: SsrSpace.lg),
           if (items.isEmpty)
             EmptyView(
-              icon: Icons.receipt_long_outlined,
+              icon: AppIcons.reports,
+              illustration: 'assets/illustrations/empty_laporan.svg',
               title: 'Belum ada transaksi untuk bulan ini.',
               subtitle: 'Pilih bulan lain atau catat transaksi dulu.',
               actionLabel: 'Muat ulang',
@@ -172,6 +191,138 @@ class ReportsScreenState extends State<ReportsScreen> {
             _TxListCard(items: items),
         ],
       ),
+    );
+  }
+}
+
+/// Donut Masuk vs Keluar bulan terpilih: irisan zamrud/bata,
+/// persen masuk di tengah, legenda mask-aware di bawah.
+class _MonthFlowChart extends StatelessWidget {
+  final double totalIn;
+  final double totalOut;
+
+  const _MonthFlowChart({required this.totalIn, required this.totalOut});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = totalIn + totalOut;
+    final pctIn = total <= 0 ? 0 : (totalIn / total * 100).round();
+    return SectionCard(
+      child: Column(
+        children: [
+          _DonutDial(totalIn: totalIn, totalOut: totalOut, pctIn: pctIn),
+          const SizedBox(height: SsrSpace.sm),
+          Row(
+            children: [
+              Expanded(
+                child: _FlowLegend(
+                  color: SsrColors.accent,
+                  label: 'Masuk',
+                  value: totalIn,
+                ),
+              ),
+              Expanded(
+                child: _FlowLegend(
+                  color: SsrColors.danger,
+                  label: 'Keluar',
+                  value: totalOut,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Lingkaran donut + persen masuk di tengah.
+class _DonutDial extends StatelessWidget {
+  final double totalIn;
+  final double totalOut;
+  final int pctIn;
+
+  const _DonutDial({
+    required this.totalIn,
+    required this.totalOut,
+    required this.pctIn,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 180,
+      child: Stack(
+        children: [
+          PieChart(
+            PieChartData(
+              pieTouchData: PieTouchData(enabled: false),
+              sectionsSpace: 2,
+              centerSpaceRadius: 52,
+              startDegreeOffset: 270,
+              sections: [
+                PieChartSectionData(
+                  value: totalIn,
+                  color: SsrColors.accent,
+                  radius: 26,
+                  showTitle: false,
+                ),
+                PieChartSectionData(
+                  value: totalOut,
+                  color: SsrColors.danger,
+                  radius: 26,
+                  showTitle: false,
+                ),
+              ],
+            ),
+            duration: SsrMotion.base,
+            curve: SsrMotion.curve,
+          ),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('$pctIn%', style: SsrTheme.money.copyWith(fontSize: 20)),
+                Text('masuk', style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Titik warna + "Label · Rp…" (lewat amt, ikut privacy mode).
+class _FlowLegend extends StatelessWidget {
+  final Color color;
+  final String label;
+  final double value;
+
+  const _FlowLegend({
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: SsrSpace.sm),
+        Expanded(
+          child: Text(
+            '$label · ${amt(value)}',
+            style: Theme.of(context).textTheme.bodyMedium,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -306,7 +457,7 @@ class _MonthlySummary extends StatelessWidget {
               const SizedBox(height: SsrSpace.xs),
               Text(
                 amt(net),
-                style: SsrTheme.moneyLarge.copyWith(
+                style: SsrType.moneyLarge.copyWith(
                   color: net >= 0 ? SsrColors.accent : SsrColors.danger,
                 ),
               ),

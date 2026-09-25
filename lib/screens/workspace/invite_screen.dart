@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/invite_service.dart';
 import 'package:ssr_space/services/invite_token.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
@@ -179,12 +183,12 @@ class _InviteScreenState extends State<InviteScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Undang anggota')),
       body: loading
-          ? const LoadingView(label: 'Memuat undangan...')
+          ? const InviteListSkeleton()
           : loadErr != null
           ? ErrorView(message: loadErr!, onRetry: _load)
           : orgId.isEmpty
           ? EmptyView(
-              icon: Icons.person_add_alt_outlined,
+              icon: AppIcons.workspace,
               title: 'Belum ada workspace.',
               subtitle: 'Pilih atau buat workspace dulu untuk mengundang.',
               actionLabel: 'Muat ulang',
@@ -192,7 +196,7 @@ class _InviteScreenState extends State<InviteScreen> {
             )
           : !isAdmin
           ? EmptyView(
-              icon: Icons.lock_outline,
+              icon: AppIcons.lock,
               title: 'Hanya admin workspace yang bisa mengundang anggota.',
               subtitle: 'Minta owner atau admin membuat kode undangan.',
               actionLabel: 'Muat ulang',
@@ -339,7 +343,7 @@ class _InviteListCard extends StatelessWidget {
             IconButton(
               tooltip: 'Cabut undangan',
               onPressed: () => onRevoke(row),
-              icon: const Icon(Icons.link_off, size: 20),
+              icon: const PhosphorIcon(AppIcons.revoke, size: 20),
             ),
           ],
         ],
@@ -351,9 +355,20 @@ class _InviteListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (invites.isEmpty) {
       return SectionCard(
-        child: Text(
-          'Belum ada undangan aktif. Buat kode di atas untuk mengundang anggota.',
-          style: Theme.of(context).textTheme.bodyMedium,
+        child: Column(
+          children: [
+            SvgPicture.asset(
+              'assets/illustrations/empty_undangan.svg',
+              height: 100,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(height: SsrSpace.md),
+            Text(
+              'Belum ada undangan aktif. Buat kode di atas untuk mengundang anggota.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
         ),
       );
     }

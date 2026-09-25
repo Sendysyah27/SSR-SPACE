@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/category_icons.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
@@ -29,6 +31,12 @@ class TxRow extends StatelessWidget {
     return SsrColors.ink;
   }
 
+  IconData get _directionIcon {
+    if (tx.type == 'in') return AppIcons.txIn;
+    if (tx.type == 'out') return AppIcons.txOut;
+    return AppIcons.transfer;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -36,10 +44,10 @@ class TxRow extends StatelessWidget {
     final chips = <Widget>[
       StatusChip(label: tx.code ?? 'Tanpa kode', tone: StatusTone.neutral),
       if (auto)
-        const StatusChip(
+        StatusChip(
           label: 'Otomatis',
           tone: StatusTone.accent,
-          icon: Icons.bolt,
+          icon: AppIcons.autoBadge,
         ),
       if (tx.category != null && tx.category!.isNotEmpty)
         StatusChip(label: tx.category!, tone: StatusTone.neutral),
@@ -61,7 +69,7 @@ class TxRow extends StatelessWidget {
                   color: SsrColors.accentSoft,
                   borderRadius: BorderRadius.circular(SsrRadius.tile),
                 ),
-                child: Icon(
+                child: PhosphorIcon(
                   iconForCategory(tx.category),
                   color: SsrColors.accent,
                   size: 22,
@@ -72,12 +80,26 @@ class TxRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '$_kindLabel: ${amt(tx.amount)}',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: _amountColor,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
+                    Row(
+                      children: [
+                        PhosphorIcon(
+                          _directionIcon,
+                          size: 16,
+                          color: _amountColor,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '$_kindLabel: ${amt(tx.amount)}',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: _amountColor,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Wrap(spacing: 6, runSpacing: 4, children: chips),

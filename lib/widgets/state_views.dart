@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:ssr_space/theme/app_icons.dart';
+import 'package:ssr_space/theme/app_theme.dart';
 
 class LoadingView extends StatelessWidget {
   final String label;
@@ -24,6 +28,10 @@ class EmptyView extends StatelessWidget {
   final String? subtitle;
   final String actionLabel;
   final VoidCallback onAction;
+
+  /// Path SVG ilustrasi (assets/) menggantikan kotak ikon bila diisi.
+  final String? illustration;
+
   const EmptyView({
     super.key,
     required this.icon,
@@ -31,7 +39,29 @@ class EmptyView extends StatelessWidget {
     this.subtitle,
     required this.actionLabel,
     required this.onAction,
+    this.illustration,
   });
+
+  Widget _art(BuildContext context) {
+    final ill = illustration;
+    if (ill != null) {
+      return SvgPicture.asset(ill, height: 120, fit: BoxFit.contain);
+    }
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE6F3F1),
+        borderRadius: BorderRadius.circular(SsrRadius.card),
+      ),
+      child: PhosphorIcon(
+        icon,
+        size: 28,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -40,19 +70,7 @@ class EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE6F3F1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                icon,
-                size: 28,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
+            _art(context),
             const SizedBox(height: 14),
             Text(
               title,
@@ -88,7 +106,7 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_outlined, size: 40),
+            const PhosphorIcon(AppIcons.error, size: 40),
             const SizedBox(height: 12),
             Text(
               message,

@@ -3,12 +3,14 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/wallet_row.dart';
 
@@ -160,7 +162,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
     if (noOrg) {
       return _WalletsScaffold(
         EmptyView(
-          icon: Icons.account_balance_wallet_outlined,
+          icon: AppIcons.workspace,
           title: 'Pilih atau buat workspace dulu.',
           subtitle: 'Dompet selalu menempel pada satu workspace.',
           actionLabel: 'Muat ulang',
@@ -169,7 +171,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
       );
     }
     if (loading) {
-      return const _WalletsScaffold(LoadingView(label: 'Memuat dompet...'));
+      return const _WalletsScaffold(WalletListSkeleton());
     }
     if (err != null) {
       return _WalletsScaffold(ErrorView(message: err!, onRetry: _load));
@@ -244,7 +246,8 @@ class _WalletOverview extends StatelessWidget {
           ),
         if (items.isEmpty)
           EmptyView(
-            icon: Icons.account_balance_wallet_outlined,
+            icon: AppIcons.wallet,
+            illustration: 'assets/illustrations/empty_dompet.svg',
             title: 'Belum ada dompet.',
             subtitle: 'Tambah dompet pertama lewat form di bawah.',
             actionLabel: 'Isi dompet',
@@ -353,6 +356,7 @@ class _WalletListCard extends StatelessWidget {
             if (i > 0) const Divider(height: 1),
             WalletRow(
               name: items[i].name,
+              type: items[i].type,
               typeLabel: typeLabelOf(items[i].type),
               balanceText: balanceTextOf(items[i].id),
             ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
@@ -5,6 +7,7 @@ import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_validation.dart';
 import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
@@ -12,7 +15,9 @@ import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
+import 'package:ssr_space/widgets/success_lottie.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -183,6 +188,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Transaksi diperbarui')));
+        unawaited(showSuccessFlash(context));
       } else {
         await svc.add(
           orgId: orgId,
@@ -201,6 +207,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           walletId = null;
           toWalletId = null;
         });
+        unawaited(showSuccessFlash(context));
       }
       await _load();
     } catch (e) {
@@ -288,7 +295,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     if (noOrg) {
       return _TxStateScaffold(
         EmptyView(
-          icon: Icons.business_outlined,
+          icon: AppIcons.workspace,
           title: 'Belum ada workspace',
           subtitle: 'Pilih atau buat workspace dulu di menu Lainnya.',
           actionLabel: 'Muat ulang',
@@ -297,7 +304,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       );
     }
     if (loading) {
-      return const _TxStateScaffold(LoadingView(label: 'Memuat transaksi...'));
+      return const _TxStateScaffold(TxListSkeleton());
     }
     if (err != null) {
       return _TxStateScaffold(ErrorView(message: err!, onRetry: _load));
@@ -453,7 +460,8 @@ class _TxHistorySection extends StatelessWidget {
           SizedBox(
             height: 260,
             child: EmptyView(
-              icon: Icons.receipt_long_outlined,
+              icon: AppIcons.transactions,
+              illustration: 'assets/illustrations/empty_riwayat.svg',
               title: 'Belum ada transaksi bulan ini',
               subtitle: 'Catat pemasukan atau pengeluaran lewat form di atas.',
               actionLabel: 'Isi form catat',

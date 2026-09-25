@@ -3,7 +3,7 @@ description: SSR SPACE - Simple. Secure. Reliable. Your Finance Space. Pencatata
 publish_to: 'none'
 version: 2.3.9+22
 environment:
-  sdk: '>=3.2.0 <4.0.0'
+  sdk: '>=3.11.0 <4.0.0'
 dependencies:
   flutter:
     sdk: flutter
@@ -15,7 +15,11 @@ dependencies:
   uuid: ^4.2.2
   crypto: ^3.0.3
   provider: ^6.1.1
-  fl_chart: ^0.66.0
+  fl_chart: ^1.2.0
+  phosphor_flutter: ^2.1.0
+  flutter_svg: ^2.3.0
+  lottie: ^3.6.1
+  skeletonizer: ^3.0.0
   csv: ^6.0.0
   pdf: ^3.10.7
   share_plus: ^10.0.0
@@ -44,6 +48,17 @@ flutter:
     - family: Anton
       fonts:
         - asset: assets/fonts/Anton-Regular.ttf
+    - family: Fraunces
+      fonts:
+        - asset: assets/fonts/Fraunces-VariableFont_wght.ttf
+          weight: 400
+        - asset: assets/fonts/Fraunces-VariableFont_wght.ttf
+          weight: 600
+        - asset: assets/fonts/Fraunces-VariableFont_wght.ttf
+          weight: 700
     - family: PhosphorFill
       fonts:
         - asset: assets/fonts/Phosphor-Fill.ttf
+  assets:
+    - assets/illustrations/
+    - assets/lottie/

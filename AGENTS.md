@@ -280,6 +280,10 @@ Urutan list penting: **myBCA sebelum BCA**.
 - **Aturan tambah widget baru:** cek dulu isi `lib/widgets/` (12 file); nominal wajib lewat `amt()`; nilai styling harus **persis** sama — beda satu angka pun = jangan digabung (parameterisasi eksplisit atau pisah).
 - **Verifikasi:** `flutter` tak ada di Termux → bukti = CI analyze/test hijau + screenshot before/after manual di device user (tiap layar yang disentuh).
 
+### 4.13 Polish visual "Fintech Ledger" (2026-09-25, staged — belum commit)
+
+Visual-only 8 layar (detail: AUDIT §4 "Polish visual"). Fondasi: `phosphor_flutter`/`flutter_svg`/`lottie`/`skeletonizer`, `fl_chart`→1.2.0, Fraunces bundel (`SsrType`), `AppIcons` duotone (render via `PhosphorIcon`). Empty berilustrasi (copy UD identik), sukses Lottie `check_pop`, donut Laporan (mask-aware), gauge Budget, hero SURPLUS ber-shadow+sheen, 7 skeleton ganti spinner. Aset sumber: `/sdcard/Assets/SSR-SPACE-polish/`. Semua `build()` <50; copy Indonesia identik; `notif_track_service`/auth/Supabase tak disentuh. CI (analyze→test→APK) + APK ke `/sdcard/Download/SSR-SPACE/` jalan setelah user bilang "commit".
+
 ---
 
 ## 5. Struktur repo (penting)
@@ -367,3 +371,14 @@ ls -t /sdcard/DCIM/Screenshots | head -5
 - HP: Termux Android, working dir home.
 - `dart` ada lokal; **`flutter` tidak** — analyze/test = CI.
 - `gh` CLI ter-login ke `Sendysyah27`.
+
+<!-- antislop:start -->
+## antislop
+For UI, copy, people, mobile layout, or code comments work, read `antislop.md` (core) and then the skill for the task:
+- UI / visual: `skills/antislop-ui/SKILL.md`
+- Copy & text: `skills/antislop-copywriting/SKILL.md`
+- People / accessibility: `skills/antislop-human/SKILL.md`
+- Mobile / responsive: `skills/antislop-layoutmobile/SKILL.md`
+- Code comments: `skills/antislop-code/SKILL.md`
+Before starting, ask the user when antislop applies: during the work, or after it is done.
+<!-- antislop:end -->

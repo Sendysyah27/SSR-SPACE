@@ -2,17 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_parse.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
 import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/widgets/bank_track_row.dart';
 import 'package:ssr_space/widgets/section_card.dart';
-import 'package:ssr_space/widgets/state_views.dart';
+import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
 class NotifSettingsScreen extends StatefulWidget {
@@ -164,7 +166,7 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
     if (loading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Pelacakan otomatis')),
-        body: const LoadingView(label: 'Memuat pengaturan...'),
+        body: const NotifSettingsSkeleton(),
       );
     }
     return Scaffold(
@@ -525,7 +527,7 @@ class _RecentCard extends StatelessWidget {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.refresh),
+                  : const PhosphorIcon(AppIcons.scan),
               label: Text(
                 scanning ? 'Memindai...' : 'Pindai notifikasi aktif sekarang',
               ),
@@ -686,12 +688,12 @@ Future<String?> showModalSheetOfType(BuildContext context, CapturedNotif n) {
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.arrow_downward),
+            leading: const PhosphorIcon(AppIcons.arrowDown),
             title: const Text('Masuk (pemasukan)'),
             onTap: () => Navigator.pop(ctx, 'in'),
           ),
           ListTile(
-            leading: const Icon(Icons.arrow_upward),
+            leading: const PhosphorIcon(AppIcons.arrowUp),
             title: const Text('Keluar (pengeluaran)'),
             onTap: () => Navigator.pop(ctx, 'out'),
           ),

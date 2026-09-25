@@ -1,13 +1,20 @@
+import 'dart:async';
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/month.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
+import 'package:ssr_space/widgets/success_lottie.dart';
 
 class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({super.key});
@@ -88,6 +95,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       limitC.clear();
       await _load();
       if (mounted) {
+        unawaited(showSuccessFlash(context));
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Budget disimpan.')));
       }
@@ -110,7 +118,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
     if (loading) {
       return Scaffold(
         appBar: AppBar(title: Text('Budget ${currentMonth()}')),
-        body: const LoadingView(label: 'Memuat budget...'),
+        body: const BudgetListSkeleton(),
       );
     }
     if (err != null) {
@@ -126,7 +134,8 @@ class BudgetsScreenState extends State<BudgetsScreen> {
         children: [
           if (items.isEmpty)
             EmptyView(
-              icon: Icons.savings_outlined,
+              icon: AppIcons.budget,
+              illustration: 'assets/illustrations/empty_budget.svg',
               title: 'Belum ada budget bulan ini.',
               subtitle: 'Pasang batas pertama lewat form di bawah.',
               actionLabel: 'Isi budget',
@@ -181,22 +190,56 @@ class _BudgetCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: SsrSpace.xs),
-          Text(
-            '${amt(b.spent)} dari ${amt(b.limit)}',
-            style: SsrTheme.money.copyWith(fontSize: 14),
+          Row(
+            children: [
+              _BudgetGauge(progress: progress, over: over, pct: pct),
+              const SizedBox(width: SsrSpace.md),
+              Expanded(
+                child: Text(
+                  '${amt(b.spent)} dari ${amt(b.limit)}',
+                  style: SsrType.moneyMedium,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: SsrSpace.md),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: progress),
+        ],
+      ),
+    );
+  }
+}
+
+/// Cincin progres budget: terpakai (zamrud/bata) vs sisa.
+class _BudgetGauge extends StatelessWidget {
+  final double progress;
+  final bool over;
+  final int pct;
+
+  const _BudgetGauge({
+    required this.progress,
+    required this.over,
+    required this.pct,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final used = progress.clamp(0.0, 1.0);
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: Stack(
+        children: [
+          PieChart(
+            _gaugeData(used, over),
             duration: SsrMotion.base,
             curve: SsrMotion.curve,
-            builder: (_, value, __) => ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: value,
-                minHeight: 8,
+          ),
+          Center(
+            child: Text(
+              '$pct',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w700,
                 color: over ? SsrColors.danger : SsrColors.accent,
-                backgroundColor: SsrColors.accentSoft,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ),
@@ -204,6 +247,29 @@ class _BudgetCard extends StatelessWidget {
       ),
     );
   }
+}
+
+PieChartData _gaugeData(double used, bool over) {
+  return PieChartData(
+    pieTouchData: PieTouchData(enabled: false),
+    sectionsSpace: 0,
+    centerSpaceRadius: 20,
+    startDegreeOffset: 270,
+    sections: [
+      PieChartSectionData(
+        value: used,
+        color: over ? SsrColors.danger : SsrColors.accent,
+        radius: 8,
+        showTitle: false,
+      ),
+      PieChartSectionData(
+        value: 1 - used,
+        color: SsrColors.accentSoft,
+        radius: 8,
+        showTitle: false,
+      ),
+    ],
+  );
 }
 
 /// Kartu form "Batas baru": kategori + nominal batas + tombol simpan.

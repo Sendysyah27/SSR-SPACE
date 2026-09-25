@@ -4,7 +4,9 @@ import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/laporan/reports_screen.dart';
@@ -12,6 +14,7 @@ import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
 import 'package:ssr_space/widgets/mask_toggle.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
@@ -136,10 +139,7 @@ class BerandaScreenState extends State<BerandaScreen> {
 
   Widget _body() {
     if (loading) {
-      return const LoadingView(
-        key: ValueKey('beranda-loading'),
-        label: 'Memuat ringkasan...',
-      );
+      return const BerandaSkeleton(key: ValueKey('beranda-loading'));
     }
     if (err != null) {
       return ErrorView(
@@ -252,7 +252,8 @@ class BerandaScreenState extends State<BerandaScreen> {
           SizedBox(
             height: 280,
             child: EmptyView(
-              icon: Icons.receipt_long_outlined,
+              icon: AppIcons.transactions,
+              illustration: 'assets/illustrations/empty_transaksi.svg',
               title: 'Belum ada transaksi bulan ini',
               subtitle:
                   'Catat pemasukan atau pengeluaran untuk mengisi buku kas.',
@@ -288,139 +289,158 @@ class BerandaScreenState extends State<BerandaScreen> {
     final positive = surplus >= 0;
     return Container(
       padding: const EdgeInsets.all(SsrSpace.xl),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SsrColors.ink,
-        borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
+        borderRadius: const BorderRadius.all(Radius.circular(SsrRadius.hero)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: SsrColors.ink.withValues(alpha: 0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Stack(
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: StatusChip(
-              label: positive ? 'SURPLUS' : 'DEFISIT',
-              tone: positive ? StatusTone.accent : StatusTone.danger,
-            ),
-          ),
-          const SizedBox(height: SsrSpace.md),
-          Text(
-            amt(surplus),
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
-              color: Colors.white,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
-          const SizedBox(height: SsrSpace.xs),
-          Text(
-            'Selisih ${monthLabel(month).toLowerCase()}',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 13,
-            ),
-          ),
-          if (pctOut != null) ...[
-            const SizedBox(height: SsrSpace.sm),
-            Text(
-              '${pctOut >= 0 ? '+' : ''}$pctOut% dari pengeluaran',
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-            ),
-          ],
-          const SizedBox(height: SsrSpace.lg),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Masuk',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      amt(totalIn),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        fontFeatures: [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
+          const Positioned(
+            top: -70,
+            right: -50,
+            child: SizedBox(
+              width: 180,
+              height: 180,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0x14FFFFFF),
                 ),
               ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: StatusChip(
+                  label: positive ? 'SURPLUS' : 'DEFISIT',
+                  tone: positive ? StatusTone.accent : StatusTone.danger,
+                ),
+              ),
+              const SizedBox(height: SsrSpace.md),
+              Text(amt(surplus), style: SsrType.heroMoney),
+              const SizedBox(height: SsrSpace.xs),
+              Text(
+                'Selisih ${monthLabel(month).toLowerCase()}',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 13,
+                ),
+              ),
+              if (pctOut != null) ...[
+                const SizedBox(height: SsrSpace.sm),
+                Text(
+                  '${pctOut >= 0 ? '+' : ''}$pctOut% dari pengeluaran',
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ],
+              const SizedBox(height: SsrSpace.lg),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Masuk',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          amt(totalIn),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Keluar',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          amt(totalOut),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: SsrSpace.md),
+              SizedBox(
+                height: 8,
+                child: Stack(
                   children: [
-                    Text(
-                      'Keluar',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 12,
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      amt(totalOut),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        fontFeatures: [FontFeature.tabularFigures()],
+                    Positioned.fill(
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(
+                          begin: 0,
+                          end: inShare < 0
+                              ? 0.0
+                              : (inShare > 1 ? 1.0 : inShare),
+                        ),
+                        duration: SsrMotion.base,
+                        curve: SsrMotion.curve,
+                        builder: (context, value, _) {
+                          return Align(
+                            alignment: Alignment.centerLeft,
+                            child: FractionallySizedBox(
+                              widthFactor: value,
+                              heightFactor: 1,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: SsrColors.accent,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: SsrSpace.md),
-          SizedBox(
-            height: 8,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                Positioned.fill(
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(
-                      begin: 0,
-                      end: inShare < 0 ? 0.0 : (inShare > 1 ? 1.0 : inShare),
-                    ),
-                    duration: SsrMotion.base,
-                    curve: SsrMotion.curve,
-                    builder: (context, value, _) {
-                      return Align(
-                        alignment: Alignment.centerLeft,
-                        child: FractionallySizedBox(
-                          widthFactor: value,
-                          heightFactor: 1,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: SsrColors.accent,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
@@ -83,7 +85,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
               onPressed: () => _select(1),
               backgroundColor: SsrColors.accent,
               foregroundColor: Colors.white,
-              icon: const Icon(Icons.add),
+              icon: const PhosphorIcon(AppIcons.add),
               label: const Text('Catat'),
             ),
       bottomNavigationBar: _MainBottomBar(index: index, onSelect: _select),
@@ -100,28 +102,23 @@ class _MainBottomBar extends StatelessWidget {
 
   static const List<NavigationDestination> _destinations = [
     NavigationDestination(
-      icon: Icon(Icons.home_outlined),
-      selectedIcon: Icon(Icons.home),
+      icon: PhosphorIcon(AppIcons.home),
       label: 'Beranda',
     ),
     NavigationDestination(
-      icon: Icon(Icons.receipt_long_outlined),
-      selectedIcon: Icon(Icons.receipt_long),
+      icon: PhosphorIcon(AppIcons.transactions),
       label: 'Transaksi',
     ),
     NavigationDestination(
-      icon: Icon(Icons.savings_outlined),
-      selectedIcon: Icon(Icons.savings),
+      icon: PhosphorIcon(AppIcons.budget),
       label: 'Budget',
     ),
     NavigationDestination(
-      icon: Icon(Icons.bar_chart_outlined),
-      selectedIcon: Icon(Icons.bar_chart),
+      icon: PhosphorIcon(AppIcons.reports),
       label: 'Laporan',
     ),
     NavigationDestination(
-      icon: Icon(Icons.grid_view_outlined),
-      selectedIcon: Icon(Icons.grid_view),
+      icon: PhosphorIcon(AppIcons.menu),
       label: 'Lainnya',
     ),
   ];

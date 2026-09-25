@@ -314,6 +314,17 @@ Catatan: run `36131718083` (notif_settings) sempat **merah** karena 2 temuan ana
 - **Widget lama dilewati** (`pin_field` 72, `tx_row` 69, `bank_track_row` 54): widget kohesif hasil redesign `a0cf623`, panjang build wajar.
 - File yang diubah: hanya file layar; tak ada SQL/test/service.
 
+### Polish visual "Fintech Ledger" (2026-09-25, staged — belum commit)
+
+Pass visual-only 8 layar, keputusan user: Fraunces dibundel (tanpa `google_fonts`), ilustrasi unDraw mirror + recolor zamrud, chart = donut, stage saja (CI setelah "commit").
+
+- **P0 fondasi:** `phosphor_flutter ^2.1.0`, `flutter_svg ^2.3.0`, `lottie ^3.6.1`, `skeletonizer ^3.0.0`, `fl_chart` 0.66→`^1.2.0` (belum dipakai → bebas), sdk `>=3.11.0`; Fraunces variable TTF → `assets/fonts/` + family di pubspec; `assets/illustrations/` (6 SVG) + `assets/lottie/check_pop.json`. Sumber aset dikelompokkan di `/sdcard/Assets/SSR-SPACE-polish/`. Baru: `lib/theme/app_typography.dart` (`SsrType`: heroMoney/moneyLarge/moneyMedium Fraunces — hanya nominal tunggal besar; Fraunces tak punya `tnum`, daftar kolom tetap PJS), `lib/theme/app_icons.dart` (semantik → Phosphor duotone; render wajib `PhosphorIcon` agar lapis sekunder 20% tampil).
+- **P1 ikon:** nav 5 + FAB, `category_icons.dart` (11 peta), `tx_row` (kategori + badge bolt→lightning + glif arah kecil Masuk/Keluar/Transfer), `wallet_row` per-tipe (cash→money, ewallet→deviceMobile, bank→bank), `NavTile`/bulan/mata/state/pelacakan/invite. Nol `Icons.` tersisa di scope (kecuali fallback error Lottie → diganti `AppIcons.success`).
+- **P2 empty+sukses:** `EmptyView.illustration` (SVG 120px, copy UD identik) di 6 layar; invite-list teks polos → SectionCard + SVG; `success_lottie.dart` (`showSuccessFlash` overlay ~950ms, `errorBuilder` fallback) dipicu Simpan transaksi (tambah+ubah) & Simpan budget.
+- **P3 chart:** Laporan `_MonthFlowChart`/`_DonutDial`/`_FlowLegend` (donut Masuk zamrud/Keluar bata, `%masuk` tengah, legenda `amt()` → mask-aware; touch mati; hanya bila arus >0) + Selisih → `SsrType.moneyLarge`; Budget `_BudgetGauge` (cincin fl_chart ganti `LinearProgressIndicator`, animasi via `duration`/`curve` — `swapAnimation*` deprecated di 1.2.0) + angka → `SsrType.moneyMedium`.
+- **P4 permukaan+skeleton:** hero SURPLUS: shadow ink 18%/blur 24 + border putih 8% + orb sheen + angka → `SsrType.heroMoney` (logika badge tak berubah); radius: `state_views` 16→`SsrRadius.card` (bar 4px dibiarkan, pill track); `skeletons.dart` (7 rangka `Skeletonizer.zone`+`Bone`) ganti 7 `LoadingView` scope (splash/org_switcher/billing tetap spinner — out of scope).
+- **Verifikasi lokal:** `dart format` bersih di 10 file sentuh; semua `build()` <50 (donut awal 75 → pecah `_DonutDial`); tiap nama ikon di-grep ke sumber paket; API `PieChartData`/`Skeletonizer.zone`/`Bone.uniRadius`/`Lottie.errorBuilder` dicek dari tarball pub.dev. `flutter analyze/test` hanya bisa di CI (tak ada Flutter arm64).
+
 ---
 
 ## 5. Checklist verifikasi manual (device)
@@ -379,6 +390,12 @@ Setelah install APK v2.3.3+ & migration 07+08:
 - [ ] Visual font: seluruh layar pakai Plus Jakarta Sans; wordmark "SSR SPACE" (splash/auth) pakai Anton; **angka rupiah tetap sejajar (tabular)** dan tak ada overflow/terpotong di layar kecil
 - [ ] Carousel intro: ikon Phosphor Fill tampil (bukan kotak/huruf aneh); tombol/checkbox mudah ditekan
 - [ ] Install APK `2.3.9-22-fasee` → buka layar Transaksi, Pelacakan otomatis, Billing, Laporan, Masuk, Dompet, Pilih workspace, Splash, Beranda (nav bawah + FAB), Onboarding PIN → **tampilan identik** dengan APK `2.3.9-22-refactor` (Fase E struktur-saja)
+- [ ] Install APK polish → Beranda: angka SURPLUS pakai serif Fraunces, kartu gelap ber-shadow; nav bawah + ikon kategori/dompet = Phosphor duotone
+- [ ] Simpan transaksi & Simpan budget → kilatan centang ~1 detik, lalu snackbar seperti biasa
+- [ ] Laporan: donut Masuk/Keluar + `%masuk` tengah + legenda; mask ON → angka legenda jadi `Rp ••••••`, persen tetap
+- [ ] Budget: tiap kartu ada cincin gauge (bata bila lebih batas); angka `spent dari limit` serif
+- [ ] Matikan internet lalu buka tiap layar → skeleton meniru bentuk konten (bukan spinner); font Fraunces tetap tampil (offline)
+- [ ] Layar kosong (bulan tanpa transaksi/budget/dompet/undangan) → ilustrasi zamrud + copy lama + CTA jalan
 
 ---
 
@@ -441,6 +458,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | (fix Fase B + docs) | Fix 2 error analyze: `nav_tile` `Text(String?)` → promosi lokal; `RecentNotifTile._saveButton/_pickTypeAndSave` bawa `BuildContext` eksplisit (StatelessWidget tak punya `context` di luar `build`). **Fase D docs pass**: path basi `lib/core/…` di AGENTS/AUDIT diganti struktur baru + tree §5 ditulis ulang + catatan spec historis pakai path lama. CI run `36126303610` hijau penuh → APK `SSR-SPACE-2.3.9-22-refactor.apk` |
 | `2322201`…`10ff697` | **Fase E sesi 1**: rencana ditulis ke AUDIT + bedah `transactions` (`6673fd6`), `notif_settings` (`669b540`), `billing` (`0508afc` fix 2 temuan analyze: ctor scaffold positional + `const loading`), `10ff697` buang HANDOFF.md dari repo. Run `36131718083` merah → fix → `36132306668`+`36132388087` hijau |
 | `1ad05f3`…`21a46f1` | **Fase E sesi 2 — SELESAI**: `reports` (`1ad05f3`), `auth`+`wallets` (`836d9ac`), `org_switcher` (`066ef76`), `splash` (`4685a66`), `main_shell` (`e891590`), `onboarding` (`21a46f1`). Semua `build()` layar <50 baris (sisa 3 widget lama di-scope out). CI `36133546126` hijau → APK `SSR-SPACE-2.3.9-22-fasee-bedah-build.apk` |
+| (staged 2026-09-25) | **Polish "Fintech Ledger" P0–P4** (visual-only, belum commit): deps + Fraunces + `app_typography`/`app_icons`; re-skin Phosphor duotone; EmptyView ilustrasi + `success_lottie`; donut Laporan + gauge Budget; hero texture + `skeletons` (7 loading). Detail: §4 "Polish visual". CI (analyze/test/APK) jalan setelah user bilang "commit" |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 

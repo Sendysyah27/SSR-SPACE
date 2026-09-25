@@ -11,6 +11,7 @@ import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/lainnya/billing_screen.dart';
 import 'package:ssr_space/screens/workspace/invite_screen.dart';
@@ -247,20 +248,20 @@ class _WorkspaceSection extends StatelessWidget {
         ),
         const Divider(height: SsrSpace.xl),
         NavTile(
-          icon: Icons.swap_horiz_outlined,
+          icon: AppIcons.workspaceSwitch,
           title: 'Ganti workspace',
           onTap: onSwitch,
         ),
         const Divider(height: 1),
         NavTile(
-          icon: Icons.person_add_alt_outlined,
+          icon: AppIcons.invite,
           title: 'Undang anggota',
           subtitle: 'Bagikan kode untuk gabung workspace',
           onTap: onInvite,
         ),
         const Divider(height: 1),
         NavTile(
-          icon: Icons.account_balance_wallet_outlined,
+          icon: AppIcons.wallet,
           title: 'Dompet',
           onTap: onWallets,
         ),
@@ -283,7 +284,7 @@ class _TrackingSection extends StatelessWidget {
       label: 'Pelacakan',
       children: [
         NavTile(
-          icon: Icons.notifications_active_outlined,
+          icon: AppIcons.tracking,
           title: 'Pelacakan otomatis',
           subtitle: 'Notifikasi bank jadi transaksi',
           chip: StatusChip(
@@ -310,7 +311,7 @@ class _DataSection extends StatelessWidget {
       label: 'Data',
       children: [
         NavTile(
-          icon: Icons.save_alt_outlined,
+          icon: AppIcons.backup,
           title: 'Cadangkan data',
           subtitle: 'Ekspor seluruh workspace ke CSV',
           onTap: onBackup,
@@ -363,13 +364,13 @@ class _AccountSection extends StatelessWidget {
       label: 'Akun',
       children: [
         NavTile(
-          icon: Icons.receipt_outlined,
+          icon: AppIcons.billing,
           title: 'Billing',
           subtitle: 'Paket $planLabel',
           onTap: onBilling,
         ),
         const Divider(height: 1),
-        NavTile(icon: Icons.logout_outlined, title: 'Keluar', onTap: onLogout),
+        NavTile(icon: AppIcons.logout, title: 'Keluar', onTap: onLogout),
       ],
     );
   }

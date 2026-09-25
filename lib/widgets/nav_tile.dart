@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
@@ -33,7 +35,7 @@ class NavTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (c != null) ...[c, const SizedBox(width: SsrSpace.sm)],
-          const Icon(Icons.chevron_right, color: SsrColors.secondary),
+          const PhosphorIcon(AppIcons.chevron, color: SsrColors.secondary),
         ],
       ),
       onTap: onTap,
@@ -55,7 +57,7 @@ class _NavIconTile extends StatelessWidget {
         color: SsrColors.accentSoft,
         borderRadius: BorderRadius.circular(SsrRadius.tile),
       ),
-      child: Icon(icon, color: SsrColors.accent, size: 20),
+      child: PhosphorIcon(icon, color: SsrColors.accent, size: 20),
     );
   }
 }
