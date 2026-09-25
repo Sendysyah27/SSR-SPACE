@@ -43,7 +43,7 @@ class TxRow extends StatelessWidget {
     final chips = <Widget>[
       StatusChip(label: tx.code ?? 'Tanpa kode', tone: StatusTone.neutral),
       if (auto)
-        const StatusChip(
+        StatusChip(
           label: 'Otomatis',
           tone: StatusTone.accent,
           icon: AppIcons.autoBadge,
