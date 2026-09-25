@@ -283,6 +283,7 @@ Urutan list penting: **myBCA sebelum BCA**.
 ### 4.13 Polish visual "Fintech Ledger" (2026-09-25, staged — belum commit)
 
 Visual-only 8 layar (detail: AUDIT §4 "Polish visual"). Fondasi: `phosphor_flutter`/`flutter_svg`/`lottie`/`skeletonizer`, `fl_chart`→1.2.0, Fraunces bundel (`SsrType`), `AppIcons` duotone (render via `PhosphorIcon`). Empty berilustrasi (copy UD identik), sukses Lottie `check_pop`, donut Laporan (mask-aware), gauge Budget, hero SURPLUS ber-shadow+sheen, 7 skeleton ganti spinner. Aset sumber: `/sdcard/Assets/SSR-SPACE-polish/`. Semua `build()` <50; copy Indonesia identik; `notif_track_service`/auth/Supabase tak disentuh. CI (analyze→test→APK) + APK ke `/sdcard/Download/SSR-SPACE/` jalan setelah user bilang "commit".
+- **Hasil CI (`b89d797`…`80fce1f`, run `36148631602` hijau):** analyze 0 issue, 60 test lulus, APK `SSR-SPACE-2.3.9-22-polish-ledger.apk`. Temuan: `phosphor_flutter` 2.1.0 tak kompatibel stable (`IconData` final) → **font `Phosphor-Duotone.ttf` divendor** (`assets/fonts/`, family `PhosphorDuotone`), ikon via `AppIcons`+`DuoIcon` mandiri, dep dilepas. Pola const baru: field `static const`, `const` hanya di call-site full-const (lihat AUDIT §7).
 
 ---
 
