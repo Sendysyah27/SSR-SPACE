@@ -289,6 +289,27 @@ Sumber: `supabase.com/pricing` + docs *Project Pausing* (nilai 2026; bisa beruba
 - **Cakupan assert (T01–T11):** regresi recursion migration_08; isolasi baca & tulis lintas org (wallets/tx/budgets/subscriptions/audit_logs/orgs/org_members); auto-join org korban ditolak; `mint_tx_code` non-member error; rate limit 10/60s + manual bebas; audit trigger `tx_auto_insert`/`org_join` + client write audit ditolak; `client_errors` per-user; invite (hash-only, admin-only read/create, join sukses, exhausted+rollback, idempoten, anon denied); `tx_sequences` tersembunyi; `wallet_balance` security_invoker.
 - **Temuan → `migration_12_join_fixes.sql` (wajib jalankan):** [P0] A7 + [minor] A8 (lihat Sprint A).
 
+### Fase E — Refactor struktur lanjutan: bedah `build()` sisa (rencana, 2026-09-25)
+
+Lanjutan Fase A–D (struktur saja — **pixel identik, nominal lewat `amt()`, nol ubah business logic**).
+Disetujui user di sesi sebelumnya ("lanjutin di sesi baru"); daftar target diverifikasi ulang dari kode terkini.
+
+| # | Layar | Blok `build()` >50 baris |
+|---|-------|--------------------------|
+| 1 | `transaksi/transactions_screen` | `build@282=75` (state + ListView), `build@420=109` (`_TxFormCard`) |
+| 2 | `lainnya/notif_settings_screen` | `build@244=87`, `build@447=59`, `build@547=54` |
+| 3 | `lainnya/billing_screen` | `build@77=83` |
+| 4 | `laporan/reports_screen` | `build@127=74` |
+| 5 | `auth/auth_screen` `build@197=65` · `dompet/wallets_screen` `build@159=64` | |
+| 6 | `workspace/org_switcher` `build@149=61` · `auth/splash` `build@84=56` · `shell/main_shell` `build@102=53` · `auth/onboarding` `build@103=52` | |
+
+**Cara kerja:**
+- Ekstraksi jadi widget `StatelessWidget` named; section khusus layar → private class in-file; lintas layar → `lib/widgets/`.
+- Nilai styling disalin **persis** (padding/color/font/radius tak boleh beda satu pun); nominal tetap lewat `amt()`.
+- Verifikasi per langkah: `dart format` parse check lokal → commit per layar → push → CI hijau (batch 2–4 layar per push) sebelum lanjut.
+- **Widget lama dilewati** (`pin_field` 72, `tx_row` 69, `bank_track_row` 54): widget kohesif hasil redesign `a0cf623`, panjang build wajar.
+- File yang diubah: hanya file layar; tak ada SQL/test/service.
+
 ---
 
 ## 5. Checklist verifikasi manual (device)
