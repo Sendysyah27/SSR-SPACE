@@ -99,8 +99,14 @@ class ForegroundTrack {
 
   static Future<void> stop() async {
     if (!Platform.isAndroid) return;
-    if (await FlutterForegroundTask.isRunningService) {
-      await FlutterForegroundTask.stopService();
+    try {
+      if (await FlutterForegroundTask.isRunningService) {
+        await FlutterForegroundTask.stopService();
+      }
+    } catch (e) {
+      // Menenggelamkan error: stop wajib tetap selesai supaya logout /
+      // syncFromPrefs tak pernah batal karena plugin bermasalah.
+      debugPrint('foreground stop gagal: $e');
     }
   }
 

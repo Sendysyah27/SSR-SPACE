@@ -121,7 +121,7 @@ migration_10_org_invites.sql         ← Fase 1 (invite workspace)
 
 ---
 
-## 4. Fitur yang telah update (detail per 2026-09-24, v2.3.3+15)
+## 4. Fitur yang telah update (detail per 2026-09-25, v2.3.6+19)
 
 ### 4.1 Sesi & auth
 - Splash → (opsional onboarding PIN) → Auth email/password Supabase → pilih/buat workspace → `MainShell`.

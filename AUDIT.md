@@ -30,7 +30,7 @@ Lensa: OWASP / RLS Supabase / input hostile (isi notif pihak ketiga).
 | Urutan TX code | Mint dulu → insert bisa gagal → lubang nomor | Insert dulu → mint → update |
 | Regression 07 | — | Policy SELECT org_members self-ref → recursion dompet → **migration_08** |
 
-**Status CI setelah fix:** green · 11 file test · APK `ssr-space-apk` sukses (run `4693c88`).
+**Status CI setelah fix:** green · 11 file test · APK `ssr-space-apk` sukses (build `4693c88`).
 
 ---
 
