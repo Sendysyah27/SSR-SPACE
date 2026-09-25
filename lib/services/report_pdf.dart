@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -78,7 +76,7 @@ Future<Uint8List> buildReportPdf({
           pw.SizedBox(height: 12),
           pw.Text(
             'SSR SPACE',
-            style: pw.TextStyle(
+            style: const pw.TextStyle(
               fontSize: 10,
               fontWeight: pw.FontWeight.bold,
               letterSpacing: 2,
@@ -88,7 +86,7 @@ Future<Uint8List> buildReportPdf({
           pw.SizedBox(height: 2),
           pw.Text(
             'Laporan Keuangan',
-            style: pw.TextStyle(
+            style: const pw.TextStyle(
               fontSize: 22,
               fontWeight: pw.FontWeight.bold,
               color: _ink,
@@ -119,7 +117,7 @@ Future<Uint8List> buildReportPdf({
         pw.SizedBox(height: 16),
         pw.Text(
           'Transaksi (${items.length})',
-          style: pw.TextStyle(
+          style: const pw.TextStyle(
             fontSize: 13,
             fontWeight: pw.FontWeight.bold,
             color: _ink,
@@ -137,7 +135,7 @@ Future<Uint8List> buildReportPdf({
           pw.SizedBox(height: 16),
           pw.Text(
             'Keluar per kategori',
-            style: pw.TextStyle(
+            style: const pw.TextStyle(
               fontSize: 13,
               fontWeight: pw.FontWeight.bold,
               color: _ink,
@@ -171,7 +169,7 @@ pw.Widget _summary(double totalIn, double totalOut) {
             pw.SizedBox(height: 2),
             pw.Text(
               value,
-              style: pw.TextStyle(
+              style: const pw.TextStyle(
                 fontSize: 13,
                 fontWeight: pw.FontWeight.bold,
                 color: color,
@@ -263,7 +261,7 @@ pw.Widget _table(List<SaasTransaction> items) {
       3: const pw.FixedColumnWidth(78),
       4: const pw.FlexColumnWidth(3),
     },
-    border: pw.TableBorder.all(color: PdfColor.fromInt(0xFFE0DED8), width: 0.5),
+    border: const pw.TableBorder.all(color: PdfColor.fromInt(0xFFE0DED8), width: 0.5),
     children: rows,
   );
 }
@@ -287,7 +285,7 @@ pw.Widget _catRow(String name, double amount) {
         ),
         pw.Text(
           rp(amount),
-          style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+          style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
         ),
       ],
     ),
