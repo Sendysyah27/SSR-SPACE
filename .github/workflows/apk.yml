@@ -65,6 +65,7 @@ jobs:
           assert 'FOREGROUND_SERVICE_SPECIAL_USE' in m.read_text()
           assert 'com.pravera.flutter_foreground_task.service.ForegroundService' in m.read_text()
           EOF
+      - run: flutter analyze
       - run: flutter test
       - name: Setup release signing
         env:
