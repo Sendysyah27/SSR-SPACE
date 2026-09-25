@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ssr_space/core/format/datetime.dart';
 import 'package:ssr_space/core/saas/notif_parse.dart';
 import 'package:ssr_space/core/saas/notif_track_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   test('dayLabel formats ymd', () {
@@ -76,5 +77,24 @@ void main() {
       connectionLabel(permissionGranted: true, serviceConnected: true),
       contains('terhubung'),
     );
+  });
+
+  test('saveErrorStatus: RATE_LIMITED jadi Dibatasi', () {
+    final err = PostgrestException(message: 'RATE_LIMITED', code: 'P0001');
+    expect(saveErrorStatus(err), 'Dibatasi, terlalu banyak. Coba lagi.');
+    expect(saveErrorStatus(err), isNot(contains('—')));
+  });
+
+  test('saveErrorStatus: duplikat 23505 Sudah pernah dicatat', () {
+    final err = PostgrestException(
+      message: 'duplicate key value violates unique constraint',
+      code: '23505',
+    );
+    expect(saveErrorStatus(err), 'Sudah pernah dicatat');
+  });
+
+  test('saveErrorStatus: error lain Gagal simpan dengan code', () {
+    final err = PostgrestException(message: 'boom', code: '42501');
+    expect(saveErrorStatus(err), 'Gagal simpan: 42501');
   });
 }

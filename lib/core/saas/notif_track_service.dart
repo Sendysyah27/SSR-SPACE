@@ -7,6 +7,7 @@ import 'package:notification_listener_service/notification_listener_service.dart
 import 'package:notification_listener_service/notification_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ssr_space/core/saas/error_reporter.dart';
 import 'package:ssr_space/core/saas/notif_parse.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
 import 'package:ssr_space/core/saas/transaction_service.dart';
@@ -52,6 +53,16 @@ String connectionLabel({
     return 'Izin aktif, service terputus. Pindai untuk sambung ulang.';
   }
   return 'Service terhubung';
+}
+
+/// Status baris recent saat insert transaksi ditolak server.
+/// RATE_LIMITED = trigger rate limit auto-insert (migration_11).
+String saveErrorStatus(PostgrestException err) {
+  if (err.message.contains('RATE_LIMITED')) {
+    return 'Dibatasi, terlalu banyak. Coba lagi.';
+  }
+  if (err.code == '23505') return 'Sudah pernah dicatat';
+  return 'Gagal simpan: ${err.code}';
 }
 
 class CapturedNotif {
@@ -347,12 +358,16 @@ class NotifTrack {
             ? 'Tersimpan (dompet belum cocok)'
             : 'Tersimpan';
       } on PostgrestException catch (err) {
-        n.status = err.code == '23505'
-            ? 'Sudah pernah dicatat'
-            : 'Gagal simpan: ${err.code}';
+        ErrorReporter.capture(
+          err,
+          StackTrace.current,
+          context: 'notif_pipeline',
+        );
+        n.status = saveErrorStatus(err);
       }
       _remember(n);
-    } catch (err) {
+    } catch (err, st) {
+      ErrorReporter.capture(err, st, context: 'notif_pipeline');
       debugPrint('track: $err');
     }
   }
@@ -389,12 +404,12 @@ class NotifTrack {
       n.status = 'Tersimpan';
       return 'Tersimpan';
     } on PostgrestException catch (err) {
-      final msg = err.code == '23505'
-          ? 'Sudah pernah dicatat'
-          : 'Gagal simpan: ${err.code}';
+      ErrorReporter.capture(err, StackTrace.current, context: 'notif_force');
+      final msg = saveErrorStatus(err);
       n.status = msg;
       return msg;
-    } catch (_) {
+    } catch (err, st) {
+      ErrorReporter.capture(err, st, context: 'notif_force');
       return 'Gagal simpan. Coba lagi.';
     }
   }
