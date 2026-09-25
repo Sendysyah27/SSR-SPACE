@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ssr_space/core/format/money.dart';
+import 'package:ssr_space/core/format/mask.dart';
 import 'package:ssr_space/core/saas/category_icons.dart';
 import 'package:ssr_space/core/theme/app_theme.dart';
 import 'package:ssr_space/models/transaction.dart';
@@ -73,7 +73,7 @@ class TxRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '$_kindLabel: ${rp(tx.amount)}',
+                      '$_kindLabel: ${amt(tx.amount)}',
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: _amountColor,
                         fontFeatures: const [FontFeature.tabularFigures()],

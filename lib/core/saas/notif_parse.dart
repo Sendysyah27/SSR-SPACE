@@ -150,7 +150,12 @@ const watchedApps = [
   WatchedApp('OVO', ['com.vnoo.ovo', 'com.ovo']),
   WatchedApp('GoPay', ['com.gojek.app', 'com.gojek.gojek']),
   WatchedApp('ShopeePay', ['com.shopee']),
-  WatchedApp('SeaBank', ['com.seabank', 'id.co.seabank']),
+  WatchedApp('SeaBank', [
+    'com.seabank',
+    'id.co.seabank',
+    'id.co.bankbkemobile',
+    'id.co.bankbke',
+  ]),
   WatchedApp('BRI', ['com.bri.brimo', 'id.co.bri.brimo', 'com.bri.browser']),
   WatchedApp('BNI', ['com.bni', 'id.co.bni']),
   WatchedApp('BTN', ['com.btn', 'id.co.btn']),
@@ -158,11 +163,7 @@ const watchedApps = [
   WatchedApp('Jago', ['id.co.jago', 'com.bankjago']),
   WatchedApp('Blu', ['com.bca.digital', 'id.co.bca.blu']),
   WatchedApp('CIMB', ['com.cimb', 'com.octo']),
-  WatchedApp('KEB Hana', [
-    'id.co.bankbkemobile',
-    'id.co.bankbke',
-    'id.co.kebhana',
-  ]),
+  WatchedApp('KEB Hana', ['id.co.kebhana', 'co.id.myhana.app']),
   WatchedApp('ISAKU', ['com.isaku']),
 ];
 

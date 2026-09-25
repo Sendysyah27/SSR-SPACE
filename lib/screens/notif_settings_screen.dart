@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ssr_space/core/format/money.dart';
+import 'package:ssr_space/core/format/mask.dart';
 import 'package:ssr_space/core/saas/foreground_track.dart';
 import 'package:ssr_space/core/saas/notif_parse.dart';
 import 'package:ssr_space/core/saas/notif_track_service.dart';
@@ -494,7 +494,7 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
                     StatusChip(label: statusLabel, tone: _statusTone(n.status)),
                     if (n.amount != null)
                       StatusChip(
-                        label: rp(n.amount!),
+                        label: amt(n.amount!),
                         tone: StatusTone.neutral,
                       ),
                     if (n.type != null)
@@ -558,7 +558,7 @@ Future<String?> showModalSheetOfType(BuildContext context, CapturedNotif n) {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Jenis transaksi untuk ${rp(n.amount ?? 0)}',
+              'Jenis transaksi untuk ${amt(n.amount ?? 0)}',
               style: Theme.of(ctx).textTheme.titleMedium,
             ),
           ),

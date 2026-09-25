@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ssr_space/core/format/mask.dart';
 import 'package:ssr_space/core/saas/error_reporter.dart';
 import 'package:ssr_space/core/saas/foreground_track.dart';
 import 'package:ssr_space/core/saas/supabase_config.dart';
@@ -15,6 +16,7 @@ Future<void> main() async {
   await SupabaseConfig.init();
   ForegroundTrack.initOnce();
   final prefs = await SharedPreferences.getInstance();
+  await loadMaskAmounts(prefs);
   final app = SsrSpaceApp(session: SessionService(prefs));
   runZonedGuarded(
     () => runApp(app),

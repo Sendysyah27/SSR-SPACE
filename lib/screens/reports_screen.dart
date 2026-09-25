@@ -6,7 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:ssr_space/core/format/money.dart';
+import 'package:ssr_space/core/format/mask.dart';
 import 'package:ssr_space/core/saas/month.dart';
 import 'package:ssr_space/core/saas/transaction_service.dart';
 import 'package:ssr_space/core/theme/app_theme.dart';
@@ -172,7 +172,7 @@ class ReportsScreenState extends State<ReportsScreen> {
                       ),
                       const SizedBox(height: SsrSpace.xs),
                       Text(
-                        rp(totalIn),
+                        amt(totalIn),
                         style: SsrTheme.money.copyWith(color: SsrColors.accent),
                       ),
                     ],
@@ -191,7 +191,7 @@ class ReportsScreenState extends State<ReportsScreen> {
                       ),
                       const SizedBox(height: SsrSpace.xs),
                       Text(
-                        rp(totalOut),
+                        amt(totalOut),
                         style: SsrTheme.money.copyWith(color: SsrColors.danger),
                       ),
                     ],
@@ -211,7 +211,7 @@ class ReportsScreenState extends State<ReportsScreen> {
                 ),
                 const SizedBox(height: SsrSpace.xs),
                 Text(
-                  rp(net),
+                  amt(net),
                   style: SsrTheme.moneyLarge.copyWith(
                     color: net >= 0 ? SsrColors.accent : SsrColors.danger,
                   ),

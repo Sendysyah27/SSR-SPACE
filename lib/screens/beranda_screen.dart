@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/core/format/datetime.dart';
-import 'package:ssr_space/core/format/money.dart';
+import 'package:ssr_space/core/format/mask.dart';
 import 'package:ssr_space/core/saas/month.dart';
 import 'package:ssr_space/core/saas/transaction_service.dart';
 import 'package:ssr_space/core/theme/app_theme.dart';
@@ -9,6 +9,7 @@ import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/screens/budgets_screen.dart';
 import 'package:ssr_space/screens/reports_screen.dart';
 import 'package:ssr_space/screens/transactions_screen.dart';
+import 'package:ssr_space/widgets/mask_toggle.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/state_views.dart';
@@ -120,7 +121,10 @@ class BerandaScreenState extends State<BerandaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Beranda')),
+      appBar: AppBar(
+        title: const Text('Beranda'),
+        actions: const [MaskToggle()],
+      ),
       body: AnimatedSwitcher(
         duration: SsrMotion.base,
         switchInCurve: SsrMotion.curve,
@@ -300,7 +304,7 @@ class BerandaScreenState extends State<BerandaScreen> {
           ),
           const SizedBox(height: SsrSpace.md),
           Text(
-            rp(surplus),
+            amt(surplus),
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w700,
@@ -340,7 +344,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      rp(totalIn),
+                      amt(totalIn),
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -364,7 +368,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      rp(totalOut),
+                      amt(totalOut),
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,

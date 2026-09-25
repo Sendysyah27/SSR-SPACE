@@ -184,7 +184,7 @@ Android NotificationListener
 | OVO | `com.vnoo.ovo`, `com.ovo` |
 | GoPay | `com.gojek.app`, `com.gojek.gojek` |
 | ShopeePay | `com.shopee` |
-| SeaBank | `com.seabank`, `id.co.seabank` |
+| SeaBank | `com.seabank`, `id.co.seabank`, `id.co.bankbkemobile`, `id.co.bankbke` |
 | BRI | `com.bri.brimo`, `id.co.bri.brimo`, `com.bri.browser` |
 | BNI | `com.bni`, `id.co.bni` |
 | BTN | `com.btn`, `id.co.btn` |
@@ -192,10 +192,12 @@ Android NotificationListener
 | Jago | `id.co.jago`, `com.bankjago` |
 | Blu | `com.bca.digital`, `id.co.bca.blu` |
 | CIMB | `com.cimb`, `com.octo` |
-| KEB Hana | `id.co.bankbkemobile`, `id.co.bankbke`, `id.co.kebhana` |
+| KEB Hana | `id.co.kebhana`, `co.id.myhana.app` |
 | ISAKU | `com.isaku` |
 
 Urutan list penting: **myBCA sebelum BCA**.
+
+> **Catatan package (2026-09-25, A0):** SeaBank di Play Store memakai package lama BKE → **`id.co.bankbkemobile.digitalbank`** (bukan KEB Hana). KEB Hana asli = **`co.id.myhana.app`** (MyHana). Selalu verifikasi package asli dari Play Store / App info device sebelum menambah prefix.
 
 **Parser:**
 - Nominal: regex `Rp` pertama; `1.234.567` → 1234567; `10.800,00` → 10800.
@@ -251,7 +253,16 @@ Urutan list penting: **myBCA sebelum BCA**.
 - **D4 supply chain:** `.github/dependabot.yml` (github-actions, weekly, digroup jadi 1 PR) + semua action di `apk.yml` **di-pin ke commit SHA** dengan komentar versi (dependabot yang update). D2 ikut selesai: `checkout` v4→**v7.0.1**, `setup-java` v4→**v6.0.1**, `flutter-action`→**v2.23.0**, `upload-artifact` v4→**v7.0.1**. SHA via `git ls-remote` (jangan pernah karangan).
 - **F3-c test RLS server-side:** workflow `.github/workflows/rls-test.yml` (trigger push `supabase/**` + PR + manual) → service `postgres:16` → `supabase/test/run.sh` = `setup.sql` (stub role `anon`/`authenticated`/`service_role` + schema `auth` + `auth.uid()` baca GUC `test.user_id` + default privileges) → `schema.sql` → `migration_02..12` → `rls_test.sql` (assert T01–T11: regresi recursion, isolasi baca/tulis lintas org, join org korban, mint_tx_code, rate limit, audit log, client_errors, invite hash/idempoten/exhausted/anon, tx_sequences, wallet_balance). `migration_13` dilewati harness (butuh pg_cron). **Jalankan lokal:** `SSR_RLS_DB_URL=postgresql://… bash supabase/test/run.sh`.
 - **Temuan test → `migration_12_join_fixes.sql` (wajib user jalankan):** [P0] bikin workspace baru gagal sejak migration_07 (subquery `organizations` di policy kena RLS "member read org" → chicken-and-egg; fix helper `is_org_creator` SECURITY DEFINER); [minor] `join_org_by_invite` cek EXHAUSTED sebelum idempoten → re-join member selalu error (urutan cek dibetulkan).
-- **F3-d retention + backup:** `migration_13_retention.sql` (pg_cron, idempotent: `client_errors` 30 hari, `audit_logs` 180 hari, `cron.job_run_details` 14 hari — anti warning upgrade Supabase) + workflow `backup-db.yml` (cron Senin 02:00 UTC + manual; pg_dump via container `postgres:18-alpine` → artifact 30 hari; **butuh secret `SUPABASE_DB_URL`**, kalau kosong job skip dengan warning, bukan gagal).
+- **F3-d retention + backup:** `migration_13_retention.sql` (pg_cron, idempotent: `client_errors` 30 hari, `audit_logs` 180 hari, `cron.job_run_details` 14 hari — anti warning upgrade Supabase) + workflow `backup-db.yml` (cron Senin 02:00 UTC + manual; pg_dump via container `postgres:18-alpine` → artifact 30 hari; **butuh secret `SUPABASE_DB_URL`**, kalau kosong job skip dengan warning, bukan gagal). **Status akhir 2026-09-25:** migration_12 + 13 sudah user jalankan; secret diset (session pooler URI) → run `36110689118` hijau, artifact `ssr-space-backup` 63 KB.
+
+### 4.11 Privacy mode — samarkan nominal (2026-09-25)
+
+- **State:** prefs `mask_amounts` (default OFF) + `ValueNotifier` global `maskAmounts` di `lib/core/format/mask.dart`; dimuat di `main()` via `loadMaskAmounts(prefs)`.
+- **Format:** `amt(value)` → `rp(value)` bila mati, placeholder `Rp ••••••` bila menyala. `mask.dart` me-`export` `money.dart` (jadi `rp` tetap tersedia).
+- **Rebuild global:** `MainShell.body` dibungkus `ValueListenableBuilder(maskAmounts)` → toggle langsung bikin semua tab ulang-build tanpa reload data.
+- **Titik pakai:** beranda (surplus + masuk/keluar), transaksi (list via `TxRow` + label dropdown dompet), dompet (saldo + total), budget (spent/limit), laporan (in/out/net), recent notif. **Billing sengaja tetap `rp()`** (harga plan app, bukan uang user).
+- **Toggle:** ikon mata di `AppBar` Beranda (`lib/widgets/mask_toggle.dart`) + tile **Tampilan → Samarkan nominal** di Lainnya. Billing/field input form tidak ikut disembunyikan.
+- **Test:** `test/mask_test.dart` (asli/menyamar + default OFF + persist prefs).
 
 ---
 
@@ -268,7 +279,7 @@ SSR SPACE/
 ├── lib/
 │   ├── main.dart
 │   ├── core/
-│   │   ├── format/  (money, datetime)
+│   │   ├── format/  (money, datetime, mask)
 │   │   ├── saas/    (auth, wallet, transaction, budget, dashboard,
 │   │   │             notif_parse, notif_track_service, invite_service,
 │   │   │             invite_token, foreground_track, supabase_config, …)
@@ -299,6 +310,10 @@ gh run watch $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') -
 
 # unduh APK terbaru
 gh run download <run-id> -n ssr-space-apk -D /sdcard/Download/SSR-SPACE/
+
+# cek SS (screenshot) terbaru dari user — bukti bug / package app / UI device
+ls -t /sdcard/DCIM/Screenshots | head -5
+# → lalu read file terbaru namanya Screenshot_<YYYY-MM-DD-HH-MM>... ; jangan nebak isi SS tanpa buka
 
 # lokal: flutter TIDAK terpasang di Termux ini → test jalan di CI saja
 ```

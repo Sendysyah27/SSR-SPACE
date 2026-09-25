@@ -49,7 +49,12 @@ void main() {
     expect(matchWatchedApp('com.bca.mybca.omni.android'), 'myBCA');
     expect(matchWatchedApp('com.gojek.app'), 'GoPay');
     expect(matchWatchedApp('com.isaku.app'), 'ISAKU');
-    expect(matchWatchedApp('id.co.bankbkemobile.digitalbank'), 'KEB Hana');
+    // App SeaBank di Play Store memakai namespace lama BKE.
+    expect(matchWatchedApp('id.co.bankbkemobile.digitalbank'), 'SeaBank');
+    expect(matchWatchedApp('id.co.bankbke'), 'SeaBank');
+    // MyHana (KEB Hana) pakai co.id.myhana.app.
+    expect(matchWatchedApp('co.id.myhana.app'), 'KEB Hana');
+    expect(matchWatchedApp('id.co.kebhana'), 'KEB Hana');
     expect(matchWatchedApp('id.dana.debug'), 'DANA');
     expect(matchWatchedApp('com.game.asing'), null);
     expect(matchWatchedApp('com.example.danagame'), null);

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ssr_space/core/format/mask.dart';
 import 'package:ssr_space/core/saas/foreground_track.dart';
 import 'package:ssr_space/core/saas/notif_track_service.dart';
 import 'package:ssr_space/core/session/session_service.dart';
@@ -58,20 +59,23 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: index,
-        children: [
-          BerandaScreen(
-            key: berandaKey,
-            onCatat: () => _select(1),
-            onBudget: () => _select(2),
-            onLaporan: () => _select(3),
-          ),
-          const TransactionsScreen(),
-          BudgetsScreen(key: budgetKey),
-          ReportsScreen(key: reportsKey),
-          OtherScreen(session: widget.session),
-        ],
+      body: ValueListenableBuilder<bool>(
+        valueListenable: maskAmounts,
+        builder: (context, masked, child) => IndexedStack(
+          index: index,
+          children: [
+            BerandaScreen(
+              key: berandaKey,
+              onCatat: () => _select(1),
+              onBudget: () => _select(2),
+              onLaporan: () => _select(3),
+            ),
+            const TransactionsScreen(),
+            BudgetsScreen(key: budgetKey),
+            ReportsScreen(key: reportsKey),
+            OtherScreen(session: widget.session),
+          ],
+        ),
       ),
       floatingActionButton: index == 1
           ? null

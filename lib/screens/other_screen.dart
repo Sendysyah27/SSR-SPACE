@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/core/format/mask.dart';
 import 'package:ssr_space/core/saas/backup_export.dart';
 import 'package:ssr_space/core/saas/billing_service.dart';
 import 'package:ssr_space/core/saas/error_reporter.dart';
@@ -301,6 +302,31 @@ class _OtherScreenState extends State<OtherScreen> {
                       title: 'Cadangkan data',
                       subtitle: 'Ekspor seluruh workspace ke CSV',
                       onTap: backingUp ? null : _backup,
+                    ),
+                  ],
+                ),
+              ),
+              SectionCard(
+                margin: const EdgeInsets.only(bottom: SsrSpace.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tampilan',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: SsrSpace.xs),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: maskAmounts,
+                      builder: (context, masked, _) => SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Samarkan nominal'),
+                        subtitle: const Text(
+                          'Sembunyikan saldo & nominal transaksi',
+                        ),
+                        value: masked,
+                        onChanged: setMaskAmounts,
+                      ),
                     ),
                   ],
                 ),

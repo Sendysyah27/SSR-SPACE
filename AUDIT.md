@@ -16,7 +16,8 @@ Lensa: OWASP / RLS Supabase / input hostile (isi notif pihak ketiga).
 - **Fase 2 D1** (2026-09-25): CI kini wajib lulus `flutter analyze` sebelum test; 26 temuan lama dibersihkan sekali jalan (`739fbb4` + `e7e88e8`), run `36090886163` hijau penuh (analyze → test → APK).
 - **Fase 2 hardening** (2026-09-25): A3 rate limit auto-insert + A4 audit log (`migration_11_hardening.sql`), error monitoring in-house (`client_errors` + `ErrorReporter`), D5 backup manual multi-CSV. CI run `36098447278` hijau penuh; APK `SSR-SPACE-2.3.7-20-fase2-hardening.apk`. **User wajib jalankan migration_11 di Supabase.**
 - **Fase 3 awal** (2026-09-25): spike limit plan Supabase (hasil §4) + D4 dependabot & pin actions by SHA (D2 sekalian selesai).
-- **Fase 3 F3-c/F3-d** (2026-09-25): **test RLS server-side di CI** (`rls-test.yml` + `supabase/test/`, 40+ assert, lulus lokal + CI) → **nemukan 2 temuan** → `migration_12_join_fixes.sql` (**[P0] bikin workspace baru gagal sejak migration_07** — subquery `organizations` di policy `join own org` kena RLS "member read org" (chicken-and-egg); + [minor] `join_org_by_invite` cek EXHAUSTED sebelum idempoten); **F3-d**: `migration_13_retention.sql` (pg_cron retention) + `backup-db.yml` (pg_dump mingguan, butuh secret `SUPABASE_DB_URL`). **User wajib jalankan migration_12 + 13 di Supabase.**
+- **A0 bug sisa pasca-redesign — SELESAI** (2026-09-25): root cause = **prefix package salah**. App **SeaBank** (Play Store) pakai `id.co.bankbkemobile.digitalbank` → kena label "KEB Hana"; **KEB Hana asli** (`co.id.myhana.app`) tidak terpantau sama sekali. Fix: pindahkan prefix BKE (`id.co.bankbkemobile`, `id.co.bankbke`) ke SeaBank, KEB Hana → `id.co.kebhana` + `co.id.myhana.app`, test dibalik. **Fitur baru: privacy mode "Samarkan nominal"** (`mask.dart` + `amt()`, toggle mata di Beranda + tile Lainnya, `test/mask_test.dart`).
+- **Fase 3 F3-c/F3-d** (2026-09-25): **test RLS server-side di CI** (`rls-test.yml` + `supabase/test/`, 40+ assert, lulus lokal + CI) → **nemukan 2 temuan** → `migration_12_join_fixes.sql` (**[P0] bikin workspace baru gagal sejak migration_07** — subquery `organizations` di policy `join own org` kena RLS "member read org" (chicken-and-egg); + [minor] `join_org_by_invite` cek EXHAUSTED sebelum idempoten); **F3-d**: `migration_13_retention.sql` (pg_cron retention) + `backup-db.yml` (pg_dump mingguan, butuh secret `SUPABASE_DB_URL`). **Migrasi 12 + 13 sudah dijalankan user (2026-09-25)**; secret `SUPABASE_DB_URL` diset → backup mingguan aktif (run `36110689118` hijau, artifact 63 KB).
 
 ---
 
@@ -210,13 +211,13 @@ supabase/migration_07 + 08
 
 | # | Item | Detail “done when” |
 |---|------|---------------------|
-| A0 | **Bug sisa pasca-redesign** | ⬜ **Prioritas pertama sesi baru.** BRI sudah aman, tapi user masih melaporkan bug. Langkah: minta detail gejala + screenshot, reproduksi, systematic-debugging (root cause dulu). |
+| A0 | **Bug sisa pasca-redesign** | ✅ **SELESAI 2026-09-25** — root cause: allowlist salah. SeaBank (`id.co.bankbkemobile.digitalbank`) dilabel "KEB Hana"; MyHana (`co.id.myhana.app`) tak terpantau. Fix di `notif_parse.dart` + test dibalik. Sisa A6 (verifikasi prefix bank lain) terpisah. |
 | A1 | **Edit transaksi** (wallet, kategori, tanggal, amount) | ✅ done `2.3.4+16` edit in-place + hapus berkonfirmasi (`transactions_screen`, `TransactionService.update`/`delete`) |
 | A2 | **Saldo dompet** | ✅ done `2.3.4+16` view `wallet_balance` (`migration_09`, `security_invoker`); tampil di Dompet + dropdown form |
 | A3 | **Rate limit auto-insert** | ✅ done `2.3.7+20`: trigger `before insert` di `transactions` (migration_11), maks 10 auto-insert/60 detik/org → `RATE_LIMITED` → status recent "Dibatasi, terlalu banyak. Coba lagi."; form manual bebas limit |
 | A4 | **Audit log server** | ✅ done `2.3.7+20`: tabel `audit_logs` + trigger SECURITY DEFINER `tx_auto_insert` & `org_join` (migration_11); RLS SELECT member saja, client write deny total; tanpa UI (baca via Dashboard) |
 | A5 | **Invite workspace** | ✅ done `2.3.6+19` (migration_10, token hash + RPC `join_org_by_invite`); UX Lainnya → Undang anggota |
-| A6 | **Verifikasi package Play Store** | Di device: catat `packageName` asli tiap bank di allowlist; perbaiki prefix yang meleset. **BRI ✅ aman (user device, 2026-09-24)**; sisa: myBCA/BCA/DANA/OVO/dst |
+| A6 | **Verifikasi package Play Store** | Di device: catat `packageName` asli tiap bank di allowlist; perbaiki prefix yang meleset. **BRI ✅ aman (user device, 2026-09-24); SeaBank ✅ + KEB Hana ✅ (Play Store + App info device, 2026-09-25)**; sisa: myBCA/BCA/DANA/OVO/dst |
 | A7 | **Bikin workspace baru gagal sejak migration_07** | ✅ ditemukan test RLS F3-c (2026-09-25), fixed `migration_12`: policy `join own org` subquery `organizations` kena RLS "member read org" → 42501 chicken-and-egg; fix helper `is_org_creator` SECURITY DEFINER. Gejala user: "Gagal membuat workspace. Periksa nama dan koneksi." |
 | A8 | **Re-join invite selalu INVITE_EXHAUSTED** | ✅ fixed `migration_12`: cek "sudah member" (idempoten) dipindah sebelum cek EXHAUSTED di `join_org_by_invite`; non-member tetap tak lolos tanpa slot |
 
@@ -333,14 +334,17 @@ Setelah install APK v2.3.3+ & migration 07+08:
 - [ ] Flood ≥11 notif cepat → status "Dibatasi, terlalu banyak. Coba lagi."; setelah >60 detik auto-track bisa lagi
 - [ ] `client_errors` terisi setelah error uji → cek di Dashboard: ada `app_version`, **tidak ada** nominal/note/isi notif di kolom mana pun
 - [ ] Install APK `2.3.7+20` → Lainnya → Cadangkan data → share sheet berisi 3 CSV; buka di Sheets → kolom lengkap, angka benar
-- [ ] Push Fase 3 → run CI hijau walau semua action sudah di-pin SHA; cek Dependabot → muncul PR update github-actions (weekly)
-- [ ] Push F3-c → run `rls-test` hijau (suite T01–T11 lulus di postgres:16 CI)
-- [ ] Jalankan `migration_12_join_fixes.sql` di Supabase Dashboard (setelah migration_11)
+- [x] Push Fase 3 → CI hijau walau semua action di-pin SHA; Dependabot sudah aktif (2 PR update github-actions sukses)
+- [x] Push F3-c → run `rls-test` hijau (`36107004906`, suite T01–T11 lulus di postgres:16 CI); `build-apk` `36107004899` hijau
+- [x] Jalankan `migration_12_join_fixes.sql` di Supabase Dashboard (setelah migration_11) — ✅ user 2026-09-25
 - [ ] **Buat workspace BARU** → berhasil (bukan "Gagal membuat workspace") — regresi P0 A7
 - [ ] Join via invite → keluar → tempel kode sama lagi → sukses/idempoten (bukan error "sudah dipakai")
-- [ ] Jalankan `migration_13_retention.sql` → cek `select * from cron.job where jobname like 'ssr_%'` → 3 job ada
-- [ ] GitHub → Settings → Secrets → tambah `SUPABASE_DB_URL` (connection string Database) → jalankan `backup-db` manual (workflow_dispatch) → artifact `ssr-space-backup` berisi `.dump`
-- [ ] Tanpa secret: `backup-db` jalan tapi skip dengan warning (tidak merah)
+- [x] Jalankan `migration_13_retention.sql` → ✅ user 2026-09-25 (cek `select * from cron.job where jobname like 'ssr_%'` → 3 job ada)
+- [x] Secret `SUPABASE_DB_URL` diset (session pooler URI) → `backup-db` run `36110689118` hijau, artifact `ssr-space-backup` 63 KB `.dump`
+- [x] Tanpa secret: `backup-db` skip dengan warning, tidak merah (run `36108091344`)
+- [ ] Notif **SeaBank** asli → status recent "…dari SeaBank", pref `track_wallet_SeaBank` (bukan KEB Hana)
+- [ ] Notif **MyHana/KEB Hana** → label "KEB Hana" (bila app terpasang)
+- [ ] Toggle samarkan nominal (mata di Beranda / tile Lainnya) → beranda, transaksi, dompet, budget, laporan, recent jadi `Rp ••••••`; mati lagi → normal; **restart app → state tetap**; harga plan Billing tidak ikut disembunyikan
 
 ---
 
@@ -363,6 +367,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `test/backup_export_test.dart` | header + escaping CSV 3 tabel, nama file, baris kosong |
 | `test/notif_track_test.dart` (tambahan) | `saveErrorStatus`: RATE_LIMITED → "Dibatasi…", 23505 → "Sudah pernah dicatat", lainnya → "Gagal simpan: code" |
 | `supabase/test/rls_test.sql` (CI, bukan Flutter) | **40+ assert RLS**: regresi recursion, isolasi lintas org, join korban, mint_tx_code, rate limit, audit log, client_errors, invite hash/idempoten/exhausted/anon, tx_sequences, wallet_balance |
+| `test/mask_test.dart` | `amt()` asli/menyamar, default OFF saat prefs kosong, persist `mask_amounts` |
 
 **Belum ada test:** pipeline `_onEvent` penuh (mock Supabase).
 
@@ -395,6 +400,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `12d1a26` | Spec + implementation plan Fase 2 hardening |
 | (Fase 3) | **D4 supply chain**: `.github/dependabot.yml` + pin 4 action ke commit SHA di `apk.yml`; D2 sekalian (checkout v7.0.1, setup-java v6.0.1, flutter-action v2.23.0, upload-artifact v7.0.1). Spike limit plan Supabase → §4 |
 | (Fase 3 F3-c/d) | **Test RLS CI**: `rls-test.yml` + `supabase/test/{setup,run,rls_test}` (40+ assert) → temukan **[P0] bikin workspace gagal sejak 07** + [minor] re-join invite EXHAUSTED → `migration_12_join_fixes.sql`; **retention**: `migration_13_retention.sql` (pg_cron 3 job) + `backup-db.yml` pg_dump mingguan |
+| (A0) | **Fix allowlist SeaBank/KEB Hana** + **fitur privacy mode "Samarkan nominal"**: `notif_parse.dart` (SeaBank ← prefix BKE, KEB Hana ← `co.id.myhana.app`), `mask.dart`/`amt()`/`MaskToggle`, `MainShell` rebuild global, 7 layar + `tx_row`, tile Lainnya, `test/mask_test.dart`, docs |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ssr_space/core/format/money.dart';
+import 'package:ssr_space/core/format/mask.dart';
 import 'package:ssr_space/core/saas/month.dart';
 import 'package:ssr_space/core/saas/transaction_service.dart';
 import 'package:ssr_space/core/saas/tx_validation.dart';
@@ -274,7 +274,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     return DropdownMenuItem(
       value: w.id,
       child: Text(
-        bal == null ? w.name : '${w.name} · ${rp(bal)}',
+        bal == null ? w.name : '${w.name} · ${amt(bal)}',
         style: bal == null
             ? null
             : theme.textTheme.bodyMedium?.copyWith(

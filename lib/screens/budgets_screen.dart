@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ssr_space/core/format/money.dart';
+import 'package:ssr_space/core/format/mask.dart';
 import 'package:ssr_space/core/saas/budget_service.dart';
 import 'package:ssr_space/core/saas/month.dart';
 import 'package:ssr_space/core/theme/app_theme.dart';
@@ -209,7 +209,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
           ),
           const SizedBox(height: SsrSpace.xs),
           Text(
-            '${rp(b.spent)} dari ${rp(b.limit)}',
+            '${amt(b.spent)} dari ${amt(b.limit)}',
             style: SsrTheme.money.copyWith(fontSize: 14),
           ),
           const SizedBox(height: SsrSpace.md),

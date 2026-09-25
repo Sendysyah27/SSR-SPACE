@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ssr_space/core/format/money.dart';
+import 'package:ssr_space/core/format/mask.dart';
 import 'package:ssr_space/core/saas/wallet_service.dart';
 import 'package:ssr_space/core/session/session_service.dart';
 import 'package:ssr_space/core/theme/app_theme.dart';
@@ -97,9 +97,9 @@ class _WalletsScreenState extends State<WalletsScreen> {
   String _balanceLabel(String walletId) {
     if (!balancesOk) return 'Belum termuat';
     for (final b in balances) {
-      if (b.walletId == walletId) return rp(b.balance);
+      if (b.walletId == walletId) return amt(b.balance);
     }
-    return rp(0);
+    return amt(0);
   }
 
   double? _totalBalance() {
@@ -200,7 +200,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: SsrSpace.xs),
-                  Text(rp(total), style: SsrTheme.moneyLarge),
+                  Text(amt(total), style: SsrTheme.moneyLarge),
                 ],
               ),
             ),
