@@ -134,7 +134,7 @@ migration_13_retention.sql           ← Fase 3 (pg_cron retention; di test suit
 
 ### 4.1 Sesi & auth
 - Splash → **intro + persetujuan (user baru / belum setuju)** → Auth email/password Supabase → pilih/buat workspace → `MainShell`.
-- **IntroConsentScreen** (`lib/screens/intro_consent_screen.dart`): PageView 4 halaman (brand tagline → 3 nilai fitur → kesadaran finansial → syarat & persetujuan + checkbox). Centang wajib sebelum "Setuju & mulai". Disimpan di prefs `consent_v1` (timestamp ISO); gate ada di `SplashScreen._boot` **sebelum** cek workspace. User lama juga lihat sekali (flag belum pernah ada). Gagal tulis prefs → snackbar, tetap di layar.
+- **IntroConsentScreen** (`lib/screens/auth/intro_consent_screen.dart`): PageView 4 halaman (brand tagline → 3 nilai fitur → kesadaran finansial → syarat & persetujuan + checkbox). Centang wajib sebelum "Setuju & mulai". Disimpan di prefs `consent_v1` (timestamp ISO); gate ada di `SplashScreen._boot` **sebelum** cek workspace. User lama juga lihat sekali (flag belum pernah ada). Gagal tulis prefs → snackbar, tetap di layar.
 - PIN: hash SHA-256 + salt 16 byte di storage; 5 salah → lockout 60 detik; auto-lock 5 menit.
 - Verifikasi email wajib (resend tersedia).
 
@@ -177,7 +177,7 @@ Android NotificationListener
   → status di NotifTrack.recent (max 20, RAM saja)
 ```
 
-**Allowlist package** (`lib/core/saas/notif_parse.dart`) — match `package == prefix` atau `startsWith(prefix + '.')`:
+**Allowlist package** (`lib/services/notif_parse.dart`) — match `package == prefix` atau `startsWith(prefix + '.')`:
 
 | Label | Prefix package |
 |-------|----------------|
@@ -224,7 +224,7 @@ Urutan list penting: **myBCA sebelum BCA**.
 - “Pindai notifikasi aktif” + daftar recent + tombol Simpan manual  
 **Batasan sadar (by design / sisa backlog):**
 
-- **Foreground service (Fase 1):** `lib/core/saas/foreground_track.dart` menjaga proses hidup selama `track_master` ON + session aktif (Android saja, service type `specialUse`), mati saat master OFF / logout. Start/stop dipanggil dari `main.dart` (init), `notif_settings` (toggle), `main_shell` (init/resume), `other_screen` (logout). Gate `_onEvent` TIDAK berubah karenanya. Izin Manifest (`FOREGROUND_SERVICE_SPECIAL_USE` + service) di-inject CI (`apk.yml`); `android/` tidak di-commit. OEM agresif masih bisa kill → status jujur via `ForegroundTrack.isRunning`, jangan janji "selalu aktif".
+- **Foreground service (Fase 1):** `lib/services/foreground_track.dart` menjaga proses hidup selama `track_master` ON + session aktif (Android saja, service type `specialUse`), mati saat master OFF / logout. Start/stop dipanggil dari `main.dart` (init), `notif_settings` (toggle), `main_shell` (init/resume), `other_screen` (logout). Gate `_onEvent` TIDAK berubah karenanya. Izin Manifest (`FOREGROUND_SERVICE_SPECIAL_USE` + service) di-inject CI (`apk.yml`); `android/` tidak di-commit. OEM agresif masih bisa kill → status jujur via `ForegroundTrack.isRunning`, jangan janji "selalu aktif".
 - Plugin **tidak mengekspos timestamp notif asli** → tanggal = waktu diterima event.
 - Isi pesan full **tidak diupload**; yang dikirim: amount, type, package, hash, category, note, date, wallet_id.
 
@@ -249,8 +249,8 @@ Urutan list penting: **myBCA sebelum BCA**.
 
 - **A3 rate limit auto-insert:** trigger `before insert` di `transactions` (`supabase/migration_11_hardening.sql`) — maks **10 auto-insert (`source_package != null`) / 60 detik / org**, index partial pendukung. Lewat batas → `raise 'RATE_LIMITED'`. Client: `saveErrorStatus()` (`notif_track_service.dart`) → status recent **"Dibatasi, terlalu banyak. Coba lagi."** (dipakai di `_onEvent` + `forceSave`). Insert form manual tidak kena limit.
 - **A4 audit log:** tabel `audit_logs` + trigger SECURITY DEFINER: `tx_auto_insert` (meta: tx_id, amount, type, package, date) dan `org_join` (meta: role). RLS: SELECT member saja, **tanpa** INSERT/UPDATE/DELETE client. Tanpa UI (baca via Dashboard).
-- **Error monitoring in-house:** `lib/core/saas/error_reporter.dart` — `ErrorReporter.init()` di `main()` (`FlutterError.onError` + `PlatformDispatcher.onError` + `runZonedGuarded`), `capture()` dipanggil di catch pipeline notif/backup. Anti-flood murni Dart: dedupe `context|message` per 60 menit + maks 20 event/jam, gagal upload = drop senyap. Tabel `client_errors` (RLS tulis+baca milik sendiri). **Tanpa PII**: hanya message/stack/context/`app_version` (`AppInfo.version`, ikut bump pubspec).
-- **D5 backup manual:** Lainnya → **Cadangkan data** → 3 CSV (`dompet/transaksi/budget-ssr-space.csv`) via share sheet. Builder murni di `lib/core/saas/backup_export.dart`. Tanpa jadwal otomatis (pg_cron = backlog Fase 3).
+- **Error monitoring in-house:** `lib/services/error_reporter.dart` — `ErrorReporter.init()` di `main()` (`FlutterError.onError` + `PlatformDispatcher.onError` + `runZonedGuarded`), `capture()` dipanggil di catch pipeline notif/backup. Anti-flood murni Dart: dedupe `context|message` per 60 menit + maks 20 event/jam, gagal upload = drop senyap. Tabel `client_errors` (RLS tulis+baca milik sendiri). **Tanpa PII**: hanya message/stack/context/`app_version` (`AppInfo.version`, ikut bump pubspec).
+- **D5 backup manual:** Lainnya → **Cadangkan data** → 3 CSV (`dompet/transaksi/budget-ssr-space.csv`) via share sheet. Builder murni di `lib/services/backup_export.dart`. Tanpa jadwal otomatis (pg_cron = backlog Fase 3).
 
 ### 4.10 Fase 3 (mulai 2026-09-25) — scale ops
 
@@ -262,12 +262,22 @@ Urutan list penting: **myBCA sebelum BCA**.
 
 ### 4.11 Privacy mode — samarkan nominal (2026-09-25)
 
-- **State:** prefs `mask_amounts` (default OFF) + `ValueNotifier` global `maskAmounts` di `lib/core/format/mask.dart`; dimuat di `main()` via `loadMaskAmounts(prefs)`.
+- **State:** prefs `mask_amounts` (default OFF) + `ValueNotifier` global `maskAmounts` di `lib/utils/mask.dart`; dimuat di `main()` via `loadMaskAmounts(prefs)`.
 - **Format:** `amt(value)` → `rp(value)` bila mati, placeholder `Rp ••••••` bila menyala. `mask.dart` me-`export` `money.dart` (jadi `rp` tetap tersedia).
 - **Rebuild global:** `MainShell.body` dibungkus `ValueListenableBuilder(maskAmounts)` → toggle langsung bikin semua tab ulang-build tanpa reload data.
 - **Titik pakai:** beranda (surplus + masuk/keluar), transaksi (list via `TxRow` + label dropdown dompet), dompet (saldo + total), budget (spent/limit), laporan (in/out/net), recent notif. **Billing sengaja tetap `rp()`** (harga plan app, bukan uang user).
 - **Toggle:** ikon mata di `AppBar` Beranda (`lib/widgets/mask_toggle.dart`) + tile **Tampilan → Samarkan nominal** di Lainnya. Billing/field input form tidak ikut disembunyikan.
 - **Test:** `test/mask_test.dart` (asli/menyamar + default OFF + persist prefs).
+
+### 4.12 Refactor struktur lib/ + widget bersama (2026-09-25)
+
+**Hard constraint: struktur saja — pixel, warna, spacing, font, behavior wajib identik.**
+
+- **Fase A** (`112c64d`, CI run `36123125093` hijau): `lib/core/{saas,session,format,theme}` → `lib/{services,utils,theme}` + `lib/screens/<fitur>/` (auth, shell, beranda, transaksi, dompet, budget, laporan, lainnya, workspace). Import-only, nol ubah kode.
+- **Fase B** (`19e979d`): 5 widget baru — `NavTile`, `WalletRow`, `BankTrackRow`, `LabeledSectionCard`, `TxTypeSelector` — plus dekomposisi `build()` besar per layar dan dedup `_orgId`/`activeOrgId` → `lib/utils/org_prefs.dart`. **Re-use wajib** 5 widget lama (`SectionCard`, `StatusChip`, `TxRow`, `PrimaryButton`, `PinField`) — dilarang bikin duplikat paralel.
+- **Fix Fase B:** 2 error analyze — `nav_tile` `Text(String?)` (String? tak otomatis promote) dan `RecentNotifTile._saveButton/_pickTypeAndSave` yang akses `context` di luar `build` → `BuildContext` dilewatkan eksplisit.
+- **Aturan tambah widget baru:** cek dulu isi `lib/widgets/` (12 file); nominal wajib lewat `amt()`; nilai styling harus **persis** sama — beda satu angka pun = jangan digabung (parameterisasi eksplisit atau pisah).
+- **Verifikasi:** `flutter` tak ada di Termux → bukti = CI analyze/test hijau + screenshot before/after manual di device user (tiap layar yang disentuh).
 
 ---
 
@@ -281,26 +291,38 @@ SSR SPACE/
 ├── README.md
 ├── pubspec.yaml
 ├── assets/fonts/             ← PJS variable + Anton + Phosphor-Fill (bundled)
-├── .github/workflows/apk.yml
+├── .github/workflows/        ← apk.yml, rls-test.yml, backup-db.yml
 ├── lib/
 │   ├── main.dart
-│   ├── core/
-│   │   ├── format/  (money, datetime, mask)
-│   │   ├── saas/    (auth, wallet, transaction, budget, dashboard,
-│   │   │             notif_parse, notif_track_service, invite_service,
-│   │   │             invite_token, foreground_track, supabase_config, …)
-│   │   ├── session/ (session_service, PIN)
-│   │   └── theme/
-│   ├── models/      (wallet, transaction)
-│   ├── screens/     (splash…main_shell, beranda, transactions, notif_settings, …)
-│   └── widgets/
+│   ├── theme/       (app_theme: SsrColors, SsrSpace, SsrRadius, SsrFonts)
+│   ├── utils/       (money/rp, datetime/ymd, mask/amt, org_prefs, app_info)
+│   ├── services/    (auth, wallet, transaction, budget, dashboard,
+│   │                 notif_parse, notif_track_service, invite_service,
+│   │                 invite_token, foreground_track, supabase_config,
+│   │                 session_service, error_reporter, backup_export, …)
+│   ├── models/      (wallet, transaction, wallet_balance)
+│   ├── screens/     ← satu folder per fitur:
+│   │   ├── auth/    (splash, intro_consent, auth, lock, onboarding)
+│   │   ├── shell/   (main_shell)
+│   │   ├── beranda/ transaksi/ dompet/ budget/ laporan/
+│   │   ├── lainnya/ (other, notif_settings, billing)
+│   │   └── workspace/ (invite, org_switcher)
+│   └── widgets/     (section_card, status_chip, tx_row, primary_button,
+│                     pin_field, nav_tile, wallet_row, bank_track_row,
+│                     labeled_section_card, tx_type_selector, mask_toggle,
+│                     month_picker, state_views)
 ├── test/            (session, notif_parse, notif_track, budget, dashboard, …)
 ├── supabase/
 │   ├── schema.sql
-│   ├── migration_02 … migration_11
+│   ├── migration_02 … migration_13
+│   ├── test/        (run.sh, setup.sql, rls_test.sql — CI rls-test.yml)
 │   └── functions/create-snap/
 └── docs/superpowers/ (spec + plan historis)
 ```
+
+> **Catatan path:** struktur di atas berlaku sejak refactor 2026-09-25 (`112c64d` + `19e979d`).
+> Spec lama di `docs/superpowers/specs/` masih menulis path lama (`lib/core/saas/…`,
+> `lib/screens/*_screen.dart`) — jangan ditiru, cek struktur di atas.
 
 ---
 

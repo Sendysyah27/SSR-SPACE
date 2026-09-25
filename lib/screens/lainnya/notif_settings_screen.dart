@@ -520,14 +520,13 @@ class RecentNotifTile extends StatelessWidget {
     onSaved(msg);
   }
 
-  Future<void> _pickTypeAndSave() async {
-    final ctx = context;
+  Future<void> _pickTypeAndSave(BuildContext ctx) async {
     final type = await showModalSheetOfType(ctx, n);
     if (type == null || !ctx.mounted) return;
     await _forceSave(forceType: type);
   }
 
-  Widget? _saveButton() {
+  Widget? _saveButton(BuildContext ctx) {
     final saved =
         n.status == 'Tersimpan' || (n.status?.startsWith('Tersimpan') ?? false);
     if (saved) return null;
@@ -539,7 +538,7 @@ class RecentNotifTile extends StatelessWidget {
       );
     }
     return TextButton(
-      onPressed: _pickTypeAndSave,
+      onPressed: () => _pickTypeAndSave(ctx),
       child: const Text('Simpan...'),
     );
   }
@@ -550,7 +549,7 @@ class RecentNotifTile extends StatelessWidget {
     final statusLabel = (n.status == null || n.status!.isEmpty)
         ? 'Melewati filter'
         : n.status!;
-    final saveBtn = _saveButton();
+    final saveBtn = _saveButton(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
       child: Row(

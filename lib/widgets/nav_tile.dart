@@ -23,11 +23,12 @@ class NavTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = chip;
+    final s = subtitle;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: _NavIconTile(icon),
       title: Text(title),
-      subtitle: subtitle != null ? Text(subtitle) : null,
+      subtitle: s != null ? Text(s) : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

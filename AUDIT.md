@@ -176,15 +176,15 @@ Lihat **Backlog** di bawah.
 ```
 lib/main.dart
   SupabaseConfig.init()
-lib/screens/main_shell.dart:26
+lib/screens/shell/main_shell.dart:26
   NotifTrack.ensureListening()
-lib/core/saas/notif_track_service.dart
+lib/services/notif_track_service.dart
   notificationsStream → _onEvent
-lib/core/saas/notif_parse.dart
+lib/services/notif_parse.dart
   matchWatchedApp / parseNotifAmount / classifyNotif / notifHash / ymd
-lib/core/saas/transaction_service.dart
+lib/services/transaction_service.dart
   add() → insert → mint_tx_code → update code
-lib/screens/notif_settings_screen.dart
+lib/screens/lainnya/notif_settings_screen.dart
   master + per-app + wallet mapping + recent + forceSave
 supabase/migration_06_notif_source.sql
   source_package, source_hash, unique_tx_hash
@@ -410,6 +410,9 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | (Fase 3 F3-c/d) | **Test RLS CI**: `rls-test.yml` + `supabase/test/{setup,run,rls_test}` (40+ assert) → temukan **[P0] bikin workspace gagal sejak 07** + [minor] re-join invite EXHAUSTED → `migration_12_join_fixes.sql`; **retention**: `migration_13_retention.sql` (pg_cron 3 job) + `backup-db.yml` pg_dump mingguan |
 | (A0) | **Fix allowlist SeaBank/KEB Hana** + **fitur privacy mode "Samarkan nominal"**: `notif_parse.dart` (SeaBank ← prefix BKE, KEB Hana ← `co.id.myhana.app`), `mask.dart`/`amt()`/`MaskToggle`, `MainShell` rebuild global, 7 layar + `tx_row`, tile Lainnya, `test/mask_test.dart`, docs |
 | (tagline+consent) | **Tagline resmi "Simple. Secure. Reliable. Your Finance Space."** + **IntroConsentScreen** carousel 4 halaman (brand → nilai → kesadaran finansial → syarat + checkbox, prefs `consent_v1`, gate splash) + **font global** PJS/Anton/Phosphor-Fill (`assets/fonts/`, `SsrFonts`) + pubspec D3 ditutup + v2.3.9+22 |
+| `112c64d` | **Refactor Fase A (struktur only)**: `lib/core/{saas,session,format,theme}` → `lib/{services,utils,theme}` + `lib/screens/<fitur>/` (auth, shell, beranda, transaksi, dompet, budget, laporan, lainnya, workspace); import saja, nol ubah kode. CI run `36123125093` hijau |
+| `19e979d` | **Refactor Fase B**: widget baru `NavTile`, `WalletRow`, `BankTrackRow`, `LabeledSectionCard`, `TxTypeSelector` (re-use 5 widget lama), dekomposisi `build()` besar per layar, dedup `_orgId`→`lib/utils/org_prefs.dart`. CI run `36125021068` **merah** (2 error analyze) → fix menyusul |
+| (fix Fase B + docs) | Fix 2 error analyze: `nav_tile` `Text(String?)` → promosi lokal; `RecentNotifTile._saveButton/_pickTypeAndSave` bawa `BuildContext` eksplisit (StatelessWidget tak punya `context` di luar `build`). **Fase D docs pass**: path basi `lib/core/…` di AGENTS/AUDIT diganti struktur baru + tree §5 ditulis ulang + catatan spec historis pakai path lama |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 
