@@ -80,13 +80,13 @@ void main() {
   });
 
   test('saveErrorStatus: RATE_LIMITED jadi Dibatasi', () {
-    final err = PostgrestException(message: 'RATE_LIMITED', code: 'P0001');
+    const err = PostgrestException(message: 'RATE_LIMITED', code: 'P0001');
     expect(saveErrorStatus(err), 'Dibatasi, terlalu banyak. Coba lagi.');
     expect(saveErrorStatus(err), isNot(contains('—')));
   });
 
   test('saveErrorStatus: duplikat 23505 Sudah pernah dicatat', () {
-    final err = PostgrestException(
+    const err = PostgrestException(
       message: 'duplicate key value violates unique constraint',
       code: '23505',
     );
@@ -94,7 +94,7 @@ void main() {
   });
 
   test('saveErrorStatus: error lain Gagal simpan dengan code', () {
-    final err = PostgrestException(message: 'boom', code: '42501');
+    const err = PostgrestException(message: 'boom', code: '42501');
     expect(saveErrorStatus(err), 'Gagal simpan: 42501');
   });
 }

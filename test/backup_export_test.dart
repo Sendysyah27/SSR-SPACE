@@ -16,7 +16,7 @@ void main() {
     final csv = walletsCsv([
       {'id': 'w1', 'name': 'DANA', 'type': 'ewallet'},
     ]);
-    final lines = LineSplitter().split(csv).toList();
+    final lines = LineSplitter.split(csv).toList();
     expect(lines[0], 'id,nama,tipe');
     expect(lines[1], 'w1,DANA,ewallet');
     expect(lines.length, 2);
@@ -37,7 +37,7 @@ void main() {
         'source_package': 'id.dana',
       },
     ]);
-    final lines = LineSplitter().split(csv).toList();
+    final lines = LineSplitter.split(csv).toList();
     expect(
       lines[0],
       'id,kode,tanggal,jenis,nominal,kategori,catatan,dompet_id,ke_dompet_id,sumber_aplikasi',
@@ -52,15 +52,15 @@ void main() {
     final csv = budgetsCsv([
       {'category': 'Makan', 'month': '2026-09', 'limit_amount': 800000},
     ]);
-    final lines = LineSplitter().split(csv).toList();
+    final lines = LineSplitter.split(csv).toList();
     expect(lines[0], 'kategori,bulan,limit');
     expect(lines[1], 'Makan,2026-09,800000');
   });
 
   test('baris kosong = hanya header', () {
     expect(
-      LineSplitter().split(walletsCsv(const [])).toList(),
-      ['id,nama,tipe'],
+      LineSplitter.split(walletsCsv(const [])).toList(),
+      const ['id,nama,tipe'],
     );
   });
 }
