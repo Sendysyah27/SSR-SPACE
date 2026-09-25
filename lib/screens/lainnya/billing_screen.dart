@@ -76,21 +76,14 @@ class _BillingScreenState extends State<BillingScreen> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Billing')),
-        body: const LoadingView(label: 'Memuat paket...'),
-      );
+      return const _BillingScaffold(LoadingView(label: 'Memuat paket...'));
     }
     if (err != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Billing')),
-        body: ErrorView(message: err!, onRetry: _load),
-      );
+      return _BillingScaffold(ErrorView(message: err!, onRetry: _load));
     }
     final isPro = plan == 'pro';
-    return Scaffold(
-      appBar: AppBar(title: const Text('Billing')),
-      body: ListView(
+    return _BillingScaffold(
+      ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
           Text(
@@ -98,63 +91,102 @@ class _BillingScreenState extends State<BillingScreen> {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: SsrSpace.lg),
-          _PlanCard(
-            margin: const EdgeInsets.only(bottom: SsrSpace.md),
-            title: 'Gratis',
-            statusChip: !isPro
-                ? const StatusChip(
-                    label: 'Paket aktif',
-                    tone: StatusTone.accent,
-                  )
-                : null,
-            price: Text('Rp0', style: SsrTheme.money.copyWith(fontSize: 18)),
-            features: const ['Catat transaksi', '1 workspace'],
-          ),
-          _PlanCard(
-            borderColor: SsrColors.accent,
-            title: 'Pro',
-            statusChip: isPro
-                ? const StatusChip(
-                    label: 'Paket aktif',
-                    tone: StatusTone.accent,
-                  )
-                : const StatusChip(label: 'Upgrade', tone: StatusTone.neutral),
-            price: Text(
-              '${rp(proPrice)}/bulan',
-              style: SsrTheme.money.copyWith(
-                fontSize: 18,
-                color: SsrColors.accent,
-              ),
-            ),
-            features: const [
-              'Workspace banyak',
-              'Export laporan',
-              'Tanpa batas',
-            ],
-            extra: [
-              if (msg != null) ...[
-                const SizedBox(height: SsrSpace.md),
-                StatusChip(
-                  label: msg!.startsWith('Permintaan')
-                      ? 'Permintaan terkirim'
-                      : 'Gagal',
-                  tone: msg!.startsWith('Permintaan')
-                      ? StatusTone.accent
-                      : StatusTone.danger,
-                ),
-                const SizedBox(height: SsrSpace.sm),
-                Text(msg!, style: Theme.of(context).textTheme.bodySmall),
-              ],
-              const SizedBox(height: SsrSpace.lg),
-              PrimaryButton(
-                label: 'Naik ke Pro',
-                loading: upgrading,
-                onPressed: isPro ? null : _upgrade,
-              ),
-            ],
+          _FreePlanCard(isPro: isPro),
+          _ProPlanCard(
+            isPro: isPro,
+            msg: msg,
+            upgrading: upgrading,
+            onUpgrade: _upgrade,
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Kerangka layar Billing: AppBar "Billing" + body (state / daftar paket).
+class _BillingScaffold extends StatelessWidget {
+  final Widget body;
+  const _BillingScaffold(this.body);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Billing')),
+      body: body,
+    );
+  }
+}
+
+/// Kartu paket Gratis: chip "Paket aktif" bila bukan Pro.
+class _FreePlanCard extends StatelessWidget {
+  final bool isPro;
+
+  const _FreePlanCard({required this.isPro});
+
+  @override
+  Widget build(BuildContext context) {
+    return _PlanCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      title: 'Gratis',
+      statusChip: !isPro
+          ? const StatusChip(label: 'Paket aktif', tone: StatusTone.accent)
+          : null,
+      price: Text('Rp0', style: SsrTheme.money.copyWith(fontSize: 18)),
+      features: const ['Catat transaksi', '1 workspace'],
+    );
+  }
+}
+
+/// Kartu paket Pro: harga, fitur, chip status, pesan hasil upgrade,
+/// dan tombol "Naik ke Pro".
+class _ProPlanCard extends StatelessWidget {
+  final bool isPro;
+  final String? msg;
+  final bool upgrading;
+  final VoidCallback onUpgrade;
+
+  const _ProPlanCard({
+    required this.isPro,
+    required this.msg,
+    required this.upgrading,
+    required this.onUpgrade,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _PlanCard(
+      borderColor: SsrColors.accent,
+      title: 'Pro',
+      statusChip: isPro
+          ? const StatusChip(label: 'Paket aktif', tone: StatusTone.accent)
+          : const StatusChip(label: 'Upgrade', tone: StatusTone.neutral),
+      price: Text(
+        '${rp(proPrice)}/bulan',
+        style: SsrTheme.money.copyWith(fontSize: 18, color: SsrColors.accent),
+      ),
+      features: const ['Workspace banyak', 'Export laporan', 'Tanpa batas'],
+      extra: [
+        if (msg != null) ...[
+          const SizedBox(height: SsrSpace.md),
+          StatusChip(
+            label: msg!.startsWith('Permintaan')
+                ? 'Permintaan terkirim'
+                : 'Gagal',
+            tone: msg!.startsWith('Permintaan')
+                ? StatusTone.accent
+                : StatusTone.danger,
+          ),
+          const SizedBox(height: SsrSpace.sm),
+          Text(msg!, style: Theme.of(context).textTheme.bodySmall),
+        ],
+        const SizedBox(height: SsrSpace.lg),
+        PrimaryButton(
+          label: 'Naik ke Pro',
+          loading: upgrading,
+          onPressed: isPro ? null : onUpgrade,
+        ),
+      ],
     );
   }
 }

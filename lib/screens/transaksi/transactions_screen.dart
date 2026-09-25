@@ -297,7 +297,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       );
     }
     if (loading) {
-      return _TxStateScaffold(const LoadingView(label: 'Memuat transaksi...'));
+      return const _TxStateScaffold(LoadingView(label: 'Memuat transaksi...'));
     }
     if (err != null) {
       return _TxStateScaffold(ErrorView(message: err!, onRetry: _load));
@@ -473,7 +473,7 @@ class _TxHistorySection extends StatelessWidget {
 /// Kerangka layar Transaksi: AppBar "Transaksi" + body (state / daftar).
 class _TxStateScaffold extends StatelessWidget {
   final Widget body;
-  const _TxStateScaffold({required this.body});
+  const _TxStateScaffold(this.body);
 
   @override
   Widget build(BuildContext context) {
