@@ -278,12 +278,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     }
   }
 
+  void _onMonthChanged(String m) {
+    setState(() => month = m);
+    _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (noOrg) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Transaksi')),
-        body: EmptyView(
+      return _TxStateScaffold(
+        EmptyView(
           icon: Icons.business_outlined,
           title: 'Belum ada workspace',
           subtitle: 'Pilih atau buat workspace dulu di menu Lainnya.',
@@ -293,64 +297,37 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       );
     }
     if (loading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Transaksi')),
-        body: const LoadingView(label: 'Memuat transaksi...'),
-      );
+      return _TxStateScaffold(const LoadingView(label: 'Memuat transaksi...'));
     }
     if (err != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Transaksi')),
-        body: ErrorView(message: err!, onRetry: _load),
-      );
+      return _TxStateScaffold(ErrorView(message: err!, onRetry: _load));
     }
-    return Scaffold(
-      appBar: AppBar(title: const Text('Transaksi')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          SsrSpace.lg,
-          SsrSpace.lg,
-          SsrSpace.lg,
-          96,
-        ),
-        children: [
-          MonthPicker(
-            month: month,
-            onChanged: (m) {
-              setState(() => month = m);
-              _load();
-            },
-          ),
-          const SizedBox(height: SsrSpace.md),
-          _TxFormCard(
-            formKey: formKey,
-            editing: editing,
-            type: type,
-            amountC: amountC,
-            catC: catC,
-            noteC: noteC,
-            walletId: walletId,
-            toWalletId: toWalletId,
-            wallets: wallets,
-            balanceOf: _balanceOf,
-            formErr: formErr,
-            saving: saving,
-            onTypeChanged: (v) => setState(() => type = v),
-            onWalletChanged: (v) => setState(() => walletId = v),
-            onToWalletChanged: (v) => setState(() => toWalletId = v),
-            onCancelEdit: _cancelEdit,
-            onConfirmDelete: _confirmDelete,
-            onSave: _save,
-          ),
-          const SizedBox(height: SsrSpace.xl),
-          _TxHistorySection(
-            month: month,
-            items: items,
-            selectedId: editing?.id,
-            onTap: _startEdit,
-            onEmptyAction: _scrollToForm,
-          ),
-        ],
+    return _TxStateScaffold(
+      _TxListBody(
+        month: month,
+        onMonthChanged: _onMonthChanged,
+        items: items,
+        selectedId: editing?.id,
+        onTap: _startEdit,
+        onEmptyAction: _scrollToForm,
+        formKey: formKey,
+        editing: editing,
+        type: type,
+        amountC: amountC,
+        catC: catC,
+        noteC: noteC,
+        walletId: walletId,
+        toWalletId: toWalletId,
+        wallets: wallets,
+        balanceOf: _balanceOf,
+        formErr: formErr,
+        saving: saving,
+        onTypeChanged: (v) => setState(() => type = v),
+        onWalletChanged: (v) => setState(() => walletId = v),
+        onToWalletChanged: (v) => setState(() => toWalletId = v),
+        onCancelEdit: _cancelEdit,
+        onConfirmDelete: _confirmDelete,
+        onSave: _save,
       ),
     );
   }
@@ -400,22 +377,6 @@ class _TxFormCard extends StatelessWidget {
     required this.onSave,
   });
 
-  DropdownMenuItem<String> _walletItem(Wallet w, ThemeData theme) {
-    final bal = balanceOf(w.id);
-    return DropdownMenuItem(
-      value: w.id,
-      child: Text(
-        bal == null ? w.name : '${w.name} · ${amt(bal)}',
-        style: bal == null
-            ? null
-            : theme.textTheme.bodyMedium?.copyWith(
-                color: SsrColors.secondary,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -425,27 +386,9 @@ class _TxFormCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (editing != null) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(SsrSpace.md),
-              decoration: BoxDecoration(
-                color: SsrColors.accentSoft,
-                borderRadius: BorderRadius.circular(SsrRadius.tile),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Mengubah ${editing!.code ?? 'transaksi'}',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: onCancelEdit,
-                    child: const Text('Batalkan edit'),
-                  ),
-                ],
-              ),
+            _EditBanner(
+              label: 'Mengubah ${editing!.code ?? 'transaksi'}',
+              onCancelEdit: onCancelEdit,
             ),
             const SizedBox(height: SsrSpace.md),
           ],
@@ -456,72 +399,24 @@ class _TxFormCard extends StatelessWidget {
           const SizedBox(height: SsrSpace.md),
           TxTypeSelector(value: type, onChanged: onTypeChanged),
           const SizedBox(height: SsrSpace.lg),
-          TextField(
-            controller: amountC,
-            keyboardType: TextInputType.number,
-            style: SsrTheme.moneyLarge,
-            decoration: const InputDecoration(
-              labelText: 'Nominal',
-              prefixText: 'Rp ',
-              prefixStyle: SsrTheme.moneyLarge,
-            ),
+          _TxBasicFields(amountC: amountC, catC: catC, noteC: noteC),
+          _TxDropdowns(
+            type: type,
+            walletId: walletId,
+            toWalletId: toWalletId,
+            wallets: wallets,
+            balanceOf: balanceOf,
+            formErr: formErr,
+            onWalletChanged: onWalletChanged,
+            onToWalletChanged: onToWalletChanged,
           ),
-          const SizedBox(height: SsrSpace.md),
-          TextField(
-            controller: catC,
-            decoration: const InputDecoration(
-              labelText: 'Kategori (misal Makan)',
-            ),
-          ),
-          const SizedBox(height: SsrSpace.md),
-          TextField(
-            controller: noteC,
-            decoration: const InputDecoration(labelText: 'Catatan'),
-          ),
-          const SizedBox(height: SsrSpace.md),
-          DropdownButtonFormField<String>(
-            initialValue: walletId,
-            decoration: const InputDecoration(labelText: 'Dompet'),
-            items: [for (final w in wallets) _walletItem(w, theme)],
-            onChanged: onWalletChanged,
-          ),
-          if (type == 'transfer') ...[
-            const SizedBox(height: SsrSpace.md),
-            DropdownButtonFormField<String>(
-              initialValue: toWalletId,
-              decoration: const InputDecoration(labelText: 'Dompet tujuan'),
-              items: [for (final w in wallets) _walletItem(w, theme)],
-              onChanged: onToWalletChanged,
-            ),
-          ],
-          if (formErr != null) ...[
-            const SizedBox(height: SsrSpace.md),
-            Text(
-              formErr!,
-              style: const TextStyle(color: SsrColors.danger, fontSize: 13),
-            ),
-          ],
           const SizedBox(height: SsrSpace.lg),
-          PrimaryButton(
-            label: editing != null ? 'Simpan perubahan' : 'Simpan transaksi',
-            onPressed: onSave,
-            loading: saving,
+          _TxFormActions(
+            editing: editing,
+            saving: saving,
+            onSave: onSave,
+            onConfirmDelete: onConfirmDelete,
           ),
-          if (editing != null) ...[
-            const SizedBox(height: SsrSpace.sm),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton(
-                onPressed: onConfirmDelete,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: SsrColors.danger,
-                  side: const BorderSide(color: SsrColors.danger),
-                ),
-                child: const Text('Hapus'),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -570,6 +465,309 @@ class _TxHistorySection extends StatelessWidget {
             TxRow(tx: t, selected: selectedId == t.id, onTap: () => onTap(t)),
             const Divider(height: 1),
           ],
+      ],
+    );
+  }
+}
+
+/// Kerangka layar Transaksi: AppBar "Transaksi" + body (state / daftar).
+class _TxStateScaffold extends StatelessWidget {
+  final Widget body;
+  const _TxStateScaffold({required this.body});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Transaksi')),
+      body: body,
+    );
+  }
+}
+
+/// Isi layar Transaksi: pemilih bulan, kartu form catat, dan blok riwayat.
+class _TxListBody extends StatelessWidget {
+  final String month;
+  final ValueChanged<String> onMonthChanged;
+  final List<SaasTransaction> items;
+  final String? selectedId;
+  final ValueChanged<SaasTransaction> onTap;
+  final VoidCallback onEmptyAction;
+  final GlobalKey formKey;
+  final SaasTransaction? editing;
+  final String type;
+  final TextEditingController amountC;
+  final TextEditingController catC;
+  final TextEditingController noteC;
+  final String? walletId;
+  final String? toWalletId;
+  final List<Wallet> wallets;
+  final double? Function(String? id) balanceOf;
+  final String? formErr;
+  final bool saving;
+  final ValueChanged<String> onTypeChanged;
+  final ValueChanged<String?> onWalletChanged;
+  final ValueChanged<String?> onToWalletChanged;
+  final VoidCallback onCancelEdit;
+  final VoidCallback onConfirmDelete;
+  final VoidCallback onSave;
+
+  const _TxListBody({
+    required this.month,
+    required this.onMonthChanged,
+    required this.items,
+    required this.selectedId,
+    required this.onTap,
+    required this.onEmptyAction,
+    required this.formKey,
+    required this.editing,
+    required this.type,
+    required this.amountC,
+    required this.catC,
+    required this.noteC,
+    required this.walletId,
+    required this.toWalletId,
+    required this.wallets,
+    required this.balanceOf,
+    required this.formErr,
+    required this.saving,
+    required this.onTypeChanged,
+    required this.onWalletChanged,
+    required this.onToWalletChanged,
+    required this.onCancelEdit,
+    required this.onConfirmDelete,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        SsrSpace.lg,
+        SsrSpace.lg,
+        SsrSpace.lg,
+        96,
+      ),
+      children: [
+        MonthPicker(month: month, onChanged: onMonthChanged),
+        const SizedBox(height: SsrSpace.md),
+        _TxFormCard(
+          formKey: formKey,
+          editing: editing,
+          type: type,
+          amountC: amountC,
+          catC: catC,
+          noteC: noteC,
+          walletId: walletId,
+          toWalletId: toWalletId,
+          wallets: wallets,
+          balanceOf: balanceOf,
+          formErr: formErr,
+          saving: saving,
+          onTypeChanged: onTypeChanged,
+          onWalletChanged: onWalletChanged,
+          onToWalletChanged: onToWalletChanged,
+          onCancelEdit: onCancelEdit,
+          onConfirmDelete: onConfirmDelete,
+          onSave: onSave,
+        ),
+        const SizedBox(height: SsrSpace.xl),
+        _TxHistorySection(
+          month: month,
+          items: items,
+          selectedId: selectedId,
+          onTap: onTap,
+          onEmptyAction: onEmptyAction,
+        ),
+      ],
+    );
+  }
+}
+
+/// Banner "Mengubah TX-xxxx" + tombol Batalkan edit (saat mode edit).
+class _EditBanner extends StatelessWidget {
+  final String label;
+  final VoidCallback onCancelEdit;
+
+  const _EditBanner({required this.label, required this.onCancelEdit});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(SsrSpace.md),
+      decoration: BoxDecoration(
+        color: SsrColors.accentSoft,
+        borderRadius: BorderRadius.circular(SsrRadius.tile),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
+          TextButton(
+            onPressed: onCancelEdit,
+            child: const Text('Batalkan edit'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tiga field teks form: nominal, kategori, dan catatan.
+class _TxBasicFields extends StatelessWidget {
+  final TextEditingController amountC;
+  final TextEditingController catC;
+  final TextEditingController noteC;
+
+  const _TxBasicFields({
+    required this.amountC,
+    required this.catC,
+    required this.noteC,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: amountC,
+          keyboardType: TextInputType.number,
+          style: SsrTheme.moneyLarge,
+          decoration: const InputDecoration(
+            labelText: 'Nominal',
+            prefixText: 'Rp ',
+            prefixStyle: SsrTheme.moneyLarge,
+          ),
+        ),
+        const SizedBox(height: SsrSpace.md),
+        TextField(
+          controller: catC,
+          decoration: const InputDecoration(
+            labelText: 'Kategori (misal Makan)',
+          ),
+        ),
+        const SizedBox(height: SsrSpace.md),
+        TextField(
+          controller: noteC,
+          decoration: const InputDecoration(labelText: 'Catatan'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Pilihan dompet (+ dompet tujuan saat transfer) dan pesan galat.
+class _TxDropdowns extends StatelessWidget {
+  final String type;
+  final String? walletId;
+  final String? toWalletId;
+  final List<Wallet> wallets;
+  final double? Function(String? id) balanceOf;
+  final String? formErr;
+  final ValueChanged<String?> onWalletChanged;
+  final ValueChanged<String?> onToWalletChanged;
+
+  const _TxDropdowns({
+    required this.type,
+    required this.walletId,
+    required this.toWalletId,
+    required this.wallets,
+    required this.balanceOf,
+    required this.formErr,
+    required this.onWalletChanged,
+    required this.onToWalletChanged,
+  });
+
+  DropdownMenuItem<String> _walletItem(Wallet w, ThemeData theme) {
+    final bal = balanceOf(w.id);
+    return DropdownMenuItem(
+      value: w.id,
+      child: Text(
+        bal == null ? w.name : '${w.name} · ${amt(bal)}',
+        style: bal == null
+            ? null
+            : theme.textTheme.bodyMedium?.copyWith(
+                color: SsrColors.secondary,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: SsrSpace.md),
+        DropdownButtonFormField<String>(
+          initialValue: walletId,
+          decoration: const InputDecoration(labelText: 'Dompet'),
+          items: [for (final w in wallets) _walletItem(w, theme)],
+          onChanged: onWalletChanged,
+        ),
+        if (type == 'transfer') ...[
+          const SizedBox(height: SsrSpace.md),
+          DropdownButtonFormField<String>(
+            initialValue: toWalletId,
+            decoration: const InputDecoration(labelText: 'Dompet tujuan'),
+            items: [for (final w in wallets) _walletItem(w, theme)],
+            onChanged: onToWalletChanged,
+          ),
+        ],
+        if (formErr != null) ...[
+          const SizedBox(height: SsrSpace.md),
+          Text(
+            formErr!,
+            style: const TextStyle(color: SsrColors.danger, fontSize: 13),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Tombol simpan (+ Hapus danger saat mode edit).
+class _TxFormActions extends StatelessWidget {
+  final SaasTransaction? editing;
+  final bool saving;
+  final VoidCallback onSave;
+  final VoidCallback onConfirmDelete;
+
+  const _TxFormActions({
+    required this.editing,
+    required this.saving,
+    required this.onSave,
+    required this.onConfirmDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PrimaryButton(
+          label: editing != null ? 'Simpan perubahan' : 'Simpan transaksi',
+          onPressed: onSave,
+          loading: saving,
+        ),
+        if (editing != null) ...[
+          const SizedBox(height: SsrSpace.sm),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: OutlinedButton(
+              onPressed: onConfirmDelete,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: SsrColors.danger,
+                side: const BorderSide(color: SsrColors.danger),
+              ),
+              child: const Text('Hapus'),
+            ),
+          ),
+        ],
       ],
     );
   }
