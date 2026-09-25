@@ -14,6 +14,7 @@ Lensa: OWASP / RLS Supabase / input hostile (isi notif pihak ketiga).
 - **Fase 1 scale** (invite workspace + foreground service): kode + docs commit lokal; CI milestone 1 run `36069820717` dan milestone 2 run `36075349074` hijau. Changelog commit di §7.
 - APK rilis Fase 1: `/sdcard/Download/SSR-SPACE/SSR-SPACE-2.3.6-19-fase1-scale.apk` (diunduh dari run CI setelah push docs ini)
 - **Fase 2 D1** (2026-09-25): CI kini wajib lulus `flutter analyze` sebelum test; 26 temuan lama dibersihkan sekali jalan (`739fbb4` + `e7e88e8`), run `36090886163` hijau penuh (analyze → test → APK).
+- **Fase 2 hardening** (2026-09-25): A3 rate limit auto-insert + A4 audit log (`migration_11_hardening.sql`), error monitoring in-house (`client_errors` + `ErrorReporter`), D5 backup manual multi-CSV. CI run `36098447278` hijau penuh; APK `SSR-SPACE-2.3.7-20-fase2-hardening.apk`. **User wajib jalankan migration_11 di Supabase.**
 
 ---
 
@@ -210,8 +211,8 @@ supabase/migration_07 + 08
 | A0 | **Bug sisa pasca-redesign** | ⬜ **Prioritas pertama sesi baru.** BRI sudah aman, tapi user masih melaporkan bug. Langkah: minta detail gejala + screenshot, reproduksi, systematic-debugging (root cause dulu). |
 | A1 | **Edit transaksi** (wallet, kategori, tanggal, amount) | ✅ done `2.3.4+16` edit in-place + hapus berkonfirmasi (`transactions_screen`, `TransactionService.update`/`delete`) |
 | A2 | **Saldo dompet** | ✅ done `2.3.4+16` view `wallet_balance` (`migration_09`, `security_invoker`); tampil di Dompet + dropdown form |
-| A3 | **Rate limit auto-insert** | Mis. max N insert / menit / org (prefer: RPC insert terkontrol atau Supabase rate limit); status “Dibatasi” |
-| A4 | **Audit log server** | Tabel `audit_logs(org_id, session/app, event, meta)` untuk insert otomatis & join org |
+| A3 | **Rate limit auto-insert** | ✅ done `2.3.7+20`: trigger `before insert` di `transactions` (migration_11), maks 10 auto-insert/60 detik/org → `RATE_LIMITED` → status recent "Dibatasi, terlalu banyak. Coba lagi."; form manual bebas limit |
+| A4 | **Audit log server** | ✅ done `2.3.7+20`: tabel `audit_logs` + trigger SECURITY DEFINER `tx_auto_insert` & `org_join` (migration_11); RLS SELECT member saja, client write deny total; tanpa UI (baca via Dashboard) |
 | A5 | **Invite workspace** | ✅ done `2.3.6+19` (migration_10, token hash + RPC `join_org_by_invite`); UX Lainnya → Undang anggota |
 | A6 | **Verifikasi package Play Store** | Di device: catat `packageName` asli tiap bank di allowlist; perbaiki prefix yang meleset. **BRI ✅ aman (user device, 2026-09-24)**; sisa: myBCA/BCA/DANA/OVO/dst |
 
@@ -246,7 +247,9 @@ supabase/migration_07 + 08
 | D2 | Setup-java v5 + checkout v5 | Hilangkan deprecation warning Actions |
 | D3 | Pubspec description masih “offline multi-dompet” | Samakan dengan reality SaaS |
 | D4 | Dependabot / pin actions by SHA | Supply chain |
-| D5 | Backup export DB | CSV terjadwal / manual dari dashboard |
+| D5 | Backup export DB | ✅ done `2.3.7+20`: **manual** multi-CSV (dompet/transaksi/budget) dari Lainnya → Cadangkan data (`backup_export.dart`); jadwal otomatis (pg_cron + Storage) = backlog Fase 3 |
+| D6 | Retention `client_errors` + `audit_logs` | ⬜ Baru: cleanup baris lama (pg_cron Fase 3); UI baca `audit_logs` opsional |
+| D7 | Error monitoring lanjutan | ⬜ Baru: eksplorasi alert/DSN Sentry bila volume error in-house mulai besar |
 
 ---
 
@@ -287,6 +290,13 @@ Setelah install APK v2.3.3+ & migration 07+08:
 - [ ] Kode invite kedaluwarsa/dipakai → pesan spesifik, bukan error generik
 - [ ] Master ON → notif persist "SSR SPACE aktif" muncul; swipe app dari recents → buka lagi → transaksi notif tercatat
 - [ ] Master OFF / logout → notif persist hilang
+- [ ] Jalankan `migration_11_hardening.sql` di Supabase Dashboard (setelah migration_10)
+- [ ] Auto-track normal (1–2 notif) → "Tersimpan" + baris `tx_auto_insert` muncul di `audit_logs`
+- [ ] User join workspace (manual & via invite) → row `org_join` di `audit_logs`
+- [ ] `insert into audit_logs` dari client biasa → ditolak RLS; `select` hanya row org sendiri
+- [ ] Flood ≥11 notif cepat → status "Dibatasi, terlalu banyak. Coba lagi."; setelah >60 detik auto-track bisa lagi
+- [ ] `client_errors` terisi setelah error uji → cek di Dashboard: ada `app_version`, **tidak ada** nominal/note/isi notif di kolom mana pun
+- [ ] Install APK `2.3.7+20` → Lainnya → Cadangkan data → share sheet berisi 3 CSV; buka di Sheets → kolom lengkap, angka benar
 
 ---
 
@@ -305,6 +315,9 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `test/tx_payload_test.dart` | `date` null → default hari ini (bukan null), `now` injectable |
 | `test/tx_validation_test.dart` | `validateTxInput` |
 | `test/wallet_balance_test.dart` | kalkulasi saldo `wallet_balance` |
+| `test/error_reporter_test.dart` | dedupe 60 menit, cap 20/jam + reset, payload persis 4 kunci + clip 500/4000 (tanpa PII) |
+| `test/backup_export_test.dart` | header + escaping CSV 3 tabel, nama file, baris kosong |
+| `test/notif_track_test.dart` (tambahan) | `saveErrorStatus`: RATE_LIMITED → "Dibatasi…", 23505 → "Sudah pernah dicatat", lainnya → "Gagal simpan: code" |
 
 **Belum ada test:** RLS server-side (butuh local stack / testcontainers), pipeline `_onEvent` penuh.
 
@@ -329,6 +342,12 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `3658b2c` | Docs: changelog 3 commit hardening + aturan wajib catat hasil kerja di AGENTS/AUDIT |
 | `739fbb4` | **Fase 2 D1**: langkah `flutter analyze` blocking di CI sebelum test |
 | `e7e88e8` | Bersihkan **26 temuan analyze**: await di splash `_boot`, curly braces, `withValues`, `initialValue` dropdown, `publishableKey`, hapus import sisa, `const pw.TextStyle`. Run `36090886163` hijau (analyze+test+APK) |
+| `74d85c5` | **migration_11**: trigger rate limit auto-insert (10/60s/org) + `audit_logs` (trigger `tx_auto_insert`/`org_join`, RLS deny client write) + `client_errors` |
+| `dbc7794` | **ErrorReporter** in-house: dedupe/cap murni Dart + payload tanpa PII + `AppInfo.version` + test |
+| `391d747` | Mapping `RATE_LIMITED` → status "Dibatasi, terlalu banyak. Coba lagi." (`saveErrorStatus`); wiring `ErrorReporter` ke `main` (init + `runZonedGuarded`) & catch pipeline notif + test |
+| `105beaf` | **D5 backup**: `backup_export.dart` (3 CSV builder) + tile Lainnya → Cadangkan data + test |
+| `0ba570b` | Fix temuan analyze pertama: `LineSplitter` static, hapus `dart:ui`, `const` test. Run `36098447278` hijau penuh → APK `2.3.7+20` |
+| `12d1a26` | Spec + implementation plan Fase 2 hardening |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 

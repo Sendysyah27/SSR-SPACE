@@ -11,7 +11,7 @@ Panduan kerja untuk agent / contributor di repo ini. Baca dulu sebelum ubah kode
 | Nama | **SSR SPACE** |
 | Path | `/data/data/com.termux/files/home/SSR SPACE` |
 | Remote | `https://github.com/Sendysyah27/SSR-SPACE.git` |
-| Versi | `2.3.6+19` (`pubspec.yaml`) |
+| Versi | `2.3.7+20` (`pubspec.yaml`) |
 | Stack | Flutter (stable) + Supabase (Auth + Postgres RLS) + Notification Listener |
 | Bahasa UI | Indonesia |
 | Build | GitHub Actions (`.github/workflows/apk.yml`), **bukan** lokal Termux |
@@ -75,7 +75,7 @@ Arah pengembangan ke **skala banyak user** — urutan wajib dijaga, jangan melom
 | Fase | Isi | Status |
 |------|-----|--------|
 | **Fase 1** | **Fitur inti:** foreground service auto-track (`specialUse`) + invite workspace (token hash + RPC `join_org_by_invite`, `migration_10`) | ✅ done 2.3.6+19: kode selesai, CI milestone 2 hijau (run `36075349074`); catatan: `migration_10` masih dijalankan manual user, foreground service baru aktif setelah install APK baru |
-| Fase 2 | Hardening: rate limit auto-insert (A3), audit log (A4), error monitoring, backup DB (D5), `flutter analyze` di CI (D1) | 🔄 **D1 ✅ 2026-09-25**: CI wajib lulus `flutter analyze` sebelum test (run `36090886163`), 26 temuan lama dibersihkan (`e7e88e8`); sisa A3/A4/monitoring/D5 ⬜ |
+| Fase 2 | Hardening: rate limit auto-insert (A3), audit log (A4), error monitoring, backup DB (D5), `flutter analyze` di CI (D1) | ✅ **done 2.3.7+20** (2026-09-25): D1 analyze CI (`739fbb4`+`e7e88e8`, run `36090886163`); A3+A4+monitoring+D5 (`74d85c5`…`105beaf`), CI run `36098447278` hijau penuh. Catatan: `migration_11_hardening.sql` masih dijalankan manual user |
 | Fase 3 | Scale ops: cek limit plan Supabase, dependabot/pin actions SHA (D4), test RLS server-side | ⬜ |
 | Fase 4 | Monetisasi: billing Midtrans per plan + limit kuota | ⬜ |
 
@@ -112,6 +112,7 @@ migration_07_security.sql
 migration_08_fix_rls_recursion.sql   ← wajib bila pernah jalan 07 versi lama
 migration_09_wallet_balance.sql
 migration_10_org_invites.sql         ← Fase 1 (invite workspace)
+migration_11_hardening.sql           ← Fase 2 (rate limit + audit_logs + client_errors)
 ```
 
 **Aturan RLS (jangan dilanggar):**
@@ -124,7 +125,7 @@ migration_10_org_invites.sql         ← Fase 1 (invite workspace)
 
 ---
 
-## 4. Fitur yang telah update (detail per 2026-09-25, v2.3.6+19)
+## 4. Fitur yang telah update (detail per 2026-09-25, v2.3.7+20)
 
 ### 4.1 Sesi & auth
 - Splash → (opsional onboarding PIN) → Auth email/password Supabase → pilih/buat workspace → `MainShell`.
@@ -235,6 +236,13 @@ Urutan list penting: **myBCA sebelum BCA**.
 - Secrets: `SSR_KEYSTORE_B64`, `SSR_KEYSTORE_PASS`, `SSR_KEY_ALIAS`, `SSR_KEY_PASS`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
 - Folder `android/` **tidak di-commit** (di-generate CI).
 
+### 4.9 Fase 2 hardening (v2.3.7+20)
+
+- **A3 rate limit auto-insert:** trigger `before insert` di `transactions` (`supabase/migration_11_hardening.sql`) — maks **10 auto-insert (`source_package != null`) / 60 detik / org**, index partial pendukung. Lewat batas → `raise 'RATE_LIMITED'`. Client: `saveErrorStatus()` (`notif_track_service.dart`) → status recent **"Dibatasi, terlalu banyak. Coba lagi."** (dipakai di `_onEvent` + `forceSave`). Insert form manual tidak kena limit.
+- **A4 audit log:** tabel `audit_logs` + trigger SECURITY DEFINER: `tx_auto_insert` (meta: tx_id, amount, type, package, date) dan `org_join` (meta: role). RLS: SELECT member saja, **tanpa** INSERT/UPDATE/DELETE client. Tanpa UI (baca via Dashboard).
+- **Error monitoring in-house:** `lib/core/saas/error_reporter.dart` — `ErrorReporter.init()` di `main()` (`FlutterError.onError` + `PlatformDispatcher.onError` + `runZonedGuarded`), `capture()` dipanggil di catch pipeline notif/backup. Anti-flood murni Dart: dedupe `context|message` per 60 menit + maks 20 event/jam, gagal upload = drop senyap. Tabel `client_errors` (RLS tulis+baca milik sendiri). **Tanpa PII**: hanya message/stack/context/`app_version` (`AppInfo.version`, ikut bump pubspec).
+- **D5 backup manual:** Lainnya → **Cadangkan data** → 3 CSV (`dompet/transaksi/budget-ssr-space.csv`) via share sheet. Builder murni di `lib/core/saas/backup_export.dart`. Tanpa jadwal otomatis (pg_cron = backlog Fase 3).
+
 ---
 
 ## 5. Struktur repo (penting)
@@ -262,7 +270,7 @@ SSR SPACE/
 ├── test/            (session, notif_parse, notif_track, budget, dashboard, …)
 ├── supabase/
 │   ├── schema.sql
-│   ├── migration_02 … migration_10
+│   ├── migration_02 … migration_11
 │   └── functions/create-snap/
 └── docs/superpowers/ (spec + plan historis)
 ```
