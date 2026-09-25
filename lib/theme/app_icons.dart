@@ -112,11 +112,12 @@ class AppIcons {
   };
 
   /// Lapisan sekunder untuk [icon] (diri sendiri bila tak dikenal).
-  static IconData subOf(IconData icon) {
-    final sub = _subs[icon.codePoint];
-    if (sub == null) return icon;
-    return IconData(sub, fontFamily: kPhosphorDuotoneFamily);
-  }
+  static IconData subOf(IconData icon) => _subIcons[icon.codePoint] ?? icon;
+
+  static final Map<int, IconData> _subIcons = {
+    for (final e in _subs.entries)
+      e.key: IconData(e.value, fontFamily: kPhosphorDuotoneFamily),
+  };
 }
 
 /// Ikon duotone: lapisan sekunder di bawah pada opacity 20%.
