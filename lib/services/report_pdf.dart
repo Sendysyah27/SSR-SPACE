@@ -261,6 +261,7 @@ pw.Widget _table(List<SaasTransaction> items) {
       3: const pw.FixedColumnWidth(78),
       4: const pw.FlexColumnWidth(3),
     },
+    // ignore: prefer_const_constructors (TableBorder.all bukan const ctor)
     border: pw.TableBorder.all(color: PdfColor.fromInt(0xFFE0DED8), width: 0.5),
     children: rows,
   );
