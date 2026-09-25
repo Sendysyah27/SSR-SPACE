@@ -289,19 +289,23 @@ Sumber: `supabase.com/pricing` + docs *Project Pausing* (nilai 2026; bisa beruba
 - **Cakupan assert (T01–T11):** regresi recursion migration_08; isolasi baca & tulis lintas org (wallets/tx/budgets/subscriptions/audit_logs/orgs/org_members); auto-join org korban ditolak; `mint_tx_code` non-member error; rate limit 10/60s + manual bebas; audit trigger `tx_auto_insert`/`org_join` + client write audit ditolak; `client_errors` per-user; invite (hash-only, admin-only read/create, join sukses, exhausted+rollback, idempoten, anon denied); `tx_sequences` tersembunyi; `wallet_balance` security_invoker.
 - **Temuan → `migration_12_join_fixes.sql` (wajib jalankan):** [P0] A7 + [minor] A8 (lihat Sprint A).
 
-### Fase E — Refactor struktur lanjutan: bedah `build()` sisa (rencana, 2026-09-25)
+### Fase E — Refactor struktur lanjutan: bedah `build()` sisa (**SELESAI**, 2026-09-25)
 
 Lanjutan Fase A–D (struktur saja — **pixel identik, nominal lewat `amt()`, nol ubah business logic**).
 Disetujui user di sesi sebelumnya ("lanjutin di sesi baru"); daftar target diverifikasi ulang dari kode terkini.
 
-| # | Layar | Blok `build()` >50 baris |
-|---|-------|--------------------------|
-| 1 | `transaksi/transactions_screen` | `build@282=75` (state + ListView), `build@420=109` (`_TxFormCard`) |
-| 2 | `lainnya/notif_settings_screen` | `build@244=87`, `build@447=59`, `build@547=54` |
-| 3 | `lainnya/billing_screen` | `build@77=83` |
-| 4 | `laporan/reports_screen` | `build@127=74` |
-| 5 | `auth/auth_screen` `build@197=65` · `dompet/wallets_screen` `build@159=64` | |
-| 6 | `workspace/org_switcher` `build@149=61` · `auth/splash` `build@84=56` · `shell/main_shell` `build@102=53` · `auth/onboarding` `build@103=52` | |
+| # | Layar | Blok `build()` >50 baris (sebelum) | Status |
+|---|-------|-------------------------------------|--------|
+| 1 | `transaksi/transactions_screen` | `build@282=75` (state + ListView), `build@420=109` (`_TxFormCard`) | ✅ `6673fd6` — `_TxStateScaffold`/`_TxListBody`/`_TxFormCard` |
+| 2 | `lainnya/notif_settings_screen` | `build@244=87`, `build@447=59`, `build@547=54` | ✅ `669b540` — `_StatusLines`/`_ServiceLine`/`_RecentList`/`_RecentChips` |
+| 3 | `lainnya/billing_screen` | `build@77=83` | ✅ `0508afc` (+ fix analyze: ctor scaffold positional + `const loading`) |
+| 4 | `laporan/reports_screen` | `build@127=74` | ✅ `1ad05f3` — `_ReportsScaffold`/`_TxListCard` |
+| 5 | `auth/auth_screen` `build@197=65` · `dompet/wallets_screen` `build@159=64` | | ✅ `836d9ac` — `_AuthHeader`/`_AuthFields`/`_AuthMessages`/`_AuthActions` + `_WalletsScaffold`/`_WalletOverview` |
+| 6 | `workspace/org_switcher` `build@149=61` · `auth/splash` `build@84=56` · `shell/main_shell` `build@102=53` · `auth/onboarding` `build@103=52` | | ✅ `066ef76`/`4685a66`/`e891590`/`21a46f1` — `_OrgSwitcherScaffold`/`_OrgPickerBody`/`_OrgListCard`, `_SplashLoading`/`_SplashError`, `_MainBottomBar._destinations`, `_OnboardingBody` (+ `_stepDots` pindah body) |
+
+**Hasil:** semua `build()` layar <50 baris (yang tersisa >50 hanya 3 widget lama yang memang di-scope out).
+CI batch akhir `36133546126` hijau (sha `21a46f1`) → APK `SSR-SPACE-2.3.9-22-fasee-bedah-build.apk`.
+Catatan: run `36131718083` (notif_settings) sempat **merah** karena 2 temuan analyze → fixed `0508afc`.
 
 **Cara kerja:**
 - Ekstraksi jadi widget `StatelessWidget` named; section khusus layar → private class in-file; lintas layar → `lib/widgets/`.
@@ -374,6 +378,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 - [ ] Setuju sekali → restart app → carousel **tidak** muncul lagi
 - [ ] Visual font: seluruh layar pakai Plus Jakarta Sans; wordmark "SSR SPACE" (splash/auth) pakai Anton; **angka rupiah tetap sejajar (tabular)** dan tak ada overflow/terpotong di layar kecil
 - [ ] Carousel intro: ikon Phosphor Fill tampil (bukan kotak/huruf aneh); tombol/checkbox mudah ditekan
+- [ ] Install APK `2.3.9-22-fasee` → buka layar Transaksi, Pelacakan otomatis, Billing, Laporan, Masuk, Dompet, Pilih workspace, Splash, Beranda (nav bawah + FAB), Onboarding PIN → **tampilan identik** dengan APK `2.3.9-22-refactor` (Fase E struktur-saja)
 
 ---
 
@@ -434,6 +439,8 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `112c64d` | **Refactor Fase A (struktur only)**: `lib/core/{saas,session,format,theme}` → `lib/{services,utils,theme}` + `lib/screens/<fitur>/` (auth, shell, beranda, transaksi, dompet, budget, laporan, lainnya, workspace); import saja, nol ubah kode. CI run `36123125093` hijau |
 | `19e979d` | **Refactor Fase B**: widget baru `NavTile`, `WalletRow`, `BankTrackRow`, `LabeledSectionCard`, `TxTypeSelector` (re-use 5 widget lama), dekomposisi `build()` besar per layar, dedup `_orgId`→`lib/utils/org_prefs.dart`. CI run `36125021068` **merah** (2 error analyze) → fix menyusul |
 | (fix Fase B + docs) | Fix 2 error analyze: `nav_tile` `Text(String?)` → promosi lokal; `RecentNotifTile._saveButton/_pickTypeAndSave` bawa `BuildContext` eksplisit (StatelessWidget tak punya `context` di luar `build`). **Fase D docs pass**: path basi `lib/core/…` di AGENTS/AUDIT diganti struktur baru + tree §5 ditulis ulang + catatan spec historis pakai path lama. CI run `36126303610` hijau penuh → APK `SSR-SPACE-2.3.9-22-refactor.apk` |
+| `2322201`…`10ff697` | **Fase E sesi 1**: rencana ditulis ke AUDIT + bedah `transactions` (`6673fd6`), `notif_settings` (`669b540`), `billing` (`0508afc` fix 2 temuan analyze: ctor scaffold positional + `const loading`), `10ff697` buang HANDOFF.md dari repo. Run `36131718083` merah → fix → `36132306668`+`36132388087` hijau |
+| `1ad05f3`…`21a46f1` | **Fase E sesi 2 — SELESAI**: `reports` (`1ad05f3`), `auth`+`wallets` (`836d9ac`), `org_switcher` (`066ef76`), `splash` (`4685a66`), `main_shell` (`e891590`), `onboarding` (`21a46f1`). Semua `build()` layar <50 baris (sisa 3 widget lama di-scope out). CI `36133546126` hijau → APK `SSR-SPACE-2.3.9-22-fasee-bedah-build.apk` |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 
