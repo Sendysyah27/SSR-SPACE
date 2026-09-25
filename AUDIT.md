@@ -16,6 +16,7 @@ Lensa: OWASP / RLS Supabase / input hostile (isi notif pihak ketiga).
 - **Fase 2 D1** (2026-09-25): CI kini wajib lulus `flutter analyze` sebelum test; 26 temuan lama dibersihkan sekali jalan (`739fbb4` + `e7e88e8`), run `36090886163` hijau penuh (analyze → test → APK).
 - **Fase 2 hardening** (2026-09-25): A3 rate limit auto-insert + A4 audit log (`migration_11_hardening.sql`), error monitoring in-house (`client_errors` + `ErrorReporter`), D5 backup manual multi-CSV. CI run `36098447278` hijau penuh; APK `SSR-SPACE-2.3.7-20-fase2-hardening.apk`. **User wajib jalankan migration_11 di Supabase.**
 - **Fase 3 awal** (2026-09-25): spike limit plan Supabase (hasil §4) + D4 dependabot & pin actions by SHA (D2 sekalian selesai).
+- **Fase 3 F3-c/F3-d** (2026-09-25): **test RLS server-side di CI** (`rls-test.yml` + `supabase/test/`, 40+ assert, lulus lokal + CI) → **nemukan 2 temuan** → `migration_12_join_fixes.sql` (**[P0] bikin workspace baru gagal sejak migration_07** — subquery `organizations` di policy `join own org` kena RLS "member read org" (chicken-and-egg); + [minor] `join_org_by_invite` cek EXHAUSTED sebelum idempoten); **F3-d**: `migration_13_retention.sql` (pg_cron retention) + `backup-db.yml` (pg_dump mingguan, butuh secret `SUPABASE_DB_URL`). **User wajib jalankan migration_12 + 13 di Supabase.**
 
 ---
 
@@ -216,6 +217,8 @@ supabase/migration_07 + 08
 | A4 | **Audit log server** | ✅ done `2.3.7+20`: tabel `audit_logs` + trigger SECURITY DEFINER `tx_auto_insert` & `org_join` (migration_11); RLS SELECT member saja, client write deny total; tanpa UI (baca via Dashboard) |
 | A5 | **Invite workspace** | ✅ done `2.3.6+19` (migration_10, token hash + RPC `join_org_by_invite`); UX Lainnya → Undang anggota |
 | A6 | **Verifikasi package Play Store** | Di device: catat `packageName` asli tiap bank di allowlist; perbaiki prefix yang meleset. **BRI ✅ aman (user device, 2026-09-24)**; sisa: myBCA/BCA/DANA/OVO/dst |
+| A7 | **Bikin workspace baru gagal sejak migration_07** | ✅ ditemukan test RLS F3-c (2026-09-25), fixed `migration_12`: policy `join own org` subquery `organizations` kena RLS "member read org" → 42501 chicken-and-egg; fix helper `is_org_creator` SECURITY DEFINER. Gejala user: "Gagal membuat workspace. Periksa nama dan koneksi." |
+| A8 | **Re-join invite selalu INVITE_EXHAUSTED** | ✅ fixed `migration_12`: cek "sudah member" (idempoten) dipindah sebelum cek EXHAUSTED di `join_org_by_invite`; non-member tetap tak lolos tanpa slot |
 
 ### Sprint B — Kualitas auto-track
 
@@ -248,8 +251,8 @@ supabase/migration_07 + 08
 | D2 | Setup-java v5 + checkout v5 | ✅ done 2026-09-25 (sekalian D4): `checkout` **v7.0.1**, `setup-java` **v6.0.1** (lewat v5 — versi terbaru 2026), di-pin SHA |
 | D3 | Pubspec description masih “offline multi-dompet” | Samakan dengan reality SaaS |
 | D4 | Dependabot / pin actions by SHA | ✅ done 2026-09-25: `.github/dependabot.yml` (github-actions, weekly, digroup 1 PR) + 4 action di `apk.yml` di-pin commit SHA + komentar versi (`checkout` v7.0.1, `setup-java` v6.0.1, `flutter-action` v2.23.0, `upload-artifact` v7.0.1) |
-| D5 | Backup export DB | ✅ done `2.3.7+20`: **manual** multi-CSV (dompet/transaksi/budget) dari Lainnya → Cadangkan data (`backup_export.dart`); jadwal otomatis (pg_cron + Storage) = backlog Fase 3 |
-| D6 | Retention `client_errors` + `audit_logs` | ⬜ Baru: cleanup baris lama (pg_cron Fase 3); UI baca `audit_logs` opsional |
+| D5 | Backup export DB | ✅ **manual** multi-CSV (dompet/transaksi/budget) dari Lainnya → Cadangkan data (`backup_export.dart`); **otomatis ✅ 2026-09-25**: `backup-db.yml` pg_dump mingguan (cron Senin 02:00 UTC) → artifact 30 hari, butuh secret `SUPABASE_DB_URL` |
+| D6 | Retention `client_errors` + `audit_logs` | ✅ done 2026-09-25: `migration_13_retention.sql` (pg_cron harian: `client_errors` 30 hari, `audit_logs` 180 hari, `cron.job_run_details` 14 hari; idempotent). UI baca `audit_logs` opsional tetap backlog |
 | D7 | Error monitoring lanjutan | ⬜ Baru: eksplorasi alert/DSN Sentry bila volume error in-house mulai besar |
 | D8 | Anti-pause heartbeat free plan | ⬜ Baru: workflow GitHub Actions cron (mis. 2×/minggu) hit query ringan ke project → cegah pause 7 hari (lihat §4 Fase 3). Alternatif: email warning dibaca, atau naik Pro |
 
@@ -274,7 +277,15 @@ Sumber: `supabase.com/pricing` + docs *Project Pausing* (nilai 2026; bisa beruba
 **Kesimpulan:**
 1. **Free cukup untuk skala sekarang → Fase 4 aman dimulai di free.** Kuota utama semua >10× kebutuhan.
 2. **Risiko #1 = pause 7 hari inaktif**: tanpa user buka app / API dipanggil selama seminggu, project berhenti → semua user error. Supabase kirim email peringatan ~1 minggu sebelumnya; pulihkan = 1 klik (backup disimpan max 1 tahun). Mitigasi: **D8 heartbeat cron**, baca email warning, atau Pro.
-3. **Trigger naik Pro ($25/bln):** (a) DB > ~400 MB, (b) mulai ada revenue Midtrans → backup harian otomatis wajib untuk data finansial, (c) pause jadi berulang/panic, (d) butuh log platform >1 hari untuk debugging. **Disarankan: naik Pro bersamaan dengan launch Fase 4 publik**, bukan sebelumnya.
+3. **Trigger naik Pro ($25/bln):** (a) DB > ~400 MB, (b) mulai ada revenue Midtrans → backup harian otomatis wajib untuk data finansial, (c) pause jadi berulang/panic, (d) butuh log platform >1 hari untuk debugging. **Disarankan: naik Pro bersamaan dengan launch Fase 4 publik**, bukan sebelumnya. Catatan: **Supabase TIDAK punya trial Pro** (docs billing 2026) — upgrade langsung kena tagihan, batal = prorated credit.
+
+### Fase 3 — Test RLS server-side di CI (F3-c, 2026-09-25)
+
+- **Harness:** `supabase/test/setup.sql` mereproduksi lingkungan Supabase di Postgres polos (role `anon`/`authenticated`/`service_role`, schema `auth` + `auth.uid()` dari GUC `test.user_id`, default privileges grant-all ke client roles).
+- **Runner:** `supabase/test/run.sh` = reset skema → setup → `schema.sql` → `migration_02..12` (ON_ERROR_STOP) → `rls_test.sql`. `migration_13` dilewati (butuh pg_cron).
+- **Workflow:** `.github/workflows/rls-test.yml` — push `supabase/**` + PR + manual; service `postgres:16`.
+- **Cakupan assert (T01–T11):** regresi recursion migration_08; isolasi baca & tulis lintas org (wallets/tx/budgets/subscriptions/audit_logs/orgs/org_members); auto-join org korban ditolak; `mint_tx_code` non-member error; rate limit 10/60s + manual bebas; audit trigger `tx_auto_insert`/`org_join` + client write audit ditolak; `client_errors` per-user; invite (hash-only, admin-only read/create, join sukses, exhausted+rollback, idempoten, anon denied); `tx_sequences` tersembunyi; `wallet_balance` security_invoker.
+- **Temuan → `migration_12_join_fixes.sql` (wajib jalankan):** [P0] A7 + [minor] A8 (lihat Sprint A).
 
 ---
 
@@ -323,6 +334,13 @@ Setelah install APK v2.3.3+ & migration 07+08:
 - [ ] `client_errors` terisi setelah error uji → cek di Dashboard: ada `app_version`, **tidak ada** nominal/note/isi notif di kolom mana pun
 - [ ] Install APK `2.3.7+20` → Lainnya → Cadangkan data → share sheet berisi 3 CSV; buka di Sheets → kolom lengkap, angka benar
 - [ ] Push Fase 3 → run CI hijau walau semua action sudah di-pin SHA; cek Dependabot → muncul PR update github-actions (weekly)
+- [ ] Push F3-c → run `rls-test` hijau (suite T01–T11 lulus di postgres:16 CI)
+- [ ] Jalankan `migration_12_join_fixes.sql` di Supabase Dashboard (setelah migration_11)
+- [ ] **Buat workspace BARU** → berhasil (bukan "Gagal membuat workspace") — regresi P0 A7
+- [ ] Join via invite → keluar → tempel kode sama lagi → sukses/idempoten (bukan error "sudah dipakai")
+- [ ] Jalankan `migration_13_retention.sql` → cek `select * from cron.job where jobname like 'ssr_%'` → 3 job ada
+- [ ] GitHub → Settings → Secrets → tambah `SUPABASE_DB_URL` (connection string Database) → jalankan `backup-db` manual (workflow_dispatch) → artifact `ssr-space-backup` berisi `.dump`
+- [ ] Tanpa secret: `backup-db` jalan tapi skip dengan warning (tidak merah)
 
 ---
 
@@ -344,8 +362,9 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `test/error_reporter_test.dart` | dedupe 60 menit, cap 20/jam + reset, payload persis 4 kunci + clip 500/4000 (tanpa PII) |
 | `test/backup_export_test.dart` | header + escaping CSV 3 tabel, nama file, baris kosong |
 | `test/notif_track_test.dart` (tambahan) | `saveErrorStatus`: RATE_LIMITED → "Dibatasi…", 23505 → "Sudah pernah dicatat", lainnya → "Gagal simpan: code" |
+| `supabase/test/rls_test.sql` (CI, bukan Flutter) | **40+ assert RLS**: regresi recursion, isolasi lintas org, join korban, mint_tx_code, rate limit, audit log, client_errors, invite hash/idempoten/exhausted/anon, tx_sequences, wallet_balance |
 
-**Belum ada test:** RLS server-side (butuh local stack / testcontainers), pipeline `_onEvent` penuh.
+**Belum ada test:** pipeline `_onEvent` penuh (mock Supabase).
 
 ---
 
@@ -375,6 +394,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `0ba570b` | Fix temuan analyze pertama: `LineSplitter` static, hapus `dart:ui`, `const` test. Run `36098447278` hijau penuh → APK `2.3.7+20` |
 | `12d1a26` | Spec + implementation plan Fase 2 hardening |
 | (Fase 3) | **D4 supply chain**: `.github/dependabot.yml` + pin 4 action ke commit SHA di `apk.yml`; D2 sekalian (checkout v7.0.1, setup-java v6.0.1, flutter-action v2.23.0, upload-artifact v7.0.1). Spike limit plan Supabase → §4 |
+| (Fase 3 F3-c/d) | **Test RLS CI**: `rls-test.yml` + `supabase/test/{setup,run,rls_test}` (40+ assert) → temukan **[P0] bikin workspace gagal sejak 07** + [minor] re-join invite EXHAUSTED → `migration_12_join_fixes.sql`; **retention**: `migration_13_retention.sql` (pg_cron 3 job) + `backup-db.yml` pg_dump mingguan |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 

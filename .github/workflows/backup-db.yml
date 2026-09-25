@@ -1,0 +1,40 @@
+name: backup-db
+on:
+  schedule:
+    - cron: '0 2 * * 1' # Senin 02:00 UTC = Senin 09:00 WIB
+  workflow_dispatch:
+jobs:
+  pg-dump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Cek secret SUPABASE_DB_URL
+        id: guard
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "has_url=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Secret SUPABASE_DB_URL belum di-set — backup dilewati. Tambah: Settings → Secrets and variables → Actions (bisa diisi saat workflow dispatch)."
+          else
+            echo "has_url=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Dump database (pg_dump via container postgres:18)
+        if: steps.guard.outputs.has_url == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          STAMP=$(date -u +%Y%m%d-%H%M)
+          docker run --rm \
+            -e SUPABASE_DB_URL="$SUPABASE_DB_URL" \
+            -v "$PWD:/dump" \
+            postgres:18-alpine \
+            sh -c 'pg_dump --no-owner --no-privileges -Fc "$SUPABASE_DB_URL" -f /dump/ssr-space-backup-'"$STAMP"'.dump'
+          ls -lh ssr-space-backup-*.dump
+      - name: Upload artifact
+        if: steps.guard.outputs.has_url == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ssr-space-backup
+          path: ssr-space-backup-*.dump
+          retention-days: 30

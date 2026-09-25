@@ -1,0 +1,36 @@
+name: rls-test
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/rls-test.yml'
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/rls-test.yml'
+  workflow_dispatch:
+jobs:
+  rls:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ssr_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SSR_RLS_DB_URL: postgresql://postgres:postgres@127.0.0.1:5432/ssr_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install psql
+        run: command -v psql >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client)
+      - name: Jalankan suite RLS (schema + migration_02..12 + assert)
+        run: bash supabase/test/run.sh
