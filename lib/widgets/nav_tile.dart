@@ -34,7 +34,7 @@ class NavTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (c != null) ...[c, const SizedBox(width: SsrSpace.sm)],
-          DuoIcon(AppIcons.chevron, color: SsrColors.secondary),
+          const DuoIcon(AppIcons.chevron, color: SsrColors.secondary),
         ],
       ),
       onTap: onTap,

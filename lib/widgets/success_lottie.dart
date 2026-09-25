@@ -40,7 +40,7 @@ class _FlashCard extends StatelessWidget {
         'assets/lottie/check_pop.json',
         repeat: false,
         errorBuilder: (context, error, stackTrace) =>
-            DuoIcon(AppIcons.success, color: SsrColors.accent, size: 48),
+            const DuoIcon(AppIcons.success, color: SsrColors.accent, size: 48),
       ),
     );
   }

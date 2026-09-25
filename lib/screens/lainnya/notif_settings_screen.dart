@@ -526,7 +526,7 @@ class _RecentCard extends StatelessWidget {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : DuoIcon(AppIcons.scan),
+                  : const DuoIcon(AppIcons.scan),
               label: Text(
                 scanning ? 'Memindai...' : 'Pindai notifikasi aktif sekarang',
               ),
@@ -687,12 +687,12 @@ Future<String?> showModalSheetOfType(BuildContext context, CapturedNotif n) {
             ),
           ),
           ListTile(
-            leading: DuoIcon(AppIcons.arrowDown),
+            leading: const DuoIcon(AppIcons.arrowDown),
             title: const Text('Masuk (pemasukan)'),
             onTap: () => Navigator.pop(ctx, 'in'),
           ),
           ListTile(
-            leading: DuoIcon(AppIcons.arrowUp),
+            leading: const DuoIcon(AppIcons.arrowUp),
             title: const Text('Keluar (pengeluaran)'),
             onTap: () => Navigator.pop(ctx, 'out'),
           ),

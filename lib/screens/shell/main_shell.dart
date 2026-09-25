@@ -84,7 +84,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
               onPressed: () => _select(1),
               backgroundColor: SsrColors.accent,
               foregroundColor: Colors.white,
-              icon: DuoIcon(AppIcons.add),
+              icon: const DuoIcon(AppIcons.add),
               label: const Text('Catat'),
             ),
       bottomNavigationBar: _MainBottomBar(index: index, onSelect: _select),
@@ -99,15 +99,21 @@ class _MainBottomBar extends StatelessWidget {
 
   const _MainBottomBar({required this.index, required this.onSelect});
 
-  static final List<NavigationDestination> _destinations = [
-    NavigationDestination(icon: DuoIcon(AppIcons.home), label: 'Beranda'),
+  static const List<NavigationDestination> _destinations = [
+    NavigationDestination(icon: const DuoIcon(AppIcons.home), label: 'Beranda'),
     NavigationDestination(
-      icon: DuoIcon(AppIcons.transactions),
+      icon: const DuoIcon(AppIcons.transactions),
       label: 'Transaksi',
     ),
-    NavigationDestination(icon: DuoIcon(AppIcons.budget), label: 'Budget'),
-    NavigationDestination(icon: DuoIcon(AppIcons.reports), label: 'Laporan'),
-    NavigationDestination(icon: DuoIcon(AppIcons.menu), label: 'Lainnya'),
+    NavigationDestination(
+      icon: const DuoIcon(AppIcons.budget),
+      label: 'Budget',
+    ),
+    NavigationDestination(
+      icon: const DuoIcon(AppIcons.reports),
+      label: 'Laporan',
+    ),
+    NavigationDestination(icon: const DuoIcon(AppIcons.menu), label: 'Lainnya'),
   ];
 
   @override

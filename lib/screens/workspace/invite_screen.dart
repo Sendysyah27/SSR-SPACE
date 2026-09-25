@@ -342,7 +342,7 @@ class _InviteListCard extends StatelessWidget {
             IconButton(
               tooltip: 'Cabut undangan',
               onPressed: () => onRevoke(row),
-              icon: DuoIcon(AppIcons.revoke, size: 20),
+              icon: const DuoIcon(AppIcons.revoke, size: 20),
             ),
           ],
         ],

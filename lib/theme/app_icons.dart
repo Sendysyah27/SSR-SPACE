@@ -13,79 +13,79 @@ class AppIcons {
   AppIcons._();
 
   // Navigasi bawah & aksi utama
-  static final home = IconData(0xe2c3, fontFamily: kPhosphorDuotoneFamily);
-  static final transactions = IconData(
+  static const home = IconData(0xe2c3, fontFamily: kPhosphorDuotoneFamily);
+  static const transactions = IconData(
     0xe3f1,
     fontFamily: kPhosphorDuotoneFamily,
   );
-  static final budget = IconData(0xea05, fontFamily: kPhosphorDuotoneFamily);
-  static final reports = IconData(0xe151, fontFamily: kPhosphorDuotoneFamily);
-  static final menu = IconData(0xe465, fontFamily: kPhosphorDuotoneFamily);
-  static final add = IconData(0xe3d5, fontFamily: kPhosphorDuotoneFamily);
+  static const budget = IconData(0xea05, fontFamily: kPhosphorDuotoneFamily);
+  static const reports = IconData(0xe151, fontFamily: kPhosphorDuotoneFamily);
+  static const menu = IconData(0xe465, fontFamily: kPhosphorDuotoneFamily);
+  static const add = IconData(0xe3d5, fontFamily: kPhosphorDuotoneFamily);
 
   // Kategori transaksi (pengganti Material di category_icons)
-  static final food = IconData(0xe263, fontFamily: kPhosphorDuotoneFamily);
-  static final transport = IconData(0xe113, fontFamily: kPhosphorDuotoneFamily);
-  static final shopping = IconData(0xe419, fontFamily: kPhosphorDuotoneFamily);
-  static final bills = IconData(0xe3f1, fontFamily: kPhosphorDuotoneFamily);
-  static final health = IconData(0xe2a9, fontFamily: kPhosphorDuotoneFamily);
-  static final education = IconData(0xe62d, fontFamily: kPhosphorDuotoneFamily);
-  static final entertainment = IconData(
+  static const food = IconData(0xe263, fontFamily: kPhosphorDuotoneFamily);
+  static const transport = IconData(0xe113, fontFamily: kPhosphorDuotoneFamily);
+  static const shopping = IconData(0xe419, fontFamily: kPhosphorDuotoneFamily);
+  static const bills = IconData(0xe3f1, fontFamily: kPhosphorDuotoneFamily);
+  static const health = IconData(0xe2a9, fontFamily: kPhosphorDuotoneFamily);
+  static const education = IconData(0xe62d, fontFamily: kPhosphorDuotoneFamily);
+  static const entertainment = IconData(
     0xe8c3,
     fontFamily: kPhosphorDuotoneFamily,
   );
-  static final income = IconData(0xe54d, fontFamily: kPhosphorDuotoneFamily);
-  static final topup = IconData(0xe467, fontFamily: kPhosphorDuotoneFamily);
-  static final transfer = IconData(0xe0a1, fontFamily: kPhosphorDuotoneFamily);
-  static final categoryFallback = IconData(
+  static const income = IconData(0xe54d, fontFamily: kPhosphorDuotoneFamily);
+  static const topup = IconData(0xe467, fontFamily: kPhosphorDuotoneFamily);
+  static const transfer = IconData(0xe0a1, fontFamily: kPhosphorDuotoneFamily);
+  static const categoryFallback = IconData(
     0xec5f,
     fontFamily: kPhosphorDuotoneFamily,
   );
 
   // Arah transaksi
-  static final txIn = IconData(0xe041, fontFamily: kPhosphorDuotoneFamily);
-  static final txOut = IconData(0xe093, fontFamily: kPhosphorDuotoneFamily);
-  static final arrowDown = IconData(0xe03f, fontFamily: kPhosphorDuotoneFamily);
-  static final arrowUp = IconData(0xe08f, fontFamily: kPhosphorDuotoneFamily);
-  static final autoBadge = IconData(0xe2df, fontFamily: kPhosphorDuotoneFamily);
+  static const txIn = IconData(0xe041, fontFamily: kPhosphorDuotoneFamily);
+  static const txOut = IconData(0xe093, fontFamily: kPhosphorDuotoneFamily);
+  static const arrowDown = IconData(0xe03f, fontFamily: kPhosphorDuotoneFamily);
+  static const arrowUp = IconData(0xe08f, fontFamily: kPhosphorDuotoneFamily);
+  static const autoBadge = IconData(0xe2df, fontFamily: kPhosphorDuotoneFamily);
 
   // Dompet
-  static final wallet = IconData(0xe68b, fontFamily: kPhosphorDuotoneFamily);
-  static final walletCash = IconData(
+  static const wallet = IconData(0xe68b, fontFamily: kPhosphorDuotoneFamily);
+  static const walletCash = IconData(
     0xe589,
     fontFamily: kPhosphorDuotoneFamily,
   );
-  static final walletEwallet = IconData(
+  static const walletEwallet = IconData(
     0xe1e1,
     fontFamily: kPhosphorDuotoneFamily,
   );
-  static final walletBank = IconData(
+  static const walletBank = IconData(
     0xe0b5,
     fontFamily: kPhosphorDuotoneFamily,
   );
 
   // Menu Lainnya & utilitas
-  static final workspace = IconData(0xe105, fontFamily: kPhosphorDuotoneFamily);
-  static final workspaceSwitch = IconData(
+  static const workspace = IconData(0xe105, fontFamily: kPhosphorDuotoneFamily);
+  static const workspaceSwitch = IconData(
     0xe0a1,
     fontFamily: kPhosphorDuotoneFamily,
   );
-  static final invite = IconData(0xe68f, fontFamily: kPhosphorDuotoneFamily);
-  static final tracking = IconData(0xe0cf, fontFamily: kPhosphorDuotoneFamily);
-  static final backup = IconData(0xe20d, fontFamily: kPhosphorDuotoneFamily);
-  static final billing = IconData(0xe1d3, fontFamily: kPhosphorDuotoneFamily);
-  static final logout = IconData(0xe42b, fontFamily: kPhosphorDuotoneFamily);
-  static final revoke = IconData(0xe2e9, fontFamily: kPhosphorDuotoneFamily);
-  static final scan = IconData(0xe095, fontFamily: kPhosphorDuotoneFamily);
-  static final monthPrev = IconData(0xe139, fontFamily: kPhosphorDuotoneFamily);
-  static final monthNext = IconData(0xe13b, fontFamily: kPhosphorDuotoneFamily);
-  static final chevron = IconData(0xe13b, fontFamily: kPhosphorDuotoneFamily);
-  static final eye = IconData(0xe221, fontFamily: kPhosphorDuotoneFamily);
-  static final eyeOff = IconData(0xe225, fontFamily: kPhosphorDuotoneFamily);
-  static final error = IconData(0xe1b7, fontFamily: kPhosphorDuotoneFamily);
-  static final lock = IconData(0xe2fb, fontFamily: kPhosphorDuotoneFamily);
-  static final addUser = IconData(0xe4d1, fontFamily: kPhosphorDuotoneFamily);
-  static final success = IconData(0xe607, fontFamily: kPhosphorDuotoneFamily);
+  static const invite = IconData(0xe68f, fontFamily: kPhosphorDuotoneFamily);
+  static const tracking = IconData(0xe0cf, fontFamily: kPhosphorDuotoneFamily);
+  static const backup = IconData(0xe20d, fontFamily: kPhosphorDuotoneFamily);
+  static const billing = IconData(0xe1d3, fontFamily: kPhosphorDuotoneFamily);
+  static const logout = IconData(0xe42b, fontFamily: kPhosphorDuotoneFamily);
+  static const revoke = IconData(0xe2e9, fontFamily: kPhosphorDuotoneFamily);
+  static const scan = IconData(0xe095, fontFamily: kPhosphorDuotoneFamily);
+  static const monthPrev = IconData(0xe139, fontFamily: kPhosphorDuotoneFamily);
+  static const monthNext = IconData(0xe13b, fontFamily: kPhosphorDuotoneFamily);
+  static const chevron = IconData(0xe13b, fontFamily: kPhosphorDuotoneFamily);
+  static const eye = IconData(0xe221, fontFamily: kPhosphorDuotoneFamily);
+  static const eyeOff = IconData(0xe225, fontFamily: kPhosphorDuotoneFamily);
+  static const error = IconData(0xe1b7, fontFamily: kPhosphorDuotoneFamily);
+  static const lock = IconData(0xe2fb, fontFamily: kPhosphorDuotoneFamily);
+  static const addUser = IconData(0xe4d1, fontFamily: kPhosphorDuotoneFamily);
+  static const success = IconData(0xe607, fontFamily: kPhosphorDuotoneFamily);
 
   /// Lapisan sekunder untuk [icon] (diri sendiri bila tak dikenal).
   static IconData subOf(IconData icon) {

@@ -14,13 +14,13 @@ class MonthPicker extends StatelessWidget {
       children: [
         IconButton(
           tooltip: 'Bulan lalu',
-          icon: DuoIcon(AppIcons.monthPrev),
+          icon: const DuoIcon(AppIcons.monthPrev),
           onPressed: () => onChanged(prevMonth(month)),
         ),
         Text(monthLabel(month), style: Theme.of(context).textTheme.titleMedium),
         IconButton(
           tooltip: 'Bulan depan',
-          icon: DuoIcon(AppIcons.monthNext),
+          icon: const DuoIcon(AppIcons.monthNext),
           onPressed: isCurrent ? null : () => onChanged(nextMonth(month)),
         ),
       ],
