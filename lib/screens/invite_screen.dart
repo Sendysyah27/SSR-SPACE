@@ -26,6 +26,7 @@ class _InviteScreenState extends State<InviteScreen> {
   bool creating = false;
   String? loadErr;
   String? role = 'member';
+  bool isAdmin = false;
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _InviteScreenState extends State<InviteScreen> {
     setState(() {
       loading = true;
       loadErr = null;
+      isAdmin = false;
     });
     final prefs = await SharedPreferences.getInstance();
     orgId = prefs.getString('active_org_id') ?? '';
@@ -49,6 +51,17 @@ class _InviteScreenState extends State<InviteScreen> {
       return;
     }
     try {
+      final myRole = await _service.myRole(orgId);
+      final admin = myRole == 'owner' || myRole == 'admin';
+      if (!mounted) return;
+      if (!admin) {
+        setState(() {
+          isAdmin = false;
+          invites = [];
+        });
+        return;
+      }
+      setState(() => isAdmin = true);
       final rows = await _service.listInvites(orgId);
       if (!mounted) return;
       setState(() => invites = rows);
@@ -71,10 +84,13 @@ class _InviteScreenState extends State<InviteScreen> {
       if (!mounted) return;
       await _showTokenDialog(res.token);
       await _load();
-    } catch (_) {
+    } catch (err) {
       if (!mounted) return;
+      final msg = err is InviteException
+          ? err.message
+          : 'Gagal membuat undangan. Coba lagi.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal membuat undangan. Coba lagi.')),
+        SnackBar(content: Text(msg)),
       );
     } finally {
       if (mounted) setState(() => creating = false);
@@ -202,80 +218,90 @@ class _InviteScreenState extends State<InviteScreen> {
                       actionLabel: 'Muat ulang',
                       onAction: _load,
                     )
-                  : ListView(
-                      padding: const EdgeInsets.all(SsrSpace.lg),
-                      children: [
-                        SectionCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                orgName.isEmpty ? 'Workspace aktif' : orgName,
-                                style:
-                                    Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: SsrSpace.sm),
-                              Text(
-                                'Bagikan kode agar anggota lain bisa masuk ke '
-                                'buku kas ini.',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: SsrColors.secondary,
+                  : !isAdmin
+                      ? EmptyView(
+                          icon: Icons.lock_outline,
+                          title:
+                              'Hanya admin workspace yang bisa mengundang anggota.',
+                          subtitle:
+                              'Minta owner atau admin membuat kode undangan.',
+                          actionLabel: 'Muat ulang',
+                          onAction: _load,
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.all(SsrSpace.lg),
+                          children: [
+                            SectionCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    orgName.isEmpty ? 'Workspace aktif' : orgName,
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                  const SizedBox(height: SsrSpace.sm),
+                                  Text(
+                                    'Bagikan kode agar anggota lain bisa masuk ke '
+                                    'buku kas ini.',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: SsrColors.secondary,
+                                        ),
+                                  ),
+                                  const SizedBox(height: SsrSpace.md),
+                                  DropdownButtonFormField<String>(
+                                    value: role,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Peran anggota',
                                     ),
+                                    items: const [
+                                      DropdownMenuItem(
+                                          value: 'member',
+                                          child: Text('Anggota')),
+                                      DropdownMenuItem(
+                                          value: 'admin', child: Text('Admin')),
+                                    ],
+                                    onChanged: (v) =>
+                                        setState(() => role = v ?? 'member'),
+                                  ),
+                                  const SizedBox(height: SsrSpace.lg),
+                                  PrimaryButton(
+                                    label: 'Buat undangan',
+                                    loading: creating,
+                                    onPressed: orgId.isEmpty ? null : _create,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: SsrSpace.md),
-                              DropdownButtonFormField<String>(
-                                value: role,
-                                decoration: const InputDecoration(
-                                  labelText: 'Peran anggota',
+                            ),
+                            const SizedBox(height: SsrSpace.lg),
+                            if (invites.isEmpty)
+                              SectionCard(
+                                child: Text(
+                                  'Belum ada undangan aktif. Buat kode di atas '
+                                  'untuk mengundang anggota.',
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
-                                items: const [
-                                  DropdownMenuItem(
-                                      value: 'member',
-                                      child: Text('Anggota')),
-                                  DropdownMenuItem(
-                                      value: 'admin', child: Text('Admin')),
-                                ],
-                                onChanged: (v) =>
-                                    setState(() => role = v ?? 'member'),
+                              )
+                            else
+                              SectionCard(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: SsrSpace.md,
+                                  vertical: SsrSpace.xs,
+                                ),
+                                child: Column(
+                                  children: [
+                                    for (var i = 0; i < invites.length; i++) ...[
+                                      if (i > 0) const Divider(height: 1),
+                                      _inviteRow(invites[i]),
+                                    ],
+                                  ],
+                                ),
                               ),
-                              const SizedBox(height: SsrSpace.lg),
-                              PrimaryButton(
-                                label: 'Buat undangan',
-                                loading: creating,
-                                onPressed: orgId.isEmpty ? null : _create,
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
-                        const SizedBox(height: SsrSpace.lg),
-                        if (invites.isEmpty)
-                          SectionCard(
-                            child: Text(
-                              'Belum ada undangan aktif. Buat kode di atas '
-                              'untuk mengundang anggota.',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          )
-                        else
-                          SectionCard(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: SsrSpace.md,
-                              vertical: SsrSpace.xs,
-                            ),
-                            child: Column(
-                              children: [
-                                for (var i = 0; i < invites.length; i++) ...[
-                                  if (i > 0) const Divider(height: 1),
-                                  _inviteRow(invites[i]),
-                                ],
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
     );
   }
 

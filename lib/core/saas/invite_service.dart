@@ -20,17 +20,37 @@ class InviteService {
   }) async {
     final token = generateInviteToken();
     final uid = _c.auth.currentUser!.id;
+    try {
+      final row = await _c
+          .from('org_invites')
+          .insert({
+            'org_id': orgId,
+            'role': role,
+            'token_hash': hashInviteToken(token),
+            'created_by': uid,
+          })
+          .select('id')
+          .single();
+      return (token: token, id: row['id'] as String);
+    } on PostgrestException catch (err) {
+      if (err.code == '42501') {
+        throw InviteException('Hanya admin workspace yang bisa mengundang.');
+      }
+      rethrow;
+    }
+  }
+
+  /// Peran user sendiri di org. Policy "own memberships" (migration_08)
+  /// mengizinkan member membaca baris keanggotaannya sendiri.
+  Future<String> myRole(String orgId) async {
+    final uid = _c.auth.currentUser!.id;
     final row = await _c
-        .from('org_invites')
-        .insert({
-          'org_id': orgId,
-          'role': role,
-          'token_hash': hashInviteToken(token),
-          'created_by': uid,
-        })
-        .select('id')
-        .single();
-    return (token: token, id: row['id'] as String);
+        .from('org_members')
+        .select('role')
+        .eq('org_id', orgId)
+        .eq('user_id', uid)
+        .maybeSingle();
+    return row?['role'] as String? ?? '';
   }
 
   Future<List<Map<String, dynamic>>> listInvites(String orgId) async {
