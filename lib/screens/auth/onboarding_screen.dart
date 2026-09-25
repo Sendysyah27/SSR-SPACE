@@ -72,6 +72,54 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: _OnboardingBody(
+          nameC: nameC,
+          nameFocus: nameFocus,
+          pinC: pinC,
+          pin2C: pin2C,
+          errName: errName,
+          errPin: errPin,
+          errPin2: errPin2,
+          saving: saving,
+          onNameChanged: (_) => setState(() => errName = null),
+          onSubmit: _submit,
+        ),
+      ),
+    );
+  }
+}
+
+/// Isi layar onboarding: judul + dots langkah, field nama, dua field PIN,
+/// dan tombol Mulai.
+class _OnboardingBody extends StatelessWidget {
+  final TextEditingController nameC;
+  final FocusNode nameFocus;
+  final TextEditingController pinC;
+  final TextEditingController pin2C;
+  final String? errName;
+  final String? errPin;
+  final String? errPin2;
+  final bool saving;
+  final ValueChanged<String> onNameChanged;
+  final VoidCallback onSubmit;
+
+  const _OnboardingBody({
+    required this.nameC,
+    required this.nameFocus,
+    required this.pinC,
+    required this.pin2C,
+    required this.errName,
+    required this.errPin,
+    required this.errPin2,
+    required this.saving,
+    required this.onNameChanged,
+    required this.onSubmit,
+  });
+
   Widget _stepDots() {
     final step = (pinC.text.isNotEmpty || pin2C.text.isNotEmpty) ? 1 : 0;
     return Row(
@@ -101,55 +149,43 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(SsrSpace.xxl),
-          children: [
-            Text(
-              'Selamat datang di SSR SPACE',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: SsrSpace.xs),
-            Text(
-              'Isi profil lalu buat PIN untuk mulai mencatat.',
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: SsrColors.secondary),
-            ),
-            const SizedBox(height: SsrSpace.xl),
-            _stepDots(),
-            const SizedBox(height: SsrSpace.xl),
-            Text('Profil', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: SsrSpace.md),
-            TextField(
-              controller: nameC,
-              focusNode: nameFocus,
-              textInputAction: TextInputAction.next,
-              onChanged: (_) => setState(() => errName = null),
-              decoration: InputDecoration(
-                labelText: 'Nama',
-                errorText: errName,
-              ),
-            ),
-            const SizedBox(height: SsrSpace.xl),
-            Text(
-              'PIN keamanan (6 digit)',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: SsrSpace.md),
-            PinField(
-              controller: pinC,
-              length: 6,
-              error: errPin,
-              autofocus: true,
-            ),
-            const SizedBox(height: SsrSpace.md),
-            PinField(controller: pin2C, length: 6, error: errPin2),
-            const SizedBox(height: SsrSpace.xxl),
-            PrimaryButton(label: 'Mulai', loading: saving, onPressed: _submit),
-          ],
+    return ListView(
+      padding: const EdgeInsets.all(SsrSpace.xxl),
+      children: [
+        Text(
+          'Selamat datang di SSR SPACE',
+          style: Theme.of(context).textTheme.titleLarge,
         ),
-      ),
+        const SizedBox(height: SsrSpace.xs),
+        Text(
+          'Isi profil lalu buat PIN untuk mulai mencatat.',
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: SsrColors.secondary),
+        ),
+        const SizedBox(height: SsrSpace.xl),
+        _stepDots(),
+        const SizedBox(height: SsrSpace.xl),
+        Text('Profil', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: SsrSpace.md),
+        TextField(
+          controller: nameC,
+          focusNode: nameFocus,
+          textInputAction: TextInputAction.next,
+          onChanged: onNameChanged,
+          decoration: InputDecoration(labelText: 'Nama', errorText: errName),
+        ),
+        const SizedBox(height: SsrSpace.xl),
+        Text(
+          'PIN keamanan (6 digit)',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: SsrSpace.md),
+        PinField(controller: pinC, length: 6, error: errPin, autofocus: true),
+        const SizedBox(height: SsrSpace.md),
+        PinField(controller: pin2C, length: 6, error: errPin2),
+        const SizedBox(height: SsrSpace.xxl),
+        PrimaryButton(label: 'Mulai', loading: saving, onPressed: onSubmit),
+      ],
     );
   }
 }
