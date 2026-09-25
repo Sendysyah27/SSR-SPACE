@@ -158,9 +158,8 @@ class _WalletsScreenState extends State<WalletsScreen> {
   @override
   Widget build(BuildContext context) {
     if (noOrg) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Dompet')),
-        body: EmptyView(
+      return _WalletsScaffold(
+        EmptyView(
           icon: Icons.account_balance_wallet_outlined,
           title: 'Pilih atau buat workspace dulu.',
           subtitle: 'Dompet selalu menempel pada satu workspace.',
@@ -170,43 +169,22 @@ class _WalletsScreenState extends State<WalletsScreen> {
       );
     }
     if (loading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Dompet')),
-        body: const LoadingView(label: 'Memuat dompet...'),
-      );
+      return const _WalletsScaffold(LoadingView(label: 'Memuat dompet...'));
     }
     if (err != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Dompet')),
-        body: ErrorView(message: err!, onRetry: _load),
-      );
+      return _WalletsScaffold(ErrorView(message: err!, onRetry: _load));
     }
-    final total = items.isEmpty ? null : _totalBalance();
-    return Scaffold(
-      appBar: AppBar(title: const Text('Dompet')),
-      body: ListView(
+    return _WalletsScaffold(
+      ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
-          if (total != null)
-            LabeledSectionCard(
-              margin: const EdgeInsets.only(bottom: SsrSpace.md),
-              label: 'Total aset',
-              children: [Text(amt(total), style: SsrTheme.moneyLarge)],
-            ),
-          if (items.isEmpty)
-            EmptyView(
-              icon: Icons.account_balance_wallet_outlined,
-              title: 'Belum ada dompet.',
-              subtitle: 'Tambah dompet pertama lewat form di bawah.',
-              actionLabel: 'Isi dompet',
-              onAction: _focusForm,
-            )
-          else
-            _WalletListCard(
-              items: items,
-              typeLabelOf: _typeLabel,
-              balanceTextOf: _balanceLabel,
-            ),
+          _WalletOverview(
+            total: items.isEmpty ? null : _totalBalance(),
+            items: items,
+            typeLabelOf: _typeLabel,
+            balanceTextOf: _balanceLabel,
+            onFocusForm: _focusForm,
+          ),
           _NewWalletForm(
             nameC: nameC,
             nameFocus: nameFocus,
@@ -218,6 +196,67 @@ class _WalletsScreenState extends State<WalletsScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Kerangka layar Dompet: AppBar "Dompet" + body (state / daftar).
+class _WalletsScaffold extends StatelessWidget {
+  final Widget body;
+  const _WalletsScaffold(this.body);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Dompet')),
+      body: body,
+    );
+  }
+}
+
+/// Total aset + daftar dompet (atau EmptyView bila belum ada).
+class _WalletOverview extends StatelessWidget {
+  final double? total;
+  final List<Wallet> items;
+  final String Function(String type) typeLabelOf;
+  final String Function(String walletId) balanceTextOf;
+  final VoidCallback onFocusForm;
+
+  const _WalletOverview({
+    required this.total,
+    required this.items,
+    required this.typeLabelOf,
+    required this.balanceTextOf,
+    required this.onFocusForm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = total;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (t != null)
+          LabeledSectionCard(
+            margin: const EdgeInsets.only(bottom: SsrSpace.md),
+            label: 'Total aset',
+            children: [Text(amt(t), style: SsrTheme.moneyLarge)],
+          ),
+        if (items.isEmpty)
+          EmptyView(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'Belum ada dompet.',
+            subtitle: 'Tambah dompet pertama lewat form di bawah.',
+            actionLabel: 'Isi dompet',
+            onAction: onFocusForm,
+          )
+        else
+          _WalletListCard(
+            items: items,
+            typeLabelOf: typeLabelOf,
+            balanceTextOf: balanceTextOf,
+          ),
+      ],
     );
   }
 }

@@ -162,6 +162,103 @@ class _AuthForm extends StatelessWidget {
     required this.onToggleMode,
   });
 
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(SsrSpace.xxl),
+      children: [
+        const _AuthHeader(),
+        _AuthFields(emailC: emailC, passC: passC, onSubmit: onSubmit),
+        _AuthMessages(
+          err: err,
+          info: info,
+          showResend: needVerify && emailC.text.isNotEmpty,
+          onResend: onResend,
+        ),
+        _AuthActions(
+          isLogin: isLogin,
+          loading: loading,
+          onSubmit: onSubmit,
+          onToggleMode: onToggleMode,
+        ),
+      ],
+    );
+  }
+}
+
+/// Kopi halaman auth: jarak atas + wordmark "SSR SPACE" + subjudul.
+class _AuthHeader extends StatelessWidget {
+  const _AuthHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: SsrSpace.xxl),
+        Text('SSR SPACE', style: Theme.of(context).textTheme.displaySmall),
+        const SizedBox(height: SsrSpace.sm),
+        Text(
+          'Masuk untuk lanjut catat harian.',
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: SsrColors.secondary),
+        ),
+        const SizedBox(height: SsrSpace.xxl),
+      ],
+    );
+  }
+}
+
+/// Field email + password (sandi tersembunyi, submit lewat tombol keyboard).
+class _AuthFields extends StatelessWidget {
+  final TextEditingController emailC;
+  final TextEditingController passC;
+  final Future<void> Function() onSubmit;
+
+  const _AuthFields({
+    required this.emailC,
+    required this.passC,
+    required this.onSubmit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: emailC,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.email],
+          decoration: const InputDecoration(labelText: 'Email'),
+        ),
+        const SizedBox(height: SsrSpace.md),
+        TextField(
+          controller: passC,
+          obscureText: true,
+          onSubmitted: (_) => onSubmit(),
+          decoration: const InputDecoration(labelText: 'Password'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Pesan error/info + tombol kirim ulang verifikasi (bila perlu).
+class _AuthMessages extends StatelessWidget {
+  final String? err;
+  final String? info;
+  final bool showResend;
+  final Future<void> Function() onResend;
+
+  const _AuthMessages({
+    required this.err,
+    required this.info,
+    required this.showResend,
+    required this.onResend,
+  });
+
   Widget _messageRow({
     required String text,
     required Color bg,
@@ -195,32 +292,9 @@ class _AuthForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(SsrSpace.xxl),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: SsrSpace.xxl),
-        Text('SSR SPACE', style: Theme.of(context).textTheme.displaySmall),
-        const SizedBox(height: SsrSpace.sm),
-        Text(
-          'Masuk untuk lanjut catat harian.',
-          style: Theme.of(context).textTheme.bodyMedium
-              ?.copyWith(color: SsrColors.secondary),
-        ),
-        const SizedBox(height: SsrSpace.xxl),
-        TextField(
-          controller: emailC,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.next,
-          autofillHints: const [AutofillHints.email],
-          decoration: const InputDecoration(labelText: 'Email'),
-        ),
-        const SizedBox(height: SsrSpace.md),
-        TextField(
-          controller: passC,
-          obscureText: true,
-          onSubmitted: (_) => onSubmit(),
-          decoration: const InputDecoration(labelText: 'Password'),
-        ),
         if (err != null) ...[
           const SizedBox(height: SsrSpace.md),
           _messageRow(
@@ -239,11 +313,35 @@ class _AuthForm extends StatelessWidget {
             icon: Icons.mark_email_read_outlined,
           ),
         ],
-        if (needVerify && emailC.text.isNotEmpty)
+        if (showResend)
           TextButton(
             onPressed: onResend,
             child: const Text('Kirim ulang verifikasi'),
           ),
+      ],
+    );
+  }
+}
+
+/// Tombol submit utama + tautan ganti mode masuk/daftar.
+class _AuthActions extends StatelessWidget {
+  final bool isLogin;
+  final bool loading;
+  final Future<void> Function() onSubmit;
+  final VoidCallback onToggleMode;
+
+  const _AuthActions({
+    required this.isLogin,
+    required this.loading,
+    required this.onSubmit,
+    required this.onToggleMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         const SizedBox(height: SsrSpace.lg),
         PrimaryButton(
           label: isLogin ? 'Masuk' : 'Daftar',
