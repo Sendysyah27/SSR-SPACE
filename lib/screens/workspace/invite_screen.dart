@@ -5,6 +5,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/invite_service.dart';
 import 'package:ssr_space/services/invite_token.dart';
+import 'package:ssr_space/services/billing_service.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
@@ -80,6 +82,17 @@ class _InviteScreenState extends State<InviteScreen> {
     if (creating) return;
     setState(() => creating = true);
     try {
+      final plan = await currentPlan(orgId);
+      final members = await memberCount(orgId);
+      if (!canInvite(plan: plan, members: members)) {
+        if (!mounted) return;
+        setState(() => creating = false);
+        await requirePro(
+          context,
+          'Paket Gratis maks ${PlanLimits.freeMembers} anggota per workspace.',
+        );
+        return;
+      }
       final res = await _service.createInvite(
         orgId: orgId,
         role: role ?? 'member',

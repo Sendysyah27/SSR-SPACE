@@ -7,7 +7,9 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
+import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/month.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/report_pdf.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -132,10 +134,21 @@ class ReportsScreenState extends State<ReportsScreen> {
           exporting: exporting,
           hasItems: items.isNotEmpty,
           onExportCsv: () => _runExport(_exportCsv, 'CSV'),
-          onExportPdf: () => _runExport(_exportPdf, 'PDF'),
+          onExportPdf: () => _guardPdf(),
         ),
       ],
     );
+  }
+
+  Future<void> _guardPdf() async {
+    final orgId = await activeOrgId();
+    final plan = orgId.isEmpty ? 'free' : await currentPlan(orgId);
+    if (!mounted) return;
+    if (!canExportPdf(plan: plan)) {
+      await requirePro(context, 'Export PDF khusus paket Pro.');
+      return;
+    }
+    _runExport(_exportPdf, 'PDF');
   }
 
   @override

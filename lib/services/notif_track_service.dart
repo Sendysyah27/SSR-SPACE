@@ -8,7 +8,9 @@ import 'package:notification_listener_service/notification_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/notif_parse.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/wallet_service.dart';
@@ -339,6 +341,18 @@ class NotifTrack {
         n.status = 'Nominal atau jenis tidak terbaca';
         _remember(n);
         return;
+      }
+      try {
+        final plan = await currentPlan(orgId);
+        final used = await autoUsedThisMonth(orgId, ymd(n.at).substring(0, 7));
+        if (!canAutoTrack(plan: plan, used: used)) {
+          n.status =
+              'Batas auto-track Gratis (${PlanLimits.freeAutoPerMonth}/bln). Naik ke Pro.';
+          _remember(n);
+          return;
+        }
+      } catch (_) {
+        debugPrint('track: cek kuota gagal, lanjut');
       }
       final walletId = await resolveWalletId(orgId, n.appLabel!, prefs);
       final category = prefs.getString(catPrefKey(n.appLabel!))?.trim();

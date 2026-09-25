@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
+import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/invite_service.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -75,6 +78,17 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
       formErr = null;
     });
     try {
+      final activeId = await activeOrgId();
+      final plan = activeId.isEmpty ? 'free' : await currentPlan(activeId);
+      if (!canCreateWorkspace(plan: plan, joined: orgs.length)) {
+        if (!mounted) return;
+        setState(() => busy = false);
+        await requirePro(
+          context,
+          'Paket Gratis maks ${PlanLimits.freeWorkspaces} workspace.',
+        );
+        return;
+      }
       final c = SupabaseConfig.client;
       final uid = c.auth.currentUser!.id;
       final newId = const Uuid().v4();
