@@ -148,6 +148,25 @@ jobs:
           import pathlib
           m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
           s = m.read_text()
+          # Pengingat harian (flutter_local_notifications): POST_NOTIFICATIONS
+          # untuk Android 13+. Izin lain tidak ditambah di task ini.
+          # Catatan Task 9 (minify/shrink): bila minifyEnabled=true, tambah
+          # keep-rules plugin ini di android/app/proguard-rules.pro:
+          # -keep class com.dexterous.flutterlocalnotifications.** { *; }
+          if 'android.permission.POST_NOTIFICATIONS' not in s:
+              s = s.replace(
+                  '</manifest>',
+                  '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n</manifest>',
+              )
+          m.write_text(s)
+          assert 'android.permission.POST_NOTIFICATIONS' in m.read_text()
+          print('post-notifications permission ok')
+          EOF
+      - run: |
+          python3 - <<'EOF'
+          import pathlib
+          m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
+          s = m.read_text()
           # Deep link magic-link ganti PIN: com.ssr.space.ssrspace://login-callback
           # (lihat pin_link_verify.dart; redirect URL didaftarkan di Dashboard).
           if 'com.ssr.space.ssrspace' not in s:
