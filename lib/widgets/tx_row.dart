@@ -107,9 +107,7 @@ class TxRow extends StatelessWidget {
                         when,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: SsrColors.secondary,
-                          fontFeatures: const [
-                            FontFeature.tabularFigures(),
-                          ],
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                     ],
