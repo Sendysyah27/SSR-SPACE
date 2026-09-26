@@ -171,6 +171,19 @@ jobs:
           m.write_text(s)
           assert 'android.permission.RECEIVE_BOOT_COMPLETED' in m.read_text()
           print('boot-completed permission ok')
+          s = m.read_text()
+          if 'com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver' not in s:
+              rcv = '''          <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver" android:enabled="true" android:exported="false">
+              <intent-filter>
+                  <action android:name="android.intent.action.BOOT_COMPLETED" />
+              </intent-filter>
+          </receiver>
+          '''
+              assert '</application>' in s, 'application block tak ketemu'
+              s = s.replace('</application>', rcv + '</application>')
+          m.write_text(s)
+          assert 'com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver' in m.read_text()
+          print('boot receiver ok')
           EOF
       - run: |
           python3 - <<'EOF'
