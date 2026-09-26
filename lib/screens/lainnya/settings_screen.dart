@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
+import 'package:ssr_space/services/reminder_service.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -357,16 +359,38 @@ class _HeroStyleCard extends StatelessWidget {
 }
 
 /// Pengingat harian: toggle + jam via TimePicker.
-/// Hanya simpan prefs, penjadwalan notifikasi milik Task 7.
 class _ReminderCard extends StatelessWidget {
   const _ReminderCard();
+
+  Future<void> _toggle(bool v) async {
+    await setReminderEnabled(v);
+    try {
+      if (v) {
+        await ReminderService.scheduleDaily(
+          reminderHour.value,
+          reminderMinute.value,
+        );
+      } else {
+        await ReminderService.cancel();
+      }
+    } catch (e) {
+      debugPrint('pengingat gagal: $e');
+    }
+  }
 
   Future<void> _pick(BuildContext context, int h, int m) async {
     final t = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: h, minute: m),
     );
-    if (t != null) await setReminderTime(t.hour, t.minute);
+    if (t == null) return;
+    await setReminderTime(t.hour, t.minute);
+    if (!reminderEnabled.value) return;
+    try {
+      await ReminderService.scheduleDaily(t.hour, t.minute);
+    } catch (e) {
+      debugPrint('pengingat gagal: $e');
+    }
   }
 
   String _fmt(int h, int m) =>
@@ -390,7 +414,7 @@ class _ReminderCard extends StatelessWidget {
                     contentPadding: EdgeInsets.zero,
                     title: Text(tr('st_reminder_on')),
                     value: enabled,
-                    onChanged: setReminderEnabled,
+                    onChanged: _toggle,
                   ),
                   Row(
                     children: [

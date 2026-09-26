@@ -149,7 +149,8 @@ jobs:
           m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
           s = m.read_text()
           # Pengingat harian (flutter_local_notifications): POST_NOTIFICATIONS
-          # untuk Android 13+. Izin lain tidak ditambah di task ini.
+          # untuk Android 13+ plus RECEIVE_BOOT_COMPLETED agar jadwal
+          # harian bisa dijadwal ulang saat app start setelah reboot.
           # Catatan Task 9 (minify/shrink): bila minifyEnabled=true, tambah
           # keep-rules plugin ini di android/app/proguard-rules.pro:
           # -keep class com.dexterous.flutterlocalnotifications.** { *; }
@@ -161,6 +162,15 @@ jobs:
           m.write_text(s)
           assert 'android.permission.POST_NOTIFICATIONS' in m.read_text()
           print('post-notifications permission ok')
+          s = m.read_text()
+          if 'android.permission.RECEIVE_BOOT_COMPLETED' not in s:
+              s = s.replace(
+                  '</manifest>',
+                  '    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>\n</manifest>',
+              )
+          m.write_text(s)
+          assert 'android.permission.RECEIVE_BOOT_COMPLETED' in m.read_text()
+          print('boot-completed permission ok')
           EOF
       - run: |
           python3 - <<'EOF'

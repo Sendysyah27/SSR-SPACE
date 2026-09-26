@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/app_categories.dart';
@@ -8,6 +9,7 @@ import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
+import 'package:ssr_space/services/reminder_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -39,6 +41,16 @@ Future<void> main() async {
   await loadAppCategories(prefs);
   await CurrencyService.loadCache(prefs);
   unawaited(CurrencyService.refresh());
+  try {
+    if (prefs.getBool('reminder_enabled') ?? false) {
+      final h = (prefs.getInt('reminder_hour') ?? 7).clamp(0, 23);
+      final m = (prefs.getInt('reminder_minute') ?? 0).clamp(0, 59);
+      await ReminderService.init();
+      await ReminderService.scheduleDaily(h, m);
+    }
+  } catch (e) {
+    debugPrint('jadwal ulang pengingat gagal: $e');
+  }
   final app = SsrSpaceApp(session: SessionService(prefs));
   runZonedGuarded(
     () => runApp(app),
