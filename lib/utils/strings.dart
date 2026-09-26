@@ -735,6 +735,32 @@ const _t = <String, Map<String, String>>{
   'org_create': {'id': 'Buat', 'en': 'Create'},
   'org_f_code': {'id': 'Kode undangan', 'en': 'Invite code'},
   'org_join': {'id': 'Gabung', 'en': 'Join'},
+  // Detail workspace
+  'wsm_members': {'id': 'Anggota', 'en': 'Members'},
+  'wsm_you': {'id': 'Kamu', 'en': 'You'},
+  'wsm_kick': {'id': 'Keluarkan', 'en': 'Remove'},
+  'wsm_kick_title': {'id': 'Keluarkan anggota?', 'en': 'Remove member?'},
+  'wsm_kick_body': {
+    'id': 'Aksesnya ke buku kas ini langsung putus.',
+    'en': 'Their access to this ledger ends immediately.',
+  },
+  'wsm_kick_last': {
+    'id': 'Tak bisa keluarkan pemilik terakhir.',
+    'en': 'Cannot remove the last owner.',
+  },
+  'wsm_kick_denied': {'id': 'Hanya pemilik/admin.', 'en': 'Owners/admins only.'},
+  'wsm_danger': {'id': 'Zona danger', 'en': 'Danger zone'},
+  'wsm_delete': {'id': 'Hapus workspace', 'en': 'Delete workspace'},
+  'wsm_delete_body': {
+    'id':
+        'Semua dompet, transaksi, dan data ikut terhapus. Ketik nama workspace untuk konfirmasi.',
+    'en':
+        'All wallets, transactions, and data go with it. Type the workspace name to confirm.',
+  },
+  'wsm_delete_hint': {'id': 'Ketik nama workspace', 'en': 'Type workspace name'},
+  'wsm_deleted': {'id': 'Workspace dihapus.', 'en': 'Workspace deleted.'},
+  'wsm_err': {'id': 'Gagal. Periksa koneksi.', 'en': 'Failed. Check your connection.'},
+  'wsm_detail': {'id': 'Kelola', 'en': 'Manage'},
   // Pelacakan otomatis
   'nt_title': {'id': 'Pelacakan otomatis', 'en': 'Auto-tracking'},
   'nt_sub': {
