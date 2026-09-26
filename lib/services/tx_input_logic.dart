@@ -1,10 +1,10 @@
-/// Logika murni input transaksi: numpad nominal + rakit tanggal/jam.
-///
-/// File ini SENGAJA tanpa import Flutter/package apa pun supaya bisa
-/// diverifikasi via `dart` murni di Termux (tanpa `flutter test`).
-/// Widget (`tx_numpad.dart`, `tx_input_sheet.dart`) hanya memanggil
-/// fungsi di sini; formatting tampilan ke mata uang tetap di
-/// `CurrencyService.format` (sisi widget, sudah sadar kurs + mask).
+// Logika murni input transaksi: numpad nominal + rakit tanggal/jam.
+//
+// File ini SENGAJA tanpa import Flutter/package apa pun supaya bisa
+// diverifikasi via `dart` murni di Termux (tanpa `flutter test`).
+// Widget (`tx_numpad.dart`, `tx_input_sheet.dart`) hanya memanggil
+// fungsi di sini; formatting tampilan ke mata uang tetap di
+// `CurrencyService.format` (sisi widget, sudah sadar kurs + mask).
 
 int _pow10(int n) {
   var r = 1;
