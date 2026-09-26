@@ -325,6 +325,114 @@ select t_assert(
    where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1') = 0,
   'T11 saldo org A tak terlihat bob');
 
+-- ===== T12: list_org_members hanya untuk member =====
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select t_assert((select count(*) from public.list_org_members('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1')) = 2,
+  'T12 owner melihat 2 anggota org A');
+set test.user_id = '99999999-9999-4999-8999-999999999999';
+select t_assert((select count(*) from public.list_org_members('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1')) = 0,
+  'T12 non-member melihat 0 anggota');
+
+-- ===== T13: kick_member guard =====
+set test.user_id = '22222222-2222-4222-8222-222222222222';
+do $$
+begin
+  perform public.kick_member('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '33333333-3333-4333-8333-333333333333');
+  raise exception 'ASSERT GAGAL: T13 non-admin bisa kick';
+exception when others then
+  if sqlerrm not like '%NOT_ADMIN%' then raise; end if;
+end $$;
+-- dave admin di A (superuser, karena tanpa policy UPDATE role)
+reset role;
+insert into auth.users (id) values ('44444444-4444-4444-8444-444444444444') on conflict (id) do nothing;
+insert into org_members (org_id, user_id, role) values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '44444444-4444-4444-8444-444444444444', 'admin')
+on conflict do nothing;
+set role authenticated;
+set test.user_id = '44444444-4444-4444-8444-444444444444';
+do $$
+begin
+  perform public.kick_member('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '11111111-1111-4111-8111-111111111111');
+  raise exception 'ASSERT GAGAL: T13 kick owner-terakhir lolos';
+exception when others then
+  if sqlerrm not like '%KICK_LAST_OWNER%' then raise; end if;
+end $$;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+do $$
+begin
+  perform public.kick_member('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '11111111-1111-4111-8111-111111111111');
+  raise exception 'ASSERT GAGAL: T13 kick diri sendiri lolos';
+exception when others then
+  if sqlerrm not like '%KICK_SELF%' then raise; end if;
+end $$;
+select public.kick_member('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '44444444-4444-4444-8444-444444444444');
+select t_assert(
+  not exists (select 1 from org_members
+    where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+      and user_id = '44444444-4444-4444-8444-444444444444'),
+  'T13 kick admin oleh owner lolos');
+select public.kick_member('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '33333333-3333-4333-8333-333333333333');
+select t_assert(
+  not exists (select 1 from org_members
+    where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+      and user_id = '33333333-3333-4333-8333-333333333333'),
+  'T13 kick member oleh owner lolos');
+
+-- ===== T14: delete_workspace guard + cascade =====
+set test.user_id = '22222222-2222-4222-8222-222222222222';
+do $$
+begin
+  perform public.delete_workspace('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
+  raise exception 'ASSERT GAGAL: T14 non-owner bisa hapus';
+exception when others then
+  if sqlerrm not like '%NOT_OWNER%' then raise; end if;
+end $$;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+insert into organizations (id, name, created_by)
+values ('cccccccc-cccc-4ccc-8ccc-ccccccccccc3', 'Org C',
+        '11111111-1111-4111-8111-111111111111');
+insert into org_members (org_id, user_id, role)
+values ('cccccccc-cccc-4ccc-8ccc-ccccccccccc3',
+        '11111111-1111-4111-8111-111111111111', 'owner');
+insert into wallets (id, org_id, name, type) values
+  ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeee03', 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3', 'Kas C', 'cash');
+select public.delete_workspace('cccccccc-cccc-4ccc-8ccc-ccccccccccc3');
+select t_assert(
+  not exists (select 1 from organizations where id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),
+  'T14 org C terhapus');
+select t_assert(
+  not exists (select 1 from org_members where org_id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),
+  'T14 members C cascade');
+select t_assert(
+  not exists (select 1 from wallets where org_id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),
+  'T14 wallets C cascade');
+
+-- ===== T15: anon tak boleh execute RPC admin =====
+set role anon;
+set test.user_id = '';
+do $$
+begin
+  perform public.kick_member('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '11111111-1111-4111-8111-111111111111');
+  raise exception 'ASSERT GAGAL: T15 anon bisa kick_member';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+do $$
+begin
+  perform public.delete_workspace('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
+  raise exception 'ASSERT GAGAL: T15 anon bisa delete_workspace';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+do $$
+begin
+  perform public.list_org_members('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
+  raise exception 'ASSERT GAGAL: T15 anon bisa list_org_members';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+set role authenticated;
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');
