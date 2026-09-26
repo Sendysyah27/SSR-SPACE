@@ -22,7 +22,6 @@ final pinLinkVerified = ValueNotifier<bool>(false);
 /// Tangkap deep-link callback auth -> tukar token_hash jadi sesi.
 /// Fail-closed: hanya type=magiclink yang diterima. Tak pernah melempar.
 class PinLinkVerify {
-  static StreamSubscription<Uri>? _sub;
   static bool _started = false;
 
   static void initOnce() {
@@ -30,7 +29,7 @@ class PinLinkVerify {
     _started = true;
     try {
       final links = AppLinks();
-      _sub = links.uriLinkStream.listen(
+      links.uriLinkStream.listen(
         (uri) {
           unawaited(consume(uri));
         },
