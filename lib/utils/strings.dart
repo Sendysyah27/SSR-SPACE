@@ -332,6 +332,20 @@ const _t = <String, Map<String, String>>{
     'id': 'Ekspor seluruh workspace ke CSV',
     'en': 'Export the whole workspace to CSV',
   },
+  'o_cats': {'id': 'Kategori', 'en': 'Categories'},
+  'o_cats_s': {
+    'id': 'Atur daftar kategori transaksi',
+    'en': 'Manage transaction categories',
+  },
+  'c_add_hint': {'id': 'Kategori baru', 'en': 'New category'},
+  'c_add': {'id': 'Tambah', 'en': 'Add'},
+  'c_saved': {'id': 'Daftar kategori disimpan.', 'en': 'Category list saved.'},
+  'c_min_one': {'id': 'Minimal 1 kategori.', 'en': 'At least 1 category.'},
+  'c_dupe': {
+    'id': 'Kategori itu sudah ada.',
+    'en': 'That category already exists.',
+  },
+  'c_reset': {'id': 'Kembalikan bawaan', 'en': 'Reset to defaults'},
   'o_sec_display': {'id': 'Tampilan', 'en': 'Display'},
   'o_mask': {'id': 'Samarkan nominal', 'en': 'Mask amounts'},
   'o_mask_s': {
@@ -875,8 +889,14 @@ const _t = <String, Map<String, String>>{
     'id': 'Gabung workspace di SSR SPACE dengan kode: {c}',
     'en': 'Join the SSR SPACE workspace with code: {c}',
   },
-  'r_share_csv': {'id': 'Laporan SSR SPACE (CSV)', 'en': 'SSR SPACE report (CSV)'},
-  'r_share_pdf': {'id': 'Laporan SSR SPACE (PDF)', 'en': 'SSR SPACE report (PDF)'},
+  'r_share_csv': {
+    'id': 'Laporan SSR SPACE (CSV)',
+    'en': 'SSR SPACE report (CSV)',
+  },
+  'r_share_pdf': {
+    'id': 'Laporan SSR SPACE (PDF)',
+    'en': 'SSR SPACE report (PDF)',
+  },
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

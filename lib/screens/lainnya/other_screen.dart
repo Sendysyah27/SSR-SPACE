@@ -14,6 +14,7 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/lainnya/billing_screen.dart';
+import 'package:ssr_space/screens/lainnya/categories_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_screen.dart';
 import 'package:ssr_space/screens/workspace/invite_screen.dart';
 import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
@@ -193,7 +194,10 @@ class _OtherScreenState extends State<OtherScreen> {
                 tracking: meta?.tracking == true,
                 onOpen: () => _push(const NotifSettingsScreen()),
               ),
-              _DataSection(onBackup: backingUp ? null : _backup),
+              _DataSection(
+                onBackup: backingUp ? null : _backup,
+                onCategories: () => _push(const CategoriesScreen()),
+              ),
               _AppearanceSection(
                 onSettings: () => _push(const SettingsScreen()),
               ),
@@ -300,11 +304,12 @@ class _TrackingSection extends StatelessWidget {
   }
 }
 
-/// Kartu "Data": ekspor CSV workspace (nonaktif saat proses berjalan).
+/// Kartu "Data": daftar kategori + ekspor CSV workspace.
 class _DataSection extends StatelessWidget {
   final VoidCallback? onBackup;
+  final VoidCallback onCategories;
 
-  const _DataSection({required this.onBackup});
+  const _DataSection({required this.onBackup, required this.onCategories});
 
   @override
   Widget build(BuildContext context) {
@@ -312,6 +317,13 @@ class _DataSection extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('o_sec_data'),
       children: [
+        NavTile(
+          icon: AppIcons.categoryFallback,
+          title: tr('o_cats'),
+          subtitle: tr('o_cats_s'),
+          onTap: onCategories,
+        ),
+        const Divider(height: 1),
         NavTile(
           icon: AppIcons.backup,
           title: tr('o_backup'),

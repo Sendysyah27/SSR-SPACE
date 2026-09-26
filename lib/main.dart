@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/error_reporter.dart';
@@ -20,6 +21,7 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   await loadMaskAmounts(prefs);
   await loadAppSettings(prefs);
+  await loadAppCategories(prefs);
   await CurrencyService.loadCache(prefs);
   unawaited(CurrencyService.refresh());
   final app = SsrSpaceApp(session: SessionService(prefs));
@@ -46,9 +48,8 @@ class SsrSpaceApp extends StatelessWidget {
             home: SplashScreen(session: session),
             debugShowCheckedModeBanner: false,
             builder: (ctx, child) => MediaQuery(
-              data: MediaQuery.of(ctx).copyWith(
-                textScaler: TextScaler.linear(scale),
-              ),
+              data: MediaQuery.of(ctx)
+                  .copyWith(textScaler: TextScaler.linear(scale)),
               child: child ?? const SizedBox.shrink(),
             ),
           ),
