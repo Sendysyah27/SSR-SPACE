@@ -97,6 +97,7 @@ Arah pengembangan ke **skala banyak user** — urutan wajib dijaga, jangan melom
 - **BigText fallback (2026-09-26, akar SeaBank "unreadable"):** plugin hanya baca `EXTRA_TEXT`, SeaBank taruh isi di BigText → `pubspec` pin `1.0.0` + patch Java via step `apk.yml` (assert keras). Verifikasi akhir di device.
 - **Optimasi CI (2026-09-26):** build 9–10 → 12+ mnt karena tanpa cache (build apk 10m21s/85%). Pasang cache Flutter+pub+Gradle (pin SHA) + `paths-ignore` docs. Hemat terasa dari run kedua.
 - **Auto-gabung transfer (2026-09-26, minta user):** pasangan out+in auto+auto (nominal sama, dompet beda, ≤10 mnt) langsung jadi 1 baris `transfer` — `pickAutoMerge()` + `_tryAutoMerge()` fail-open di `_onEvent` (histori lama tak diubah; kode TX milik OUT). `summary()` kenal transfer.
+- **Ganti PIN magic-link (2026-09-26):** template email terkunci (perlu SMTP) → OTP 6 digit buntu → ganti PIN via deep-link: kirim link → ketuk → tukar token jadi sesi (`pin_link_verify.dart`, `app_links`, intent-filter CI). User wajib tambah redirect `com.ssr.space.ssrspace://login-callback` di Dashboard → Auth → URL Configuration.
 
 Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari `track_master`; parser/gate `_onEvent` TIDAK berubah.
 

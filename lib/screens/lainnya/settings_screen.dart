@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
+import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -12,7 +12,7 @@ import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 
-/// Pengaturan: bahasa, mata uang, ukuran huruf, ganti PIN via OTP email.
+/// Pengaturan: bahasa, mata uang, ukuran huruf, ganti PIN via magic link.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -169,7 +169,8 @@ class _FontCard extends StatelessWidget {
   }
 }
 
-/// Ganti PIN: kirim OTP ke email → verifikasi → PIN baru 2x.
+/// Ganti PIN: kirim magic link ke email -> ketuk link (app terbuka
+/// otomatis, token ditukar sesi) -> PIN baru 2x.
 class _PinCard extends StatefulWidget {
   const _PinCard();
 
@@ -182,17 +183,28 @@ class _PinCardState extends State<_PinCard> {
   String? msg;
   String? err;
   bool busy = false;
-  String email = '';
-  final otpC = TextEditingController();
   final pinC = TextEditingController();
   final pin2C = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    if (pinLinkVerified.value) step = 'verified';
+    pinLinkVerified.addListener(_onLinkVerified);
+  }
+
+  @override
   void dispose() {
-    otpC.dispose();
+    pinLinkVerified.removeListener(_onLinkVerified);
     pinC.dispose();
     pin2C.dispose();
     super.dispose();
+  }
+
+  void _onLinkVerified() {
+    if (pinLinkVerified.value && mounted && step == 'sent') {
+      setState(() => step = 'verified');
+    }
   }
 
   Future<void> _send() async {
@@ -207,45 +219,20 @@ class _PinCardState extends State<_PinCard> {
         setState(() => err = tr('st_pin_noemail'));
         return;
       }
-      await SupabaseConfig.client.auth.signInWithOtp(email: mail);
+      PinLinkVerify.reset();
+      await SupabaseConfig.client.auth.signInWithOtp(
+        email: mail,
+        emailRedirectTo: pinLinkCallback,
+        shouldCreateUser: false,
+      );
       if (!mounted) return;
       setState(() {
-        email = mail;
         step = 'sent';
-        msg = tr('st_pin_sent').replaceFirst('{e}', mail);
+        msg = tr('st_pin_sent_link').replaceFirst('{e}', mail);
       });
     } catch (_) {
       if (!mounted) return;
       setState(() => err = tr('w_err_save'));
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
-  }
-
-  Future<void> _verify() async {
-    if (otpC.text.trim().length < 6) {
-      setState(() => err = tr('st_pin_badcode'));
-      return;
-    }
-    setState(() {
-      busy = true;
-      err = null;
-    });
-    try {
-      final res = await SupabaseConfig.client.auth.verifyOTP(
-        type: OtpType.email,
-        token: otpC.text.trim(),
-        email: email,
-      );
-      if (!mounted) return;
-      if (res.session == null) {
-        setState(() => err = tr('st_pin_badcode'));
-        return;
-      }
-      setState(() => step = 'verified');
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => err = tr('st_pin_badcode'));
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -268,13 +255,13 @@ class _PinCardState extends State<_PinCard> {
       final prefs = await SharedPreferences.getInstance();
       await SessionService(prefs).setPin(pinC.text);
       if (!mounted) return;
+      PinLinkVerify.reset();
       setState(() {
         step = 'idle';
         msg = tr('st_pin_changed');
       });
       pinC.clear();
       pin2C.clear();
-      otpC.clear();
     } catch (_) {
       if (!mounted) return;
       setState(() => err = tr('w_err_save'));
@@ -295,8 +282,7 @@ class _PinCardState extends State<_PinCard> {
             loading: busy,
             onPressed: _send,
           ),
-        if (step == 'sent')
-          _CodeForm(otpC: otpC, busy: busy, onVerify: _verify),
+        if (step == 'sent') _WaitLink(busy: busy, onResend: _send),
         if (step == 'verified')
           _NewPinForm(pinC: pinC, pin2C: pin2C, busy: busy, onSave: _savePin),
       ],
@@ -333,33 +319,23 @@ class _PinFeedback extends StatelessWidget {
   }
 }
 
-/// Form kode OTP 6 digit.
-class _CodeForm extends StatelessWidget {
-  final TextEditingController otpC;
+/// Tunggu ketuk link di email + kirim ulang.
+class _WaitLink extends StatelessWidget {
   final bool busy;
-  final VoidCallback onVerify;
+  final VoidCallback onResend;
 
-  const _CodeForm({
-    required this.otpC,
-    required this.busy,
-    required this.onVerify,
-  });
+  const _WaitLink({required this.busy, required this.onResend});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          controller: otpC,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(labelText: tr('st_pin_code')),
-        ),
+        Text(tr('st_pin_wait'), style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: SsrSpace.md),
-        PrimaryButton(
-          label: tr('st_pin_verify'),
-          loading: busy,
-          onPressed: onVerify,
+        TextButton(
+          onPressed: busy ? null : onResend,
+          child: Text(tr('st_pin_resend')),
         ),
       ],
     );

@@ -399,13 +399,19 @@ const _t = <String, Map<String, String>>{
   },
   'st_font': {'id': 'Ukuran huruf', 'en': 'Font size'},
   'st_pin': {'id': 'PIN keamanan', 'en': 'Security PIN'},
-  'st_pin_send': {'id': 'Kirim kode ke email', 'en': 'Send code to email'},
-  'st_pin_sent': {
-    'id': 'Kode dikirim ke {e}. Cek inbox.',
-    'en': 'Code sent to {e}. Check your inbox.',
+  'st_pin_send': {
+    'id': 'Kirim link verifikasi ke email',
+    'en': 'Send verification link to email',
   },
-  'st_pin_code': {'id': 'Kode 6 digit', 'en': '6-digit code'},
-  'st_pin_verify': {'id': 'Verifikasi', 'en': 'Verify'},
+  'st_pin_sent_link': {
+    'id': 'Link dikirim ke {e}. Buka email lalu ketuk linknya — app terbuka otomatis.',
+    'en': 'Link sent to {e}. Open your email and tap the link — the app opens automatically.',
+  },
+  'st_pin_wait': {
+    'id': 'Menunggu ketuk link di email (berlaku 1 jam).',
+    'en': 'Waiting for the email link tap (valid for 1 hour).',
+  },
+  'st_pin_resend': {'id': 'Kirim ulang link', 'en': 'Resend link'},
   'st_pin_new': {'id': 'PIN baru (6 digit)', 'en': 'New PIN (6 digits)'},
   'st_pin_new2': {'id': 'Ulangi PIN baru', 'en': 'Repeat new PIN'},
   'st_pin_save': {'id': 'Simpan PIN', 'en': 'Save PIN'},
@@ -414,10 +420,6 @@ const _t = <String, Map<String, String>>{
   'st_pin_short': {
     'id': 'PIN minimal 4 digit.',
     'en': 'PIN must be at least 4 digits.',
-  },
-  'st_pin_badcode': {
-    'id': 'Kode salah. Coba lagi.',
-    'en': 'Wrong code. Try again.',
   },
   'st_pin_noemail': {
     'id': 'Email user tidak ditemukan.',

@@ -143,6 +143,27 @@ jobs:
           assert 'SYSTEM_ALERT_WINDOW' in m.read_text()
           assert 'flutter.overlay.window.flutter_overlay_window.OverlayService' in m.read_text()
           EOF
+      - run: |
+          python3 - <<'EOF'
+          import pathlib
+          m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
+          s = m.read_text()
+          # Deep link magic-link ganti PIN: com.ssr.space.ssrspace://login-callback
+          # (lihat pin_link_verify.dart; redirect URL didaftarkan di Dashboard).
+          if 'com.ssr.space.ssrspace' not in s:
+              filt = '''          <intent-filter>
+              <action android:name="android.intent.action.VIEW" />
+              <category android:name="android.intent.category.DEFAULT" />
+              <category android:name="android.intent.category.BROWSABLE" />
+              <data android:scheme="com.ssr.space.ssrspace" android:host="login-callback" />
+          </intent-filter>
+'''
+              assert '</activity>' in s, 'activity block tak ketemu'
+              s = s.replace('</activity>', filt + '      </activity>', 1)
+              m.write_text(s)
+          assert 'com.ssr.space.ssrspace' in m.read_text()
+          print('deeplink intent-filter ok')
+          EOF
       - run: flutter analyze
       - run: flutter test
       - name: Setup release signing

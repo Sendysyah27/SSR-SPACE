@@ -7,6 +7,7 @@ import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
+import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -31,6 +32,7 @@ Future<void> main() async {
   ErrorReporter.init();
   await SupabaseConfig.init();
   ForegroundTrack.initOnce();
+  PinLinkVerify.initOnce();
   final prefs = await SharedPreferences.getInstance();
   await loadMaskAmounts(prefs);
   await loadAppSettings(prefs);
