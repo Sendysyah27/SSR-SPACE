@@ -70,3 +70,4 @@ flutter:
   assets:
     - assets/illustrations/
     - assets/lottie/
+    - assets/changelog_id.md

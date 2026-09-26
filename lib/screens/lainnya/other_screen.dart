@@ -25,6 +25,8 @@ import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
 import 'package:ssr_space/screens/workspace/invite_screen.dart';
 import 'package:ssr_space/screens/workspace/workspace_detail_screen.dart';
 import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
+import 'package:ssr_space/screens/lainnya/settings_search.dart';
+import 'package:ssr_space/screens/lainnya/update_log_screen.dart';
 import 'package:ssr_space/screens/workspace/org_switcher_screen.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:ssr_space/screens/dompet/wallets_screen.dart';
@@ -223,6 +225,52 @@ class _OtherScreenState extends State<OtherScreen> {
     }
   }
 
+  /// Hasil pencarian pengaturan: layar nyata di-push, aksi dijalankan,
+  /// baris P2 menampilkan dialog msg_p2. 'hub' berarti sudah di sini.
+  Future<void> _openSearch() async {
+    final key = await showSearch<String?>(
+      context: context,
+      delegate: SettingsSearchDelegate(),
+    );
+    if (!mounted || key == null || key == kSearchHub) return;
+    switch (key) {
+      case 'wallets':
+        await _push(const WalletsScreen());
+      case 'categories':
+        await _push(const CategoriesScreen());
+      case 'budgets':
+        await _push(const BudgetsScreen());
+      case 'history':
+        await _push(const TransactionsScreen());
+      case 'tracking':
+        await _push(const NotifSettingsScreen());
+      case 'export':
+        await _push(const ReportsScreen());
+      case 'import':
+        await _push(const ImportPreviewScreen());
+      case 'switch':
+        await _push(OrgSwitcherScreen(session: widget.session));
+      case 'invite':
+        await _push(const InviteScreen());
+      case 'detail':
+        await _openWorkspaceDetail();
+      case 'billing':
+        await _push(const BillingScreen());
+      case 'settings':
+        await _push(const SettingsScreen());
+      case 'changelog':
+        await _push(const UpdateLogScreen());
+      case 'backup':
+        await _backup();
+      case 'clearCache':
+        await _clearLocalCache();
+      case 'logout':
+        await _confirmLogout();
+      default:
+        await _showP2();
+    }
+  }
+
   bool backingUp = false;
 
   Future<void> _backup() async {
@@ -278,7 +326,16 @@ class _OtherScreenState extends State<OtherScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(tr('nav_lainnya'))),
+      appBar: AppBar(
+        title: Text(tr('nav_lainnya')),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: tr('search_settings_hint'),
+            onPressed: _openSearch,
+          ),
+        ],
+      ),
       body: FutureBuilder<_OtherMeta>(
         future: _metaFuture,
         builder: (_, snap) {
@@ -310,6 +367,7 @@ class _OtherScreenState extends State<OtherScreen> {
             onImportP2: () => _push(const ImportPreviewScreen()),
             onClearCache: _clearLocalCache,
             onSettings: () => _push(const SettingsScreen()),
+            onChangelog: () => _push(const UpdateLogScreen()),
             onLogout: _confirmLogout,
             onP2: () => _showP2(),
           );
@@ -342,6 +400,7 @@ class _HubList extends StatelessWidget {
   final VoidCallback onImportP2;
   final VoidCallback onClearCache;
   final VoidCallback onSettings;
+  final VoidCallback onChangelog;
   final VoidCallback onLogout;
   final VoidCallback onP2;
 
@@ -367,6 +426,7 @@ class _HubList extends StatelessWidget {
     required this.onImportP2,
     required this.onClearCache,
     required this.onSettings,
+    required this.onChangelog,
     required this.onLogout,
     required this.onP2,
   });
@@ -415,7 +475,7 @@ class _HubList extends StatelessWidget {
       _LangMoneySection(onSettings: onSettings),
       _ReminderSection(onSettings: onSettings),
       _SecuritySection(onSettings: onSettings, onLogout: onLogout),
-      _AboutSection(onP2: onP2),
+      _AboutSection(onP2: onP2, onChangelog: onChangelog),
     ];
   }
 
@@ -774,11 +834,12 @@ class _SecuritySection extends StatelessWidget {
   }
 }
 
-/// TENTANG: baris statis, semua P2 sampai Task 8 pasang layarnya.
+/// TENTANG: baris statis, changelog membuka layar log, sisanya P2.
 class _AboutSection extends StatelessWidget {
   final VoidCallback onP2;
+  final VoidCallback onChangelog;
 
-  const _AboutSection({required this.onP2});
+  const _AboutSection({required this.onP2, required this.onChangelog});
 
   @override
   Widget build(BuildContext context) {
@@ -792,7 +853,11 @@ class _AboutSection extends StatelessWidget {
           onTap: onP2,
         ),
         const Divider(height: 1),
-        NavTile(icon: AppIcons.reports, title: tr('ab_changelog'), onTap: onP2),
+        NavTile(
+          icon: AppIcons.reports,
+          title: tr('ab_changelog'),
+          onTap: onChangelog,
+        ),
         const Divider(height: 1),
         NavTile(icon: AppIcons.error, title: tr('ab_help'), onTap: onP2),
         const Divider(height: 1),
