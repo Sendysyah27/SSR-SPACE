@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/billing_service.dart';
+import 'package:ssr_space/services/instant_correct.dart';
 import 'package:ssr_space/services/notif_parse.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/plan_limits.dart';
@@ -347,7 +348,8 @@ class NotifTrack {
         final plan = await currentPlan(orgId);
         final used = await autoUsedThisMonth(orgId, ymd(n.at).substring(0, 7));
         if (!canAutoTrack(plan: plan, used: used)) {
-          n.status = tr('q_auto').replaceFirst('{n}', '${PlanLimits.freeAutoPerMonth}');
+          n.status = tr('q_auto')
+              .replaceFirst('{n}', '${PlanLimits.freeAutoPerMonth}');
           _remember(n);
           return;
         }
@@ -357,7 +359,7 @@ class NotifTrack {
       final walletId = await resolveWalletId(orgId, n.appLabel!, prefs);
       final category = prefs.getString(catPrefKey(n.appLabel!))?.trim();
       try {
-        await TransactionService().add(
+        final txId = await TransactionService().add(
           orgId: orgId,
           type: n.type!,
           amount: n.amount!,
@@ -369,6 +371,14 @@ class NotifTrack {
           sourceHash: notifHash(pkg, title, content, at: n.at),
         );
         n.status = walletId == null ? tr('st_saved_nowallet') : tr('st_saved');
+        if (txId != null) {
+          await InstantCorrect.offer(
+            txId: txId,
+            type: n.type!,
+            amount: n.amount!,
+            app: n.appLabel ?? pkg,
+          );
+        }
       } on PostgrestException catch (err) {
         ErrorReporter.capture(
           err,

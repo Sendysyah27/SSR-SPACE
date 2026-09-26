@@ -897,6 +897,33 @@ const _t = <String, Map<String, String>>{
     'id': 'Laporan SSR SPACE (PDF)',
     'en': 'SSR SPACE report (PDF)',
   },
+  // Koreksi instan
+  'fg_correct': {
+    'id': '{s} • ketuk untuk lengkapi',
+    'en': '{s} • tap to complete',
+  },
+  'ic_title': {'id': 'Koreksi instan', 'en': 'Instant correction'},
+  'ic_popup': {'id': 'Popup koreksi instan', 'en': 'Instant correction popup'},
+  'ic_popup_s': {
+    'id': 'Ringkasan 30 detik setelah auto-catat',
+    'en': '30-second summary after auto-save',
+  },
+  'ic_perm': {
+    'id': 'Izin tampil di atas aplikasi',
+    'en': 'Display over apps permission',
+  },
+  'ic_perm_grant': {'id': 'Beri izin', 'en': 'Grant permission'},
+  'ic_perm_ok': {'id': 'Izin overlay aktif', 'en': 'Overlay permission active'},
+  'ic_overlay_t': {'id': 'Transaksi tercatat', 'en': 'Transaction saved'},
+  'ic_lengkapi': {'id': 'Lengkapi', 'en': 'Complete'},
+  'ic_tutup': {'id': 'Tutup', 'en': 'Close'},
+  'ic_sheet_t': {'id': 'Lengkapi catatan', 'en': 'Complete entry'},
+  'ic_note_hint': {
+    'id': 'Catatan singkat (opsional)',
+    'en': 'Short note (optional)',
+  },
+  'ic_skip': {'id': 'Lewati', 'en': 'Skip'},
+  'ic_saved': {'id': 'Koreksi tersimpan.', 'en': 'Correction saved.'},
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/foreground_track.dart';
+import 'package:ssr_space/services/instant_correct.dart';
 import 'package:ssr_space/services/notif_parse.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
 import 'package:ssr_space/services/wallet_service.dart';
@@ -28,6 +30,8 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
   bool granted = false;
   bool serviceConnected = false;
   bool foregroundRunning = false;
+  bool correctPopup = true;
+  bool overlayGranted = false;
   Map<String, bool> perApp = {};
   Map<String, String?> walletFor = {};
   Map<String, String> catFor = {};
@@ -55,11 +59,18 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
       debugPrint('wallet map load: $e');
     }
     if (!mounted) return;
+    var og = false;
+    try {
+      og = await FlutterOverlayWindow.isPermissionGranted();
+    } catch (_) {}
+    if (!mounted) return;
     setState(() {
       master = prefs.getBool('track_master') ?? false;
       granted = g;
       serviceConnected = conn;
       foregroundRunning = fr;
+      correctPopup = InstantCorrect.popupEnabled(prefs);
+      overlayGranted = og;
       wallets = ws;
       perApp = {
         for (final a in watchedApps)
@@ -148,6 +159,20 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
     await _load();
   }
 
+  Future<void> _setCorrectPopup(bool v) async {
+    await InstantCorrect.setPopupEnabled(v);
+    if (!mounted) return;
+    setState(() => correctPopup = v);
+  }
+
+  Future<void> _requestOverlay() async {
+    try {
+      await FlutterOverlayWindow.requestPermission();
+    } catch (_) {}
+    if (!mounted) return;
+    await _load();
+  }
+
   Future<void> _reconnect() async {
     await NotifTrack.reconnectService();
     await Future.delayed(const Duration(milliseconds: 900));
@@ -188,6 +213,12 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
             scanning: scanning,
             onRequestPermission: _requestPermission,
             onReconnect: _reconnect,
+          ),
+          _CorrectCard(
+            enabled: correctPopup,
+            onChanged: _setCorrectPopup,
+            overlayGranted: overlayGranted,
+            onRequestOverlay: _requestOverlay,
           ),
           _BankMappingCard(
             wallets: wallets,
@@ -284,6 +315,49 @@ class _StatusCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Kartu "Koreksi instan": toggle popup 30 detik + status izin overlay.
+class _CorrectCard extends StatelessWidget {
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+  final bool overlayGranted;
+  final VoidCallback onRequestOverlay;
+
+  const _CorrectCard({
+    required this.enabled,
+    required this.onChanged,
+    required this.overlayGranted,
+    required this.onRequestOverlay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      label: tr('ic_title'),
+      children: [
+        SwitchListTile(
+          title: Text(tr('ic_popup')),
+          subtitle: Text(tr('ic_popup_s')),
+          value: enabled,
+          onChanged: onChanged,
+        ),
+        const Divider(height: 1),
+        _StatusLine(
+          label: tr('ic_perm'),
+          below: StatusChip(
+            label: overlayGranted ? tr('ic_perm_ok') : tr('nt_notactive'),
+            tone: overlayGranted ? StatusTone.accent : StatusTone.neutral,
+          ),
+          trailing: OutlinedButton(
+            onPressed: onRequestOverlay,
+            child: Text(tr('ic_perm_grant')),
+          ),
+        ),
+      ],
     );
   }
 }

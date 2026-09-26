@@ -110,6 +110,18 @@ class TransactionService {
         .toList();
   }
 
+  /// Satu transaksi by id (untuk sheet koreksi instan). Null bila tak ada.
+  Future<SaasTransaction?> getById(String orgId, String id) async {
+    final row = await SupabaseConfig.client
+        .from('transactions')
+        .select()
+        .eq('org_id', orgId)
+        .eq('id', id)
+        .maybeSingle();
+    if (row == null) return null;
+    return SaasTransaction.fromMap(Map<String, dynamic>.from(row));
+  }
+
   Future<String> mintCode(String orgId) async {
     final res = await SupabaseConfig.client.rpc(
       'mint_tx_code',

@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,6 +37,8 @@ class _PassiveTaskHandler extends TaskHandler {
 class ForegroundTrack {
   static bool _inited = false;
   static const _serviceId = 256;
+  static const _title = 'SSR SPACE aktif';
+  static const _text = 'Memantau transaksi masuk';
 
   static void initOnce() {
     if (_inited || !Platform.isAndroid) return;
@@ -89,8 +92,8 @@ class ForegroundTrack {
     final res = await FlutterForegroundTask.startService(
       serviceId: _serviceId,
       serviceTypes: const [ForegroundServiceTypes.specialUse],
-      notificationTitle: 'SSR SPACE aktif',
-      notificationText: 'Memantau transaksi masuk',
+      notificationTitle: _title,
+      notificationText: _text,
       callback: foregroundStartCallback,
     );
     if (res is ServiceRequestFailure) {
@@ -114,5 +117,33 @@ class ForegroundTrack {
   static Future<bool> get isRunning async {
     if (!Platform.isAndroid) return false;
     return FlutterForegroundTask.isRunningService;
+  }
+
+  /// Sematkan ringkasan koreksi instan di notif service (ketuk → buka app).
+  static Future<void> pinNotice(String body) async {
+    if (!Platform.isAndroid) return;
+    try {
+      if (!await FlutterForegroundTask.isRunningService) return;
+      await FlutterForegroundTask.updateService(
+        notificationTitle: _title,
+        notificationText: tr('fg_correct').replaceFirst('{s}', body),
+      );
+    } catch (e) {
+      debugPrint('foreground pin gagal: $e');
+    }
+  }
+
+  /// Kembalikan teks notif service ke semula.
+  static Future<void> clearNotice() async {
+    if (!Platform.isAndroid) return;
+    try {
+      if (!await FlutterForegroundTask.isRunningService) return;
+      await FlutterForegroundTask.updateService(
+        notificationTitle: _title,
+        notificationText: _text,
+      );
+    } catch (e) {
+      debugPrint('foreground clear gagal: $e');
+    }
   }
 }

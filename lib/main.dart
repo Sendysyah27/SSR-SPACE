@@ -11,7 +11,20 @@ import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
+import 'package:ssr_space/widgets/correct_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// Entry-point isolate overlay koreksi instan (30 detik, tanpa izin tambahan
+/// selain SYSTEM_ALERT_WINDOW yang diminta saat master tracking dinyalakan).
+@pragma('vm:entry-point')
+void overlayMain() {
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: CorrectOverlay(),
+    ),
+  );
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

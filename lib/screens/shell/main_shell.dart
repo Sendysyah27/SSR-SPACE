@@ -1,10 +1,18 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/foreground_track.dart';
+import 'package:ssr_space/services/instant_correct.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
+import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/widgets/correct_sheet.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -26,6 +34,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   final berandaKey = GlobalKey<BerandaScreenState>();
   final budgetKey = GlobalKey<BudgetsScreenState>();
   final reportsKey = GlobalKey<ReportsScreenState>();
+  StreamSubscription? _overlaySub;
+  bool _resumed = true;
+  bool _sheetOpen = false;
 
   @override
   void initState() {
@@ -34,11 +45,18 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     // force: resubscribe bila stream sempat error / app resume dari background
     NotifTrack.ensureListening(force: true);
     unawaited(ForegroundTrack.syncFromPrefs());
+    _overlaySub = Platform.isAndroid
+        ? FlutterOverlayWindow.overlayListener.listen((event) {
+            if ('$event' == 'lengkapi' && _resumed) unawaited(_checkPending());
+          })
+        : null;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkPending());
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _overlaySub?.cancel();
     super.dispose();
   }
 
@@ -46,8 +64,34 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
+      _resumed = true;
       NotifTrack.ensureListening(force: true);
       unawaited(ForegroundTrack.syncFromPrefs());
+      unawaited(_checkPending());
+    } else {
+      _resumed = false;
+    }
+  }
+
+  /// Buka sheet koreksi bila ada pending (dari overlay / ketuk notif service).
+  Future<void> _checkPending() async {
+    if (_sheetOpen || !_resumed || !mounted) return;
+    try {
+      final txId = await InstantCorrect.pendingTxId();
+      if (txId == null || !mounted) return;
+      final orgId = await activeOrgId();
+      if (orgId.isEmpty || !mounted) return;
+      final tx = await TransactionService().getById(orgId, txId);
+      if (!mounted) return;
+      if (tx == null) {
+        await InstantCorrect.clearPending();
+        return;
+      }
+      _sheetOpen = true;
+      await showCorrectSheet(context, tx, orgId);
+      _sheetOpen = false;
+    } catch (_) {
+      _sheetOpen = false;
     }
   }
 
