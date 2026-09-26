@@ -360,7 +360,7 @@ class _OverAllocBanner extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: SsrSpace.sm),
       padding: const EdgeInsets.all(SsrSpace.md),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SsrColors.dangerSoft,
         borderRadius: BorderRadius.circular(SsrRadius.tile),
       ),
@@ -470,7 +470,7 @@ class _SavingChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SsrColors.savingSoft,
         borderRadius: BorderRadius.circular(SsrRadius.chip),
       ),
