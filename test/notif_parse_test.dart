@@ -84,6 +84,19 @@ void main() {
     expect(matchWatchedApp('co.id.myhana.app'), 'KEB Hana');
     expect(matchWatchedApp('id.co.kebhana'), 'KEB Hana');
     expect(matchWatchedApp('id.dana.debug'), 'DANA');
+    // Audit 2026-09-26 lawan package resmi (device + Play Store).
+    expect(matchWatchedApp('com.shopeepay.id'), 'ShopeePay');
+    expect(matchWatchedApp('ovo.id'), 'OVO');
+    expect(matchWatchedApp('com.gojek.gopay'), 'GoPay');
+    expect(matchWatchedApp('com.bca'), 'BCA');
+    expect(matchWatchedApp('src.com.bni'), 'BNI');
+    expect(matchWatchedApp('com.jago.digitalBanking'), 'Jago');
+    expect(matchWatchedApp('com.bcadigital.blu'), 'Blu');
+    expect(matchWatchedApp('id.co.cimbniaga.mobile.android'), 'CIMB');
+    expect(matchWatchedApp('com.btpn.dc'), 'Jenius');
+    expect(matchWatchedApp('com.bankmandiri.mandirionline'), 'Livin Mandiri');
+    expect(matchWatchedApp('id.co.btn.mobilebanking.android'), 'BTN');
+    expect(matchWatchedApp('id.co.bri.brimo'), 'BRI');
     expect(matchWatchedApp('com.game.asing'), null);
     expect(matchWatchedApp('com.example.danagame'), null);
     expect(matchWatchedApp('com.bluetooth.something'), null);

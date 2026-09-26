@@ -139,7 +139,8 @@ class WatchedApp {
 
   bool matches(String package) {
     for (final p in packagePrefixes) {
-      if (package == p || package.startsWith('$p.')) return true;
+      final q = p.toLowerCase();
+      if (package == q || package.startsWith('$q.')) return true;
     }
     return false;
   }
@@ -149,12 +150,12 @@ class WatchedApp {
 /// Urutan penting: myBCA sebelum BCA.
 const watchedApps = [
   WatchedApp('myBCA', ['com.bca.mybca']),
-  WatchedApp('BCA', ['com.bankcentralasia', 'com.bca.main']),
+  WatchedApp('BCA', ['com.bankcentralasia', 'com.bca.main', 'com.bca']),
   WatchedApp('Livin Mandiri', ['com.mandiri.mobile', 'com.bankmandiri']),
   WatchedApp('DANA', ['id.dana']),
-  WatchedApp('OVO', ['com.vnoo.ovo', 'com.ovo']),
-  WatchedApp('GoPay', ['com.gojek.app', 'com.gojek.gojek']),
-  WatchedApp('ShopeePay', ['com.shopee']),
+  WatchedApp('OVO', ['com.vnoo.ovo', 'com.ovo', 'ovo.id']),
+  WatchedApp('GoPay', ['com.gojek.app', 'com.gojek.gojek', 'com.gojek.gopay']),
+  WatchedApp('ShopeePay', ['com.shopee', 'com.shopeepay']),
   WatchedApp('SeaBank', [
     'com.seabank',
     'id.co.seabank',
@@ -162,12 +163,12 @@ const watchedApps = [
     'id.co.bankbke',
   ]),
   WatchedApp('BRI', ['com.bri.brimo', 'id.co.bri.brimo', 'com.bri.browser']),
-  WatchedApp('BNI', ['com.bni', 'id.co.bni']),
+  WatchedApp('BNI', ['com.bni', 'id.co.bni', 'src.com.bni']),
   WatchedApp('BTN', ['com.btn', 'id.co.btn']),
   WatchedApp('Jenius', ['com.btpn', 'id.co.btpn']),
-  WatchedApp('Jago', ['id.co.jago', 'com.bankjago']),
-  WatchedApp('Blu', ['com.bca.digital', 'id.co.bca.blu']),
-  WatchedApp('CIMB', ['com.cimb', 'com.octo']),
+  WatchedApp('Jago', ['id.co.jago', 'com.bankjago', 'com.jago.digitalBanking']),
+  WatchedApp('Blu', ['com.bca.digital', 'id.co.bca.blu', 'com.bcadigital.blu']),
+  WatchedApp('CIMB', ['com.cimb', 'com.octo', 'id.co.cimbniaga']),
   WatchedApp('KEB Hana', ['id.co.kebhana', 'co.id.myhana.app']),
   WatchedApp('ISAKU', ['com.isaku']),
 ];

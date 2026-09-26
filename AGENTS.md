@@ -91,6 +91,7 @@ Arah pengembangan ke **skala banyak user** — urutan wajib dijaga, jangan melom
 - **Follow-up i18n (2026-09-26, `207f512`+`8127fcf`, run `36204732391` hijau, 79 test):** commit F4 (`43feacc`) pecah analyze — `tr()` di dalam `const` (SnackBar/Text/InputDecoration/items/segments di 8 file) → drop `const` induk, `const` tetap di argumen murni (EdgeInsets, DuoIcon); import `fl_chart` yang terbuang dikembalikan; `unused_import` foundation di `currency.dart` dibuang; `_historyTitle` (method state) → top-level `txHistoryTitle()` karena dipakai `_TxHistorySection` (StatelessWidget). **Pelajaran CI: `flutter analyze` fatal bahkan untuk info** (`prefer_const_constructors` 1 baris = run merah).
 - **Fix `transfer_detect` (2026-09-26, `833cc49`, run sama hijau):** greedy out-terawal dulu mengklaim `in` bersama sebelum lirik yang lebih dekat (test T3 `o2` vs `o1` gagal: Expected `o2`, Actual `o1`) → kumpulkan semua kandidat lalu pasangkan dari **gap terkecil global** (`_Candidate`, `usedOut`+`usedIn`). Diverifikasi lokal via `dart` murni (4/4 PASS) sebelum commit — pola ini bisa dipakai lagi untuk logika murni lain.
 - **Waktu detail TxRow (2026-09-26, `84bee1b`+`553e9fd`, run `36210627031` hijau, 83 test):** helper `txWhenLabel()` di `datetime.dart` ("26 Sep 2026 • 12:04", tanggal saja bila jam kosong, sembunyi bila tak ada data) + baris `bodySmall` secondary tabular di `TxRow` bawah chips → Transaksi, Laporan, Riwayat Dompet otomatis dapat. Test `datetime_test.dart` (4 assert, ISO dibangun dari `DateTime` lokal biar aman TZ runner). Diverifikasi lokal via `dart` + stub `tr()` (7/7 PASS).
+- **Koreksi instan auto-track (2026-09-26, 3 commit + 1 fix, run `36217156334` hijau, 90 test):** (1) `0506288` kategori global — `app_categories.dart` (10 default, sanitize trim/dedupe/cap-20, prefs `app_categories`, notifier; load di `main`) + `CategoriesScreen` (tambah/hapus/simpan/reset) di kartu Data Lainnya; (2) `0766aac` `CategoryChips` (wrap StatusChip → isi controller, ikut notifier) di form transaksi + budget; (3) `766c063` overlay 30 detik (`flutter_overlay_window` 0.5.0, entry `overlayMain`, shareData JSON, auto-tutup; Manifest+izin diinject CI) + sematan teks notif foreground 3 menit (`pinNotice`/`clearNotice`, ketuk → buka app) + sheet koreksi (chip kategori + catatan + Simpan/Lewati → `update()`, pending `pending_correct_tx` di prefs, dibuka MainShell saat resume/foreground) + toggle & izin overlay di notif_settings; fix `5f0c9a8` (import ganda, LabeledSectionCard). Tanpa `flutter_local_notifications` (pakai notif service yang ada — hindari desugar/AGP). Batas sadar: overlay tak di lockscreen (verifikasi di device); sheet tak dibuka bila app background (tunggu resume).
 
 Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari `track_master`; parser/gate `_onEvent` TIDAK berubah.
 
@@ -103,12 +104,12 @@ Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari
 5. bila hijau: gh run download <run-id> -n ssr-space-apk
 6. file final → /sdcard/Download/SSR-SPACE/ (rapi, nama jelas)
 7. bila ubah SQL: JELASKAN migration apa yang harus user jalankan di Supabase
-8. **SELESAI → wajib catat hasil kerja di AGENTS.md (status/fitur) + AUDIT.md (changelog §7)** — jangan diakhiri sebelum doc diupdate
+8. **SELESAI → catat hasil kerja di AGENTS.md (status/fitur) + AUDIT.md (changelog §7) secara LOKAL saja** — jangan commit docs sendirian (hemat 1 run CI); commit docs ikut digabung ke update berikutnya
 ```
 
 **Jangan commit tanpa diminta user** (peraturan global HP ini), kecuali user sudah bilang “commit” / “lanjut push”.
 
-**Aturan wajib (2026-09-25):** setiap pekerjaan yang sudah selesai (fix, fitur, redesign, migration) **harus dibaca ulang doc-nya lalu dicatat** di `AGENTS.md` + `AUDIT.md` — minimal changelog commit di AUDIT.md §7 dan baris status terkait di AGENTS.md. Doc boleh tertinggal ≤1 sesi, jangan lebih.
+**Aturan docs (2026-09-25, diubah 2026-09-26):** setiap pekerjaan selesai (fix, fitur, redesign, migration) **wajib dicatat lokal** di `AGENTS.md` + `AUDIT.md` — minimal changelog commit di AUDIT.md §7 dan baris status terkait di AGENTS.md. **Jangan commit docs sendirian** (satu commit docs = satu run CI full yang sia-sia); commit + push docs **digabung ke update berikutnya**, begitu seterusnya. Doc lokal boleh tertinggal ≤1 sesi dari push, jangan lebih.
 
 ### 3.4 Workflow Supabase migration
 Semua SQL di `supabase/`. User jalankan manual di **Dashboard → SQL Editor**.
@@ -192,20 +193,20 @@ Android NotificationListener
 | Label | Prefix package |
 |-------|----------------|
 | myBCA | `com.bca.mybca` |
-| BCA | `com.bankcentralasia`, `com.bca.main` |
+| BCA | `com.bankcentralasia`, `com.bca.main`, `com.bca` |
 | Livin Mandiri | `com.mandiri.mobile`, `com.bankmandiri` |
 | DANA | `id.dana` |
-| OVO | `com.vnoo.ovo`, `com.ovo` |
-| GoPay | `com.gojek.app`, `com.gojek.gojek` |
-| ShopeePay | `com.shopee` |
+| OVO | `com.vnoo.ovo`, `com.ovo`, `ovo.id` |
+| GoPay | `com.gojek.app`, `com.gojek.gojek`, `com.gojek.gopay` |
+| ShopeePay | `com.shopee`, `com.shopeepay` |
 | SeaBank | `com.seabank`, `id.co.seabank`, `id.co.bankbkemobile`, `id.co.bankbke` |
 | BRI | `com.bri.brimo`, `id.co.bri.brimo`, `com.bri.browser` |
-| BNI | `com.bni`, `id.co.bni` |
+| BNI | `com.bni`, `id.co.bni`, `src.com.bni` |
 | BTN | `com.btn`, `id.co.btn` |
 | Jenius | `com.btpn`, `id.co.btpn` |
-| Jago | `id.co.jago`, `com.bankjago` |
-| Blu | `com.bca.digital`, `id.co.bca.blu` |
-| CIMB | `com.cimb`, `com.octo` |
+| Jago | `id.co.jago`, `com.bankjago`, `com.jago.digitalBanking` |
+| Blu | `com.bca.digital`, `id.co.bca.blu`, `com.bcadigital.blu` |
+| CIMB | `com.cimb`, `com.octo`, `id.co.cimbniaga` |
 | KEB Hana | `id.co.kebhana`, `co.id.myhana.app` |
 | ISAKU | `com.isaku` |
 
