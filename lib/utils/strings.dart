@@ -750,7 +750,7 @@ const _t = <String, Map<String, String>>{
     'en': 'Cannot remove the last owner.',
   },
   'wsm_kick_denied': {'id': 'Hanya pemilik/admin.', 'en': 'Owners/admins only.'},
-  'wsm_danger': {'id': 'Zona danger', 'en': 'Danger zone'},
+  'wsm_danger': {'id': 'Zona berbahaya', 'en': 'Danger zone'},
   'wsm_delete': {'id': 'Hapus workspace', 'en': 'Delete workspace'},
   'wsm_delete_body': {
     'id':
@@ -759,7 +759,14 @@ const _t = <String, Map<String, String>>{
         'All wallets, transactions, and data go with it. Type the workspace name to confirm.',
   },
   'wsm_delete_hint': {'id': 'Ketik nama workspace', 'en': 'Type workspace name'},
-  'wsm_deleted': {'id': 'Workspace dihapus.', 'en': 'Workspace deleted.'},
+  'wsm_delete_denied': {
+    'id': 'Hanya pemilik yang bisa hapus workspace.',
+    'en': 'Only owners can delete the workspace.',
+  },
+  'wsm_nomigration': {
+    'id': 'Butuh migration_14: jalankan di Supabase SQL Editor.',
+    'en': 'Requires migration_14: run it in the Supabase SQL editor.',
+  },
   'wsm_err': {'id': 'Gagal. Periksa koneksi.', 'en': 'Failed. Check your connection.'},
   'wsm_detail': {'id': 'Kelola', 'en': 'Manage'},
   'wsm_invite_active': {

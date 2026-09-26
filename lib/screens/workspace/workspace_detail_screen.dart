@@ -142,7 +142,7 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
       await _load();
     } on PostgrestException catch (e) {
       if (!mounted) return;
-      _snack(_kickError(e.message));
+      _snack(_kickError(e));
     } catch (_) {
       if (!mounted) return;
       _snack(tr('wsm_err'));
@@ -151,9 +151,10 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
     }
   }
 
-  String _kickError(String message) {
-    if (message.contains('KICK_LAST_OWNER')) return tr('wsm_kick_last');
-    if (message.contains('NOT_ADMIN')) return tr('wsm_kick_denied');
+  String _kickError(PostgrestException e) {
+    if (e.code == '42883') return tr('wsm_nomigration');
+    if (e.message.contains('KICK_LAST_OWNER')) return tr('wsm_kick_last');
+    if (e.message.contains('NOT_ADMIN')) return tr('wsm_kick_denied');
     return tr('wsm_err');
   }
 
@@ -178,16 +179,19 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
       );
     } on PostgrestException catch (e) {
       if (!mounted) return;
-      final msg = e.message.contains('NOT_OWNER')
-          ? tr('wsm_kick_denied')
-          : tr('wsm_err');
-      _snack(msg);
+      _snack(_deleteError(e));
     } catch (_) {
       if (!mounted) return;
       _snack(tr('wsm_err'));
     } finally {
       if (mounted) setState(() => deleting = false);
     }
+  }
+
+  String _deleteError(PostgrestException e) {
+    if (e.code == '42883') return tr('wsm_nomigration');
+    if (e.message.contains('NOT_OWNER')) return tr('wsm_delete_denied');
+    return tr('wsm_err');
   }
 
   void _snack(String msg) {
@@ -283,14 +287,16 @@ class _DetailBody extends StatelessWidget {
           kicking: kicking,
           onKick: onKick,
         ),
-        const SizedBox(height: SsrSpace.lg),
-        _DangerCard(
-          name: name,
-          delC: delC,
-          deleting: deleting,
-          onChanged: onDeleteChanged,
-          onDelete: onDelete,
-        ),
+        if (myRole == 'owner') ...[
+          const SizedBox(height: SsrSpace.lg),
+          _DangerCard(
+            name: name,
+            delC: delC,
+            deleting: deleting,
+            onChanged: onDeleteChanged,
+            onDelete: onDelete,
+          ),
+        ],
       ],
     );
   }

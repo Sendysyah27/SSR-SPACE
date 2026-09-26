@@ -396,6 +396,15 @@ values ('cccccccc-cccc-4ccc-8ccc-ccccccccccc3',
         '11111111-1111-4111-8111-111111111111', 'owner');
 insert into wallets (id, org_id, name, type) values
   ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeee03', 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3', 'Kas C', 'cash');
+insert into transactions (id, org_id, type, amount, wallet_id, category, note, date, created_by) values
+  ('dddddddd-dddd-4ddd-8ddd-ddddddddddd3', 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3',
+   'out', 25000, 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeee03', 'Makan', 'seed C', current_date,
+   '11111111-1111-4111-8111-111111111111');
+insert into budgets (org_id, category, month, limit_amount)
+values ('cccccccc-cccc-4ccc-8ccc-ccccccccccc3', 'Makan', '2026-09', 100000);
+insert into org_invites (org_id, created_by, token_hash)
+values ('cccccccc-cccc-4ccc-8ccc-ccccccccccc3',
+        '11111111-1111-4111-8111-111111111111', 'C3SEEDHASH000000000000000000000001');
 select public.delete_workspace('cccccccc-cccc-4ccc-8ccc-ccccccccccc3');
 select t_assert(
   not exists (select 1 from organizations where id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),
@@ -406,6 +415,15 @@ select t_assert(
 select t_assert(
   not exists (select 1 from wallets where org_id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),
   'T14 wallets C cascade');
+select t_assert(
+  not exists (select 1 from transactions where org_id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),
+  'T14 transactions C cascade');
+select t_assert(
+  not exists (select 1 from budgets where org_id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),
+  'T14 budgets C cascade');
+select t_assert(
+  not exists (select 1 from org_invites where org_id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),
+  'T14 invites C cascade');
 
 -- ===== T15: anon tak boleh execute RPC admin =====
 set role anon;
