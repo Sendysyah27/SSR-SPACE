@@ -9,6 +9,7 @@ import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/tx_validation.dart';
+import 'package:ssr_space/services/tx_wallet_check.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -59,6 +60,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   String type = 'out';
   String? walletId;
   String? toWalletId;
+  bool onlyNoWallet = false;
 
   @override
   void initState() {
@@ -299,7 +301,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   void _onMonthChanged(String m) {
-    setState(() => month = m);
+    setState(() {
+      month = m;
+      onlyNoWallet = false;
+    });
     _load();
   }
 
@@ -330,6 +335,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         selectedId: editing?.id,
         onTap: _startEdit,
         onEmptyAction: _scrollToForm,
+        onlyNoWallet: onlyNoWallet,
+        onToggleNoWallet: () =>
+            setState(() => onlyNoWallet = !onlyNoWallet),
         formKey: formKey,
         editing: editing,
         type: type,
@@ -444,13 +452,16 @@ class _TxFormCard extends StatelessWidget {
   }
 }
 
-/// Blok riwayat: judul bulan + daftar TxRow (atau EmptyView bila kosong).
+/// Blok riwayat: judul bulan + banner tanpa-dompet + daftar TxRow
+/// (atau EmptyView bila kosong).
 class _TxHistorySection extends StatelessWidget {
   final String month;
   final List<SaasTransaction> items;
   final String? selectedId;
   final ValueChanged<SaasTransaction> onTap;
   final VoidCallback onEmptyAction;
+  final bool onlyNoWallet;
+  final VoidCallback onToggleNoWallet;
 
   const _TxHistorySection({
     required this.month,
@@ -458,10 +469,18 @@ class _TxHistorySection extends StatelessWidget {
     required this.selectedId,
     required this.onTap,
     required this.onEmptyAction,
+    required this.onlyNoWallet,
+    required this.onToggleNoWallet,
   });
+
+  List<SaasTransaction> get _noWallet => items.where(hasNoWallet).toList();
+
+  List<SaasTransaction> get _shown =>
+      onlyNoWallet ? _noWallet : items;
 
   @override
   Widget build(BuildContext context) {
+    final shown = _shown;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -470,7 +489,8 @@ class _TxHistorySection extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: SsrSpace.sm),
-        if (items.isEmpty)
+        _noWalletBanner(),
+        if (shown.isEmpty)
           SizedBox(
             height: 260,
             child: EmptyView(
@@ -483,11 +503,63 @@ class _TxHistorySection extends StatelessWidget {
             ),
           )
         else
-          for (final t in items) ...[
+          for (final t in shown) ...[
             TxRow(tx: t, selected: selectedId == t.id, onTap: () => onTap(t)),
             const Divider(height: 1),
           ],
       ],
+    );
+  }
+
+  Widget _noWalletBanner() {
+    final missing = _noWallet;
+    if (missing.isEmpty) return const SizedBox.shrink();
+    return _NoWalletBanner(
+      text: tr('tx_nowallet_banner')
+          .replaceFirst('{n}', '${missing.length}')
+          .replaceFirst('{a}', amt(noWalletTotal(missing))),
+      filterActive: onlyNoWallet,
+      onToggle: onToggleNoWallet,
+    );
+  }
+}
+
+/// Banner peringatan: transaksi tanpa dompet tak masuk total aset.
+/// Ketuk tombol untuk saring hanya yang tanpa dompet (biar cepat diperbaiki
+/// via edit — form edit wajib isi dompet).
+class _NoWalletBanner extends StatelessWidget {
+  final String text;
+  final bool filterActive;
+  final VoidCallback onToggle;
+
+  const _NoWalletBanner({
+    required this.text,
+    required this.filterActive,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: SsrSpace.sm),
+      padding: const EdgeInsets.all(SsrSpace.md),
+      decoration: BoxDecoration(
+        color: SsrColors.dangerSoft,
+        borderRadius: BorderRadius.circular(SsrRadius.tile),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
+          TextButton(
+            onPressed: onToggle,
+            child: Text(
+              tr(filterActive ? 'tx_show_all' : 'tx_nowallet_only'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -514,6 +586,8 @@ class _TxListBody extends StatelessWidget {
   final String? selectedId;
   final ValueChanged<SaasTransaction> onTap;
   final VoidCallback onEmptyAction;
+  final bool onlyNoWallet;
+  final VoidCallback onToggleNoWallet;
   final GlobalKey formKey;
   final SaasTransaction? editing;
   final String type;
@@ -540,6 +614,8 @@ class _TxListBody extends StatelessWidget {
     required this.selectedId,
     required this.onTap,
     required this.onEmptyAction,
+    required this.onlyNoWallet,
+    required this.onToggleNoWallet,
     required this.formKey,
     required this.editing,
     required this.type,
@@ -599,6 +675,8 @@ class _TxListBody extends StatelessWidget {
           selectedId: selectedId,
           onTap: onTap,
           onEmptyAction: onEmptyAction,
+          onlyNoWallet: onlyNoWallet,
+          onToggleNoWallet: onToggleNoWallet,
         ),
       ],
     );

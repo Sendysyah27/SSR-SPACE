@@ -357,6 +357,15 @@ class NotifTrack {
         debugPrint('track: cek kuota gagal, lanjut');
       }
       final walletId = await resolveWalletId(orgId, n.appLabel!, prefs);
+      if (walletId == null) {
+        // Guard tanpa-dompet: jangan insert — transaksi null-wallet tidak
+        // masuk saldo dompet dan bikin Home vs Dompet selisih diam-diam.
+        // User petakan dompet di Pelacakan otomatis lalu Simpan manual
+        // (forceSave tetap mengizinkan simpan sadar tanpa dompet).
+        n.status = tr('st_need_wallet');
+        _remember(n);
+        return;
+      }
       final category = prefs.getString(catPrefKey(n.appLabel!))?.trim();
       try {
         final txId = await TransactionService().add(
@@ -370,7 +379,7 @@ class NotifTrack {
           sourcePackage: pkg,
           sourceHash: notifHash(pkg, title, content, at: n.at),
         );
-        n.status = walletId == null ? tr('st_saved_nowallet') : tr('st_saved');
+        n.status = tr('st_saved');
         if (txId != null) {
           await InstantCorrect.offer(
             txId: txId,

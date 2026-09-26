@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/tx_wallet_check.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -51,6 +52,8 @@ class TxRow extends StatelessWidget {
           tone: StatusTone.accent,
           icon: AppIcons.autoBadge,
         ),
+      if (hasNoWallet(tx))
+        StatusChip(label: tr('tx_nowallet'), tone: StatusTone.danger),
       if (tx.category != null && tx.category!.isNotEmpty)
         StatusChip(label: tx.category!, tone: StatusTone.neutral),
     ];

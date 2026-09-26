@@ -854,6 +854,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Tersimpan (dompet belum cocok)',
     'en': 'Saved (wallet not matched)',
   },
+  'st_need_wallet': {
+    'id': 'Dompet belum dipetakan — atur di Pelacakan otomatis lalu Simpan manual',
+    'en': 'Wallet not mapped — set it in Auto-tracking then Save manually',
+  },
   'st_saved': {'id': 'Tersimpan', 'en': 'Saved'},
   'nt_auto_from': {'id': 'Otomatis dari {a}', 'en': 'Auto from {a}'},
   'fg_notandroid': {'id': 'Bukan Android', 'en': 'Not Android'},
@@ -867,6 +871,13 @@ const _t = <String, Map<String, String>>{
   'mp_prev': {'id': 'Bulan lalu', 'en': 'Previous month'},
   'mp_next': {'id': 'Bulan depan', 'en': 'Next month'},
   'tx_auto': {'id': 'Otomatis', 'en': 'Auto'},
+  'tx_nowallet': {'id': 'Tanpa dompet', 'en': 'No wallet'},
+  'tx_nowallet_banner': {
+    'id': '{n} tanpa dompet · {a} tak masuk total aset',
+    'en': '{n} without a wallet · {a} excluded from totals',
+  },
+  'tx_nowallet_only': {'id': 'Hanya tanpa dompet', 'en': 'Only missing wallet'},
+  'tx_show_all': {'id': 'Tampilkan semua', 'en': 'Show all'},
   'cat_other': {'id': 'Lainnya', 'en': 'Other'},
   'iv_err_load': {
     'id': 'Gagal memuat undangan. Periksa koneksi.',
