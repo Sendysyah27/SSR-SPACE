@@ -13,6 +13,7 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/correct_sheet.dart';
+import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
@@ -32,6 +33,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   final berandaKey = GlobalKey<BerandaScreenState>();
   final budgetKey = GlobalKey<BudgetsScreenState>();
   final reportsKey = GlobalKey<ReportsScreenState>();
+  final txKey = GlobalKey<TransactionsScreenState>();
   StreamSubscription? _overlaySub;
   bool _resumed = true;
   bool _sheetOpen = false;
@@ -93,6 +95,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _openInput() async {
+    if (await openTxInputSheet(context)) {
+      berandaKey.currentState?.reload();
+      txKey.currentState?.reload();
+      budgetKey.currentState?.reload();
+      reportsKey.currentState?.reload();
+    }
+  }
+
   void _select(int i) {
     setState(() => index = i);
     if (i == 0) berandaKey.currentState?.reload();
@@ -114,22 +125,21 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
               onBudget: () => _select(2),
               onLaporan: () => _select(3),
             ),
-            const TransactionsScreen(),
+            TransactionsScreen(key: txKey),
             BudgetsScreen(key: budgetKey),
             ReportsScreen(key: reportsKey),
             OtherScreen(session: widget.session),
           ],
         ),
       ),
-      floatingActionButton: index == 1
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () => _select(1),
-              backgroundColor: SsrColors.accent,
-              foregroundColor: Colors.white,
-              icon: const DuoIcon(AppIcons.add),
-              label: Text(tr('act_catat')),
-            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openInput,
+        backgroundColor: SsrColors.accent,
+        foregroundColor: Colors.white,
+        tooltip: tr('act_catat'),
+        child: const DuoIcon(AppIcons.add),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: _MainBottomBar(index: index, onSelect: _select),
     );
   }

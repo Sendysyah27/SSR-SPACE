@@ -9,6 +9,8 @@ String _ymd(DateTime d) =>
 
 /// Payload INSERT transaksi. `date` tidak boleh null eksplisit:
 /// kolom `date date not null default current_date` hanya apply bila key diomit.
+/// `createdAt` opsional (ISO 'YYYY-MM-DDTHH:MM:SS'): diisi hanya bila user
+/// memilih jam di sheet input; null berarti kolom diomit (server pakai now()).
 Map<String, dynamic> txInsertPayload({
   required String orgId,
   required String type,
@@ -19,12 +21,13 @@ Map<String, dynamic> txInsertPayload({
   String? note,
   String? code,
   String? date,
+  String? createdAt,
   String? sourcePackage,
   String? sourceHash,
   String? createdBy,
   DateTime? now,
 }) {
-  return {
+  final row = <String, dynamic>{
     'org_id': orgId,
     'type': type,
     'amount': amount,
@@ -38,9 +41,12 @@ Map<String, dynamic> txInsertPayload({
     'source_hash': sourceHash,
     'created_by': createdBy,
   };
+  if (createdAt != null) row['created_at'] = createdAt;
+  return row;
 }
 
-/// Payload UPDATE. `date` null → key diomit (kolom tidak diubah, bukan di-NULL-kan).
+/// Payload UPDATE. `date`/`createdAt` null → key diomit (kolom tidak diubah,
+/// bukan di-NULL-kan).
 Map<String, dynamic> txUpdatePayload({
   required String type,
   required double amount,
@@ -49,6 +55,7 @@ Map<String, dynamic> txUpdatePayload({
   String? category,
   String? note,
   String? date,
+  String? createdAt,
 }) {
   final row = <String, dynamic>{
     'type': type,
@@ -59,6 +66,7 @@ Map<String, dynamic> txUpdatePayload({
     'note': note,
   };
   if (date != null) row['date'] = date;
+  if (createdAt != null) row['created_at'] = createdAt;
   return row;
 }
 
@@ -157,6 +165,7 @@ class TransactionService {
     String? note,
     String? code,
     String? date,
+    String? createdAt,
     String? sourcePackage,
     String? sourceHash,
   }) async {
@@ -174,6 +183,7 @@ class TransactionService {
             note: note,
             code: code,
             date: date,
+            createdAt: createdAt,
             sourcePackage: sourcePackage,
             sourceHash: sourceHash,
             createdBy: SupabaseConfig.client.auth.currentUser?.id,
@@ -205,6 +215,7 @@ class TransactionService {
     String? category,
     String? note,
     String? date,
+    String? createdAt,
   }) async {
     assert(amount > 0);
     await SupabaseConfig.client
@@ -218,6 +229,7 @@ class TransactionService {
             category: category,
             note: note,
             date: date,
+            createdAt: createdAt,
           ),
         )
         .eq('id', id)
