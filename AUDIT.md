@@ -468,6 +468,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `43feacc` | **F2 kelompok laporan + F3 PIN budget + F4 settings ID/EN** (i18n penuh `strings.dart`/`tr()`, kurs, font, OTP): run `36194242303` **merah** — `tr()` di dalam `const` + import `fl_chart` terbuang + `_historyTitle` tak terlihat dari StatelessWidget |
 | `207f512`+`8127fcf` | **Follow-up i18n** (run `36203932158` merah → `36204433528` merah → hijau di bawah): drop `const` induk di 8 file (`const` tetap di argumen murni), kembalikan `fl_chart`, buang `unused_import` foundation, `_historyTitle` → top-level `txHistoryTitle()`. Pelajaran: analyze fatal bahkan untuk info (`prefer_const_constructors` 1 baris). `HANDOFF.md` sempat ke-commit (`207f512`) lalu dibuang dari repo |
 | `833cc49` | **Fix `transfer_detect`** (run `36204732391` hijau, **79 test**): greedy out-terawal klaim `in` bersama (T3 gagal `o1` vs `o2`) → kandidat global dipasangkan dari gap terkecil (`_Candidate`, `usedOut`+`usedIn`); diverifikasi lokal `dart` murni 4/4 PASS. APK `SSR-SPACE-2.3.9-22-i18n-fix.apk` |
+| `84bee1b`+`553e9fd` | **Waktu detail di TxRow** (run `36210627031` hijau, **83 test**): `txWhenLabel()` (`datetime.dart`, "26 Sep 2026 • 12:04" / tanggal saja / sembunyi) + baris `bodySmall` secondary tabular di bawah chips → berlaku di Transaksi, Laporan, Riwayat Dompet sekaligus. `test/datetime_test.dart` (4 assert, TZ-aman). Verifikasi lokal `dart`+stub `tr()` 7/7 PASS. APK `SSR-SPACE-2.3.9-22-txrow-waktu.apk` |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 
