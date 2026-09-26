@@ -15,6 +15,7 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
+import 'package:ssr_space/widgets/category_chips.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
@@ -442,6 +443,8 @@ class _BudgetForm extends StatelessWidget {
             focusNode: catFocus,
             decoration: InputDecoration(labelText: tr('b_f_cat')),
           ),
+          const SizedBox(height: SsrSpace.sm),
+          CategoryChips(controller: catC),
           const SizedBox(height: SsrSpace.md),
           TextField(
             controller: limitC,

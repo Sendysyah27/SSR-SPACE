@@ -22,6 +22,7 @@ import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/success_lottie.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
+import 'package:ssr_space/widgets/category_chips.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -666,6 +667,8 @@ class _TxBasicFields extends StatelessWidget {
           controller: catC,
           decoration: InputDecoration(labelText: tr('tx_f_cat')),
         ),
+        const SizedBox(height: SsrSpace.sm),
+        CategoryChips(controller: catC),
         const SizedBox(height: SsrSpace.md),
         TextField(
           controller: noteC,
