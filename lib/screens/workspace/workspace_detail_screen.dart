@@ -52,6 +52,7 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
   bool deleting = false;
   String? loadErr;
   String? kicking;
+  String? activeId;
 
   String get _orgId => (widget.org['org_id'] ??
           widget.org['organizations']?['id'] ??
@@ -66,6 +67,7 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
   String get _myRole => (widget.org['role'] ?? 'member').toString();
   String get _myId => SupabaseConfig.client.auth.currentUser?.id ?? '';
   bool get _canManage => _myRole == 'owner' || _myRole == 'admin';
+  bool get _isActiveView => activeId == _orgId;
 
   @override
   void initState() {
@@ -84,13 +86,21 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
       loading = true;
       loadErr = null;
     });
+    final active = await activeOrgId();
+    if (!mounted) return;
     try {
       final rows = await _service.members(_orgId);
       if (!mounted) return;
-      setState(() => members = rows);
+      setState(() {
+        members = rows;
+        activeId = active;
+      });
     } catch (_) {
       if (!mounted) return;
-      setState(() => loadErr = tr('wsm_err'));
+      setState(() {
+        activeId = active;
+        loadErr = tr('wsm_err');
+      });
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -187,18 +197,20 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_name),
-        actions: [
-          IconButton(
-            tooltip: tr('o_invite'),
-            onPressed: _openInvite,
-            icon: const Icon(Icons.person_add_outlined),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(_name), actions: _actions()),
       body: _body(),
     );
+  }
+
+  List<Widget> _actions() {
+    if (!_isActiveView) return const [];
+    return [
+      IconButton(
+        tooltip: tr('o_invite'),
+        onPressed: _openInvite,
+        icon: const Icon(Icons.person_add_outlined),
+      ),
+    ];
   }
 
   Widget _body() {
@@ -212,6 +224,7 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
       members: members,
       myId: _myId,
       canManage: _canManage,
+      isActiveView: _isActiveView,
       kicking: kicking,
       delC: delC,
       deleting: deleting,
@@ -229,6 +242,7 @@ class _DetailBody extends StatelessWidget {
   final List<OrgMember> members;
   final String myId;
   final bool canManage;
+  final bool isActiveView;
   final String? kicking;
   final TextEditingController delC;
   final bool deleting;
@@ -242,6 +256,7 @@ class _DetailBody extends StatelessWidget {
     required this.members,
     required this.myId,
     required this.canManage,
+    required this.isActiveView,
     required this.kicking,
     required this.delC,
     required this.deleting,
@@ -257,6 +272,10 @@ class _DetailBody extends StatelessWidget {
       children: [
         _DetailHero(name: name, myRole: myRole, count: members.length),
         const SizedBox(height: SsrSpace.lg),
+        if (!isActiveView) ...[
+          const _InviteNote(),
+          const SizedBox(height: SsrSpace.lg),
+        ],
         _MembersCard(
           members: members,
           myId: myId,
@@ -323,6 +342,21 @@ class _DetailHero extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Catatan pengganti tombol undang saat workspace yang dilihat bukan aktif.
+class _InviteNote extends StatelessWidget {
+  const _InviteNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      tr('wsm_invite_active'),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: SsrColors.secondary,
       ),
     );
   }

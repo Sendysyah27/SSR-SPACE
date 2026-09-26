@@ -762,6 +762,10 @@ const _t = <String, Map<String, String>>{
   'wsm_deleted': {'id': 'Workspace dihapus.', 'en': 'Workspace deleted.'},
   'wsm_err': {'id': 'Gagal. Periksa koneksi.', 'en': 'Failed. Check your connection.'},
   'wsm_detail': {'id': 'Kelola', 'en': 'Manage'},
+  'wsm_invite_active': {
+    'id': 'Aktifkan workspace ini dulu untuk mengundang anggota.',
+    'en': 'Activate this workspace first to invite members.',
+  },
   // Pelacakan otomatis
   'nt_title': {'id': 'Pelacakan otomatis', 'en': 'Auto-tracking'},
   'nt_sub': {
