@@ -615,7 +615,7 @@ class _BackupSection extends StatelessWidget {
         NavTile(
           icon: AppIcons.arrowDown,
           title: tr('imp_title'),
-          subtitle: tr('imp_pick'),
+          subtitle: tr('imp_title'),
           onTap: onImportP2,
         ),
         const Divider(height: 1),

@@ -178,12 +178,17 @@ class _ImportPreviewState extends State<ImportPreviewScreen> {
           fail++;
           continue;
         }
+        final toWid = _toWalletFor(r, wid);
+        if (r.type == 'transfer' && toWid == null) {
+          fail++;
+          continue;
+        }
         await TransactionService().add(
           orgId: _orgId,
           type: r.type,
           amount: r.amount,
           walletId: wid,
-          toWalletId: _toWalletFor(r, wid),
+          toWalletId: toWid,
           category: _catFor(r),
           note: r.note.isEmpty ? null : r.note,
           date: r.date,
@@ -390,9 +395,20 @@ class _RowsCard extends StatelessWidget {
     final wid = matchWalletId(wallets, r.walletName) ?? fallbackWalletId;
     final cat =
         matchCategory(appCategories.value, r.category) ?? fallbackCategory;
-    final detail =
-        '${_walletNameOf(wallets, wid, tr('nt_wallet_unset'))} - '
-        '${cat ?? tr('cat_other')}';
+    final srcName = _walletNameOf(wallets, wid, tr('nt_wallet_unset'));
+    final catName = cat ?? tr('cat_other');
+    final String detail;
+    if (r.type == 'transfer') {
+      final toWid =
+          matchWalletId(wallets, r.toWalletName) ??
+          (fallbackWalletId != null && fallbackWalletId != wid
+              ? fallbackWalletId
+              : null);
+      final dstName = _walletNameOf(wallets, toWid, tr('nt_wallet_unset'));
+      detail = '$srcName → $dstName - $catName';
+    } else {
+      detail = '$srcName - $catName';
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: SsrSpace.xs),
       child: Row(
