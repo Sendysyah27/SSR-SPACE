@@ -157,7 +157,7 @@ jobs:
               <category android:name="android.intent.category.BROWSABLE" />
               <data android:scheme="com.ssr.space.ssrspace" android:host="login-callback" />
           </intent-filter>
-'''
+          '''
               assert '</activity>' in s, 'activity block tak ketemu'
               s = s.replace('</activity>', filt + '      </activity>', 1)
               m.write_text(s)
