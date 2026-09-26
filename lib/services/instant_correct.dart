@@ -49,6 +49,38 @@ class InstantCorrect {
     return '$dir ${amt(amount)} • $app';
   }
 
+  /// Popup tes tanpa menyentuh DB/pending: untuk memastikan overlay
+  /// tampil di HP ini (sebagian OEM memblokir diam-diam meski izin aktif).
+  /// True = perintah tampil terkirim; user tetap yang memastikan popup
+  /// terlihat di layar (ia menutup sendiri 30 detik). Tak pernah melempar.
+  static Future<bool> testOverlay() async {
+    try {
+      if (!Platform.isAndroid) return false;
+      if (!await FlutterOverlayWindow.isPermissionGranted()) return false;
+      try {
+        await FlutterOverlayWindow.closeOverlay();
+      } catch (_) {}
+      await FlutterOverlayWindow.showOverlay(
+        overlayTitle: tr('ic_overlay_t'),
+        overlayContent: tr('ic_test_body'),
+      );
+      final payload = jsonEncode({
+        'tx': '',
+        'title': tr('ic_overlay_t'),
+        'body': tr('ic_test_body'),
+        'ok': tr('ic_lengkapi'),
+        'no': tr('ic_tutup'),
+      });
+      await FlutterOverlayWindow.shareData(payload);
+      await Future.delayed(const Duration(milliseconds: 600));
+      await FlutterOverlayWindow.shareData(payload);
+      return true;
+    } catch (err, st) {
+      ErrorReporter.capture(err, st, context: 'instant_correct_test');
+      return false;
+    }
+  }
+
   /// Tawarkan koreksi setelah insert sukses. Tak pernah melempar.
   static Future<void> offer({
     required String txId,

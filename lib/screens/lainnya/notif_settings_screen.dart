@@ -174,6 +174,20 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
     await _load();
   }
 
+  Future<void> _testOverlay() async {
+    if (!overlayGranted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('ic_test_noperm'))));
+      return;
+    }
+    final ok = await InstantCorrect.testOverlay();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(tr(ok ? 'ic_test_ok' : 'ic_test_fail'))),
+    );
+  }
+
   Future<void> _reconnect() async {
     await NotifTrack.reconnectService();
     await Future.delayed(const Duration(milliseconds: 900));
@@ -220,6 +234,7 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
             onChanged: _setCorrectPopup,
             overlayGranted: overlayGranted,
             onRequestOverlay: _requestOverlay,
+            onTestOverlay: _testOverlay,
           ),
           _BankMappingCard(
             wallets: wallets,
@@ -320,18 +335,21 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
-/// Kartu "Koreksi instan": toggle popup 30 detik + status izin overlay.
+/// Kartu "Koreksi instan": toggle popup 30 detik + status izin overlay
+/// + tombol tes overlay (tanpa tulis DB).
 class _CorrectCard extends StatelessWidget {
   final bool enabled;
   final ValueChanged<bool> onChanged;
   final bool overlayGranted;
   final VoidCallback onRequestOverlay;
+  final VoidCallback onTestOverlay;
 
   const _CorrectCard({
     required this.enabled,
     required this.onChanged,
     required this.overlayGranted,
     required this.onRequestOverlay,
+    required this.onTestOverlay,
   });
 
   @override
@@ -356,6 +374,14 @@ class _CorrectCard extends StatelessWidget {
           trailing: OutlinedButton(
             onPressed: onRequestOverlay,
             child: Text(tr('ic_perm_grant')),
+          ),
+        ),
+        const Divider(height: 1),
+        Align(
+          alignment: Alignment.centerRight,
+          child: OutlinedButton(
+            onPressed: onTestOverlay,
+            child: Text(tr('ic_test')),
           ),
         ),
       ],

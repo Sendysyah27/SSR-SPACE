@@ -929,6 +929,23 @@ const _t = <String, Map<String, String>>{
   'ic_lengkapi': {'id': 'Lengkapi', 'en': 'Complete'},
   'ic_tutup': {'id': 'Tutup', 'en': 'Close'},
   'ic_sheet_t': {'id': 'Lengkapi catatan', 'en': 'Complete entry'},
+  'ic_test': {'id': 'Tes overlay', 'en': 'Test overlay'},
+  'ic_test_body': {
+    'id': 'Ini popup tes — bila terlihat, overlay di HP ini beres.',
+    'en': 'This is a test popup — if you can see it, overlays work here.',
+  },
+  'ic_test_ok': {
+    'id': 'Popup tes dikirim — lihat layar HP, ia tutup sendiri 30 detik.',
+    'en': 'Test popup sent — check your screen, it closes in 30 seconds.',
+  },
+  'ic_test_noperm': {
+    'id': 'Izin overlay belum aktif — ketuk Beri izin dulu.',
+    'en': 'Overlay permission is off — tap Grant permission first.',
+  },
+  'ic_test_fail': {
+    'id': 'Perintah popup gagal dikirim.',
+    'en': 'Could not send the popup command.',
+  },
   'ic_note_hint': {
     'id': 'Catatan singkat (opsional)',
     'en': 'Short note (optional)',

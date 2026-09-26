@@ -50,6 +50,15 @@ void main() {
     expect(classifyNotif('Pembayaran sebesar Rp10.000 berhasil'), 'out');
   });
 
+  test('classify + amount teks asli SeaBank realtime transfer (out)', () {
+    const t = 'Kamu baru melakukan transfer real-time senilai '
+        'Rp17.000 pada 26 Sep 2026 14:31. Jika kamu tidak melakukan ini, '
+        'segera hubungi 1500130.';
+    expect(parseNotifAmount(t), 17000);
+    expect(classifyNotif(t), 'out');
+    expect(classifyNotif('Realtime Transfer'), isNull);
+  });
+
   test('classify format ISAKU cash in', () {
     expect(
       classifyNotif(

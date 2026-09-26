@@ -79,6 +79,7 @@ const _inKeys = [
 
 const _outKeys = [
   'berhasil ditransfer',
+  'melakukan transfer',
   'transfer berhasil',
   'pembayaran berhasil',
   'berhasil dibayar',
