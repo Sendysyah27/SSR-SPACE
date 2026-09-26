@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/app_categories.dart';

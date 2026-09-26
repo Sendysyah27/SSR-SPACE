@@ -36,7 +36,7 @@ class ReminderService {
     }
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const settings = InitializationSettings(android: android);
-    await _plugin.initialize(settings);
+    await _plugin.initialize(settings: settings);
     const channel = AndroidNotificationChannel(
       channelId,
       channelName,
@@ -107,5 +107,5 @@ class ReminderService {
     }
   }
 
-  static Future<void> cancel() => _plugin.cancel(notifId);
+  static Future<void> cancel() => _plugin.cancel(id: notifId);
 }
