@@ -164,7 +164,7 @@ String neutralizeFormula(String s) {
   final t = s.trimLeft();
   if (t.isEmpty) return s;
   final c = t.codeUnitAt(0);
-  if (c == 61 || c == 43 || c == 45 || c == 64) return "'$s";
+  if (c == 61 || c == 43 || c == 45 || c == 64) return "'${s.trimLeft()}";
   return s;
 }
 
