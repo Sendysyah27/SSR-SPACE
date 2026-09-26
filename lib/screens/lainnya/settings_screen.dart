@@ -59,6 +59,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           _FontCard(value: fontScale.value, onChanged: (v) => setFontScale(v)),
           const SizedBox(height: SsrSpace.md),
+          const _DefaultCurrencyCard(),
+          const SizedBox(height: SsrSpace.md),
+          const _TopNCard(),
+          const SizedBox(height: SsrSpace.md),
+          const _AnimsCard(),
+          const SizedBox(height: SsrSpace.md),
+          const _ListStyleCard(),
+          const SizedBox(height: SsrSpace.md),
+          const _DateStyleCard(),
+          const SizedBox(height: SsrSpace.md),
+          const _HeroStyleCard(),
+          const SizedBox(height: SsrSpace.md),
+          const _ReminderCard(),
+          const SizedBox(height: SsrSpace.md),
+          const _WidgetStubCard(),
+          const SizedBox(height: SsrSpace.md),
+          const _ResetCorrectCard(),
+          const SizedBox(height: SsrSpace.md),
           const _PinCard(),
         ],
       ),
@@ -163,6 +181,286 @@ class _FontCard extends StatelessWidget {
           divisions: 9,
           label: value.toStringAsFixed(2),
           onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
+/// Mata uang bawaan form input (dropdown kode, ikut validasi kCurrencySymbols).
+class _DefaultCurrencyCard extends StatelessWidget {
+  const _DefaultCurrencyCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_def_currency'),
+      children: [
+        ValueListenableBuilder<String>(
+          valueListenable: inputDefaultCurrency,
+          builder: (context, value, _) => DropdownButtonFormField<String>(
+            initialValue: value,
+            decoration: const InputDecoration(),
+            items: [
+              for (final c in kCurrencySymbols.keys)
+                DropdownMenuItem(value: c, child: Text(c)),
+            ],
+            onChanged: (v) {
+              if (v != null) setInputDefaultCurrency(v);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Top 8 + Lainnya di laporan.
+class _TopNCard extends StatelessWidget {
+  const _TopNCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_topn'),
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: reportsTopN,
+          builder: (context, value, _) => SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(tr('st_topn')),
+            subtitle: Text(tr('st_topn_sub')),
+            value: value,
+            onChanged: setReportsTopN,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Animasi UI.
+class _AnimsCard extends StatelessWidget {
+  const _AnimsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_anims'),
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: uiAnims,
+          builder: (context, value, _) => SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(tr('st_anims')),
+            value: value,
+            onChanged: setUiAnims,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Gaya daftar: rapat / lega.
+class _ListStyleCard extends StatelessWidget {
+  const _ListStyleCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_list_style'),
+      children: [
+        ValueListenableBuilder<String>(
+          valueListenable: uiListStyle,
+          builder: (context, value, _) => SegmentedButton<String>(
+            segments: [
+              ButtonSegment(
+                value: 'compact',
+                label: Text(tr('st_list_compact')),
+              ),
+              ButtonSegment(
+                value: 'comfortable',
+                label: Text(tr('st_list_comfortable')),
+              ),
+            ],
+            selected: {value},
+            showSelectedIcon: false,
+            onSelectionChanged: (s) => setUiListStyle(s.first),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Gaya pemilih tanggal.
+class _DateStyleCard extends StatelessWidget {
+  const _DateStyleCard();
+
+  static const _styles = ['system', 'calendar', 'spinner'];
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_date_style'),
+      children: [
+        ValueListenableBuilder<String>(
+          valueListenable: uiDateStyle,
+          builder: (context, value, _) => DropdownButtonFormField<String>(
+            initialValue: _styles.contains(value) ? value : 'system',
+            decoration: const InputDecoration(),
+            items: [
+              for (final s in _styles)
+                DropdownMenuItem(value: s, child: Text(s)),
+            ],
+            onChanged: (v) {
+              if (v != null) setUiDateStyle(v);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Gaya ringkasan: satu varian dulu, sisanya tahap P2.
+class _HeroStyleCard extends StatelessWidget {
+  const _HeroStyleCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_hero_style'),
+      children: [
+        ValueListenableBuilder<String>(
+          valueListenable: uiHeroStyle,
+          builder: (context, value, _) => DropdownButtonFormField<String>(
+            initialValue: value == 'emerald-calm' ? value : 'emerald-calm',
+            decoration: const InputDecoration(),
+            items: const [
+              DropdownMenuItem(
+                value: 'emerald-calm',
+                child: Text('emerald-calm'),
+              ),
+            ],
+            onChanged: (v) {
+              if (v != null) setUiHeroStyle(v);
+            },
+          ),
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
+
+/// Pengingat harian: toggle + jam via TimePicker.
+/// Hanya simpan prefs, penjadwalan notifikasi milik Task 7.
+class _ReminderCard extends StatelessWidget {
+  const _ReminderCard();
+
+  Future<void> _pick(BuildContext context, int h, int m) async {
+    final t = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: h, minute: m),
+    );
+    if (t != null) await setReminderTime(t.hour, t.minute);
+  }
+
+  String _fmt(int h, int m) =>
+      '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_reminder_time'),
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: reminderEnabled,
+          builder: (context, enabled, _) => ValueListenableBuilder<int>(
+            valueListenable: reminderHour,
+            builder: (context, h, _) => ValueListenableBuilder<int>(
+              valueListenable: reminderMinute,
+              builder: (context, m, _) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(tr('st_reminder_on')),
+                    value: enabled,
+                    onChanged: setReminderEnabled,
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _fmt(h, m),
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.schedule),
+                        onPressed: () => _pick(context, h, m),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Widget hari ini: sakelar dulu, provider native tahap P2.
+class _WidgetStubCard extends StatelessWidget {
+  const _WidgetStubCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_widget_today'),
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: widgetToday,
+          builder: (context, value, _) => SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(tr('st_widget_today')),
+            subtitle: Text(tr('msg_p2')),
+            value: value,
+            onChanged: setWidgetToday,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Atur ulang memori koreksi instan (pending + popup), tanpa hapus data.
+class _ResetCorrectCard extends StatelessWidget {
+  const _ResetCorrectCard();
+
+  Future<void> _reset(BuildContext context) async {
+    final p = await SharedPreferences.getInstance();
+    await p.remove('pending_correct_tx');
+    await p.remove('correct_popup');
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(tr('st_reset_correct_done'))));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_reset_correct'),
+      children: [
+        OutlinedButton(
+          onPressed: () => _reset(context),
+          child: Text(tr('st_reset_correct')),
         ),
       ],
     );
