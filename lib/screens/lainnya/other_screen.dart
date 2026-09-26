@@ -18,6 +18,7 @@ import 'package:ssr_space/utils/app_info.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/billing_screen.dart';
 import 'package:ssr_space/screens/lainnya/categories_screen.dart';
+import 'package:ssr_space/screens/lainnya/import_preview_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_screen.dart';
 import 'package:ssr_space/screens/laporan/reports_screen.dart';
 import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
@@ -306,7 +307,7 @@ class _OtherScreenState extends State<OtherScreen> {
             onPopupChanged: _setPopup,
             onBackup: _backup,
             onExport: () => _push(const ReportsScreen()),
-            onImportP2: () => _showP2(),
+            onImportP2: () => _push(const ImportPreviewScreen()),
             onClearCache: _clearLocalCache,
             onSettings: () => _push(const SettingsScreen()),
             onLogout: _confirmLogout,
