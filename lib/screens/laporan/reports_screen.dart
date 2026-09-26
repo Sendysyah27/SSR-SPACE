@@ -218,7 +218,7 @@ class ReportsScreenState extends State<ReportsScreen> {
           )
         else if (visible.isEmpty)
           Padding(
-            padding: EdgeInsets.symmetric(vertical: SsrSpace.xl),
+            padding: const EdgeInsets.symmetric(vertical: SsrSpace.xl),
             child: Text(tr('r_noflow'), textAlign: TextAlign.center),
           )
         else
