@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
@@ -199,7 +200,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(tr('b_pin_body')),
+                      Text(tr('b_pin_body')),
                       const SizedBox(height: SsrSpace.md),
                       PinField(
                         controller: pinC,
@@ -439,13 +440,13 @@ class _BudgetForm extends StatelessWidget {
           TextField(
             controller: catC,
             focusNode: catFocus,
-            decoration: const InputDecoration(labelText: tr('b_f_cat')),
+            decoration: InputDecoration(labelText: tr('b_f_cat')),
           ),
           const SizedBox(height: SsrSpace.md),
           TextField(
             controller: limitC,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: tr('b_f_limit'),
               prefixText: '${kCurrencySymbols[currencyCode.value] ?? 'Rp'} ',
             ),

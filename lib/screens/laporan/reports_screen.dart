@@ -217,7 +217,7 @@ class ReportsScreenState extends State<ReportsScreen> {
             onAction: _load,
           )
         else if (visible.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: SsrSpace.xl),
             child: Text(tr('r_noflow'), textAlign: TextAlign.center),
           )
@@ -373,7 +373,7 @@ class _FlowFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<String>(
-      segments: const [
+      segments: [
         ButtonSegment(value: 'all', label: Text(tr('r_flow_all'))),
         ButtonSegment(value: 'in', label: Text(tr('tx_in'))),
         ButtonSegment(value: 'out', label: Text(tr('tx_out'))),

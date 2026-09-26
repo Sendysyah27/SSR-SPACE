@@ -52,12 +52,12 @@ class BankTrackRow extends StatelessWidget {
                   child: DropdownButtonFormField<String?>(
                     initialValue: walletValue,
                     isExpanded: true,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: tr('bt_wallet'),
                       isDense: true,
                     ),
                     items: [
-                      const DropdownMenuItem<String?>(
+                      DropdownMenuItem<String?>(
                         value: null,
                         child: Text(tr('bt_auto')),
                       ),
@@ -74,7 +74,7 @@ class BankTrackRow extends StatelessWidget {
                 Expanded(
                   child: TextFormField(
                     initialValue: categoryValue,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: tr('bt_cat'),
                       isDense: true,
                     ),

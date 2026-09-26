@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/app_settings.dart';
@@ -56,10 +55,7 @@ class CurrencyService {
       fetchedAt = DateTime.now();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kRates, jsonEncode(next));
-      await prefs.setInt(
-        _kRatesAt,
-        fetchedAt!.millisecondsSinceEpoch,
-      );
+      await prefs.setInt(_kRatesAt, fetchedAt!.millisecondsSinceEpoch);
       return true;
     } catch (_) {
       return false;
@@ -67,7 +63,8 @@ class CurrencyService {
   }
 
   /// Konversi nominal IDR ke mata uang aktif.
-  static double convert(num idrAmount) {    final code = currencyCode.value;
+  static double convert(num idrAmount) {
+    final code = currencyCode.value;
     if (code == 'IDR') return idrAmount.toDouble();
     final r = rates[code];
     if (r == null) return idrAmount.toDouble();

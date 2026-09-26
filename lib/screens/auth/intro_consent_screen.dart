@@ -32,7 +32,13 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
   bool _agreed = false;
   bool _saving = false;
 
-  static List<String> get _terms => [tr('in_term_1'), tr('in_term_2'), tr('in_term_3'), tr('in_term_4'), tr('in_term_5')];
+  static List<String> get _terms => [
+    tr('in_term_1'),
+    tr('in_term_2'),
+    tr('in_term_3'),
+    tr('in_term_4'),
+    tr('in_term_5'),
+  ];
 
   @override
   void dispose() {
@@ -60,11 +66,8 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(tr('in_save_fail')),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('in_save_fail'))));
     }
   }
 
@@ -218,10 +221,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        tr('in_auto_t'),
-                        style: t.textTheme.titleMedium,
-                      ),
+                      Text(tr('in_auto_t'), style: t.textTheme.titleMedium),
                       const SizedBox(height: SsrSpace.xs),
                       Text(
                         tr('in_auto_s'),
@@ -373,10 +373,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                   onTap: () => setState(() => _agreed = !_agreed),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: SsrSpace.md),
-                    child: Text(
-                      tr('in_agree'),
-                      style: t.textTheme.titleMedium,
-                    ),
+                    child: Text(tr('in_agree'), style: t.textTheme.titleMedium),
                   ),
                 ),
               ),

@@ -25,6 +25,13 @@ import 'package:ssr_space/widgets/tx_row.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+String txHistoryTitle(String m) {
+  final label = localeCode.value == 'en'
+      ? monthLabel(m)
+      : monthLabel(m).toLowerCase();
+  return tr('tx_history').replaceFirst('{m}', label);
+}
+
 class TransactionsScreen extends StatefulWidget {
   final String? initialMonth;
   const TransactionsScreen({super.key, this.initialMonth});
@@ -148,13 +155,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')}';
-
-  String _historyTitle(String m) {
-    final label = localeCode.value == 'en'
-        ? monthLabel(m)
-        : monthLabel(m).toLowerCase();
-    return tr('tx_history').replaceFirst('{m}', label);
-  }
 
   Future<void> _save() async {
     final typed = double.tryParse(amountC.text);
@@ -465,7 +465,7 @@ class _TxHistorySection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _historyTitle(month),
+          txHistoryTitle(month),
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: SsrSpace.sm),
@@ -655,7 +655,7 @@ class _TxBasicFields extends StatelessWidget {
           controller: amountC,
           keyboardType: TextInputType.number,
           style: SsrTheme.moneyLarge,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: tr('tx_f_nominal'),
             prefixText: '${kCurrencySymbols[currencyCode.value] ?? 'Rp'} ',
             prefixStyle: SsrTheme.moneyLarge,
@@ -664,12 +664,12 @@ class _TxBasicFields extends StatelessWidget {
         const SizedBox(height: SsrSpace.md),
         TextField(
           controller: catC,
-          decoration: const InputDecoration(labelText: tr('tx_f_cat')),
+          decoration: InputDecoration(labelText: tr('tx_f_cat')),
         ),
         const SizedBox(height: SsrSpace.md),
         TextField(
           controller: noteC,
-          decoration: const InputDecoration(labelText: tr('tx_f_note')),
+          decoration: InputDecoration(labelText: tr('tx_f_note')),
         ),
       ],
     );
@@ -723,7 +723,7 @@ class _TxDropdowns extends StatelessWidget {
         const SizedBox(height: SsrSpace.md),
         DropdownButtonFormField<String>(
           initialValue: walletId,
-          decoration: const InputDecoration(labelText: tr('tx_f_wallet')),
+          decoration: InputDecoration(labelText: tr('tx_f_wallet')),
           items: [for (final w in wallets) _walletItem(w, theme)],
           onChanged: onWalletChanged,
         ),
@@ -731,7 +731,7 @@ class _TxDropdowns extends StatelessWidget {
           const SizedBox(height: SsrSpace.md),
           DropdownButtonFormField<String>(
             initialValue: toWalletId,
-            decoration: const InputDecoration(labelText: tr('tx_f_towallet')),
+            decoration: InputDecoration(labelText: tr('tx_f_towallet')),
             items: [for (final w in wallets) _walletItem(w, theme)],
             onChanged: onToWalletChanged,
           ),

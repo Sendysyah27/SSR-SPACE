@@ -297,13 +297,13 @@ class _NewWalletForm extends StatelessWidget {
           TextField(
             controller: nameC,
             focusNode: nameFocus,
-            decoration: const InputDecoration(labelText: tr('w_f_name')),
+            decoration: InputDecoration(labelText: tr('w_f_name')),
           ),
           const SizedBox(height: SsrSpace.md),
           DropdownButtonFormField<String>(
             initialValue: type,
             decoration: InputDecoration(labelText: tr('w_f_type')),
-            items: const [
+            items: [
               DropdownMenuItem(value: 'cash', child: Text(tr('w_cash'))),
               DropdownMenuItem(value: 'ewallet', child: Text(tr('w_ewallet'))),
               DropdownMenuItem(value: 'bank', child: Text(tr('w_bank'))),

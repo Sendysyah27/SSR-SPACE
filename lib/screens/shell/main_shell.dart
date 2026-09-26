@@ -102,23 +102,23 @@ class _MainBottomBar extends StatelessWidget {
 
   static List<NavigationDestination> get _destinations => [
     NavigationDestination(
-      icon: DuoIcon(AppIcons.home),
+      icon: const DuoIcon(AppIcons.home),
       label: tr('nav_beranda'),
     ),
     NavigationDestination(
-      icon: DuoIcon(AppIcons.transactions),
+      icon: const DuoIcon(AppIcons.transactions),
       label: tr('nav_transaksi'),
     ),
     NavigationDestination(
-      icon: DuoIcon(AppIcons.budget),
+      icon: const DuoIcon(AppIcons.budget),
       label: tr('nav_budget'),
     ),
     NavigationDestination(
-      icon: DuoIcon(AppIcons.reports),
+      icon: const DuoIcon(AppIcons.reports),
       label: tr('nav_laporan'),
     ),
     NavigationDestination(
-      icon: DuoIcon(AppIcons.menu),
+      icon: const DuoIcon(AppIcons.menu),
       label: tr('nav_lainnya'),
     ),
   ];
