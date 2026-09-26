@@ -11,8 +11,17 @@ class TransferPair {
   double get amount => outTx.amount;
 }
 
+class _Candidate {
+  final SaasTransaction outTx;
+  final SaasTransaction inTx;
+  final Duration gap;
+  const _Candidate(this.outTx, this.inTx, this.gap);
+}
+
 /// Deteksi pasangan transfer: out + in nominal sama, dompet beda,
 /// selisih waktu <= [window], tiap transaksi dipakai maks sekali.
+/// Kandidat dipasangkan mulai dari gap terkecil (global), agar satu
+/// transaksi `in` yang diperebutkan jatuh ke `out` terdekat.
 /// Murni saran (badge) — tidak menggabung/mengubah data.
 List<TransferPair> detectTransferPairs(
   List<SaasTransaction> items, {
@@ -31,17 +40,13 @@ List<TransferPair> detectTransferPairs(
     return t.type == 'out' && t.walletId != null && t.walletId!.isNotEmpty;
   }).toList();
   final ins = items.where((t) => t.type == 'in').toList();
-  final usedIn = <String>{};
-  final pairs = <TransferPair>[];
-
   outs.sort((a, b) => (a.createdAt ?? '').compareTo(b.createdAt ?? ''));
+
+  final cands = <_Candidate>[];
   for (final o in outs) {
     final ot = at(o);
     if (ot == null) continue;
-    TransferPair? best;
-    Duration? bestGap;
     for (final i in ins) {
-      if (usedIn.contains(i.id)) continue;
       if (i.amount != o.amount) continue;
       final iw = i.walletId ?? i.toWalletId ?? '';
       if (iw.isEmpty || iw == o.walletId) continue;
@@ -49,15 +54,19 @@ List<TransferPair> detectTransferPairs(
       if (it == null) continue;
       final gap = it.difference(ot).abs();
       if (gap > window) continue;
-      if (bestGap == null || gap < bestGap) {
-        bestGap = gap;
-        best = TransferPair(outTx: o, inTx: i);
-      }
+      cands.add(_Candidate(o, i, gap));
     }
-    if (best != null) {
-      usedIn.add(best.inTx.id);
-      pairs.add(best);
-    }
+  }
+  cands.sort((a, b) => a.gap.compareTo(b.gap));
+
+  final usedOut = <String>{};
+  final usedIn = <String>{};
+  final pairs = <TransferPair>[];
+  for (final c in cands) {
+    if (usedOut.contains(c.outTx.id) || usedIn.contains(c.inTx.id)) continue;
+    usedOut.add(c.outTx.id);
+    usedIn.add(c.inTx.id);
+    pairs.add(TransferPair(outTx: c.outTx, inTx: c.inTx));
   }
   return pairs;
 }
