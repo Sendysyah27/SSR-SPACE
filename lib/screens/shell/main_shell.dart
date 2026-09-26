@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/instant_correct.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
+import 'package:ssr_space/services/overlay_bus.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -34,7 +34,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   final budgetKey = GlobalKey<BudgetsScreenState>();
   final reportsKey = GlobalKey<ReportsScreenState>();
   final txKey = GlobalKey<TransactionsScreenState>();
-  StreamSubscription? _overlaySub;
   bool _resumed = true;
   bool _sheetOpen = false;
 
@@ -45,18 +44,20 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     // force: resubscribe bila stream sempat error / app resume dari background
     NotifTrack.ensureListening(force: true);
     unawaited(ForegroundTrack.syncFromPrefs());
-    _overlaySub = Platform.isAndroid
-        ? FlutterOverlayWindow.overlayListener.listen((event) {
-            if ('$event' == 'lengkapi' && _resumed) unawaited(_checkPending());
-          })
-        : null;
+    // Via OverlayBus (bukan listen langsung): stream plugin sekali-dengar,
+    // MainShell baru lahir sebelum dispose lama saat pushReplacement.
+    if (Platform.isAndroid) {
+      OverlayBus.add('main', (event) {
+        if ('$event' == 'lengkapi' && _resumed) unawaited(_checkPending());
+      });
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkPending());
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _overlaySub?.cancel();
+    OverlayBus.remove('main');
     super.dispose();
   }
 

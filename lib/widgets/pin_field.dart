@@ -27,6 +27,12 @@ class PinField extends StatefulWidget {
 class _PinFieldState extends State<PinField> {
   late final FocusNode _focus;
 
+  /// Guard sekali-tembak: listener (teks + fokus) bisa fire berkali-kali
+  /// saat teks sudah penuh (mis. keyboard turun → focus berubah setelah
+  /// dialog sukses dipop). Tanpa ini onCompleted jalan ganda → pop ganda →
+  /// route aplikasi ikut ter-pop (layar hitam, back mati).
+  bool _fired = false;
+
   @override
   void initState() {
     super.initState();
@@ -38,9 +44,13 @@ class _PinFieldState extends State<PinField> {
   void _onChanged() {
     if (mounted) setState(() {});
     final v = widget.controller.text;
-    if (v.length >= widget.length) {
-      widget.onCompleted?.call(v);
+    if (v.length < widget.length) {
+      _fired = false;
+      return;
     }
+    if (_fired) return;
+    _fired = true;
+    widget.onCompleted?.call(v);
   }
 
   @override
