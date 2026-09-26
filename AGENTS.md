@@ -99,6 +99,7 @@ Arah pengembangan ke **skala banyak user** — urutan wajib dijaga, jangan melom
 - **Auto-gabung transfer (2026-09-26, minta user):** pasangan out+in auto+auto (nominal sama, dompet beda, ≤10 mnt) langsung jadi 1 baris `transfer` — `pickAutoMerge()` + `_tryAutoMerge()` fail-open di `_onEvent` (histori lama tak diubah; kode TX milik OUT). `summary()` kenal transfer.
 - **Ganti PIN magic-link (2026-09-26):** template email terkunci (perlu SMTP) → OTP 6 digit buntu → ganti PIN via deep-link: kirim link → ketuk → tukar token jadi sesi (`pin_link_verify.dart`, `app_links`, intent-filter CI). User wajib tambah redirect `com.ssr.space.ssrspace://login-callback` di Dashboard → Auth → URL Configuration.
 - **Workspace premium (2026-09-26, SDD subagent):** detail workspace (anggota ID+peran, kick, hapus + ketik-nama + PIN) via RPC `migration_14` (wajib user jalankan) + assert T12-T15. Spec `docs/superpowers/specs/2026-09-26-workspace-premium-design.md`, plan `docs/superpowers/plans/2026-09-26-workspace-premium.md`.
+- **Input transaksi premium (2026-09-26, `686316b`+`cfb0d54`, run `36251716559` hijau, 123 test):** tab Transaksi = riwayat saja (strip ringkasan Masuk/Keluar/Surplus-Defisit, rumus = beranda, transfer diabaikan); input pindah ke `TxInputSheet` via tombol **+ tengah `centerFloat`** (semua tab) / aksi + AppBar / ketuk baris (edit + hapus). Numpad custom 1-9/000/0/hapus (tanpa keyboard sistem, sadar desimal kurs, minor-eksak). Tanggal wajib default hari ini + jam opsional → kolom `date` + `created_at` custom (param `createdAt` baru di payload/add/update, **tanpa migration**). Logika murni `tx_input_logic.dart` (lokal `dart` 30/30) + `test/tx_input_test.dart` (21 case). Eksekusi pakai 3 subagents paralel (shell / test / review); review menemukan `localeCode` tak ke-import + `unused theme` sebelum push; CI sempat merah 1x (`)` kurang di numpad + `dangling_library_doc_comments` info). Batas sadar: `onCatat` Beranda masih navigasi ke tab (bukan buka sheet langsung).
 
 Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari `track_master`; parser/gate `_onEvent` TIDAK berubah.
 
@@ -323,7 +324,8 @@ SSR SPACE/
 │   ├── services/    (auth, wallet, transaction, budget, dashboard,
 │   │                 notif_parse, notif_track_service, invite_service,
 │   │                 invite_token, foreground_track, supabase_config,
-│   │                 session_service, error_reporter, backup_export, …)
+│   │                 session_service, error_reporter, backup_export,
+│   │                 tx_input_logic (murni, numpad + tanggal/jam), …)
 │   ├── models/      (wallet, transaction, wallet_balance)
 │   ├── screens/     ← satu folder per fitur:
 │   │   ├── auth/    (splash, intro_consent, auth, lock, onboarding)
@@ -334,7 +336,7 @@ SSR SPACE/
 │   └── widgets/     (section_card, status_chip, tx_row, primary_button,
 │                     pin_field, nav_tile, wallet_row, bank_track_row,
 │                     labeled_section_card, tx_type_selector, mask_toggle,
-│                     month_picker, state_views)
+│                     month_picker, state_views, tx_numpad, tx_input_sheet)
 ├── test/            (session, notif_parse, notif_track, budget, dashboard, …)
 ├── supabase/
 │   ├── schema.sql

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/widgets/section_card.dart';
@@ -32,6 +34,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   List<SaasTransaction> items = [];
   bool loading = true;
   String? err;
+  bool savingOnly = false;
 
   @override
   void initState() {
@@ -83,6 +86,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (err != null) {
       return ErrorView(message: err!, onRetry: _load);
     }
+    // Rincian tabungan: OUT berkategori Tabungan/Savings, semua waktu.
+    final svTotal = savingOutOf(items);
+    final svCount = items
+        .where((t) => t.type == 'out' && isSavingCategory(t.category))
+        .length;
+    final visible = savingOnly
+        ? items
+              .where((t) => t.type == 'out' && isSavingCategory(t.category))
+              .toList()
+        : items;
     return ListView(
       padding: const EdgeInsets.all(SsrSpace.lg),
       children: [
@@ -91,6 +104,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           balanceText: widget.balanceText,
           count: items.length,
         ),
+        if (svCount > 0) ...[
+          const SizedBox(height: SsrSpace.md),
+          _SavingStrip(
+            total: svTotal,
+            count: svCount,
+            only: savingOnly,
+            onToggle: () => setState(() => savingOnly = !savingOnly),
+          ),
+        ],
         const SizedBox(height: SsrSpace.md),
         if (items.isEmpty)
           EmptyView(
@@ -102,7 +124,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             onAction: () => Navigator.pop(context),
           )
         else
-          _HistoryCard(items: items),
+          _HistoryCard(items: visible),
       ],
     );
   }
@@ -133,6 +155,54 @@ class _SummaryCard extends StatelessWidget {
           Text(
             tr('wd_count').replaceFirst('{n}', '$count'),
             style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Strip rincian tabungan: dot emas + "Ditabung {a} · {n} transaksi"
+/// + toggle filter hanya-tabungan. Muncul hanya bila ada OUT tabungan.
+class _SavingStrip extends StatelessWidget {
+  final double total;
+  final int count;
+  final bool only;
+  final VoidCallback onToggle;
+
+  const _SavingStrip({
+    required this.total,
+    required this.count,
+    required this.only,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      color: SsrColors.savingSoft,
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: const BoxDecoration(
+              color: SsrColors.saving,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: SsrSpace.sm),
+          Expanded(
+            child: Text(
+              tr('sv_wallet_line')
+                  .replaceFirst('{a}', amt(total))
+                  .replaceFirst('{n}', '$count'),
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          TextButton(
+            onPressed: onToggle,
+            child: Text(tr(only ? 'tx_show_all' : 'sv_only')),
           ),
         ],
       ),

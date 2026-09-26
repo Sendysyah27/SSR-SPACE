@@ -13,6 +13,7 @@ import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/report_pdf.dart';
+import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/transfer_detect.dart';
 import 'package:ssr_space/services/wallet_service.dart';
@@ -125,13 +126,23 @@ class ReportsScreenState extends State<ReportsScreen> {
     _load();
   }
 
-  Widget _summarySection(double totalIn, double totalOut, double net) {
-    final hasFlow = totalIn + totalOut > 0;
+  Widget _summarySection(
+    double totalIn,
+    double totalOut,
+    double spendOut,
+    double savingOut,
+    double net,
+  ) {
+    final hasFlow = totalIn + spendOut + savingOut > 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (hasFlow) ...[
-          _MonthFlowChart(totalIn: totalIn, totalOut: totalOut),
+          _MonthFlowChart(
+            totalIn: totalIn,
+            spendOut: spendOut,
+            savingOut: savingOut,
+          ),
           const SizedBox(height: SsrSpace.md),
         ],
         _MonthlySummary(
@@ -174,13 +185,17 @@ class ReportsScreenState extends State<ReportsScreen> {
         .where((t) => t.type == 'out')
         .fold<double>(0, (s, t) => s + t.amount);
     final net = totalIn - totalOut;
+    // Iris tabungan: OUT berkategori Tabungan/Savings (sumber sama: items bulan ini).
+    final savingOut = savingOutOf(items);
+    var spendOut = totalOut - savingOut;
+    if (spendOut < 0) spendOut = 0;
     return _ReportsScaffold(
       ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
           MonthPicker(month: month, onChanged: _onMonthChanged),
           const SizedBox(height: SsrSpace.md),
-          _summarySection(totalIn, totalOut, net),
+          _summarySection(totalIn, totalOut, spendOut, savingOut, net),
           const SizedBox(height: SsrSpace.lg),
           _listSection(),
         ],
@@ -228,22 +243,32 @@ class ReportsScreenState extends State<ReportsScreen> {
   }
 }
 
-/// Donut Masuk vs Keluar bulan terpilih: irisan zamrud/bata,
-/// persen masuk di tengah, legenda mask-aware di bawah.
+/// Donut 3 iris bulan terpilih: zamrud (masuk), bata (belanja non-tabungan),
+/// emas (tabungan). Persen masuk di tengah, legenda mask-aware di bawah.
 class _MonthFlowChart extends StatelessWidget {
   final double totalIn;
-  final double totalOut;
+  final double spendOut;
+  final double savingOut;
 
-  const _MonthFlowChart({required this.totalIn, required this.totalOut});
+  const _MonthFlowChart({
+    required this.totalIn,
+    required this.spendOut,
+    required this.savingOut,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final total = totalIn + totalOut;
+    final total = totalIn + spendOut + savingOut;
     final pctIn = total <= 0 ? 0 : (totalIn / total * 100).round();
     return SectionCard(
       child: Column(
         children: [
-          _DonutDial(totalIn: totalIn, totalOut: totalOut, pctIn: pctIn),
+          _DonutDial(
+            totalIn: totalIn,
+            spendOut: spendOut,
+            savingOut: savingOut,
+            pctIn: pctIn,
+          ),
           const SizedBox(height: SsrSpace.sm),
           Row(
             children: [
@@ -258,7 +283,14 @@ class _MonthFlowChart extends StatelessWidget {
                 child: _FlowLegend(
                   color: SsrColors.danger,
                   label: tr('tx_out'),
-                  value: totalOut,
+                  value: spendOut,
+                ),
+              ),
+              Expanded(
+                child: _FlowLegend(
+                  color: SsrColors.saving,
+                  label: tr('sv_label'),
+                  value: savingOut,
                 ),
               ),
             ],
@@ -270,19 +302,46 @@ class _MonthFlowChart extends StatelessWidget {
 }
 
 /// Lingkaran donut + persen masuk di tengah.
+/// Hanya iris bernilai > 0 yang dirender (fl_chart tak dapat section 0);
+/// bila semua nol, satu lingkaran penuh warna muted sebagai placeholder.
 class _DonutDial extends StatelessWidget {
   final double totalIn;
-  final double totalOut;
+  final double spendOut;
+  final double savingOut;
   final int pctIn;
 
   const _DonutDial({
     required this.totalIn,
-    required this.totalOut,
+    required this.spendOut,
+    required this.savingOut,
     required this.pctIn,
   });
 
   @override
   Widget build(BuildContext context) {
+    final sections = <PieChartSectionData>[
+      if (totalIn > 0)
+        PieChartSectionData(
+          value: totalIn,
+          color: SsrColors.accent,
+          radius: 26,
+          showTitle: false,
+        ),
+      if (spendOut > 0)
+        PieChartSectionData(
+          value: spendOut,
+          color: SsrColors.danger,
+          radius: 26,
+          showTitle: false,
+        ),
+      if (savingOut > 0)
+        PieChartSectionData(
+          value: savingOut,
+          color: SsrColors.saving,
+          radius: 26,
+          showTitle: false,
+        ),
+    ];
     return SizedBox(
       height: 180,
       child: Stack(
@@ -293,20 +352,16 @@ class _DonutDial extends StatelessWidget {
               sectionsSpace: 2,
               centerSpaceRadius: 52,
               startDegreeOffset: 270,
-              sections: [
-                PieChartSectionData(
-                  value: totalIn,
-                  color: SsrColors.accent,
-                  radius: 26,
-                  showTitle: false,
-                ),
-                PieChartSectionData(
-                  value: totalOut,
-                  color: SsrColors.danger,
-                  radius: 26,
-                  showTitle: false,
-                ),
-              ],
+              sections: sections.isEmpty
+                  ? [
+                      PieChartSectionData(
+                        value: 1,
+                        color: SsrColors.surfaceMuted,
+                        radius: 26,
+                        showTitle: false,
+                      ),
+                    ]
+                  : sections,
             ),
             duration: SsrMotion.base,
             curve: SsrMotion.curve,

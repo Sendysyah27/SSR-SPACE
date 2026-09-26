@@ -8,6 +8,10 @@ class SsrColors {
   static const danger = Color(0xFFB3261E);
   static const accentSoft = Color(0xFFE6F3F1);
   static const dangerSoft = Color(0xFFF9E8E6);
+  // Emas tabungan: makna ketiga setelah zamrud (masuk) & bata (keluar).
+  // Dipakai hanya di titik tabungan (gauge, iris donut, strip dompet).
+  static const saving = Color(0xFFB45309);
+  static const savingSoft = Color(0xFFFBEDD3);
   static const surfaceMuted = Color(0xFFF3F2EE);
 }
 

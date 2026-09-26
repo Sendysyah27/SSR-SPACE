@@ -270,6 +270,26 @@ const _t = <String, Map<String, String>>{
   'b_form_title': {'id': 'Batas baru', 'en': 'New limit'},
   'b_f_cat': {'id': 'Kategori (misal Makan)', 'en': 'Category (e.g. Food)'},
   'b_save': {'id': 'Simpan budget', 'en': 'Save budget'},
+  'b_delete': {'id': 'Hapus', 'en': 'Delete'},
+  'b_deleted': {'id': 'Budget dihapus.', 'en': 'Budget deleted.'},
+  'b_del_title': {'id': 'Hapus budget {c}', 'en': 'Delete {c} budget'},
+  'b_del_body': {
+    'id': 'Hapus budget {c} bulan ini? Transaksi tetap ada.',
+    'en': 'Delete the {c} budget for this month? Transactions stay.',
+  },
+  'b_over_alloc': {
+    'id': 'Total limit melebihi pemasukan bulan ini.',
+    'en': "Total limits exceed this month's income.",
+  },
+  // Tabungan (konvensi kategori, tanpa tabel baru)
+  'sv_label': {'id': 'Tabungan', 'en': 'Savings'},
+  'sv_of': {'id': 'dari', 'en': 'of'},
+  'sv_done': {'id': 'Tercapai', 'en': 'Reached'},
+  'sv_wallet_line': {
+    'id': 'Ditabung {a} · {n} transaksi',
+    'en': 'Saved {a} · {n} transactions',
+  },
+  'sv_only': {'id': 'Hanya tabungan', 'en': 'Only savings'},
   // Laporan
   'r_err_load': {
     'id': 'Gagal memuat laporan. Periksa koneksi.',

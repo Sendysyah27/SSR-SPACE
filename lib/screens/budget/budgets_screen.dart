@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/budget_service.dart';
+import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/currency.dart';
@@ -30,7 +32,7 @@ class BudgetsScreen extends StatefulWidget {
 }
 
 class BudgetsScreenState extends State<BudgetsScreen> {
-  List<Budget> items = [];
+  BudgetMonth? data;
   bool loading = true;
   bool saving = false;
   String? err;
@@ -71,7 +73,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       final b = await fetchBudgets(orgId);
       if (!mounted) return;
       setState(() {
-        items = b;
+        data = b;
         loading = false;
       });
     } catch (_) {
@@ -129,7 +131,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       text: b.limit.toStringAsFixed(whole ? 0 : 2),
     );
     try {
-      final value = await showDialog<double>(
+      final value = await showDialog<dynamic>(
         context: context,
         builder: (ctx) {
           String? err;
@@ -147,6 +149,13 @@ class BudgetsScreenState extends State<BudgetsScreen> {
                 ),
               ),
               actions: [
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: SsrColors.danger,
+                  ),
+                  onPressed: () => Navigator.pop(ctx, 'delete'),
+                  child: Text(tr('b_delete')),
+                ),
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(tr('cancel')),
@@ -167,7 +176,12 @@ class BudgetsScreenState extends State<BudgetsScreen> {
           );
         },
       );
-      if (value == null || !mounted) return;
+      if (!mounted) return;
+      if (value == 'delete') {
+        await _deleteBudget(b);
+        return;
+      }
+      if (value is! double) return;
       final ok = await _confirmPin();
       if (!ok || !mounted) return;
       try {
@@ -184,6 +198,41 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       }
     } finally {
       limitC.dispose();
+    }
+  }
+
+  Future<void> _deleteBudget(Budget b) async {
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('b_del_title').replaceFirst('{c}', b.category)),
+        content: Text(tr('b_del_body').replaceFirst('{c}', b.category)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(tr('cancel')),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: SsrColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(tr('b_delete')),
+          ),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+    final ok = await _confirmPin();
+    if (!ok || !mounted) return;
+    try {
+      await deleteBudget(await activeOrgId(), b.category);
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('b_deleted'))));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('b_err_save'))));
     }
   }
 
@@ -260,11 +309,13 @@ class BudgetsScreenState extends State<BudgetsScreen> {
         body: ErrorView(message: err!, onRetry: _load),
       );
     }
+    final items = data?.items ?? [];
     return Scaffold(
       appBar: AppBar(title: Text(_title)),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
+          _OverAllocBanner(data: data),
           if (items.isEmpty)
             EmptyView(
               icon: AppIcons.budget,
@@ -275,10 +326,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
               onAction: _focusForm,
             ),
           for (final b in items)
-            GestureDetector(
-              onTap: () => _openEdit(b),
-              child: _BudgetCard(budget: b),
-            ),
+            _BudgetEntry(budget: b, onTap: () => _openEdit(b)),
           const SizedBox(height: SsrSpace.md),
           _BudgetForm(
             catC: catC,
@@ -289,6 +337,151 @@ class BudgetsScreenState extends State<BudgetsScreen> {
             onSave: _save,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Banner: total limit bulan ini melebihi pemasukan bulan ini.
+/// Sembunyi sendiri bila tak over-alloc (pola _NoWalletBanner).
+class _OverAllocBanner extends StatelessWidget {
+  final BudgetMonth? data;
+
+  const _OverAllocBanner({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final totalIn = data?.totalIn ?? 0;
+    final totalLimit = data?.totalLimit ?? 0;
+    if (!(totalIn > 0 && totalLimit > totalIn)) {
+      return const SizedBox.shrink();
+    }
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: SsrSpace.sm),
+      padding: const EdgeInsets.all(SsrSpace.md),
+      decoration: const BoxDecoration(
+        color: SsrColors.dangerSoft,
+        borderRadius: BorderRadius.circular(SsrRadius.tile),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('b_over_alloc'),
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Text(
+            '${amt(totalLimit)} vs ${amt(totalIn)}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Satu baris budget: kartu tabungan bila kategorinya tabungan,
+///
+/// kartu biasa bila bukan. Ketuk untuk ubah/hapus.
+class _BudgetEntry extends StatelessWidget {
+  final Budget budget;
+  final VoidCallback onTap;
+
+  const _BudgetEntry({required this.budget, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: isSavingCategory(budget.category)
+          ? _SavingCard(budget: budget)
+          : _BudgetCard(budget: budget),
+    );
+  }
+}
+
+/// Kartu target tabungan: ilustrasi + nama + chip progres + angka
+/// "terkumpul dari target" + cincin emas (reuse _BudgetGauge).
+class _SavingCard extends StatelessWidget {
+  final Budget budget;
+
+  const _SavingCard({required this.budget});
+
+  @override
+  Widget build(BuildContext context) {
+    final b = budget;
+    final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
+    final done = pct >= 100;
+    return SectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SvgPicture.asset(
+                'assets/illustrations/savings.svg',
+                height: 64,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(width: SsrSpace.md),
+              Expanded(
+                child: Text(
+                  b.category,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              _SavingChip(pct: pct, done: done),
+            ],
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Row(
+            children: [
+              _BudgetGauge(
+                progress: budgetProgress(b.spent, b.limit),
+                pct: done ? 100 : pct,
+                color: SsrColors.saving, soft: SsrColors.savingSoft,
+              ),
+              const SizedBox(width: SsrSpace.md),
+              Expanded(
+                child: Text(
+                  '${amt(b.spent)} ${tr('sv_of')} ${amt(b.limit)}',
+                  style: SsrType.moneyMedium,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Chip persen emas; bila target tercapai tampilkan label selesai.
+class _SavingChip extends StatelessWidget {
+  final int pct;
+  final bool done;
+
+  const _SavingChip({required this.pct, required this.done});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: const BoxDecoration(
+        color: SsrColors.savingSoft,
+        borderRadius: BorderRadius.circular(SsrRadius.chip),
+      ),
+      child: Text(
+        done ? tr('sv_done') : '$pct%',
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: SsrColors.saving,
+          height: 1.2,
+        ),
       ),
     );
   }
@@ -346,27 +539,33 @@ class _BudgetCard extends StatelessWidget {
 }
 
 /// Cincin progres budget: terpakai (zamrud/bata) vs sisa.
+/// [color]/[soft] opsional untuk varian lain (misal emas tabungan).
 class _BudgetGauge extends StatelessWidget {
   final double progress;
   final bool over;
   final int pct;
+  final Color? color;
+  final Color? soft;
 
   const _BudgetGauge({
     required this.progress,
-    required this.over,
+    this.over = false,
     required this.pct,
+    this.color,
+    this.soft,
   });
 
   @override
   Widget build(BuildContext context) {
-    final used = progress.clamp(0.0, 1.0);
+    final used = progress.clamp(0.0, 1.0).toDouble();
+    final main = color ?? (over ? SsrColors.danger : SsrColors.accent);
     return SizedBox(
       width: 56,
       height: 56,
       child: Stack(
         children: [
           PieChart(
-            _gaugeData(used, over),
+            _gaugeData(used, over, color: color, soft: soft),
             duration: SsrMotion.base,
             curve: SsrMotion.curve,
           ),
@@ -375,7 +574,7 @@ class _BudgetGauge extends StatelessWidget {
               '$pct',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: over ? SsrColors.danger : SsrColors.accent,
+                color: main,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -386,7 +585,9 @@ class _BudgetGauge extends StatelessWidget {
   }
 }
 
-PieChartData _gaugeData(double used, bool over) {
+PieChartData _gaugeData(double used, bool over, {Color? color, Color? soft}) {
+  final main = color ?? (over ? SsrColors.danger : SsrColors.accent);
+  final rest = soft ?? SsrColors.accentSoft;
   return PieChartData(
     pieTouchData: PieTouchData(enabled: false),
     sectionsSpace: 0,
@@ -395,13 +596,13 @@ PieChartData _gaugeData(double used, bool over) {
     sections: [
       PieChartSectionData(
         value: used,
-        color: over ? SsrColors.danger : SsrColors.accent,
+        color: main,
         radius: 8,
         showTitle: false,
       ),
       PieChartSectionData(
         value: 1 - used,
-        color: SsrColors.accentSoft,
+        color: rest,
         radius: 8,
         showTitle: false,
       ),
