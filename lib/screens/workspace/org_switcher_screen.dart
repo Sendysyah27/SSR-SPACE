@@ -10,6 +10,7 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/shell/main_shell.dart';
+import 'package:ssr_space/screens/workspace/workspace_detail_screen.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
@@ -154,6 +155,15 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
     );
   }
 
+  void _openDetail(Map<String, dynamic> m) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WorkspaceDetailScreen(org: m, session: widget.session),
+      ),
+    );
+  }
+
   void _focusForm() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) nameFocus.requestFocus();
@@ -185,6 +195,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
         onJoin: _join,
         onFocusForm: _focusForm,
         onSelect: _select,
+        onManage: _openDetail,
       ),
     );
   }
@@ -220,6 +231,7 @@ class _OrgPickerBody extends StatelessWidget {
   final VoidCallback onJoin;
   final VoidCallback onFocusForm;
   final Future<void> Function(Map<String, dynamic> org) onSelect;
+  final ValueChanged<Map<String, dynamic>> onManage;
 
   const _OrgPickerBody({
     required this.orgs,
@@ -235,6 +247,7 @@ class _OrgPickerBody extends StatelessWidget {
     required this.onJoin,
     required this.onFocusForm,
     required this.onSelect,
+    required this.onManage,
   });
 
   @override
@@ -257,7 +270,7 @@ class _OrgPickerBody extends StatelessWidget {
             onAction: onFocusForm,
           )
         else
-          _OrgListCard(items: orgs, onSelect: onSelect),
+          _OrgListCard(items: orgs, onSelect: onSelect, onManage: onManage),
         const SizedBox(height: SsrSpace.lg),
         _CreateOrgForm(
           nameC: nameC,
@@ -284,8 +297,13 @@ class _OrgPickerBody extends StatelessWidget {
 class _OrgListCard extends StatelessWidget {
   final List<Map<String, dynamic>> items;
   final Future<void> Function(Map<String, dynamic> org) onSelect;
+  final ValueChanged<Map<String, dynamic>> onManage;
 
-  const _OrgListCard({required this.items, required this.onSelect});
+  const _OrgListCard({
+    required this.items,
+    required this.onSelect,
+    required this.onManage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +316,7 @@ class _OrgListCard extends StatelessWidget {
         children: [
           for (var i = 0; i < items.length; i++) ...[
             if (i > 0) const Divider(height: 1),
-            _OrgRow(m: items[i], onSelect: onSelect),
+            _OrgRow(m: items[i], onSelect: onSelect, onManage: onManage),
           ],
         ],
       ),
@@ -311,8 +329,13 @@ class _OrgListCard extends StatelessWidget {
 class _OrgRow extends StatelessWidget {
   final Map<String, dynamic> m;
   final Future<void> Function(Map<String, dynamic> org) onSelect;
+  final ValueChanged<Map<String, dynamic>> onManage;
 
-  const _OrgRow({required this.m, required this.onSelect});
+  const _OrgRow({
+    required this.m,
+    required this.onSelect,
+    required this.onManage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -350,6 +373,11 @@ class _OrgRow extends StatelessWidget {
             StatusChip(
               label: isOwner ? tr('org_owner') : tr('org_member'),
               tone: isOwner ? StatusTone.accent : StatusTone.neutral,
+            ),
+            IconButton(
+              tooltip: tr('wsm_detail'),
+              onPressed: () => onManage(m),
+              icon: const Icon(Icons.settings_outlined),
             ),
           ],
         ),

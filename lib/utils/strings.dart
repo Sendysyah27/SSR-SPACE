@@ -729,6 +729,7 @@ const _t = <String, Map<String, String>>{
   },
   'org_empty_a': {'id': 'Buat workspace', 'en': 'Create workspace'},
   'org_owner': {'id': 'Pemilik', 'en': 'Owner'},
+  'org_admin': {'id': 'Admin', 'en': 'Admin'},
   'org_member': {'id': 'Anggota', 'en': 'Member'},
   'org_new': {'id': 'Buat workspace baru', 'en': 'Create new workspace'},
   'org_f_name': {'id': 'Nama workspace', 'en': 'Workspace name'},
