@@ -17,6 +17,39 @@ jobs:
           channel: stable
       - run: flutter pub get
       - run: |
+          python3 - <<'EOF'
+          import glob, os, pathlib
+          # Patch Java plugin notification_listener_service (versi dipin exact
+          # di pubspec): baca EXTRA_BIG_TEXT bila EXTRA_TEXT kosong.
+          # SeaBank menaruh detail transfer di BigText saja -> tanpa ini
+          # content selalu null ("Amount or type unreadable").
+          cands = glob.glob(os.path.expanduser(
+              '~/.pub-cache/hosted/pub.dev/notification_listener_service-*/'
+              'android/src/main/java/notification/listener/service/'
+              'NotificationListener.java'))
+          assert len(cands) == 1, f'java plugin tidak ketemu: {cands}'
+          p = pathlib.Path(cands[0])
+          s = p.read_text()
+          a_old = 'CharSequence text = extras.getCharSequence(Notification.EXTRA_TEXT);'
+          a_new = (a_old + '\n'
+                   '            if (text == null) text = extras.getCharSequence(Notification.EXTRA_BIG_TEXT);')
+          assert s.count(a_old) == 1, 'pola live EXTRA_TEXT tidak cocok (plugin berubah?)'
+          s = s.replace(a_old, a_new)
+          b_old = ('notifyData.put("content", extras.getCharSequence(Notification.EXTRA_TEXT) != null\n'
+                   '                    ? extras.getCharSequence(Notification.EXTRA_TEXT).toString()\n'
+                   '                    : null);')
+          b_new = ('CharSequence contentText = extras.getCharSequence(Notification.EXTRA_TEXT);\n'
+                   '            if (contentText == null) contentText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT);\n'
+                   '            notifyData.put("content", contentText != null\n'
+                   '                    ? contentText.toString()\n'
+                   '                    : null);')
+          assert s.count(b_old) == 1, 'pola scan EXTRA_TEXT tidak cocok (plugin berubah?)'
+          s = s.replace(b_old, b_new)
+          p.write_text(s)
+          assert p.read_text().count('EXTRA_BIG_TEXT') == 2
+          print('bigtext patch ok:', cands[0])
+          EOF
+      - run: |
           if [ ! -d android ]; then
             flutter create . --project-name ssr_space --org com.ssr.space
           fi
