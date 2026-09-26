@@ -1018,6 +1018,76 @@ const _t = <String, Map<String, String>>{
   },
   'ic_skip': {'id': 'Lewati', 'en': 'Skip'},
   'ic_saved': {'id': 'Koreksi tersimpan.', 'en': 'Correction saved.'},
+  // Profil: judul seksi katalog
+  'pf_data': {'id': 'Data', 'en': 'Data'},
+  'pf_tracking': {'id': 'Pelacakan', 'en': 'Tracking'},
+  'pf_backup': {'id': 'Data dan cadangan', 'en': 'Data and backup'},
+  'pf_workspace': {'id': 'Workspace', 'en': 'Workspace'},
+  'pf_appearance': {'id': 'Tampilan', 'en': 'Appearance'},
+  'pf_langmoney': {'id': 'Bahasa dan mata uang', 'en': 'Language and currency'},
+  'pf_reminder': {'id': 'Pengingat', 'en': 'Reminders'},
+  'pf_security': {'id': 'Keamanan', 'en': 'Security'},
+  'pf_about': {'id': 'Tentang', 'en': 'About'},
+  // Pengaturan: katalog tampilan, pengingat, koreksi
+  'st_def_currency': {'id': 'Mata uang bawaan', 'en': 'Default currency'},
+  'st_topn': {'id': 'Top 8 + Lainnya di laporan', 'en': 'Top 8 + Other in reports'},
+  'st_topn_sub': {
+    'id': 'Batasi kategori terbanyak di laporan',
+    'en': 'Limit top categories in reports',
+  },
+  'st_anims': {'id': 'Animasi', 'en': 'Animations'},
+  'st_list_style': {'id': 'Gaya daftar', 'en': 'List style'},
+  'st_list_compact': {'id': 'Rapat', 'en': 'Compact'},
+  'st_list_comfortable': {'id': 'Lega', 'en': 'Comfortable'},
+  'st_date_style': {'id': 'Gaya tanggal', 'en': 'Date style'},
+  'st_hero_style': {'id': 'Gaya ringkasan', 'en': 'Summary style'},
+  'st_reminder_time': {'id': 'Jam pengingat', 'en': 'Reminder time'},
+  'st_reminder_on': {'id': 'Pengingat harian', 'en': 'Daily reminder'},
+  'st_widget_today': {'id': 'Widget hari ini', 'en': 'Today widget'},
+  'st_reset_correct': {
+    'id': 'Atur ulang koreksi instan',
+    'en': 'Reset instant correction',
+  },
+  'st_reset_correct_done': {
+    'id': 'Setelan koreksi instan dikembalikan.',
+    'en': 'Instant correction settings reset.',
+  },
+  // Impor CSV
+  'imp_title': {'id': 'Impor CSV', 'en': 'Import CSV'},
+  'imp_pick': {'id': 'Pilih file', 'en': 'Choose file'},
+  'imp_map_date': {'id': 'Kolom tanggal', 'en': 'Date column'},
+  'imp_map_amount': {'id': 'Kolom nominal', 'en': 'Amount column'},
+  'imp_map_type': {'id': 'Kolom jenis', 'en': 'Type column'},
+  'imp_map_wallet': {'id': 'Kolom dompet', 'en': 'Wallet column'},
+  'imp_map_towallet': {
+    'id': 'Kolom dompet tujuan',
+    'en': 'Destination wallet column',
+  },
+  'imp_map_cat': {'id': 'Kolom kategori', 'en': 'Category column'},
+  'imp_map_note': {'id': 'Kolom catatan', 'en': 'Note column'},
+  'imp_preview': {'id': 'Pratinjau', 'en': 'Preview'},
+  'imp_errors': {'id': 'Baris bermasalah ({n})', 'en': 'Problem rows ({n})'},
+  'imp_import': {'id': 'Impor', 'en': 'Import'},
+  'imp_done': {
+    'id': 'Impor selesai: {n} transaksi.',
+    'en': 'Import done: {n} transactions.',
+  },
+  // Tentang
+  'ab_about': {'id': 'Tentang SSR SPACE', 'en': 'About SSR SPACE'},
+  'ab_changelog': {'id': 'Catatan perubahan', 'en': 'Changelog'},
+  'ab_help': {'id': 'Bantuan', 'en': 'Help'},
+  'ab_feedback': {'id': 'Kirim masukan', 'en': 'Send feedback'},
+  'ab_share': {'id': 'Bagikan aplikasi', 'en': 'Share the app'},
+  'ab_privacy': {'id': 'Privasi', 'en': 'Privacy'},
+  // Cari + penanda tahap
+  'search_settings_hint': {
+    'id': 'Cari pengaturan...',
+    'en': 'Search settings...',
+  },
+  'msg_p2': {
+    'id': 'Bagian ini tahap P2. Pengaturan tetap tersimpan bila sudah ada.',
+    'en': 'This section is phase P2. Settings stay saved where already present.',
+  },
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;
