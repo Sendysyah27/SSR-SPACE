@@ -860,6 +860,10 @@ const _t = <String, Map<String, String>>{
   },
   'st_saved': {'id': 'Tersimpan', 'en': 'Saved'},
   'nt_auto_from': {'id': 'Otomatis dari {a}', 'en': 'Auto from {a}'},
+  'nt_automerge': {
+    'id': 'Otomatis digabung sebagai transfer',
+    'en': 'Auto-merged as a transfer',
+  },
   'fg_notandroid': {'id': 'Bukan Android', 'en': 'Not Android'},
   'fg_off': {'id': 'Pelacakan mati', 'en': 'Tracking off'},
   'fg_nologin': {'id': 'Belum masuk', 'en': 'Not signed in'},

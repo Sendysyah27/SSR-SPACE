@@ -96,6 +96,7 @@ Arah pengembangan ke **skala banyak user** — urutan wajib dijaga, jangan melom
 - **SeaBank + Tes overlay (2026-09-26):** transfer SeaBank→BCA Rp17.000 — BCA tercatat (Income), SeaBank "unreadable". Allowlist benar; akar = classifier tak kenal "melakukan transfer … senilai Rp…" → out-key baru + test teks asli (regresi 7/7 lokal). Overlay tak muncul padahal toggle+izin ON → tersangka forceSave-tanpa-offer atau blokir MIUI; diagnosis = tombol Tes overlay di kartu Koreksi instan.
 - **BigText fallback (2026-09-26, akar SeaBank "unreadable"):** plugin hanya baca `EXTRA_TEXT`, SeaBank taruh isi di BigText → `pubspec` pin `1.0.0` + patch Java via step `apk.yml` (assert keras). Verifikasi akhir di device.
 - **Optimasi CI (2026-09-26):** build 9–10 → 12+ mnt karena tanpa cache (build apk 10m21s/85%). Pasang cache Flutter+pub+Gradle (pin SHA) + `paths-ignore` docs. Hemat terasa dari run kedua.
+- **Auto-gabung transfer (2026-09-26, minta user):** pasangan out+in auto+auto (nominal sama, dompet beda, ≤10 mnt) langsung jadi 1 baris `transfer` — `pickAutoMerge()` + `_tryAutoMerge()` fail-open di `_onEvent` (histori lama tak diubah; kode TX milik OUT). `summary()` kenal transfer.
 
 Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari `track_master`; parser/gate `_onEvent` TIDAK berubah.
 

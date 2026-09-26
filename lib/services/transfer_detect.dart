@@ -18,6 +18,20 @@ class _Candidate {
   const _Candidate(this.outTx, this.inTx, this.gap);
 }
 
+/// Pilih pasangan yang layak gabung otomatis: mengandung transaksi [newId]
+/// dan KEDUA kakinya auto-track (`source_package != null).
+/// Saran badge tetap untuk semua pasangan; yang manual tak pernah digabung.
+TransferPair? pickAutoMerge(List<TransferPair> pairs, String newId) {
+  for (final p in pairs) {
+    if (p.outTx.id != newId && p.inTx.id != newId) continue;
+    if (p.outTx.sourcePackage == null || p.inTx.sourcePackage == null) {
+      return null;
+    }
+    return p;
+  }
+  return null;
+}
+
 /// Deteksi pasangan transfer: out + in nominal sama, dompet beda,
 /// selisih waktu <= [window], tiap transaksi dipakai maks sekali.
 /// Kandidat dipasangkan mulai dari gap terkecil (global), agar satu

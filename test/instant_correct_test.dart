@@ -28,5 +28,9 @@ void main() {
       InstantCorrect.summary(type: 'out', amount: 10800, app: 'BRI'),
       'Keluar Rp10.800 • BRI',
     );
+    expect(
+      InstantCorrect.summary(type: 'transfer', amount: 17000, app: 'SeaBank'),
+      'Transfer Rp17.000 • SeaBank',
+    );
   });
 }

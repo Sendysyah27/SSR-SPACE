@@ -45,7 +45,11 @@ class InstantCorrect {
     required double amount,
     required String app,
   }) {
-    final dir = type == 'in' ? tr('tx_in') : tr('tx_out');
+    final dir = type == 'in'
+        ? tr('tx_in')
+        : type == 'transfer'
+            ? tr('tx_transfer')
+            : tr('tx_out');
     return '$dir ${amt(amount)} • $app';
   }
 

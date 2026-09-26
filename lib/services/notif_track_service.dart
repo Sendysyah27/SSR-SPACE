@@ -11,6 +11,7 @@ import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/instant_correct.dart';
 import 'package:ssr_space/services/notif_parse.dart';
+import 'package:ssr_space/services/transfer_detect.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/supabase_config.dart';
@@ -297,6 +298,40 @@ class NotifTrack {
     return null;
   }
 
+  /// Auto-gabung transfer: bila tx baru berpasangan out+in auto+auto
+  /// (nominal sama, dompet beda, <=10 mnt), ubah kaki OUT jadi `transfer`
+  /// dan hapus kaki IN. Fail-open: gagal/ragu -> null (dua baris + badge
+  /// seperti biasa). Tak pernah melempar.
+  static Future<TransferPair?> _tryAutoMerge(String orgId, String newId) async {
+    try {
+      final since =
+          DateTime.now().toUtc().subtract(const Duration(minutes: 30));
+      final txs = await TransactionService().listSince(orgId, since);
+      final pair = pickAutoMerge(detectTransferPairs(txs), newId);
+      if (pair == null) return null;
+      final destId = pair.inTx.walletId ?? pair.inTx.toWalletId;
+      if (destId == null || destId.isEmpty) return null;
+      final base = (pair.outTx.note ?? '').trim();
+      final mark = tr('nt_automerge');
+      await TransactionService().update(
+        id: pair.outTx.id,
+        orgId: orgId,
+        type: 'transfer',
+        amount: pair.outTx.amount,
+        walletId: pair.outTx.walletId,
+        toWalletId: destId,
+        category: pair.outTx.category,
+        note: base.isEmpty ? mark : '$base • $mark',
+        date: pair.outTx.date,
+      );
+      await TransactionService().delete(pair.inTx.id, orgId);
+      return pair;
+    } catch (err, st) {
+      ErrorReporter.capture(err, st, context: 'auto_merge');
+      return null;
+    }
+  }
+
   static Future<void> _onEvent(ServiceNotificationEvent e) async {
     try {
       if (e.hasRemoved) return;
@@ -381,12 +416,26 @@ class NotifTrack {
         );
         n.status = tr('st_saved');
         if (txId != null) {
-          await InstantCorrect.offer(
-            txId: txId,
-            type: n.type!,
-            amount: n.amount!,
-            app: n.appLabel ?? pkg,
-          );
+          final pair = await _tryAutoMerge(orgId, txId);
+          if (pair != null) {
+            final label =
+                matchWatchedApp(pair.outTx.sourcePackage ?? '') ??
+                    n.appLabel ??
+                    pkg;
+            await InstantCorrect.offer(
+              txId: pair.outTx.id,
+              type: 'transfer',
+              amount: pair.amount,
+              app: label,
+            );
+          } else {
+            await InstantCorrect.offer(
+              txId: txId,
+              type: n.type!,
+              amount: n.amount!,
+              app: n.appLabel ?? pkg,
+            );
+          }
         }
       } on PostgrestException catch (err) {
         ErrorReporter.capture(

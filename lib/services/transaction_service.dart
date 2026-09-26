@@ -110,6 +110,21 @@ class TransactionService {
         .toList();
   }
 
+  /// Jendela terbaru (untuk auto-gabung transfer): tanpa filter bulan,
+  /// dibatasi 100 baris. Dasar `_tryAutoMerge` — bukan untuk UI.
+  Future<List<SaasTransaction>> listSince(String orgId, DateTime since) async {
+    final rows = await SupabaseConfig.client
+        .from('transactions')
+        .select()
+        .eq('org_id', orgId)
+        .gte('created_at', since.toUtc().toIso8601String())
+        .order('created_at', ascending: false)
+        .limit(100);
+    return List<Map<String, dynamic>>.from(rows)
+        .map(SaasTransaction.fromMap)
+        .toList();
+  }
+
   /// Satu transaksi by id (untuk sheet koreksi instan). Null bila tak ada.
   Future<SaasTransaction?> getById(String orgId, String id) async {
     final row = await SupabaseConfig.client

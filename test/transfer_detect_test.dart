@@ -9,6 +9,7 @@ SaasTransaction _tx({
   String? wallet,
   String? toWallet,
   String? at,
+  String? pkg,
 }) {
   return SaasTransaction(
     id: id,
@@ -18,6 +19,7 @@ SaasTransaction _tx({
     walletId: wallet,
     toWalletId: toWallet,
     createdAt: at,
+    sourcePackage: pkg,
   );
 }
 
@@ -114,5 +116,56 @@ void main() {
       _tx(id: 'i1', type: 'in', amount: 10000, wallet: 'wb'),
     ];
     expect(detectTransferPairs(items), isEmpty);
+  });
+
+  test('pickAutoMerge: pasangan auto+auto berisi tx baru', () {
+    final items = [
+      _tx(
+        id: 'o1',
+        type: 'out',
+        amount: 17000,
+        wallet: 'wa',
+        at: '2026-09-26T14:31:00',
+        pkg: 'id.co.bankbkemobile.digitalbank',
+      ),
+      _tx(
+        id: 'i1',
+        type: 'in',
+        amount: 17000,
+        wallet: 'wb',
+        at: '2026-09-26T14:33:00',
+        pkg: 'com.bca.mybca',
+      ),
+    ];
+    final pairs = detectTransferPairs(items);
+    expect(pairs.length, 1);
+    expect(pickAutoMerge(pairs, 'i1')?.outTx.id, 'o1');
+    expect(pickAutoMerge(pairs, 'o1')?.inTx.id, 'i1');
+    expect(pickAutoMerge(pairs, 'lain'), isNull);
+    expect(pickAutoMerge([], 'i1'), isNull);
+  });
+
+  test('pickAutoMerge: menolak bila satu kaki manual', () {
+    final items = [
+      _tx(
+        id: 'o1',
+        type: 'out',
+        amount: 17000,
+        wallet: 'wa',
+        at: '2026-09-26T14:31:00',
+        pkg: 'id.co.bankbkemobile.digitalbank',
+      ),
+      _tx(
+        id: 'i1',
+        type: 'in',
+        amount: 17000,
+        wallet: 'wb',
+        at: '2026-09-26T14:33:00',
+      ),
+    ];
+    final pairs = detectTransferPairs(items);
+    expect(pairs.length, 1);
+    expect(pickAutoMerge(pairs, 'i1'), isNull);
+    expect(pickAutoMerge(pairs, 'o1'), isNull);
   });
 }
