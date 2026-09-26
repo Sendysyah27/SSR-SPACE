@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -41,6 +42,7 @@ class TxRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final auto = tx.sourcePackage != null;
+    final when = txWhenLabel(tx.date, tx.createdAt);
     final chips = <Widget>[
       StatusChip(label: tx.code ?? tr('tx_nocode'), tone: StatusTone.neutral),
       if (auto)
@@ -99,6 +101,18 @@ class TxRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Wrap(spacing: 6, runSpacing: 4, children: chips),
+                    if (when.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        when,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: SsrColors.secondary,
+                          fontFeatures: const [
+                            FontFeature.tabularFigures(),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (tx.note != null && tx.note!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(

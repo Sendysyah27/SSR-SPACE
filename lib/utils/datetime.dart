@@ -17,3 +17,13 @@ String txTime(String? iso) {
     return '';
   }
 }
+
+/// Label waktu satu baris untuk baris transaksi: "26 Sep 2026 • 12:04".
+/// Tanggal saja bila jam tak ada; '' bila tak ada data sama sekali.
+String txWhenLabel(String? ymd, String? iso) {
+  final hasDate = ymd != null && ymd.length >= 10;
+  final t = txTime(iso);
+  if (!hasDate) return t;
+  final d = dayLabel(ymd);
+  return t.isEmpty ? d : '$d • $t';
+}
