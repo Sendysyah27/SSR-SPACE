@@ -9,20 +9,27 @@ import 'package:ssr_space/services/backup_export.dart';
 import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
+import 'package:ssr_space/services/instant_correct.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/utils/app_info.dart';
+import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/billing_screen.dart';
 import 'package:ssr_space/screens/lainnya/categories_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_screen.dart';
+import 'package:ssr_space/screens/laporan/reports_screen.dart';
+import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
 import 'package:ssr_space/screens/workspace/invite_screen.dart';
+import 'package:ssr_space/screens/workspace/workspace_detail_screen.dart';
 import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
 import 'package:ssr_space/screens/workspace/org_switcher_screen.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:ssr_space/screens/dompet/wallets_screen.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/nav_tile.dart';
+import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
@@ -30,10 +37,12 @@ class _OtherMeta {
   final String orgName;
   final String plan;
   final bool tracking;
+  final bool popup;
   const _OtherMeta({
     required this.orgName,
     required this.plan,
     required this.tracking,
+    required this.popup,
   });
 }
 
@@ -58,6 +67,7 @@ class _OtherScreenState extends State<OtherScreen> {
     final p = await SharedPreferences.getInstance();
     final orgName = p.getString('active_org_name') ?? '-';
     final tracking = p.getBool('track_master') ?? false;
+    final popup = p.getBool('correct_popup') ?? true;
     final orgId = p.getString('active_org_id') ?? '';
     var plan = '';
     if (orgId.isNotEmpty) {
@@ -67,7 +77,12 @@ class _OtherScreenState extends State<OtherScreen> {
         plan = '';
       }
     }
-    return _OtherMeta(orgName: orgName, plan: plan, tracking: tracking);
+    return _OtherMeta(
+      orgName: orgName,
+      plan: plan,
+      tracking: tracking,
+      popup: popup,
+    );
   }
 
   void _refreshMeta() {
@@ -111,6 +126,100 @@ class _OtherScreenState extends State<OtherScreen> {
   Future<void> _push(Widget screen) async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
     if (mounted) _refreshMeta();
+  }
+
+  /// Dialog P2 generik: semua baris yang layarnya baru ada di Task 6/8
+  /// atau belum ada sama sekali menunjuk ke sini. Bukan no-op diam.
+  Future<void> _showP2() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(tr('msg_p2')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(tr('back')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Hapus cache lokal saja (pending koreksi + pref popup overlay).
+  /// Tak pernah menyentuh data Supabase.
+  Future<void> _clearLocalCache() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('pf_backup')),
+        content: Text(tr('st_reset_correct')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(tr('cancel')),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: SsrColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(tr('tx_delete')),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final p = await SharedPreferences.getInstance();
+    await p.remove('pending_correct_tx');
+    await p.remove('correct_popup');
+    _refreshMeta();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(tr('st_reset_correct_done'))));
+  }
+
+  Future<void> _setPopup(bool v) async {
+    await InstantCorrect.setPopupEnabled(v);
+    if (mounted) _refreshMeta();
+  }
+
+  /// Buka detail workspace aktif (baris Kelola di switcher, dibuka langsung).
+  Future<void> _openWorkspaceDetail() async {
+    final p = await SharedPreferences.getInstance();
+    final orgId = p.getString('active_org_id') ?? '';
+    final uid = SupabaseConfig.client.auth.currentUser?.id;
+    if (orgId.isEmpty || uid == null || !mounted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(tr('org_err_load'))));
+      }
+      return;
+    }
+    try {
+      final rows = await SupabaseConfig.client
+          .from('org_members')
+          .select('org_id, role, organizations(id, name, plan)')
+          .eq('user_id', uid)
+          .eq('org_id', orgId);
+      if (!mounted) return;
+      final list = List<Map<String, dynamic>>.from(rows as List);
+      if (list.isEmpty) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(tr('org_err_load'))));
+        return;
+      }
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              WorkspaceDetailScreen(org: list.first, session: widget.session),
+        ),
+      );
+      if (mounted) _refreshMeta();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('org_err_load'))));
+    }
   }
 
   bool backingUp = false;
@@ -178,35 +287,30 @@ class _OtherScreenState extends State<OtherScreen> {
               : meta.plan == 'pro'
               ? tr('o_pro')
               : tr('o_free');
-          return ListView(
-            padding: const EdgeInsets.all(SsrSpace.lg),
-            children: [
-              _WorkspaceSection(
-                orgName: meta?.orgName ?? '-',
-                planLabel: planLabel,
-                isPro: meta?.plan == 'pro',
-                onSwitch: () =>
-                    _push(OrgSwitcherScreen(session: widget.session)),
-                onInvite: () => _push(const InviteScreen()),
-                onWallets: () => _push(const WalletsScreen()),
-              ),
-              _TrackingSection(
-                tracking: meta?.tracking == true,
-                onOpen: () => _push(const NotifSettingsScreen()),
-              ),
-              _DataSection(
-                onBackup: backingUp ? null : _backup,
-                onCategories: () => _push(const CategoriesScreen()),
-              ),
-              _AppearanceSection(
-                onSettings: () => _push(const SettingsScreen()),
-              ),
-              _AccountSection(
-                planLabel: planLabel,
-                onBilling: () => _push(const BillingScreen()),
-                onLogout: _confirmLogout,
-              ),
-            ],
+          return _HubList(
+            orgName: meta?.orgName ?? '-',
+            planLabel: planLabel,
+            isPro: meta?.plan == 'pro',
+            tracking: meta?.tracking == true,
+            popup: meta?.popup != false,
+            backupBusy: backingUp,
+            onSwitch: () => _push(OrgSwitcherScreen(session: widget.session)),
+            onInvite: () => _push(const InviteScreen()),
+            onDetail: _openWorkspaceDetail,
+            onBilling: () => _push(const BillingScreen()),
+            onWallets: () => _push(const WalletsScreen()),
+            onCategories: () => _push(const CategoriesScreen()),
+            onBudgets: () => _push(const BudgetsScreen()),
+            onHistory: () => _push(const TransactionsScreen()),
+            onTracking: () => _push(const NotifSettingsScreen()),
+            onPopupChanged: _setPopup,
+            onBackup: _backup,
+            onExport: () => _push(const ReportsScreen()),
+            onImportP2: () => _showP2(),
+            onClearCache: _clearLocalCache,
+            onSettings: () => _push(const SettingsScreen()),
+            onLogout: _confirmLogout,
+            onP2: () => _showP2(),
           );
         },
       ),
@@ -214,80 +318,239 @@ class _OtherScreenState extends State<OtherScreen> {
   }
 }
 
-/// Kartu "Workspace": nama org aktif, chip plan, dan 3 menu navigasi.
-class _WorkspaceSection extends StatelessWidget {
+/// Daftar hub: HEADER meta + 9 seksi pf_* berurutan.
+class _HubList extends StatelessWidget {
   final String orgName;
   final String planLabel;
   final bool isPro;
+  final bool tracking;
+  final bool popup;
+  final bool backupBusy;
   final VoidCallback onSwitch;
   final VoidCallback onInvite;
+  final VoidCallback onDetail;
+  final VoidCallback onBilling;
   final VoidCallback onWallets;
+  final VoidCallback onCategories;
+  final VoidCallback onBudgets;
+  final VoidCallback onHistory;
+  final VoidCallback onTracking;
+  final ValueChanged<bool> onPopupChanged;
+  final VoidCallback onBackup;
+  final VoidCallback onExport;
+  final VoidCallback onImportP2;
+  final VoidCallback onClearCache;
+  final VoidCallback onSettings;
+  final VoidCallback onLogout;
+  final VoidCallback onP2;
 
-  const _WorkspaceSection({
+  const _HubList({
     required this.orgName,
     required this.planLabel,
     required this.isPro,
+    required this.tracking,
+    required this.popup,
+    required this.backupBusy,
     required this.onSwitch,
     required this.onInvite,
+    required this.onDetail,
+    required this.onBilling,
     required this.onWallets,
+    required this.onCategories,
+    required this.onBudgets,
+    required this.onHistory,
+    required this.onTracking,
+    required this.onPopupChanged,
+    required this.onBackup,
+    required this.onExport,
+    required this.onImportP2,
+    required this.onClearCache,
+    required this.onSettings,
+    required this.onLogout,
+    required this.onP2,
+  });
+
+  List<Widget> _upper() {
+    return [
+      _HeaderCard(
+        orgName: orgName,
+        planLabel: planLabel,
+        isPro: isPro,
+        tracking: tracking,
+      ),
+      _DataSection(
+        onWallets: onWallets,
+        onCategories: onCategories,
+        onBudgets: onBudgets,
+        onHistory: onHistory,
+      ),
+      _TrackingSection(
+        tracking: tracking,
+        popup: popup,
+        onOpen: onTracking,
+        onPopupChanged: onPopupChanged,
+      ),
+      _BackupSection(
+        backupBusy: backupBusy,
+        onBackup: onBackup,
+        onExport: onExport,
+        onImportP2: onImportP2,
+        onClearCache: onClearCache,
+      ),
+      _WorkspaceSection(
+        orgName: orgName,
+        planLabel: planLabel,
+        onSwitch: onSwitch,
+        onInvite: onInvite,
+        onDetail: onDetail,
+        onBilling: onBilling,
+      ),
+    ];
+  }
+
+  List<Widget> _lower() {
+    return [
+      _AppearanceSection(onSettings: onSettings),
+      _LangMoneySection(onSettings: onSettings),
+      _ReminderSection(onSettings: onSettings),
+      _SecuritySection(onSettings: onSettings, onLogout: onLogout),
+      _AboutSection(onP2: onP2),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(SsrSpace.lg),
+      children: [..._upper(), ..._lower()],
+    );
+  }
+}
+
+/// HEADER: kartu meta tanpa label (nama org, chip plan, status pelacakan).
+class _HeaderCard extends StatelessWidget {
+  final String orgName;
+  final String planLabel;
+  final bool isPro;
+  final bool tracking;
+
+  const _HeaderCard({
+    required this.orgName,
+    required this.planLabel,
+    required this.isPro,
+    required this.tracking,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  orgName,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              StatusChip(
+                label: planLabel,
+                tone: isPro ? StatusTone.accent : StatusTone.neutral,
+              ),
+            ],
+          ),
+          const Divider(height: SsrSpace.xl),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  tr('o_tracking'),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              StatusChip(
+                label: tracking ? tr('nt_on') : tr('nt_off'),
+                tone: tracking ? StatusTone.accent : StatusTone.neutral,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// DATA: dompet, kategori, budget, riwayat transaksi.
+class _DataSection extends StatelessWidget {
+  final VoidCallback onWallets;
+  final VoidCallback onCategories;
+  final VoidCallback onBudgets;
+  final VoidCallback onHistory;
+
+  const _DataSection({
+    required this.onWallets,
+    required this.onCategories,
+    required this.onBudgets,
+    required this.onHistory,
   });
 
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('o_sec_workspace'),
+      label: tr('pf_data'),
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                orgName,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            StatusChip(
-              label: planLabel,
-              tone: isPro ? StatusTone.accent : StatusTone.neutral,
-            ),
-          ],
-        ),
-        const Divider(height: SsrSpace.xl),
-        NavTile(
-          icon: AppIcons.workspaceSwitch,
-          title: tr('o_switch'),
-          onTap: onSwitch,
-        ),
-        const Divider(height: 1),
-        NavTile(
-          icon: AppIcons.invite,
-          title: tr('o_invite'),
-          subtitle: tr('o_invite_s'),
-          onTap: onInvite,
-        ),
-        const Divider(height: 1),
         NavTile(
           icon: AppIcons.wallet,
           title: tr('o_wallets'),
           onTap: onWallets,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.categoryFallback,
+          title: tr('o_cats'),
+          subtitle: tr('o_cats_s'),
+          onTap: onCategories,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.budget,
+          title: tr('nav_budget'),
+          onTap: onBudgets,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.transactions,
+          title: tr('nav_transaksi'),
+          onTap: onHistory,
         ),
       ],
     );
   }
 }
 
-/// Kartu "Pelacakan": satu menu dengan chip on/off status tracking.
+/// PELACAKAN: pintu pelacakan otomatis + toggle popup koreksi instan.
 class _TrackingSection extends StatelessWidget {
   final bool tracking;
+  final bool popup;
   final VoidCallback onOpen;
+  final ValueChanged<bool> onPopupChanged;
 
-  const _TrackingSection({required this.tracking, required this.onOpen});
+  const _TrackingSection({
+    required this.tracking,
+    required this.popup,
+    required this.onOpen,
+    required this.onPopupChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('o_sec_tracking'),
+      label: tr('pf_tracking'),
       children: [
         NavTile(
           icon: AppIcons.tracking,
@@ -299,43 +562,128 @@ class _TrackingSection extends StatelessWidget {
           ),
           onTap: onOpen,
         ),
+        const Divider(height: 1),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(tr('ic_popup')),
+          subtitle: Text(tr('ic_popup_s')),
+          value: popup,
+          onChanged: onPopupChanged,
+        ),
       ],
     );
   }
 }
 
-/// Kartu "Data": daftar kategori + ekspor CSV workspace.
-class _DataSection extends StatelessWidget {
-  final VoidCallback? onBackup;
-  final VoidCallback onCategories;
+/// DATA DAN CADANGAN: cadangkan, ekspor laporan, impor, hapus cache lokal.
+class _BackupSection extends StatelessWidget {
+  final bool backupBusy;
+  final VoidCallback onBackup;
+  final VoidCallback onExport;
+  final VoidCallback onImportP2;
+  final VoidCallback onClearCache;
 
-  const _DataSection({required this.onBackup, required this.onCategories});
+  const _BackupSection({
+    required this.backupBusy,
+    required this.onBackup,
+    required this.onExport,
+    required this.onImportP2,
+    required this.onClearCache,
+  });
 
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('o_sec_data'),
+      label: tr('pf_backup'),
       children: [
-        NavTile(
-          icon: AppIcons.categoryFallback,
-          title: tr('o_cats'),
-          subtitle: tr('o_cats_s'),
-          onTap: onCategories,
-        ),
-        const Divider(height: 1),
         NavTile(
           icon: AppIcons.backup,
           title: tr('o_backup'),
           subtitle: tr('o_backup_s'),
-          onTap: onBackup,
+          onTap: backupBusy ? null : onBackup,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.reports,
+          title: tr('nav_laporan'),
+          subtitle: tr('r_dl').replaceFirst('{l}', 'CSV / PDF'),
+          onTap: onExport,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.arrowDown,
+          title: tr('imp_title'),
+          subtitle: tr('imp_pick'),
+          onTap: onImportP2,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.revoke,
+          title: tr('st_reset_correct'),
+          onTap: onClearCache,
         ),
       ],
     );
   }
 }
 
-/// Kartu "Tampilan": toggle privacy mode + pintu ke Pengaturan.
+/// WORKSPACE: undang, ganti, kelola detail, billing paket.
+class _WorkspaceSection extends StatelessWidget {
+  final String orgName;
+  final String planLabel;
+  final VoidCallback onSwitch;
+  final VoidCallback onInvite;
+  final VoidCallback onDetail;
+  final VoidCallback onBilling;
+
+  const _WorkspaceSection({
+    required this.orgName,
+    required this.planLabel,
+    required this.onSwitch,
+    required this.onInvite,
+    required this.onDetail,
+    required this.onBilling,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      label: tr('pf_workspace'),
+      children: [
+        NavTile(
+          icon: AppIcons.invite,
+          title: tr('o_invite'),
+          subtitle: tr('o_invite_s'),
+          onTap: onInvite,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.workspaceSwitch,
+          title: tr('o_switch'),
+          onTap: onSwitch,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.workspace,
+          title: tr('wsm_detail'),
+          subtitle: orgName,
+          onTap: onDetail,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.billing,
+          title: tr('o_billing'),
+          subtitle: tr('o_plan').replaceFirst('{p}', planLabel),
+          onTap: onBilling,
+        ),
+      ],
+    );
+  }
+}
+
+/// TAMPILAN: toggle samarkan nominal + pintu pengaturan.
 class _AppearanceSection extends StatelessWidget {
   final VoidCallback onSettings;
 
@@ -345,7 +693,7 @@ class _AppearanceSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('o_sec_display'),
+      label: tr('pf_appearance'),
       children: [
         ValueListenableBuilder<bool>(
           valueListenable: maskAmounts,
@@ -358,10 +706,45 @@ class _AppearanceSection extends StatelessWidget {
           ),
         ),
         const Divider(height: 1),
+        NavTile(icon: AppIcons.menu, title: tr('st_font'), onTap: onSettings),
+      ],
+    );
+  }
+}
+
+/// BAHASA DAN UANG: pintu pengaturan (Task 4 isi kartu bahasanya).
+class _LangMoneySection extends StatelessWidget {
+  final VoidCallback onSettings;
+
+  const _LangMoneySection({required this.onSettings});
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      label: tr('pf_langmoney'),
+      children: [
+        NavTile(icon: AppIcons.menu, title: tr('st_lang'), onTap: onSettings),
+      ],
+    );
+  }
+}
+
+/// PENGINGAT: pintu pengaturan (Task 7 isi kartu pengingatnya).
+class _ReminderSection extends StatelessWidget {
+  final VoidCallback onSettings;
+
+  const _ReminderSection({required this.onSettings});
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      label: tr('pf_reminder'),
+      children: [
         NavTile(
           icon: AppIcons.menu,
-          title: tr('st_title'),
-          subtitle: tr('o_settings_s'),
+          title: tr('st_reminder_on'),
           onTap: onSettings,
         ),
       ],
@@ -369,31 +752,54 @@ class _AppearanceSection extends StatelessWidget {
   }
 }
 
-/// Kartu "Akun": billing + keluar.
-class _AccountSection extends StatelessWidget {
-  final String planLabel;
-  final VoidCallback onBilling;
+/// KEAMANAN: pintu PIN + keluar sesi.
+class _SecuritySection extends StatelessWidget {
+  final VoidCallback onSettings;
   final VoidCallback onLogout;
 
-  const _AccountSection({
-    required this.planLabel,
-    required this.onBilling,
-    required this.onLogout,
-  });
+  const _SecuritySection({required this.onSettings, required this.onLogout});
 
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      label: tr('o_sec_account'),
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      label: tr('pf_security'),
       children: [
-        NavTile(
-          icon: AppIcons.billing,
-          title: tr('o_billing'),
-          subtitle: tr('o_plan').replaceFirst('{p}', planLabel),
-          onTap: onBilling,
-        ),
+        NavTile(icon: AppIcons.lock, title: tr('st_pin'), onTap: onSettings),
         const Divider(height: 1),
         NavTile(icon: AppIcons.logout, title: tr('o_logout'), onTap: onLogout),
+      ],
+    );
+  }
+}
+
+/// TENTANG: baris statis, semua P2 sampai Task 8 pasang layarnya.
+class _AboutSection extends StatelessWidget {
+  final VoidCallback onP2;
+
+  const _AboutSection({required this.onP2});
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('pf_about'),
+      children: [
+        NavTile(
+          icon: AppIcons.menu,
+          title: tr('ab_about'),
+          subtitle: AppInfo.version,
+          onTap: onP2,
+        ),
+        const Divider(height: 1),
+        NavTile(icon: AppIcons.reports, title: tr('ab_changelog'), onTap: onP2),
+        const Divider(height: 1),
+        NavTile(icon: AppIcons.error, title: tr('ab_help'), onTap: onP2),
+        const Divider(height: 1),
+        NavTile(icon: AppIcons.invite, title: tr('ab_feedback'), onTap: onP2),
+        const Divider(height: 1),
+        NavTile(icon: AppIcons.addUser, title: tr('ab_share'), onTap: onP2),
+        const Divider(height: 1),
+        NavTile(icon: AppIcons.lock, title: tr('ab_privacy'), onTap: onP2),
       ],
     );
   }
