@@ -262,7 +262,7 @@ jobs:
           EOF
       - run: |
           python3 - <<'EOF'
-          import pathlib
+          import pathlib, re
           kts = pathlib.Path('android/app/build.gradle.kts')
           groovy = pathlib.Path('android/app/build.gradle')
           if kts.exists():
@@ -276,11 +276,21 @@ jobs:
                   )
                   s = s.replace('android {', 'android {' + block, 1)
               if 'desugar_jdk_libs' not in s:
-                  assert 'dependencies {' in s
                   dep = (
                       '\n      coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n'
                   )
-                  s = s.replace('dependencies {', 'dependencies {' + dep, 1)
+                  m = re.search(r'dependencies\s*\{', s)
+                  if m:
+                      s = s[:m.end()] + dep + s[m.end():]
+                  else:
+                      s = s + '\n\ndependencies {\n      coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n'
+                      print('--- no dependencies block, appended ---')
+                      for line in s.splitlines():
+                          if 'dependenc' in line:
+                              print(repr(line))
+                      print('--- last 15 lines ---')
+                      for line in s.splitlines()[-15:]:
+                          print(repr(line))
               kts.write_text(s)
               assert 'isCoreLibraryDesugaringEnabled' in kts.read_text()
               assert 'desugar_jdk_libs' in kts.read_text()
@@ -295,11 +305,21 @@ jobs:
                   )
                   s = s.replace('android {', 'android {' + block, 1)
               if 'desugar_jdk_libs' not in s:
-                  assert 'dependencies {' in s
                   dep = (
                       '\n      coreLibraryDesugaring \'com.android.tools:desugar_jdk_libs:2.1.4\'\n'
                   )
-                  s = s.replace('dependencies {', 'dependencies {' + dep, 1)
+                  m = re.search(r'dependencies\s*\{', s)
+                  if m:
+                      s = s[:m.end()] + dep + s[m.end():]
+                  else:
+                      s = s + '\n\ndependencies {\n      coreLibraryDesugaring \'com.android.tools:desugar_jdk_libs:2.1.4\'\n}\n'
+                      print('--- no dependencies block, appended ---')
+                      for line in s.splitlines():
+                          if 'dependenc' in line:
+                              print(repr(line))
+                      print('--- last 15 lines ---')
+                      for line in s.splitlines()[-15:]:
+                          print(repr(line))
               groovy.write_text(s)
               assert 'coreLibraryDesugaringEnabled' in groovy.read_text()
               assert 'desugar_jdk_libs' in groovy.read_text()
