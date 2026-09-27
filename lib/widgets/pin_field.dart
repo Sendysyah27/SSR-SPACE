@@ -69,14 +69,14 @@ class _PinFieldState extends State<PinField> {
         height: 52,
         margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: SsrColors.noirSurface,
           borderRadius: BorderRadius.circular(SsrRadius.input),
           border: Border.all(
             color: widget.error != null
-                ? SsrColors.danger
+                ? SsrColors.rose
                 : isCurrent || filled
-                ? SsrColors.accent
-                : const Color(0xFFD9D7D0),
+                ? SsrColors.mint
+                : SsrColors.noirLine,
             width: isCurrent ? 1.8 : 1.2,
           ),
         ),
@@ -86,7 +86,7 @@ class _PinFieldState extends State<PinField> {
           style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
-            color: SsrColors.ink,
+            color: SsrColors.noirInk,
           ),
         ),
       ),
@@ -137,7 +137,7 @@ class _PinFieldState extends State<PinField> {
           const SizedBox(height: 8),
           Text(
             widget.error!,
-            style: const TextStyle(color: SsrColors.danger, fontSize: 13),
+            style: const TextStyle(color: SsrColors.rose, fontSize: 13),
           ),
         ],
       ],

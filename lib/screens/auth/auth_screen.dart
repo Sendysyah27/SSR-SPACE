@@ -207,7 +207,7 @@ class _AuthHeader extends StatelessWidget {
         Text(
           tr('au_sub'),
           style: Theme.of(context).textTheme.bodyMedium
-              ?.copyWith(color: SsrColors.secondary),
+              ?.copyWith(color: SsrColors.noirSecondary),
         ),
         const SizedBox(height: SsrSpace.xxl),
       ],
@@ -280,10 +280,11 @@ class _AuthMessages extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(SsrRadius.chip),
+        border: Border.all(color: fg.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: fg),
+          DuoIcon(icon, size: 16, color: fg),
           const SizedBox(width: SsrSpace.sm),
           Expanded(
             child: Text(
@@ -305,8 +306,8 @@ class _AuthMessages extends StatelessWidget {
           const SizedBox(height: SsrSpace.md),
           _messageRow(
             text: err!,
-            bg: SsrColors.dangerSoft,
-            fg: SsrColors.danger,
+            bg: SsrColors.noirRaised,
+            fg: SsrColors.rose,
             icon: AppIcons.warning,
           ),
         ],
@@ -314,8 +315,8 @@ class _AuthMessages extends StatelessWidget {
           const SizedBox(height: SsrSpace.md),
           _messageRow(
             text: info!,
-            bg: SsrColors.accentSoft,
-            fg: SsrColors.accent,
+            bg: SsrColors.noirRaised,
+            fg: SsrColors.mint,
             icon: AppIcons.mail,
           ),
         ],

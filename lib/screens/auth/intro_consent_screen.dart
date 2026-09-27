@@ -25,7 +25,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
   static const _iconBrain = IconData(0xE74E, fontFamily: SsrFonts.icon);
   static const _iconShield = IconData(0xE40C, fontFamily: SsrFonts.icon);
 
-  static const _ruleColor = Color(0xFFD9D7D0);
+  static const _ruleColor = SsrColors.noirLine;
 
   final _pageC = PageController();
   int _page = 0;
@@ -90,10 +90,11 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: bg ?? Colors.white,
+        color: bg ?? SsrColors.noirRaised,
         borderRadius: BorderRadius.circular(SsrRadius.tile),
+        border: Border.all(color: SsrColors.noirLine),
       ),
-      child: Icon(icon, size: size * 0.5, color: SsrColors.accent),
+      child: Icon(icon, size: size * 0.5, color: SsrColors.mint),
     );
   }
 
@@ -110,7 +111,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                   ?.copyWith(fontSize: 48, letterSpacing: 0),
             ),
             const SizedBox(height: SsrSpace.lg),
-            Container(width: 56, height: 2, color: SsrColors.accent),
+            Container(width: 56, height: 1, color: SsrColors.gold),
             const SizedBox(height: SsrSpace.xl),
             Text(
               'Simple.',
@@ -140,14 +141,14 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
               'Your Finance Space.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium
-                  ?.copyWith(color: SsrColors.accent),
+                  ?.copyWith(color: SsrColors.mint),
             ),
             const SizedBox(height: SsrSpace.xl),
             Text(
               tr('in_brand_sub'),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: SsrColors.secondary),
+                  ?.copyWith(color: SsrColors.noirSecondary),
             ),
             const SizedBox(height: SsrSpace.xxl),
           ],
@@ -166,7 +167,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 22, color: SsrColors.accent),
+          Icon(icon, size: 22, color: SsrColors.mint),
           const SizedBox(width: SsrSpace.lg),
           Expanded(
             child: Column(
@@ -177,7 +178,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                 Text(
                   desc,
                   style: Theme.of(context).textTheme.bodyMedium
-                      ?.copyWith(color: SsrColors.secondary),
+                      ?.copyWith(color: SsrColors.noirSecondary),
                 ),
               ],
             ),
@@ -202,15 +203,16 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
           const SizedBox(height: SsrSpace.sm),
           Text(
             tr('in_values_s'),
-            style: t.textTheme.bodyMedium?.copyWith(color: SsrColors.secondary),
+            style: t.textTheme.bodyMedium?.copyWith(color: SsrColors.noirSecondary),
           ),
           const SizedBox(height: SsrSpace.xl),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(SsrSpace.lg),
             decoration: BoxDecoration(
-              color: SsrColors.accentSoft,
+              color: SsrColors.noirSurface,
               borderRadius: BorderRadius.circular(SsrRadius.card),
+              border: Border.all(color: SsrColors.noirLine),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,7 +228,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                       Text(
                         tr('in_auto_s'),
                         style: t.textTheme.bodyMedium?.copyWith(
-                          color: SsrColors.secondary,
+                          color: SsrColors.noirSecondary,
                         ),
                       ),
                     ],
@@ -263,7 +265,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: SsrSpace.xxl),
-            const Icon(_iconBrain, size: 40, color: SsrColors.accent),
+            const Icon(_iconBrain, size: 40, color: SsrColors.mint),
             const SizedBox(height: SsrSpace.lg),
             Text(
               tr('in_mind_t'),
@@ -273,7 +275,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
               ),
             ),
             const SizedBox(height: SsrSpace.lg),
-            _hairline(width: 80, color: SsrColors.accent),
+            _hairline(width: 80, color: SsrColors.mint),
             const SizedBox(height: SsrSpace.lg),
             Text(
               tr('in_mind_s1'),
@@ -287,7 +289,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
               tr('in_mind_s2'),
               textAlign: TextAlign.center,
               style: t.textTheme.bodyMedium?.copyWith(
-                color: SsrColors.secondary,
+                color: SsrColors.noirSecondary,
               ),
             ),
             const SizedBox(height: SsrSpace.xxl),
@@ -308,7 +310,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
             child: Text(
               '${i + 1}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: SsrColors.accent,
+                color: SsrColors.mint,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -333,7 +335,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
         children: [
           Row(
             children: [
-              const Icon(_iconShield, size: 26, color: SsrColors.accent),
+              const Icon(_iconShield, size: 26, color: SsrColors.mint),
               const SizedBox(width: SsrSpace.md),
               Expanded(
                 child: Text(
@@ -348,7 +350,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
           const SizedBox(height: SsrSpace.sm),
           Text(
             tr('in_terms_s'),
-            style: t.textTheme.bodyMedium?.copyWith(color: SsrColors.secondary),
+            style: t.textTheme.bodyMedium?.copyWith(color: SsrColors.noirSecondary),
           ),
           const SizedBox(height: SsrSpace.lg),
           for (var i = 0; i < _terms.length; i++) ...[_hairline(), _termRow(i)],
@@ -361,7 +363,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                 height: 48,
                 child: Checkbox(
                   value: _agreed,
-                  activeColor: SsrColors.accent,
+                  activeColor: SsrColors.mint,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -396,7 +398,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
             width: i == _page ? 22 : 8,
             height: 8,
             decoration: BoxDecoration(
-              color: i == _page ? SsrColors.accent : SsrColors.surfaceMuted,
+              color: i == _page ? SsrColors.mint : SsrColors.noirLine,
               borderRadius: BorderRadius.circular(4),
             ),
           ),

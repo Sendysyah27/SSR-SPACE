@@ -75,20 +75,21 @@ class _LockScreenState extends State<LockScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 64,
-                  height: 64,
+                  width: 56,
+                  height: 56,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: SsrColors.accentSoft,
+                    color: SsrColors.noirRaised,
                     borderRadius: BorderRadius.circular(SsrRadius.tile),
+                    border: Border.all(color: SsrColors.noirLine),
                   ),
                   child: const DuoIcon(
                     AppIcons.lock,
-                    size: 28,
-                    color: SsrColors.accent,
+                    size: 26,
+                    color: SsrColors.mint,
                   ),
                 ),
-                const SizedBox(height: SsrSpace.xl),
+                const SizedBox(height: SsrSpace.lg),
                 Text(
                   tr('lk_title'),
                   style: Theme.of(context).textTheme.titleLarge,
@@ -98,16 +99,16 @@ class _LockScreenState extends State<LockScreen> {
                   tr('lk_sub'),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium
-                      ?.copyWith(color: SsrColors.secondary),
+                      ?.copyWith(color: SsrColors.noirSecondary),
                 ),
-                const SizedBox(height: SsrSpace.xxl),
+                const SizedBox(height: SsrSpace.lg),
                 PinField(
                   controller: pinC,
                   length: 6,
                   error: err,
                   autofocus: true,
                 ),
-                const SizedBox(height: SsrSpace.xl),
+                const SizedBox(height: SsrSpace.lg),
                 PrimaryButton(label: tr('lk_open'), onPressed: _verify),
               ],
             ),

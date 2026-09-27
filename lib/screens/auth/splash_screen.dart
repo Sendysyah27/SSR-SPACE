@@ -119,7 +119,9 @@ class _SplashLoading extends StatelessWidget {
                 tr('au_title'),
                 style: Theme.of(context).textTheme.displaySmall,
               ),
-              const SizedBox(height: SsrSpace.sm),
+              const SizedBox(height: SsrSpace.md),
+              Container(width: 56, height: 1, color: SsrColors.gold),
+              const SizedBox(height: SsrSpace.md),
               Text(
                 tr('sp_tagline'),
                 textAlign: TextAlign.center,
@@ -148,7 +150,7 @@ class _SplashError extends StatelessWidget {
         const DuoIcon(
           AppIcons.cloudOff,
           size: 40,
-          color: SsrColors.secondary,
+          color: SsrColors.noirSecondary,
         ),
         const SizedBox(height: SsrSpace.md),
         Text(

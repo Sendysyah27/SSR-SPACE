@@ -131,7 +131,7 @@ class _OnboardingBody extends StatelessWidget {
               width: 18,
               height: 2,
               margin: const EdgeInsets.symmetric(horizontal: SsrSpace.xs),
-              color: SsrColors.surfaceMuted,
+              color: SsrColors.noirLine,
             ),
           AnimatedContainer(
             duration: SsrMotion.fast,
@@ -139,7 +139,7 @@ class _OnboardingBody extends StatelessWidget {
             width: i <= step ? 22 : 8,
             height: 8,
             decoration: BoxDecoration(
-              color: i <= step ? SsrColors.accent : SsrColors.surfaceMuted,
+              color: i <= step ? SsrColors.mint : SsrColors.noirLine,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -161,7 +161,7 @@ class _OnboardingBody extends StatelessWidget {
         Text(
           tr('ob_sub'),
           style: Theme.of(context).textTheme.bodyMedium
-              ?.copyWith(color: SsrColors.secondary),
+              ?.copyWith(color: SsrColors.noirSecondary),
         ),
         const SizedBox(height: SsrSpace.xl),
         _stepDots(),
