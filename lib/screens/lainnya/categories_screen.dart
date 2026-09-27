@@ -1,9 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/app_categories.dart';
+import 'package:ssr_space/services/category_meta.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
+
+/// Palet 8 warna kategori (dikurasi, bukan color wheel bebas).
+const _kMetaPalette = <Color>[
+  SsrColors.accent,
+  SsrColors.danger,
+  SsrColors.saving,
+  Color(0xFF2563EB),
+  Color(0xFF7C3AED),
+  Color(0xFFDB2777),
+  Color(0xFF65A30D),
+  Color(0xFF64748B),
+];
+
+/// Ikon terkurasi untuk picker (kunci = nama field AppIcons).
+const _kMetaIcons = <String>[
+  'food',
+  'transport',
+  'shopping',
+  'bills',
+  'health',
+  'education',
+  'entertainment',
+  'topup',
+  'income',
+  'transfer',
+  'wallet',
+  'categoryFallback',
+];
+
+IconData _metaIconData(String key) {
+  switch (key) {
+    case 'food':
+      return AppIcons.food;
+    case 'transport':
+      return AppIcons.transport;
+    case 'shopping':
+      return AppIcons.shopping;
+    case 'bills':
+      return AppIcons.bills;
+    case 'health':
+      return AppIcons.health;
+    case 'education':
+      return AppIcons.education;
+    case 'entertainment':
+      return AppIcons.entertainment;
+    case 'topup':
+      return AppIcons.topup;
+    case 'income':
+      return AppIcons.income;
+    case 'transfer':
+      return AppIcons.transfer;
+    case 'wallet':
+      return AppIcons.wallet;
+    default:
+      return AppIcons.categoryFallback;
+  }
+}
 
 /// Atur daftar kategori global: tambah, hapus, simpan, kembalikan bawaan.
 /// Dipakai popup koreksi, form catat, dan saran kategori.
@@ -15,6 +74,7 @@ class CategoriesScreen extends StatefulWidget {
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
   late List<String> items;
+  Map<String, CatMeta> meta = {};
   final addC = TextEditingController();
   bool saving = false;
 
@@ -22,6 +82,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   void initState() {
     super.initState();
     items = [...appCategories.value];
+    loadCategoryMeta().then((m) {
+      if (mounted) setState(() => meta = m);
+    });
   }
 
   @override
@@ -36,7 +99,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   void _add() {
     final t = addC.text.trim();
-    if (t.isEmpty) return;
+    if (t.isEmpty || t.contains('>')) {
+      if (t.contains('>')) _snack(tr('sub_sep_err'));
+      return;
+    }
     if (items.any((e) => e.toLowerCase() == t.toLowerCase())) {
       _snack(tr('c_dupe'));
       return;
@@ -59,11 +125,99 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     setState(() => saving = true);
     try {
       await saveAppCategories(items);
+      await saveCategoryMeta(meta);
       if (!mounted) return;
       setState(() => items = [...appCategories.value]);
       _snack(tr('c_saved'));
     } finally {
       if (mounted) setState(() => saving = false);
+    }
+  }
+
+  Future<void> _pickColor(String name) async {
+    final cur = meta[name] ?? CatMeta.def;
+    final idx = await showDialog<int>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: Text(tr('sub_color')),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(SsrSpace.lg),
+            child: Wrap(
+              spacing: SsrSpace.sm,
+              runSpacing: SsrSpace.sm,
+              children: [
+                for (var i = 0; i < _kMetaPalette.length; i++)
+                  InkWell(
+                    onTap: () => Navigator.pop(context, i),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _kMetaPalette[i],
+                        border: Border.all(
+                          color: i == cur.color
+                              ? Colors.black
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (idx != null) {
+      setState(
+        () => meta[name] = CatMeta(color: idx, icon: cur.icon),
+      );
+    }
+  }
+
+  Future<void> _pickIcon(String name) async {
+    final cur = meta[name] ?? CatMeta.def;
+    final key = await showDialog<String>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: Text(tr('sub_icon')),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(SsrSpace.lg),
+            child: Wrap(
+              spacing: SsrSpace.sm,
+              runSpacing: SsrSpace.sm,
+              children: [
+                for (final k in _kMetaIcons)
+                  InkWell(
+                    onTap: () => Navigator.pop(context, k),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(SsrRadius.chip),
+                        border: Border.all(
+                          color: k == cur.icon
+                              ? SsrColors.accent
+                              : const Color(0xFFE8E6DF),
+                        ),
+                      ),
+                      child: DuoIcon(_metaIconData(k)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (key != null) {
+      setState(
+        () => meta[name] = CatMeta(color: cur.color, icon: key),
+      );
     }
   }
 
@@ -74,7 +228,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
-          _CatCard(items: items, onDelete: _removeAt),
+          _CatCard(
+            items: items,
+            meta: meta,
+            onDelete: _removeAt,
+            onColor: _pickColor,
+            onIcon: _pickIcon,
+          ),
           const SizedBox(height: SsrSpace.md),
           _AddRow(controller: addC, onAdd: _add),
           const SizedBox(height: SsrSpace.md),
@@ -90,11 +250,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 }
 
 /// Daftar kategori + tombol hapus per baris ala ledger.
+/// Dot warna dan ikon bisa diketuk untuk memilih dari palet terkurasi.
 class _CatCard extends StatelessWidget {
   final List<String> items;
+  final Map<String, CatMeta> meta;
   final void Function(int) onDelete;
+  final ValueChanged<String> onColor;
+  final ValueChanged<String> onIcon;
 
-  const _CatCard({required this.items, required this.onDelete});
+  const _CatCard({
+    required this.items,
+    required this.meta,
+    required this.onDelete,
+    required this.onColor,
+    required this.onIcon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -109,6 +279,26 @@ class _CatCard extends StatelessWidget {
             if (i > 0) const Divider(height: 1),
             Row(
               children: [
+                InkWell(
+                  onTap: () => onColor(items[i]),
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _kMetaPalette[(meta[items[i]] ?? CatMeta.def)
+                          .color],
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: DuoIcon(
+                    _metaIconData(
+                      (meta[items[i]] ?? CatMeta.def).icon,
+                    ),
+                  ),
+                  onPressed: () => onIcon(items[i]),
+                ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(

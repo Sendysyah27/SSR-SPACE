@@ -7,6 +7,7 @@ import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/reminder_service.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
+import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -75,7 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           const _ReminderCard(),
           const SizedBox(height: SsrSpace.md),
-          const _WidgetStubCard(),
+          const _WidgetCard(),
           const SizedBox(height: SsrSpace.md),
           const _ResetCorrectCard(),
           const SizedBox(height: SsrSpace.md),
@@ -455,9 +456,21 @@ class _ReminderCard extends StatelessWidget {
   }
 }
 
-/// Widget hari ini: sakelar dulu, provider native tahap P2.
-class _WidgetStubCard extends StatelessWidget {
-  const _WidgetStubCard();
+/// Widget hari ini: sakelar nyata untuk provider + QS tile (P2).
+/// Mati menghapus snapshot lokal; angka ditulis Beranda saat dimuat.
+class _WidgetCard extends StatelessWidget {
+  const _WidgetCard();
+
+  Future<void> _toggle(bool v) async {
+    await setWidgetToday(v);
+    if (!v) {
+      try {
+        await clearTodaySnapshot();
+      } catch (e) {
+        debugPrint('widget clear gagal: $e');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -469,9 +482,9 @@ class _WidgetStubCard extends StatelessWidget {
           builder: (context, value, _) => SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(tr('st_widget_today')),
-            subtitle: Text(tr('msg_p2')),
+            subtitle: Text(tr('wg_open')),
             value: value,
-            onChanged: setWidgetToday,
+            onChanged: _toggle,
           ),
         ),
       ],

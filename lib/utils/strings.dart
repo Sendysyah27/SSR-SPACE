@@ -323,6 +323,49 @@ const _t = <String, Map<String, String>>{
     'en': 'No transactions of this type this month.',
   },
   'r_dl': {'id': 'Unduh {l}', 'en': 'Download {l}'},
+  // Laporan: rekap kategori Top-8 + Others + susun section (P2)
+  'r_recap': {'id': 'Rekap kategori', 'en': 'Category recap'},
+  'r_others': {'id': 'Lainnya ({n})', 'en': 'Other ({n})'},
+  'r_collapse': {'id': 'Sederhanakan', 'en': 'Show less'},
+  'r_arrange': {'id': 'Susun', 'en': 'Arrange'},
+  'r_arrange_done': {'id': 'Selesai', 'en': 'Done'},
+  // Tagihan rutin (P2 recurring-bills, saran bukan insert otomatis)
+  'rb_title': {'id': 'Tagihan rutin', 'en': 'Recurring bills'},
+  'rb_empty_t': {'id': 'Belum ada tagihan rutin', 'en': 'No recurring bills yet'},
+  'rb_empty_s': {
+    'id': 'Tambahkan kos, langganan, atau cicilan agar tak lupa dicatat.',
+    'en': 'Add rent, subscriptions, or installments so you never miss one.',
+  },
+  'rb_add': {'id': 'Tambah tagihan', 'en': 'Add bill'},
+  'rb_label': {'id': 'Nama tagihan', 'en': 'Bill name'},
+  'rb_amount': {'id': 'Nominal', 'en': 'Amount'},
+  'rb_weekly': {'id': 'Mingguan', 'en': 'Weekly'},
+  'rb_monthly': {'id': 'Bulanan', 'en': 'Monthly'},
+  'rb_anchor': {'id': 'Tanggal tiap bulan', 'en': 'Day each month'},
+  'rb_next': {'id': 'Jatuh tempo berikut', 'en': 'Next due'},
+  'rb_due_t': {'id': 'Jatuh tempo', 'en': 'Due'},
+  'rb_record': {'id': 'Catat', 'en': 'Record'},
+  'rb_skip': {'id': 'Lewati', 'en': 'Skip'},
+  'rb_wallet_gone': {
+    'id': 'Dompet tagihan ini sudah dihapus. Aktifkan lagi setelah pilih dompet baru.',
+    'en': 'This bill\'s wallet was deleted. Re-enable it after picking a new wallet.',
+  },
+  'rb_del_t': {'id': 'Hapus tagihan', 'en': 'Delete bill'},
+  'rb_del_s': {
+    'id': 'Hapus tagihan ini? Riwayat transaksi tetap ada.',
+    'en': 'Delete this bill? Transaction history stays.',
+  },
+  // Subkategori + meta (P2 subcategory-picker)
+  'sub_hint': {'id': 'Subkategori (opsional)', 'en': 'Subcategory (optional)'},
+  'sub_color': {'id': 'Warna', 'en': 'Color'},
+  'sub_icon': {'id': 'Ikon', 'en': 'Icon'},
+  'sub_sep_err': {
+    'id': 'Nama tak boleh mengandung tanda >.',
+    'en': 'Name must not contain >.',
+  },
+  // Widget hari ini (P2 widget-qs-tile)
+  'wg_today': {'id': 'Hari ini', 'en': 'Today'},
+  'wg_open': {'id': 'Buka app untuk memuat', 'en': 'Open the app to load'},
   // Lainnya
   'o_logout_t': {'id': 'Keluar dari akun?', 'en': 'Log out of your account?'},
   'o_logout': {'id': 'Keluar', 'en': 'Log out'},
@@ -1099,6 +1142,72 @@ const _t = <String, Map<String, String>>{
   'msg_p2': {
     'id': 'Bagian ini tahap P2. Pengaturan tetap tersimpan bila sudah ada.',
     'en': 'This section is phase P2. Settings stay saved where already present.',
+  },
+  // Pengingat: varian copy harian (P2 reminder-copy, rotasi deterministik)
+  'rmc_m1': {
+    'id': 'Luangkan sejenak merapikan catatan kemarin.',
+    'en': "Take a moment to tidy yesterday's notes.",
+  },
+  'rmc_m2': {
+    'id': 'Pagi yang tenang untuk mengecek kas.',
+    'en': 'A calm morning to check your cash.',
+  },
+  'rmc_m3': {
+    'id': 'Satu menit menutup catatan kemarin.',
+    'en': "One minute to close yesterday's log.",
+  },
+  'rmc_m4': {
+    'id': 'Lihat kembali arus kemarin dengan santai.',
+    'en': "Glance back at yesterday's flow, calmly.",
+  },
+  'rmc_m5': {
+    'id': 'Rapikan awal hari dengan satu catatan.',
+    'en': 'Start the day tidy with one entry.',
+  },
+  'rmc_m6': {
+    'id': 'Cek sisa kemarin sebelum lanjut hari ini.',
+    'en': "Review yesterday's remainder before today.",
+  },
+  'rmc_e1': {
+    'id': 'Tutup hari dengan satu catatan singkat.',
+    'en': 'End the day with one short entry.',
+  },
+  'rmc_e2': {
+    'id': 'Refleksi singkat: apa yang keluar hari ini?',
+    'en': 'A brief reflection: what went out today?',
+  },
+  'rmc_e3': {
+    'id': 'Sejenak menengok buku kas malam ini.',
+    'en': "Take a peek at tonight's ledger.",
+  },
+  'rmc_e4': {
+    'id': 'Catat yang tertinggal, lalu istirahat.',
+    'en': "Log what's left, then rest.",
+  },
+  'rmc_e5': {
+    'id': 'Satu baris penutup untuk hari ini.',
+    'en': 'One closing line for today.',
+  },
+  'rmc_e6': {
+    'id': 'Tenang, cukup catat yang kamu ingat.',
+    'en': 'Calmly, just log what you remember.',
+  },
+  'rmc_b1': {
+    'id': 'Akhir bulan: rapikan sisa catatan bulan ini.',
+    'en': "Month-end: tidy this month's remaining notes.",
+  },
+  'rmc_b2': {
+    'id': 'Siapkan tutup bulan dengan satu cek singkat.',
+    'en': 'Prepare month close with one quick check.',
+  },
+  // Beranda: calm streak 8 minggu (P2, tanpa angka/API)
+  'calm_title': {
+    'id': 'Catatan 8 minggu terakhir',
+    'en': 'Last 8 weeks',
+  },
+  'calm_sub': {
+    'id': 'Titik penuh = minggu dengan catatan.',
+    'en': 'Filled dot = week with an entry.',
   },
 };
 

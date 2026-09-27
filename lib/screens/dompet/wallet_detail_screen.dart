@@ -12,6 +12,7 @@ import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
+import 'package:ssr_space/widgets/wallet_art.dart';
 
 /// Riwayat satu dompet: saldo akhir di kop + semua transaksi pembentuknya.
 class WalletDetailScreen extends StatefulWidget {
@@ -100,6 +101,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       padding: const EdgeInsets.all(SsrSpace.lg),
       children: [
         _SummaryCard(
+          type: widget.wallet.type,
           typeLabel: widget.typeLabel,
           balanceText: widget.balanceText,
           count: items.length,
@@ -132,11 +134,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
 /// Kop: jenis + saldo akhir + jumlah transaksi pembentuk.
 class _SummaryCard extends StatelessWidget {
+  final String type;
   final String typeLabel;
   final String balanceText;
   final int count;
 
   const _SummaryCard({
+    required this.type,
     required this.typeLabel,
     required this.balanceText,
     required this.count,
@@ -148,7 +152,21 @@ class _SummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          StatusChip(label: typeLabel),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: SsrColors.accentSoft,
+                  borderRadius: BorderRadius.circular(SsrRadius.tile),
+                ),
+                child: Center(child: WalletArt(type)),
+              ),
+              const SizedBox(width: SsrSpace.md),
+              Expanded(child: StatusChip(label: typeLabel)),
+            ],
+          ),
           const SizedBox(height: SsrSpace.xs),
           Text(balanceText, style: SsrTheme.moneyLarge),
           const SizedBox(height: SsrSpace.xs),

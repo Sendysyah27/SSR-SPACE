@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/services/reports_topn.dart';
 
 const _kLocale = 'app_locale';
 const _kCurrency = 'app_currency';
@@ -11,6 +12,7 @@ const _kUiHeroStyle = 'ui_hero_style';
 const _kHomeMenuOrder = 'home_menu_order';
 const _kInputDefaultCurrency = 'input_default_currency';
 const _kReportsTopN = 'reports_topn';
+const _kReportsOrder = 'reports_section_order';
 const _kReminderEnabled = 'reminder_enabled';
 const _kReminderHour = 'reminder_hour';
 const _kReminderMinute = 'reminder_minute';
@@ -28,6 +30,9 @@ final uiHeroStyle = ValueNotifier<String>('emerald-calm');
 final homeMenuOrder = ValueNotifier<List<String>>([]);
 final inputDefaultCurrency = ValueNotifier<String>('IDR');
 final reportsTopN = ValueNotifier<bool>(true);
+final reportSectionOrder = ValueNotifier<List<String>>(
+  const ['summary', 'recap', 'list'],
+);
 final reminderEnabled = ValueNotifier<bool>(false);
 final reminderHour = ValueNotifier<int>(7);
 final reminderMinute = ValueNotifier<int>(0);
@@ -59,6 +64,9 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
       ? defCur
       : 'IDR';
   reportsTopN.value = prefs.getBool(_kReportsTopN) ?? true;
+  reportSectionOrder.value = sanitizeSectionOrder(
+    prefs.getStringList(_kReportsOrder),
+  );
   reminderEnabled.value = prefs.getBool(_kReminderEnabled) ?? false;
   reminderHour.value = (prefs.getInt(_kReminderHour) ?? 7).clamp(0, 23);
   reminderMinute.value = (prefs.getInt(_kReminderMinute) ?? 0).clamp(0, 59);
@@ -130,6 +138,13 @@ Future<void> setReportsTopN(bool v) async {
   reportsTopN.value = v;
   final prefs = await SharedPreferences.getInstance();
   await prefs.setBool(_kReportsTopN, v);
+}
+
+Future<void> setReportSectionOrder(List<String> v) async {
+  final nv = sanitizeSectionOrder(v);
+  reportSectionOrder.value = nv;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList(_kReportsOrder, nv);
 }
 
 Future<void> setReminderEnabled(bool v) async {

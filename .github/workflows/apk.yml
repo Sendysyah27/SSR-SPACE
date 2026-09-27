@@ -206,6 +206,180 @@ jobs:
           assert 'com.ssr.space.ssrspace' in m.read_text()
           print('deeplink intent-filter ok')
           EOF
+      - run: |
+          python3 - <<'EOF'
+          import glob, pathlib
+          # Widget Hari Ini + QS tile (P2 widget-qs-tile): provider Java,
+          # layout/info XML, dan entri manifest. Ditulis di sini karena
+          # folder android/ di-generate CI (tidak di-commit).
+          # Data dari prefs FlutterSharedPreferences/flutter.widget_snapshot
+          # yang ditulis Beranda (tanpa token, tanpa query di provider).
+          mains = glob.glob('android/app/src/main/kotlin/**/MainActivity.*',
+                             recursive=True)
+          mains += glob.glob('android/app/src/main/java/**/MainActivity.*',
+                              recursive=True)
+          assert len(mains) == 1, f'MainActivity tak ketemu: {mains}'
+          pkgdir = pathlib.Path(mains[0]).parent
+          dotted = '.'.join(pkgdir.parts[pkgdir.parts.index('kotlin' if 'kotlin' in pkgdir.parts else 'java') + 1:])
+          prov = pkgdir / 'TodayWidgetProvider.java'
+          prov.write_text('''package %s;
+
+          import android.app.PendingIntent;
+          import android.appwidget.AppWidgetManager;
+          import android.appwidget.AppWidgetProvider;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.widget.RemoteViews;
+
+          public class TodayWidgetProvider extends AppWidgetProvider {
+              @Override
+              public void onUpdate(Context c, AppWidgetManager m, int[] ids) {
+                  String title = "SSR SPACE";
+                  String line = "Buka aplikasi untuk memuat";
+                  try {
+                      SharedPreferences p = c.getSharedPreferences(
+                              "FlutterSharedPreferences", Context.MODE_PRIVATE);
+                      String raw = p.getString("flutter.widget_snapshot", null);
+                      if (raw != null) {
+                          org.json.JSONObject o = new org.json.JSONObject(raw);
+                          String date = o.optString("date", "");
+                          String text = o.optString("text", "");
+                          if (!date.isEmpty()) title = "SSR \\u2022 " + date;
+                          if (!text.isEmpty()) line = text;
+                      }
+                  } catch (Exception ignored) {
+                  }
+                  for (int id : ids) {
+                      RemoteViews v = new RemoteViews(
+                              c.getPackageName(), R.layout.today_widget);
+                      v.setTextViewText(R.id.wg_title, title);
+                      v.setTextViewText(R.id.wg_line, line);
+                      try {
+                          Intent launch = c.getPackageManager()
+                                  .getLaunchIntentForPackage(c.getPackageName());
+                          PendingIntent pi = PendingIntent.getActivity(
+                                  c, 0, launch,
+                                  PendingIntent.FLAG_UPDATE_CURRENT
+                                          | PendingIntent.FLAG_IMMUTABLE);
+                          v.setOnClickPendingIntent(R.id.wg_root, pi);
+                      } catch (Exception ignored) {
+                      }
+                      m.updateAppWidget(id, v);
+                  }
+              }
+          }
+          ''' % dotted)
+          tile = pkgdir / 'SsrQsTile.java'
+          tile.write_text('''package %s;
+
+          import android.content.SharedPreferences;
+          import android.os.Build;
+          import android.service.quicksettings.Tile;
+          import android.service.quicksettings.TileService;
+
+          public class SsrQsTile extends TileService {
+              @Override
+              public void onStartListening() {
+                  super.onStartListening();
+                  Tile t = getQsTile();
+                  if (t == null) return;
+                  String line = "Buka app untuk memuat";
+                  try {
+                      SharedPreferences p = getApplicationContext()
+                              .getSharedPreferences(
+                                      "FlutterSharedPreferences", MODE_PRIVATE);
+                      String raw = p.getString("flutter.widget_snapshot", null);
+                      if (raw != null) {
+                          String text = new org.json.JSONObject(raw)
+                                  .optString("text", "");
+                          if (!text.isEmpty()) line = text;
+                      }
+                  } catch (Exception ignored) {
+                  }
+                  if (Build.VERSION.SDK_INT >= 29) t.setSubtitle(line);
+                  t.updateTile();
+              }
+
+              @Override
+              public void onClick() {
+                  super.onClick();
+                  try {
+                      android.content.Intent i = getApplicationContext()
+                              .getPackageManager()
+                              .getLaunchIntentForPackage(getPackageName());
+                      if (i != null) {
+                          i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+                          startActivityAndCollapse(i);
+                      }
+                  } catch (Exception ignored) {
+                  }
+              }
+          }
+          ''' % dotted)
+          lay = pathlib.Path('android/app/src/main/res/layout/today_widget.xml')
+          lay.parent.mkdir(parents=True, exist_ok=True)
+          lay.write_text('''<?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/wg_root"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:padding="12dp">
+              <TextView android:id="@+id/wg_title"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:textSize="12sp"
+                  android:textColor="?android:attr/textColorSecondary" />
+              <TextView android:id="@+id/wg_line"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:textSize="16sp"
+                  android:textStyle="bold"
+                  android:textColor="?android:attr/textColorPrimary" />
+          </LinearLayout>
+          ''')
+          info = pathlib.Path('android/app/src/main/res/xml/today_widget_info.xml')
+          info.parent.mkdir(parents=True, exist_ok=True)
+          info.write_text('''<?xml version="1.0" encoding="utf-8"?>
+          <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+              android:minWidth="180dp"
+              android:minHeight="80dp"
+              android:updatePeriodMillis="0"
+              android:initialLayout="@layout/today_widget"
+              android:resizeMode="horizontal"
+              android:widgetCategory="home_screen" />
+          ''')
+          m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
+          s = m.read_text()
+          if 'TodayWidgetProvider' not in s:
+              rcv = """          <receiver android:name=".TodayWidgetProvider" android:exported="false">
+                    <intent-filter>
+                        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                    </intent-filter>
+                    <meta-data android:name="android.appwidget.provider" android:resource="@xml/today_widget_info" />
+                </receiver>
+          """
+              assert '</application>' in s, 'application block tak ketemu'
+              s = s.replace('</application>', rcv + '</application>')
+          if 'SsrQsTile' not in s:
+              svc = """          <service android:name=".SsrQsTile" android:exported="true" android:icon="@mipmap/ic_launcher" android:label="SSR hari ini" android:permission="android.service.quicksettings.BIND_QUICK_SETTINGS_TILE">
+                    <intent-filter>
+                        <action android:name="android.service.quicksettings.action.QS_TILE" />
+                    </intent-filter>
+                </service>
+          """
+              assert '</application>' in s, 'application block tak ketemu'
+              s = s.replace('</application>', svc + '</application>')
+          m.write_text(s)
+          t = m.read_text()
+          assert 'TodayWidgetProvider' in t, 'receiver widget hilang'
+          assert 'SsrQsTile' in t, 'qs tile hilang'
+          assert (pkgdir / 'TodayWidgetProvider.java').exists()
+          assert (pkgdir / 'SsrQsTile.java').exists()
+          assert lay.exists() and info.exists()
+          print('widget+qs-tile inject ok:', dotted)
+          EOF
       - name: Setup release signing
         env:
           SSR_KEYSTORE_B64: ${{ secrets.SSR_KEYSTORE_B64 }}

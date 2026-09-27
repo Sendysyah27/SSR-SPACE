@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
+import 'package:ssr_space/widgets/wallet_art.dart';
 
 /// Satu baris di daftar Dompet: ikon jenis + nama + chip jenis + nominal
 /// kanan. `balanceText` wajib sudah diformat lewat amt() (atau teks
@@ -23,17 +23,6 @@ class WalletRow extends StatelessWidget {
     this.onTap,
   });
 
-  IconData get _typeIcon {
-    switch (type) {
-      case 'bank':
-        return AppIcons.walletBank;
-      case 'ewallet':
-        return AppIcons.walletEwallet;
-      default:
-        return AppIcons.walletCash;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final row = Padding(
@@ -47,7 +36,7 @@ class WalletRow extends StatelessWidget {
               color: SsrColors.accentSoft,
               borderRadius: BorderRadius.circular(SsrRadius.tile),
             ),
-            child: DuoIcon(_typeIcon, color: SsrColors.accent, size: 22),
+            child: Center(child: WalletArt(type)),
           ),
           const SizedBox(width: SsrSpace.md),
           Expanded(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/services/app_settings.dart';
+import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
@@ -26,6 +27,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 Future<bool> openTxInputSheet(
   BuildContext context, {
   SaasTransaction? editing,
+  String? initialType,
+  double? initialAmountIdr,
+  String? initialCategory,
+  String? initialWalletId,
+  String? initialNote,
 }) async {
   final orgId = await activeOrgId();
   if (orgId.isEmpty || !context.mounted) return false;
@@ -58,6 +64,11 @@ Future<bool> openTxInputSheet(
       wallets: wallets,
       balances: balances,
       editing: editing,
+      initialType: initialType,
+      initialAmountIdr: initialAmountIdr,
+      initialCategory: initialCategory,
+      initialWalletId: initialWalletId,
+      initialNote: initialNote,
     ),
   );
   if (!context.mounted || res == null) return false;
@@ -82,12 +93,24 @@ class TxInputSheet extends StatefulWidget {
   final Map<String, double> balances;
   final SaasTransaction? editing;
 
+  /// Prefill untuk saran tagihan rutin (dipakai bila [editing] null).
+  final String? initialType;
+  final double? initialAmountIdr;
+  final String? initialCategory;
+  final String? initialWalletId;
+  final String? initialNote;
+
   const TxInputSheet({
     super.key,
     required this.orgId,
     required this.wallets,
     required this.balances,
     this.editing,
+    this.initialType,
+    this.initialAmountIdr,
+    this.initialCategory,
+    this.initialWalletId,
+    this.initialNote,
   });
 
   @override
@@ -103,6 +126,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
   String? walletId;
   String? toWalletId;
   final catC = TextEditingController();
+  final subC = TextEditingController();
   final noteC = TextEditingController();
   bool saving = false;
   String? formErr;
@@ -114,8 +138,12 @@ class _TxInputSheetState extends State<TxInputSheet> {
   void initState() {
     super.initState();
     final e = widget.editing;
-    type = e?.type ?? 'out';
-    final major0 = e == null ? 0.0 : CurrencyService.convert(e.amount);
+    type = e?.type ?? widget.initialType ?? 'out';
+    final major0 = e == null
+        ? (widget.initialAmountIdr == null
+              ? 0.0
+              : CurrencyService.convert(widget.initialAmountIdr!))
+        : CurrencyService.convert(e.amount);
     digits = ValueNotifier(digitsFromMajor(major0, dec: _dec));
     day = e?.date != null
         ? DateTime.tryParse(e!.date!) ?? DateTime.now()
@@ -125,16 +153,22 @@ class _TxInputSheetState extends State<TxInputSheet> {
     time = t == null
         ? TimeOfDay.now()
         : TimeOfDay(hour: t.hour, minute: t.minute);
-    walletId = e?.walletId;
+    walletId = e?.walletId ?? widget.initialWalletId;
     toWalletId = e?.toWalletId;
-    catC.text = e?.category ?? '';
-    noteC.text = e?.note ?? '';
+    catC.text = e?.category != null
+        ? parseCategory(e!.category!).top
+        : (widget.initialCategory ?? '');
+    subC.text = e?.category != null
+        ? (parseCategory(e!.category!).sub ?? '')
+        : '';
+    noteC.text = e?.note ?? widget.initialNote ?? '';
   }
 
   @override
   void dispose() {
     digits.dispose();
     catC.dispose();
+    subC.dispose();
     noteC.dispose();
     super.dispose();
   }
@@ -178,7 +212,19 @@ class _TxInputSheetState extends State<TxInputSheet> {
         hour: useTime ? time.hour : null,
         minute: useTime ? time.minute : null,
       );
-      final cat = catC.text.trim().isEmpty ? null : catC.text.trim();
+      final top = catC.text.trim();
+      final sub = subC.text.trim();
+      if (sub.contains('>') || top.contains('>')) {
+        if (!mounted) return;
+        setState(() {
+          saving = false;
+          formErr = tr('sub_sep_err');
+        });
+        return;
+      }
+      final cat = top.isEmpty
+          ? null
+          : (sub.isEmpty ? top : formatCategory(top, sub));
       final note = noteC.text.trim();
       final svc = TransactionService();
       if (_isEdit) {
@@ -308,7 +354,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
               onWalletChanged: (v) => setState(() => walletId = v),
               onToWalletChanged: (v) => setState(() => toWalletId = v),
             ),
-            _MetaSection(catC: catC, noteC: noteC),
+            _MetaSection(catC: catC, subC: subC, noteC: noteC),
             if (formErr != null) ...[
               const SizedBox(height: SsrSpace.sm),
               Text(
@@ -566,12 +612,17 @@ class _WalletSection extends StatelessWidget {
   }
 }
 
-/// Kategori (field + chip pintasan) dan catatan.
+/// Kategori (field + chip pintasan), subkategori opsional, dan catatan.
 class _MetaSection extends StatelessWidget {
   final TextEditingController catC;
+  final TextEditingController subC;
   final TextEditingController noteC;
 
-  const _MetaSection({required this.catC, required this.noteC});
+  const _MetaSection({
+    required this.catC,
+    required this.subC,
+    required this.noteC,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -585,6 +636,11 @@ class _MetaSection extends StatelessWidget {
         ),
         const SizedBox(height: SsrSpace.sm),
         CategoryChips(controller: catC),
+        const SizedBox(height: SsrSpace.sm),
+        TextField(
+          controller: subC,
+          decoration: InputDecoration(labelText: tr('sub_hint')),
+        ),
         const SizedBox(height: SsrSpace.md),
         TextField(
           controller: noteC,

@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/calm_streak.dart';
 import 'package:ssr_space/services/month.dart';
+import 'package:ssr_space/services/recurring_bills.dart';
+import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -16,7 +21,9 @@ import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
 import 'package:ssr_space/widgets/mask_toggle.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
+import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
@@ -36,6 +43,7 @@ class BerandaScreenState extends State<BerandaScreen> {
   String month = currentMonth();
   String orgName = '-';
   List<SaasTransaction> items = [];
+  List<RecurringBill> dueBills = [];
   bool loading = true;
   String? err;
 
@@ -59,16 +67,20 @@ class BerandaScreenState extends State<BerandaScreen> {
         setState(() {
           loading = false;
           items = [];
+          dueBills = [];
         });
         return;
       }
       final txs = await TransactionService().listMonth(orgId, month);
+      final allBills = await loadBills();
       if (!mounted) return;
       setState(() {
         orgName = prefs.getString('active_org_name') ?? '-';
         items = txs;
+        dueBills = dueBills(allBills, DateTime.now());
         loading = false;
       });
+      _pushTodaySnapshot(txs);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -123,6 +135,63 @@ class BerandaScreenState extends State<BerandaScreen> {
     );
   }
 
+  /// Snapshot widget hari ini: surplus tanggal berjalan saja (bukan
+  /// sebulan), ditulis fire-and-forget agar UI tak menunggu IO prefs.
+  void _pushTodaySnapshot(List<SaasTransaction> txs) {
+    final now = DateTime.now();
+    final today =
+        '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+    var tIn = 0.0;
+    var tOut = 0.0;
+    for (final t in txs) {
+      if (t.date != today) continue;
+      if (t.type == 'in') {
+        tIn += t.amount;
+      } else if (t.type == 'out') {
+        tOut += t.amount;
+      }
+    }
+    unawaited(refreshTodayWidget(date: today, surplus: tIn - tOut));
+  }
+
+  /// Lewati: majukan nextDue satu periode tanpa insert.
+  Future<void> _skipBill(RecurringBill bill) async {
+    final all = await loadBills();
+    final from =
+        DateTime.tryParse(bill.nextDue) ?? DateTime.now();
+    final next = [
+      for (final b in all)
+        if (b.id == bill.id)
+          b.copyWith(
+            nextDue: _ymd(advanceBill(b, from)),
+          )
+        else
+          b,
+    ];
+    await saveBills(next);
+    await _load();
+  }
+
+  /// Catat: buka sheet prefill, bila tersimpan majukan periode.
+  Future<void> _recordBill(RecurringBill bill) async {
+    final ok = await openTxInputSheet(
+      context,
+      initialType: 'out',
+      initialAmountIdr: bill.amount,
+      initialCategory: bill.category.isEmpty ? null : bill.category,
+      initialWalletId: bill.walletId,
+      initialNote: bill.label,
+    );
+    if (ok) await _skipBill(bill);
+  }
+
+  static String _ymd(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -175,6 +244,10 @@ class BerandaScreenState extends State<BerandaScreen> {
       final d = (t.date ?? '').isEmpty ? '-' : t.date!;
       groups.putIfAbsent(d, () => []).add(t);
     }
+    final calmDates = [
+      for (final t in items) DateTime.tryParse(t.date ?? ''),
+    ].whereType<DateTime>().toList();
+    final calm = calmWeeks(calmDates, DateTime.now());
     return ListView(
       key: key,
       padding: const EdgeInsets.fromLTRB(
@@ -216,6 +289,10 @@ class BerandaScreenState extends State<BerandaScreen> {
         ),
         const SizedBox(height: SsrSpace.sm),
         _surplusCard(totalIn, totalOut, surplus, inShare, pctOut),
+        if (calm.any((b) => b)) ...[
+          const SizedBox(height: SsrSpace.md),
+          _CalmWeeks(weeks: calm),
+        ],
         const SizedBox(height: SsrSpace.xl),
         PrimaryButton(label: tr('act_catat'), onPressed: _goCatat),
         const SizedBox(height: SsrSpace.sm),
@@ -237,6 +314,14 @@ class BerandaScreenState extends State<BerandaScreen> {
           ],
         ),
         const SizedBox(height: SsrSpace.xl),
+        if (dueBills.isNotEmpty) ...[
+          _BillsSuggest(
+            bills: dueBills,
+            onRecord: _recordBill,
+            onSkip: _skipBill,
+          ),
+          const SizedBox(height: SsrSpace.xl),
+        ],
         Text(tr('beranda_recent'), style: theme.textTheme.titleMedium),
         if (items.isNotEmpty) ...[
           const SizedBox(height: SsrSpace.xs),
@@ -453,6 +538,107 @@ class BerandaScreenState extends State<BerandaScreen> {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu calm streak: 8 dot minggu, tanpa angka tanpa api.
+class _CalmWeeks extends StatelessWidget {
+  final List<bool> weeks;
+
+  const _CalmWeeks({required this.weeks});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(tr('calm_title'), style: theme.textTheme.titleSmall),
+          const SizedBox(height: SsrSpace.sm),
+          Row(
+            children: [
+              for (final filled in weeks) ...[
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: filled ? SsrColors.accent : Colors.transparent,
+                    border: Border.all(
+                      color: filled
+                          ? SsrColors.accent
+                          : theme.colorScheme.outline,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ],
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Text(tr('calm_sub'), style: theme.textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu saran tagihan rutin: ketuk Catat untuk insert via sheet,
+/// Lewati memajukan nextDue satu periode tanpa insert.
+class _BillsSuggest extends StatelessWidget {
+  final List<RecurringBill> bills;
+  final ValueChanged<RecurringBill> onRecord;
+  final ValueChanged<RecurringBill> onSkip;
+
+  const _BillsSuggest({
+    required this.bills,
+    required this.onRecord,
+    required this.onSkip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${tr('rb_due_t')} (${bills.length})',
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: SsrSpace.sm),
+          for (final b in bills) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(b.label, overflow: TextOverflow.ellipsis),
+                      Text(
+                        '${amt(b.amount)} · ${b.nextDue}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => onSkip(b),
+                  child: Text(tr('rb_skip')),
+                ),
+                FilledButton.tonal(
+                  onPressed: () => onRecord(b),
+                  child: Text(tr('rb_record')),
+                ),
+              ],
+            ),
+            if (b != bills.last) const Divider(height: 1),
+          ],
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/supabase_config.dart';
@@ -41,7 +42,9 @@ Future<BudgetMonth> fetchBudgets(String orgId) async {
   final spent = <String, double>{};
   for (final t in txs) {
     if (t.type == 'out' && (t.date ?? '').startsWith(currentMonth())) {
-      final k = (t.category?.isNotEmpty ?? false) ? t.category! : tr('cat_other');
+      // Grup di lapis kategori: 'Makan > Jajan' ikut budget 'Makan'.
+      final top = topOf(t.category);
+      final k = top.isEmpty ? tr('cat_other') : top;
       spent[k] = (spent[k] ?? 0) + t.amount;
     }
   }

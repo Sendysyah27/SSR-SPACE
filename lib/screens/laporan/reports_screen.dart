@@ -9,10 +9,13 @@ import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/billing_service.dart';
+import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/report_pdf.dart';
+import 'package:ssr_space/services/reports_topn.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/transfer_detect.dart';
@@ -40,6 +43,7 @@ class ReportsScreenState extends State<ReportsScreen> {
   String flowFilter = 'all';
   bool loading = true;
   bool exporting = false;
+  bool reordering = false;
   String? err;
 
   @override
@@ -189,15 +193,92 @@ class ReportsScreenState extends State<ReportsScreen> {
     final savingOut = savingOutOf(items);
     var spendOut = totalOut - savingOut;
     if (spendOut < 0) spendOut = 0;
+    final catTotals = <String, double>{};
+    for (final t in items) {
+      if (t.type != 'out') continue;
+      // Grup di lapis kategori (abaikan sub) agar konsisten dengan budget.
+      final top = topOf(t.category);
+      final name = top.isEmpty ? tr('cat_other') : top;
+      catTotals[name] = (catTotals[name] ?? 0) + t.amount;
+    }
     return _ReportsScaffold(
-      ListView(
-        padding: const EdgeInsets.all(SsrSpace.lg),
+      Column(
         children: [
-          MonthPicker(month: month, onChanged: _onMonthChanged),
-          const SizedBox(height: SsrSpace.md),
-          _summarySection(totalIn, totalOut, spendOut, savingOut, net),
-          const SizedBox(height: SsrSpace.lg),
-          _listSection(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              SsrSpace.lg,
+              SsrSpace.lg,
+              SsrSpace.lg,
+              0,
+            ),
+            child: MonthPicker(month: month, onChanged: _onMonthChanged),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => setState(() => reordering = !reordering),
+              child: Text(
+                tr(reordering ? 'r_arrange_done' : 'r_arrange'),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListenableBuilder(
+              listenable: Listenable.merge([
+                reportSectionOrder,
+                reportsTopN,
+              ]),
+              builder: (context, _) {
+                final order = sanitizeSectionOrder(
+                  reportSectionOrder.value,
+                );
+                final sections = <String, Widget>{
+                  'summary': _summarySection(
+                    totalIn,
+                    totalOut,
+                    spendOut,
+                    savingOut,
+                    net,
+                  ),
+                  'recap': _CategoryRecap(
+                    key: ValueKey('recap-$month'),
+                    totals: catTotals,
+                    topN: reportsTopN.value,
+                  ),
+                  'list': _listSection(),
+                };
+                final kids = [
+                  for (final id in order)
+                    if (id == 'recap' && catTotals.isEmpty)
+                      const SizedBox.shrink(key: ValueKey('recap-empty'))
+                    else
+                      Padding(
+                        key: ValueKey('sec-$id'),
+                        padding: const EdgeInsets.fromLTRB(
+                          SsrSpace.lg,
+                          0,
+                          SsrSpace.lg,
+                          SsrSpace.lg,
+                        ),
+                        child: sections[id]!,
+                      ),
+                ];
+                if (!reordering) {
+                  return ListView(children: kids);
+                }
+                return ReorderableListView(
+                  onReorder: (oldI, newI) async {
+                    if (newI > oldI) newI -= 1;
+                    final next = List<String>.of(order);
+                    final moved = next.removeAt(oldI);
+                    next.insert(newI, moved);
+                    await setReportSectionOrder(next);
+                  },
+                  children: kids,
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -470,6 +551,111 @@ class _TransferHints extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rekap kategori Top-8 plus Others (P2): saat toggle Top-N ON dan
+/// kategori > 8, baris Others merangkum sisa dan ketuk untuk mengembang.
+class _CategoryRecap extends StatefulWidget {
+  final Map<String, double> totals;
+  final bool topN;
+
+  const _CategoryRecap({super.key, required this.totals, required this.topN});
+
+  @override
+  State<_CategoryRecap> createState() => _CategoryRecapState();
+}
+
+class _CategoryRecapState extends State<_CategoryRecap> {
+  bool expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.totals.isEmpty) return const SizedBox.shrink();
+    final result = top8PlusOthers(widget.totals, enabled: widget.topN);
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(tr('r_recap'), style: theme.textTheme.titleMedium),
+        const SizedBox(height: SsrSpace.xs),
+        SectionCard(
+          padding: const EdgeInsets.symmetric(
+            horizontal: SsrSpace.lg,
+            vertical: SsrSpace.xs,
+          ),
+          child: Column(
+            children: [
+              for (final c in result.top) _row(context, c.name, c.total),
+              if (result.others.isNotEmpty && !expanded)
+                InkWell(
+                  onTap: () => setState(() => expanded = true),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            tr('r_others').replaceFirst(
+                              '{n}',
+                              '${result.others.length}',
+                            ),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          amt(result.othersTotal),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontFeatures: const [
+                              FontFeature.tabularFigures(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              if (expanded) ...[
+                for (final c in result.others) _row(context, c.name, c.total),
+                InkWell(
+                  onTap: () => setState(() => expanded = false),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Text(
+                      tr('r_collapse'),
+                      style: TextStyle(color: theme.colorScheme.primary),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _row(BuildContext context, String name, double total) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(name, overflow: TextOverflow.ellipsis),
+          ),
+          Text(
+            amt(total),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
         ],
       ),
     );

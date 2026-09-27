@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/budget_service.dart';
+import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/session_service.dart';
@@ -86,11 +87,16 @@ class BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   Future<void> _save() async {
-    final cat = catC.text.trim();
+    final cat = topOf(catC.text);
     final typedLimit = double.tryParse(limitC.text);
     final limit = typedLimit == null ? null : CurrencyService.toIdr(typedLimit);
     if (cat.isEmpty) {
       setState(() => formErr = tr('b_err_cat'));
+      return;
+    }
+    if (catC.text.contains('>')) {
+      // Budget selalu lapis kategori: sub ditolak, bukan dipotong diam-diam.
+      setState(() => formErr = tr('sub_sep_err'));
       return;
     }
     if (limit == null || limit <= 0) {

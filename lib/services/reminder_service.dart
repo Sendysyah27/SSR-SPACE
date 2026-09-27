@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:ssr_space/services/reminder_copy.dart';
 import 'package:ssr_space/services/reminder_schedule.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
@@ -15,8 +16,6 @@ class ReminderService {
   static const String channelName = 'Pengingat harian';
   static const String channelDesc =
       'Pengingat harian mencatat keuangan di SSR SPACE.';
-
-  static const String _body = 'Saatnya mencatat keuangan hari ini.';
 
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -83,6 +82,7 @@ class ReminderService {
         channelDescription: channelDesc,
       ),
     );
+    final body = tr(reminderKeyFor(next, hour));
     try {
       await _plugin.zonedSchedule(
         id: notifId,
@@ -90,7 +90,7 @@ class ReminderService {
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         title: tr('st_reminder_on'),
-        body: _body,
+        body: body,
         matchDateTimeComponents: DateTimeComponents.time,
       );
     } catch (e) {
@@ -101,7 +101,7 @@ class ReminderService {
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         title: tr('st_reminder_on'),
-        body: _body,
+        body: body,
         matchDateTimeComponents: DateTimeComponents.time,
       );
     }

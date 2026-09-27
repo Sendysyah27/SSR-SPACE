@@ -18,6 +18,7 @@ import 'package:ssr_space/utils/app_info.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/billing_screen.dart';
 import 'package:ssr_space/screens/lainnya/categories_screen.dart';
+import 'package:ssr_space/screens/lainnya/recurring_bills_screen.dart';
 import 'package:ssr_space/screens/lainnya/import_preview_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_screen.dart';
 import 'package:ssr_space/screens/laporan/reports_screen.dart';
@@ -358,6 +359,7 @@ class _OtherScreenState extends State<OtherScreen> {
             onCategories: () => _push(const CategoriesScreen()),
             onBudgets: () => _push(const BudgetsScreen()),
             onHistory: () => _push(const TransactionsScreen()),
+            onBills: () => _push(const RecurringBillsScreen()),
             onTracking: () => _push(const NotifSettingsScreen()),
             onPopupChanged: _setPopup,
             onBackup: _backup,
@@ -390,6 +392,7 @@ class _HubList extends StatelessWidget {
   final VoidCallback onCategories;
   final VoidCallback onBudgets;
   final VoidCallback onHistory;
+  final VoidCallback onBills;
   final VoidCallback onTracking;
   final ValueChanged<bool> onPopupChanged;
   final VoidCallback onBackup;
@@ -415,6 +418,7 @@ class _HubList extends StatelessWidget {
     required this.onCategories,
     required this.onBudgets,
     required this.onHistory,
+    required this.onBills,
     required this.onTracking,
     required this.onPopupChanged,
     required this.onBackup,
@@ -439,6 +443,7 @@ class _HubList extends StatelessWidget {
         onCategories: onCategories,
         onBudgets: onBudgets,
         onHistory: onHistory,
+        onBills: onBills,
       ),
       _TrackingSection(
         tracking: tracking,
@@ -545,12 +550,14 @@ class _DataSection extends StatelessWidget {
   final VoidCallback onCategories;
   final VoidCallback onBudgets;
   final VoidCallback onHistory;
+  final VoidCallback onBills;
 
   const _DataSection({
     required this.onWallets,
     required this.onCategories,
     required this.onBudgets,
     required this.onHistory,
+    required this.onBills,
   });
 
   @override
@@ -582,6 +589,12 @@ class _DataSection extends StatelessWidget {
           icon: AppIcons.transactions,
           title: tr('nav_transaksi'),
           onTap: onHistory,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.bills,
+          title: tr('rb_title'),
+          onTap: onBills,
         ),
       ],
     );
