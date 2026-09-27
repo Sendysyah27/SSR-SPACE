@@ -33,8 +33,9 @@ class WalletRow extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: SsrColors.accentSoft,
+              color: SsrColors.noirRaised,
               borderRadius: BorderRadius.circular(SsrRadius.tile),
+              border: Border.all(color: SsrColors.noirLine),
             ),
             child: Center(child: WalletArt(type)),
           ),

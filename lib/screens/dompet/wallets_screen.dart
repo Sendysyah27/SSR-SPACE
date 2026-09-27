@@ -260,6 +260,8 @@ class _WalletOverview extends StatelessWidget {
         if (t != null)
           LabeledSectionCard(
             margin: const EdgeInsets.only(bottom: SsrSpace.md),
+            color: SsrColors.noirSurface,
+            borderColor: SsrColors.noirLine,
             label: tr('w_total'),
             children: [Text(amt(t), style: SsrTheme.moneyLarge)],
           ),
@@ -306,6 +308,8 @@ class _NewWalletForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -317,30 +321,13 @@ class _NewWalletForm extends StatelessWidget {
             decoration: InputDecoration(labelText: tr('w_f_name')),
           ),
           const SizedBox(height: SsrSpace.md),
-          DropdownButtonFormField<String>(
-            initialValue: type,
-            decoration: InputDecoration(labelText: tr('w_f_type')),
-            items: [
-              DropdownMenuItem(value: 'cash', child: Text(tr('w_cash'))),
-              DropdownMenuItem(value: 'ewallet', child: Text(tr('w_ewallet'))),
-              DropdownMenuItem(value: 'bank', child: Text(tr('w_bank'))),
-              DropdownMenuItem(
-                value: 'savings',
-                child: Text(tr('w_savings')),
-              ),
-              DropdownMenuItem(
-                value: 'investment',
-                child: Text(tr('w_investment')),
-              ),
-            ],
-            onChanged: onTypeChanged,
-          ),
+          _WalletTypeField(type: type, onChanged: onTypeChanged),
           if (formErr != null) ...[
             const SizedBox(height: SsrSpace.sm),
             Text(
               formErr!,
               style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: SsrColors.danger),
+                  ?.copyWith(color: SsrColors.rose),
             ),
           ],
           const SizedBox(height: SsrSpace.lg),
@@ -351,6 +338,36 @@ class _NewWalletForm extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Dropdown jenis dompet: Kas, E-wallet, Bank, Tabungan, Investasi.
+class _WalletTypeField extends StatelessWidget {
+  final String type;
+  final ValueChanged<String?> onChanged;
+
+  const _WalletTypeField({required this.type, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<String>(
+      initialValue: type,
+      decoration: InputDecoration(labelText: tr('w_f_type')),
+      items: [
+        DropdownMenuItem(value: 'cash', child: Text(tr('w_cash'))),
+        DropdownMenuItem(value: 'ewallet', child: Text(tr('w_ewallet'))),
+        DropdownMenuItem(value: 'bank', child: Text(tr('w_bank'))),
+        DropdownMenuItem(
+          value: 'savings',
+          child: Text(tr('w_savings')),
+        ),
+        DropdownMenuItem(
+          value: 'investment',
+          child: Text(tr('w_investment')),
+        ),
+      ],
+      onChanged: onChanged,
     );
   }
 }
@@ -370,6 +387,8 @@ class _WalletListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.md,
@@ -412,49 +431,71 @@ class _CompositionStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(tr('comp_title'), style: text.titleMedium),
-          Text(tr('comp_sub'), style: text.bodySmall),
+          Text(
+            tr('comp_title'),
+            style: text.titleMedium?.copyWith(color: SsrColors.noirInk),
+          ),
+          Text(
+            tr('comp_sub'),
+            style: text.bodySmall?.copyWith(color: SsrColors.noirSecondary),
+          ),
           const SizedBox(height: SsrSpace.md),
-          Row(
+          _CompChart(comp: comp),
+        ],
+      ),
+    );
+  }
+}
+
+/// Donut mini + 3 baris kelompok di strip komposisi.
+class _CompChart extends StatelessWidget {
+  final Composition comp;
+  const _CompChart({required this.comp});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 96,
+          height: 96,
+          child: _CompDonut(comp: comp),
+        ),
+        const SizedBox(width: SsrSpace.md),
+        Expanded(
+          child: Column(
             children: [
-              SizedBox(
-                width: 96,
-                height: 96,
-                child: _CompDonut(comp: comp),
+              _compRow(
+                context,
+                SsrColors.mint,
+                tr('comp_liquid'),
+                comp.liquid,
+                comp.liquidPct,
               ),
-              const SizedBox(width: SsrSpace.md),
-              Expanded(
-                child: Column(
-                  children: [
-                    _compRow(
-                      SsrColors.accent,
-                      tr('comp_liquid'),
-                      comp.liquid,
-                      comp.liquidPct,
-                    ),
-                    _compRow(
-                      SsrColors.saving,
-                      tr('w_savings'),
-                      comp.savings,
-                      comp.savingsPct,
-                    ),
-                    _compRow(
-                      SsrColors.secondary,
-                      tr('w_investment'),
-                      comp.investments,
-                      comp.investmentsPct,
-                    ),
-                  ],
-                ),
+              _compRow(
+                context,
+                SsrColors.gold,
+                tr('w_savings'),
+                comp.savings,
+                comp.savingsPct,
+              ),
+              _compRow(
+                context,
+                SsrColors.noirSecondary,
+                tr('w_investment'),
+                comp.investments,
+                comp.investmentsPct,
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -476,21 +517,21 @@ class _CompDonut extends StatelessWidget {
           if (comp.liquid > 0)
             PieChartSectionData(
               value: comp.liquid,
-              color: SsrColors.accent,
+              color: SsrColors.mint,
               radius: 14,
               showTitle: false,
             ),
           if (comp.savings > 0)
             PieChartSectionData(
               value: comp.savings,
-              color: SsrColors.saving,
+              color: SsrColors.gold,
               radius: 14,
               showTitle: false,
             ),
           if (comp.investments > 0)
             PieChartSectionData(
               value: comp.investments,
-              color: SsrColors.secondary,
+              color: SsrColors.noirSecondary,
               radius: 14,
               showTitle: false,
             ),
@@ -500,7 +541,13 @@ class _CompDonut extends StatelessWidget {
   }
 }
 
-Widget _compRow(Color dot, String label, double value, double pct) {
+Widget _compRow(
+  BuildContext context,
+  Color dot,
+  String label,
+  double value,
+  double pct,
+) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: SsrSpace.xs),
     child: Row(
@@ -511,10 +558,18 @@ Widget _compRow(Color dot, String label, double value, double pct) {
           decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
         ),
         const SizedBox(width: SsrSpace.sm),
-        Expanded(child: Text(label)),
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: SsrColors.noirSecondary,
+            ),
+          ),
+        ),
         Text(
           '${amt(value)} ${(pct * 100).round()}%',
           style: const TextStyle(
+            color: SsrColors.noirInk,
             fontFeatures: [FontFeature.tabularFigures()],
           ),
         ),

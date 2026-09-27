@@ -29,18 +29,18 @@ class WalletArt extends StatelessWidget {
       walletSvgPath(type),
       width: size,
       height: size,
-      colorFilter: const ColorFilter.mode(SsrColors.accent, BlendMode.srcIn),
+      colorFilter: const ColorFilter.mode(SsrColors.mint, BlendMode.srcIn),
       errorBuilder: (_, _, _) => Container(
         width: size,
         height: size,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
-          color: SsrColors.accentSoft,
+          color: SsrColors.noirLine,
         ),
         child: DuoIcon(
           AppIcons.walletCash,
           size: size * 0.7,
-          color: SsrColors.accent,
+          color: SsrColors.mint,
         ),
       ),
     );

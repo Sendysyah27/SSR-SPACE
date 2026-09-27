@@ -151,6 +151,8 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -160,8 +162,9 @@ class _SummaryCard extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: SsrColors.accentSoft,
+                  color: SsrColors.noirRaised,
                   borderRadius: BorderRadius.circular(SsrRadius.tile),
+                  border: Border.all(color: SsrColors.noirLine),
                 ),
                 child: Center(child: WalletArt(type)),
               ),
@@ -200,14 +203,15 @@ class _SavingStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.savingSoft,
+      color: SsrColors.gold.withValues(alpha: 0.14),
+      borderColor: SsrColors.gold.withValues(alpha: 0.45),
       child: Row(
         children: [
           Container(
             width: 10,
             height: 10,
             decoration: const BoxDecoration(
-              color: SsrColors.saving,
+              color: SsrColors.gold,
               shape: BoxShape.circle,
             ),
           ),
@@ -217,7 +221,9 @@ class _SavingStrip extends StatelessWidget {
               tr('sv_wallet_line')
                   .replaceFirst('{a}', amt(total))
                   .replaceFirst('{n}', '$count'),
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: SsrColors.noirInk,
+              ),
             ),
           ),
           TextButton(
@@ -240,6 +246,8 @@ class _HistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final buckets = groupDayBuckets(items);
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.sm,
         vertical: SsrSpace.xs,
