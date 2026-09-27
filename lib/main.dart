@@ -70,7 +70,7 @@ class SsrSpaceApp extends StatelessWidget {
           valueListenable: fontScale,
           builder: (_, scale, ___) => MaterialApp(
             title: 'SSR SPACE',
-            theme: SsrTheme.light(),
+            theme: SsrTheme.noir(),
             home: SplashScreen(session: session),
             debugShowCheckedModeBanner: false,
             builder: (ctx, child) => MediaQuery(

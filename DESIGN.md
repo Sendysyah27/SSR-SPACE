@@ -1,4 +1,4 @@
-# DESIGN.md — SSR SPACE
+# DESIGN.md: SSR SPACE
 
 **Simple. Secure. Reliable. Your Finance Space.**
 
@@ -6,15 +6,16 @@ Aplikasi pencatatan pemasukan dan pengeluaran multi-workspace untuk Indonesia. D
 
 ## Dials
 
-Dial: ENERGY 2 / RHYTHM 2 / MOTION 2.
-Design Read: aplikasi keuangan phone-first untuk pemakai Indonesia, bahasa visual buku kas yang tenang tapi hidup: hierarki tegas, variasi section wajar, transisi Material halus. Dial ENERGY 2 / RHYTHM 2 / MOTION 2.
+Dial: ENERGY 2 / RHYTHM 2 / MOTION 1.
+Design Read: aplikasi keuangan phone-first untuk pemakai Indonesia, bahasa visual buku kas gelap yang tenang dan fokus: hierarki tegas, permukaan bertingkat, transisi Material minimal. Dial ENERGY 2 / RHYTHM 2 / MOTION 1.
 
 ## Palette
 
-- Kertas `#FAFAF7`, tinta `#1C1B1A`, teks sekunder `#5F5E5B`.
-- Aksen tunggal zamrud `#0F766E`. Hijau artinya uang bertambah, menenangkan untuk cek harian.
-- Sinyal makna: pemasukan zamrud, pengeluaran bata `#B3261E`, selalu ditemani label kata.
-- Semua pasangan teks lolos WCAG AA (terukur 5.23 sampai 16.45).
+- Latar `#0C1210`, permukaan `#141C18`, permukaan terangkat `#1B2521`, garis `#2A3530`.
+- Tinta `#F2EFE6`, teks sekunder `#A8A39A`.
+- Aksen tunggal mint `#2DD4BF`. Mint artinya uang bertambah, menyala tenang di atas gelap untuk cek harian.
+- Sinyal makna: pemasukan mint, pengeluaran rose `#F87171`, momen emas `#C6A15B`, selalu ditemani label kata.
+- Semua pasangan teks pakai lolos WCAG AA (terukur 6.84 sampai 16.46; putih di mint 1.86 tidak dipakai, tombol primer memakai teks gelap `#0C1210` di mint 10.17).
 
 ## Tipografi
 
@@ -34,12 +35,12 @@ Garis ledger: daftar transaksi berupa baris ber-lineup hairline seperti buku kas
 
 ## Gerak
 
-MOTION 2. Transisi bawaan Material + easing halus (150-250ms): ganti loading/konten anti-blink, progress bar ease, ketuk primary. Tanpa loop tanpa akhir, tanpa parallax.
+MOTION 1. Transisi bawaan Material + easing halus (150-250ms): ganti loading/konten anti-blink, progress bar ease, ketuk primary. Tanpa loop tanpa akhir, tanpa parallax.
 
 ## Navigasi
 
 Bottom nav 5 tab (Beranda, Transaksi, Budget, Laporan, Lainnya). Alasan: pola ibu jari HP, tujuan utama satu ketukan.
 
-## Kartu gelap
+## Emerald Noir
 
-Satu kartu surplus gelap per Beranda sebagai titik fokus. Alasan: angka uang butuh panggung, bukan default mode gelap.
+Satu tema gelap untuk seluruh aplikasi, tanpa toggle. R-21: gelap adalah identitas. Angka uang tampil di permukaan terangkat (`noirRaised`) dengan digit tabular; garis ledger memakai `noirLine` di atas `noirBg`.

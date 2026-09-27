@@ -13,6 +13,16 @@ class SsrColors {
   static const saving = Color(0xFFB45309);
   static const savingSoft = Color(0xFFFBEDD3);
   static const surfaceMuted = Color(0xFFF3F2EE);
+  // Token Emerald Noir (identitas gelap, dipakai SsrTheme.noir()).
+  static const noirBg = Color(0xFF0C1210);
+  static const noirSurface = Color(0xFF141C18);
+  static const noirRaised = Color(0xFF1B2521);
+  static const noirLine = Color(0xFF2A3530);
+  static const noirInk = Color(0xFFF2EFE6);
+  static const noirSecondary = Color(0xFFA8A39A);
+  static const mint = Color(0xFF2DD4BF);
+  static const rose = Color(0xFFF87171);
+  static const gold = Color(0xFFC6A15B);
 }
 
 class SsrMotion {
@@ -199,6 +209,171 @@ class SsrTheme {
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: SsrColors.accent,
+      ),
+      listTileTheme: const ListTileThemeData(
+        contentPadding: EdgeInsets.symmetric(horizontal: 4),
+        minTileHeight: 52,
+      ),
+    );
+  }
+
+  static ThemeData noir() {
+    const scheme = ColorScheme.dark(
+      primary: SsrColors.mint,
+      onPrimary: Color(0xFF0C1210),
+      surface: SsrColors.noirSurface,
+      onSurface: SsrColors.noirInk,
+      error: SsrColors.rose,
+      onError: Color(0xFF0C1210),
+      outline: SsrColors.noirLine,
+    );
+    return ThemeData(
+      useMaterial3: true,
+      fontFamily: SsrFonts.body,
+      scaffoldBackgroundColor: SsrColors.noirBg,
+      colorScheme: scheme,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: SsrColors.noirBg,
+        foregroundColor: SsrColors.noirInk,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.3,
+          color: SsrColors.noirInk,
+        ),
+      ),
+      textTheme: const TextTheme(
+        displaySmall: TextStyle(
+          fontFamily: SsrFonts.display,
+          fontSize: 32,
+          fontWeight: FontWeight.w400,
+          letterSpacing: -0.5,
+          color: SsrColors.noirInk,
+        ),
+        titleLarge: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.2,
+          color: SsrColors.noirInk,
+        ),
+        titleMedium: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: SsrColors.noirInk,
+        ),
+        bodyLarge: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 16,
+          height: 1.5,
+          color: SsrColors.noirInk,
+        ),
+        bodyMedium: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 14,
+          height: 1.5,
+          color: SsrColors.noirInk,
+        ),
+        bodySmall: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 12,
+          height: 1.4,
+          color: SsrColors.noirSecondary,
+        ),
+        labelLarge: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: SsrColors.noirInk,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          backgroundColor: SsrColors.mint,
+          foregroundColor: Color(0xFF0C1210),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(SsrRadius.button),
+          ),
+          textStyle: const TextStyle(
+            fontFamily: SsrFonts.body,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          foregroundColor: SsrColors.noirInk,
+          side: const BorderSide(color: SsrColors.noirLine),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(SsrRadius.button),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          minimumSize: const Size(48, 44),
+          foregroundColor: SsrColors.mint,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: SsrColors.noirSurface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.input),
+          borderSide: const BorderSide(color: SsrColors.noirLine),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.input),
+          borderSide: const BorderSide(color: SsrColors.noirLine),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.input),
+          borderSide: const BorderSide(color: SsrColors.mint, width: 1.6),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        thickness: 0.8,
+        space: 1,
+        color: SsrColors.noirLine,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: SsrColors.noirRaised,
+        contentTextStyle: const TextStyle(
+          fontFamily: SsrFonts.body,
+          color: SsrColors.noirInk,
+          fontSize: 14,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.tile),
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const Color(0xFF0C1210);
+          }
+          return null;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return SsrColors.mint;
+          return null;
+        }),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: SsrColors.mint,
       ),
       listTileTheme: const ListTileThemeData(
         contentPadding: EdgeInsets.symmetric(horizontal: 4),
