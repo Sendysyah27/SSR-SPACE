@@ -73,7 +73,7 @@ class _PinFieldState extends State<PinField> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: widget.error != null
-              ? AppColors.rust
+              ? scheme.error
               : isCurrent || filled
               ? scheme.primary
               : scheme.outline,
@@ -114,6 +114,7 @@ class _PinFieldState extends State<PinField> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final text = widget.controller.text;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +148,7 @@ class _PinFieldState extends State<PinField> {
           const SizedBox(height: 8),
           Text(
             widget.error!,
-            style: const TextStyle(color: AppColors.rust, fontSize: 13),
+            style: TextStyle(color: scheme.error, fontSize: 13),
           ),
         ],
       ],

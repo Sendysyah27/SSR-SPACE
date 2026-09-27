@@ -16,7 +16,7 @@ class StatusChip extends StatelessWidget {
     this.icon,
   });
 
-  Color _bgOf(bool dark) {
+  Color _bgOf(bool dark, ColorScheme scheme) {
     switch (tone) {
       case StatusTone.accent:
         return AppColors.chipAutoBg;
@@ -25,29 +25,29 @@ class StatusChip extends StatelessWidget {
       case StatusTone.ink:
         return AppColors.goldSoft;
       case StatusTone.neutral:
-        // Beige di light; abu-gelap di dark agar tak menyilaukan.
-        return dark ? AppColors.lineDark : AppColors.line;
+        return scheme.outline;
     }
   }
 
-  Color _fgOf(bool dark) {
+  Color _fgOf(bool dark, ColorScheme scheme) {
     switch (tone) {
       case StatusTone.accent:
-        return AppColors.emerald;
+        return scheme.primary;
       case StatusTone.danger:
-        return AppColors.rust;
+        return scheme.error;
       case StatusTone.ink:
         return AppColors.chipSurplusText;
       case StatusTone.neutral:
-        return dark ? AppColors.inkSoftDark : AppColors.inkSoft;
+        return scheme.onSurfaceVariant;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final bg = _bgOf(dark);
-    final fg = _fgOf(dark);
+    final scheme = Theme.of(context).colorScheme;
+    final bg = _bgOf(dark, scheme);
+    final fg = _fgOf(dark, scheme);
     final text = tone == StatusTone.ink ? label.toUpperCase() : label;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),

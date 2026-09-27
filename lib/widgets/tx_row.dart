@@ -140,18 +140,19 @@ class _TxBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       width: 38,
       height: 38,
       decoration: BoxDecoration(
-        color: isOut ? AppColors.rust.withValues(alpha: 0.12) : AppColors.goldSoft,
+        color: isOut ? scheme.error.withValues(alpha: 0.12) : AppColors.goldSoft,
         borderRadius: BorderRadius.circular(11),
       ),
       child: Center(
         child: SvgPicture.asset(
           svgForCategory(category),
           width: 19,
-          colorFilter: ColorFilter.mode(isOut ? AppColors.rust : const Color(0xFF7A5E14), BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(isOut ? scheme.error : const Color(0xFF7A5E14), BlendMode.srcIn),
         ),
       ),
     );

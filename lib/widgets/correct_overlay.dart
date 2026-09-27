@@ -10,6 +10,7 @@ import 'package:ssr_space/theme/app_theme.dart';
 /// Menutup sendiri setelah 30 detik.
 /// Tanpa Theme ambient (entry overlay themeless) sehingga memakai token
 /// ledger gelap AppColors langsung, bukan colorScheme.
+/// Overlay standalone: token gelap eksplisit by design (ruling plan Task 2), tidak ikut sadar-tema app.
 class CorrectOverlay extends StatefulWidget {
   const CorrectOverlay({super.key});
 
