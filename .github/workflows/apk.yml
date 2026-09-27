@@ -260,6 +260,51 @@ jobs:
               groovy.write_text(s)
           print('signing injected')
           EOF
+      - run: |
+          python3 - <<'EOF'
+          import pathlib
+          kts = pathlib.Path('android/app/build.gradle.kts')
+          groovy = pathlib.Path('android/app/build.gradle')
+          if kts.exists():
+              s = kts.read_text()
+              if 'isCoreLibraryDesugaringEnabled' not in s:
+                  assert 'android {' in s
+                  block = (
+                      '\n      compileOptions {\n'
+                      '          isCoreLibraryDesugaringEnabled = true\n'
+                      '      }\n'
+                  )
+                  s = s.replace('android {', 'android {' + block, 1)
+              if 'desugar_jdk_libs' not in s:
+                  assert 'dependencies {' in s
+                  dep = (
+                      '\n      coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n'
+                  )
+                  s = s.replace('dependencies {', 'dependencies {' + dep, 1)
+              kts.write_text(s)
+              assert 'isCoreLibraryDesugaringEnabled' in kts.read_text()
+              assert 'desugar_jdk_libs' in kts.read_text()
+          else:
+              s = groovy.read_text()
+              if 'coreLibraryDesugaringEnabled' not in s:
+                  assert 'android {' in s
+                  block = (
+                      '\n      compileOptions {\n'
+                      '          coreLibraryDesugaringEnabled true\n'
+                      '      }\n'
+                  )
+                  s = s.replace('android {', 'android {' + block, 1)
+              if 'desugar_jdk_libs' not in s:
+                  assert 'dependencies {' in s
+                  dep = (
+                      '\n      coreLibraryDesugaring \'com.android.tools:desugar_jdk_libs:2.1.4\'\n'
+                  )
+                  s = s.replace('dependencies {', 'dependencies {' + dep, 1)
+              groovy.write_text(s)
+              assert 'coreLibraryDesugaringEnabled' in groovy.read_text()
+              assert 'desugar_jdk_libs' in groovy.read_text()
+          print('desugaring enabled')
+          EOF
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
       - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
         env:
