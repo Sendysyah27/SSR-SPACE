@@ -63,26 +63,32 @@ class SsrSpaceApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<String>(
-      valueListenable: localeCode,
-      builder: (_, __, ___) => ValueListenableBuilder<String>(
-        valueListenable: currencyCode,
-        builder: (_, __, ___) => ValueListenableBuilder<double>(
-          valueListenable: fontScale,
-          builder: (_, scale, ___) => MaterialApp(
-            title: 'SSR SPACE',
-            theme: AppTheme.light(),
-            darkTheme: AppTheme.dark(),
-            themeMode: ThemeMode.system,
-            home: SplashScreen(session: session),
-            debugShowCheckedModeBanner: false,
-            builder: (ctx, child) => MediaQuery(
-              data: MediaQuery.of(ctx)
-                  .copyWith(textScaler: TextScaler.linear(scale)),
-              child: child ?? const SizedBox.shrink(),
+      valueListenable: themeChoice,
+      builder: (_, choice, ___) {
+        final isNoir = choice == 'noir';
+        return ValueListenableBuilder<String>(
+          valueListenable: localeCode,
+          builder: (_, __, ___) => ValueListenableBuilder<String>(
+            valueListenable: currencyCode,
+            builder: (_, __, ___) => ValueListenableBuilder<double>(
+              valueListenable: fontScale,
+              builder: (_, scale, ___) => MaterialApp(
+                title: 'SSR SPACE',
+                theme: isNoir ? SsrTheme.noir() : AppTheme.light(),
+                darkTheme: isNoir ? SsrTheme.noir() : AppTheme.dark(),
+                themeMode: ThemeMode.system,
+                home: SplashScreen(session: session),
+                debugShowCheckedModeBanner: false,
+                builder: (ctx, child) => MediaQuery(
+                  data: MediaQuery.of(ctx)
+                      .copyWith(textScaler: TextScaler.linear(scale)),
+                  child: child ?? const SizedBox.shrink(),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -19,6 +19,7 @@ const _kReminderHour = 'reminder_hour';
 const _kReminderMinute = 'reminder_minute';
 const _kWidgetToday = 'widget_today';
 const _kWalletUse = 'wallet_use_count';
+const _kThemeChoice = 'app_theme_choice';
 
 /// Pengaturan aplikasi: bahasa, mata uang tampilan, skala font.
 /// Diisi di main() sebelum runApp; layar settings mengubah + simpan.
@@ -32,13 +33,16 @@ final uiHeroStyle = ValueNotifier<String>('emerald-calm');
 final homeMenuOrder = ValueNotifier<List<String>>([]);
 final inputDefaultCurrency = ValueNotifier<String>('IDR');
 final reportsTopN = ValueNotifier<bool>(true);
-final reportSectionOrder = ValueNotifier<List<String>>(
-  const ['summary', 'recap', 'list'],
-);
+final reportSectionOrder = ValueNotifier<List<String>>(const [
+  'summary',
+  'recap',
+  'list',
+]);
 final reminderEnabled = ValueNotifier<bool>(false);
 final reminderHour = ValueNotifier<int>(7);
 final reminderMinute = ValueNotifier<int>(0);
 final widgetToday = ValueNotifier<bool>(false);
+final themeChoice = ValueNotifier<String>('otomatis');
 
 /// Hitung pemakaian dompet manual (id ke jumlah), untuk urutan dropdown.
 /// Hanya naik lewat noteWalletUsed; auto-track tidak menyentuh.
@@ -78,6 +82,8 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
   reminderMinute.value = (prefs.getInt(_kReminderMinute) ?? 0).clamp(0, 59);
   widgetToday.value = prefs.getBool(_kWidgetToday) ?? false;
   walletUseCounts.value = decodeUsage(prefs.getString(_kWalletUse));
+  final tc = prefs.getString(_kThemeChoice);
+  themeChoice.value = (tc == 'noir') ? 'noir' : 'otomatis';
 }
 
 Future<void> setLocaleCode(String v) async {
@@ -172,6 +178,13 @@ Future<void> setWidgetToday(bool v) async {
   widgetToday.value = v;
   final prefs = await SharedPreferences.getInstance();
   await prefs.setBool(_kWidgetToday, v);
+}
+
+Future<void> setThemeChoice(String v) async {
+  final nv = (v == 'noir') ? 'noir' : 'otomatis';
+  themeChoice.value = nv;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kThemeChoice, nv);
 }
 
 /// Catat satu pemakaian dompet manual. Id kosong diabaikan.

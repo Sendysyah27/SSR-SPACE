@@ -18,4 +18,19 @@ void main() {
     expect(widgetToday.value, false);
     expect(inputDefaultCurrency.value, 'IDR');
   });
+
+  test('theme choice fail-safe + persist', () async {
+    SharedPreferences.setMockInitialValues({});
+    final p = await SharedPreferences.getInstance();
+    await loadAppSettings(p);
+    expect(themeChoice.value, 'otomatis');
+    await setThemeChoice('noir');
+    expect(themeChoice.value, 'noir');
+    await setThemeChoice('invalid');
+    expect(themeChoice.value, 'noir');
+    SharedPreferences.setMockInitialValues({'app_theme_choice': 'noir'});
+    final p2 = await SharedPreferences.getInstance();
+    await loadAppSettings(p2);
+    expect(themeChoice.value, 'noir');
+  });
 }

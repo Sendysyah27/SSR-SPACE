@@ -172,10 +172,7 @@ const _t = <String, Map<String, String>>{
   'w_savings': {'id': 'Tabungan', 'en': 'Savings'},
   'w_investment': {'id': 'Investasi', 'en': 'Investment'},
   'comp_title': {'id': 'Komposisi aset', 'en': 'Asset mix'},
-  'comp_sub': {
-    'id': 'Posisi saldo per kelompok',
-    'en': 'Balance by group',
-  },
+  'comp_sub': {'id': 'Posisi saldo per kelompok', 'en': 'Balance by group'},
   'comp_liquid': {'id': 'Likuid', 'en': 'Liquid'},
   'w_save': {'id': 'Simpan dompet', 'en': 'Save wallet'},
   'w_notloaded': {'id': 'Belum termuat', 'en': 'Not loaded'},
@@ -352,7 +349,10 @@ const _t = <String, Map<String, String>>{
   'r_arrange_done': {'id': 'Selesai', 'en': 'Done'},
   // Tagihan rutin (P2 recurring-bills, saran bukan insert otomatis)
   'rb_title': {'id': 'Tagihan rutin', 'en': 'Recurring bills'},
-  'rb_empty_t': {'id': 'Belum ada tagihan rutin', 'en': 'No recurring bills yet'},
+  'rb_empty_t': {
+    'id': 'Belum ada tagihan rutin',
+    'en': 'No recurring bills yet',
+  },
   'rb_empty_s': {
     'id': 'Tambahkan kos, langganan, atau cicilan agar tak lupa dicatat.',
     'en': 'Add rent, subscriptions, or installments so you never miss one.',
@@ -841,16 +841,20 @@ const _t = <String, Map<String, String>>{
     'id': 'Tak bisa keluarkan pemilik terakhir.',
     'en': 'Cannot remove the last owner.',
   },
-  'wsm_kick_denied': {'id': 'Hanya pemilik/admin.', 'en': 'Owners/admins only.'},
+  'wsm_kick_denied': {
+    'id': 'Hanya pemilik/admin.',
+    'en': 'Owners/admins only.',
+  },
   'wsm_danger': {'id': 'Zona berbahaya', 'en': 'Danger zone'},
   'wsm_delete': {'id': 'Hapus workspace', 'en': 'Delete workspace'},
   'wsm_delete_body': {
-    'id':
-        'Semua dompet, transaksi, dan data ikut terhapus. Ketik nama workspace untuk konfirmasi.',
-    'en':
-        'All wallets, transactions, and data go with it. Type the workspace name to confirm.',
+    'id': 'Semua dompet, transaksi, dan data ikut terhapus. Ketik nama workspace untuk konfirmasi.',
+    'en': 'All wallets, transactions, and data go with it. Type the workspace name to confirm.',
   },
-  'wsm_delete_hint': {'id': 'Ketik nama workspace', 'en': 'Type workspace name'},
+  'wsm_delete_hint': {
+    'id': 'Ketik nama workspace',
+    'en': 'Type workspace name',
+  },
   'wsm_delete_denied': {
     'id': 'Hanya pemilik yang bisa hapus workspace.',
     'en': 'Only owners can delete the workspace.',
@@ -859,7 +863,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Butuh migration_14: jalankan di Supabase SQL Editor.',
     'en': 'Requires migration_14: run it in the Supabase SQL editor.',
   },
-  'wsm_err': {'id': 'Gagal. Periksa koneksi.', 'en': 'Failed. Check your connection.'},
+  'wsm_err': {
+    'id': 'Gagal. Periksa koneksi.',
+    'en': 'Failed. Check your connection.',
+  },
   'wsm_detail': {'id': 'Kelola', 'en': 'Manage'},
   'wsm_invite_active': {
     'id': 'Aktifkan workspace ini dulu untuk mengundang anggota.',
@@ -1100,7 +1107,10 @@ const _t = <String, Map<String, String>>{
   'pf_about': {'id': 'Tentang', 'en': 'About'},
   // Pengaturan: katalog tampilan, pengingat, koreksi
   'st_def_currency': {'id': 'Mata uang bawaan', 'en': 'Default currency'},
-  'st_topn': {'id': 'Top 8 + Lainnya di laporan', 'en': 'Top 8 + Other in reports'},
+  'st_topn': {
+    'id': 'Top 8 + Lainnya di laporan',
+    'en': 'Top 8 + Other in reports',
+  },
   'st_topn_sub': {
     'id': 'Batasi kategori terbanyak di laporan',
     'en': 'Limit top categories in reports',
@@ -1111,6 +1121,13 @@ const _t = <String, Map<String, String>>{
   'st_list_comfortable': {'id': 'Lega', 'en': 'Comfortable'},
   'st_date_style': {'id': 'Gaya tanggal', 'en': 'Date style'},
   'st_hero_style': {'id': 'Gaya ringkasan', 'en': 'Summary style'},
+  'st_theme': {'id': 'Tema', 'en': 'Theme'},
+  'th_auto': {'id': 'Otomatis', 'en': 'Automatic'},
+  'th_noir': {'id': 'Noir', 'en': 'Noir'},
+  'th_theme_desc': {
+    'id': 'Pilih tampilan aplikasi.',
+    'en': 'Choose how the app looks.',
+  },
   'st_reminder_time': {'id': 'Jam pengingat', 'en': 'Reminder time'},
   'st_reminder_on': {'id': 'Pengingat harian', 'en': 'Daily reminder'},
   'st_widget_today': {'id': 'Widget hari ini', 'en': 'Today widget'},
@@ -1168,7 +1185,8 @@ const _t = <String, Map<String, String>>{
   },
   'msg_p2': {
     'id': 'Bagian ini tahap P2. Pengaturan tetap tersimpan bila sudah ada.',
-    'en': 'This section is phase P2. Settings stay saved where already present.',
+    'en':
+        'This section is phase P2. Settings stay saved where already present.',
   },
   // Pengingat: varian copy harian (P2 reminder-copy, rotasi deterministik)
   'rmc_m1': {
@@ -1228,10 +1246,7 @@ const _t = <String, Map<String, String>>{
     'en': 'Prepare month close with one quick check.',
   },
   // Beranda: calm streak 8 minggu (P2, tanpa angka/API)
-  'calm_title': {
-    'id': 'Catatan 8 minggu terakhir',
-    'en': 'Last 8 weeks',
-  },
+  'calm_title': {'id': 'Catatan 8 minggu terakhir', 'en': 'Last 8 weeks'},
   'calm_sub': {
     'id': 'Titik penuh = minggu dengan catatan.',
     'en': 'Filled dot = week with an entry.',
