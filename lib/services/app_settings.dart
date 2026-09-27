@@ -181,10 +181,10 @@ Future<void> setWidgetToday(bool v) async {
 }
 
 Future<void> setThemeChoice(String v) async {
-  final nv = (v == 'noir') ? 'noir' : 'otomatis';
-  themeChoice.value = nv;
+  if (v != 'noir') return;
+  themeChoice.value = 'noir';
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(_kThemeChoice, nv);
+  await prefs.setString(_kThemeChoice, 'noir');
 }
 
 /// Catat satu pemakaian dompet manual. Id kosong diabaikan.
