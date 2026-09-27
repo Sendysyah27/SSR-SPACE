@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/services/wallet_composition.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -113,6 +115,15 @@ class _WalletsScreenState extends State<WalletsScreen> {
     return sum;
   }
 
+  Composition? _composition() {
+    if (!balancesOk) return null;
+    final comp = composeComposition(
+      {for (final b in balances) b.walletId: b.balance},
+      {for (final w in items) w.id: w.type},
+    );
+    return comp.showStrip ? comp : null;
+  }
+
   String _typeLabel(String t) {
     switch (t) {
       case 'cash':
@@ -121,6 +132,10 @@ class _WalletsScreenState extends State<WalletsScreen> {
         return tr('w_ewallet');
       case 'bank':
         return tr('w_bank');
+      case 'savings':
+        return tr('w_savings');
+      case 'investment':
+        return tr('w_investment');
       default:
         return t;
     }
@@ -178,6 +193,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
     if (err != null) {
       return _WalletsScaffold(ErrorView(message: err!, onRetry: _load));
     }
+    final comp = _composition();
     return _WalletsScaffold(
       ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
@@ -189,6 +205,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
             balanceTextOf: _balanceLabel,
             onFocusForm: _focusForm,
           ),
+          if (comp != null) _CompositionStrip(comp: comp),
           _NewWalletForm(
             nameC: nameC,
             nameFocus: nameFocus,
@@ -307,6 +324,14 @@ class _NewWalletForm extends StatelessWidget {
               DropdownMenuItem(value: 'cash', child: Text(tr('w_cash'))),
               DropdownMenuItem(value: 'ewallet', child: Text(tr('w_ewallet'))),
               DropdownMenuItem(value: 'bank', child: Text(tr('w_bank'))),
+              DropdownMenuItem(
+                value: 'savings',
+                child: Text(tr('w_savings')),
+              ),
+              DropdownMenuItem(
+                value: 'investment',
+                child: Text(tr('w_investment')),
+              ),
             ],
             onChanged: onTypeChanged,
           ),
@@ -375,4 +400,125 @@ class _WalletListCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Strip komposisi aset: judul + donut mini + 3 baris per kelompok.
+/// Pemanggil hanya merender bila comp.showStrip true.
+class _CompositionStrip extends StatelessWidget {
+  final Composition comp;
+  const _CompositionStrip({required this.comp});
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return SectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(tr('comp_title'), style: text.titleMedium),
+          Text(tr('comp_sub'), style: text.bodySmall),
+          const SizedBox(height: SsrSpace.md),
+          Row(
+            children: [
+              SizedBox(
+                width: 96,
+                height: 96,
+                child: _CompDonut(comp: comp),
+              ),
+              const SizedBox(width: SsrSpace.md),
+              Expanded(
+                child: Column(
+                  children: [
+                    _compRow(
+                      SsrColors.accent,
+                      tr('comp_liquid'),
+                      comp.liquid,
+                      comp.liquidPct,
+                    ),
+                    _compRow(
+                      SsrColors.saving,
+                      tr('w_savings'),
+                      comp.savings,
+                      comp.savingsPct,
+                    ),
+                    _compRow(
+                      SsrColors.secondary,
+                      tr('w_investment'),
+                      comp.investments,
+                      comp.investmentsPct,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Donut mini pola laporan: touch mati, hanya iris di atas nol.
+class _CompDonut extends StatelessWidget {
+  final Composition comp;
+  const _CompDonut({required this.comp});
+
+  @override
+  Widget build(BuildContext context) {
+    return PieChart(
+      PieChartData(
+        pieTouchData: PieTouchData(enabled: false),
+        sectionsSpace: 2,
+        centerSpaceRadius: 30,
+        startDegreeOffset: 270,
+        sections: [
+          if (comp.liquid > 0)
+            PieChartSectionData(
+              value: comp.liquid,
+              color: SsrColors.accent,
+              radius: 14,
+              showTitle: false,
+            ),
+          if (comp.savings > 0)
+            PieChartSectionData(
+              value: comp.savings,
+              color: SsrColors.saving,
+              radius: 14,
+              showTitle: false,
+            ),
+          if (comp.investments > 0)
+            PieChartSectionData(
+              value: comp.investments,
+              color: SsrColors.secondary,
+              radius: 14,
+              showTitle: false,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _compRow(Color dot, String label, double value, double pct) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: SsrSpace.xs),
+    child: Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: SsrSpace.sm),
+        Expanded(child: Text(label)),
+        Text(
+          '${amt(value)} ${(pct * 100).round()}%',
+          style: const TextStyle(
+            fontFeatures: [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    ),
+  );
 }

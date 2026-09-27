@@ -169,6 +169,14 @@ const _t = <String, Map<String, String>>{
   'w_cash': {'id': 'Tunai', 'en': 'Cash'},
   'w_ewallet': {'id': 'E-wallet', 'en': 'E-wallet'},
   'w_bank': {'id': 'Bank', 'en': 'Bank'},
+  'w_savings': {'id': 'Tabungan', 'en': 'Savings'},
+  'w_investment': {'id': 'Investasi', 'en': 'Investment'},
+  'comp_title': {'id': 'Komposisi aset', 'en': 'Asset mix'},
+  'comp_sub': {
+    'id': 'Posisi saldo per kelompok',
+    'en': 'Balance by group',
+  },
+  'comp_liquid': {'id': 'Likuid', 'en': 'Liquid'},
   'w_save': {'id': 'Simpan dompet', 'en': 'Save wallet'},
   'w_notloaded': {'id': 'Belum termuat', 'en': 'Not loaded'},
   'w_err_recursion': {
