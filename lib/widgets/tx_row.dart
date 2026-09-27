@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/tx_wallet_check.dart';
@@ -27,10 +28,13 @@ class TxRow extends StatelessWidget {
     }
   }
 
-  Color get _amountColor {
-    if (tx.type == 'in') return SsrColors.mint;
-    if (tx.type == 'out') return SsrColors.rose;
-    return SsrColors.noirInk;
+  bool get _isOut => tx.type == 'out';
+
+  Color _amountColor(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    if (tx.type == 'in') return scheme.primary;
+    if (tx.type == 'out') return scheme.error;
+    return scheme.onSurface;
   }
 
   IconData get _directionIcon {
@@ -39,29 +43,58 @@ class TxRow extends StatelessWidget {
     return AppIcons.transfer;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final auto = tx.sourcePackage != null;
+  String get _signedAmount {
+    final nominal = amt(tx.amount);
+    if (tx.type == 'in') return '+ $nominal';
+    if (tx.type == 'out') return '− $nominal';
+    return nominal;
+  }
+
+  String get _subtitle {
     final when = txWhenLabel(tx.date, tx.createdAt);
-    final chips = <Widget>[
-      StatusChip(label: tx.code ?? tr('tx_nocode'), tone: StatusTone.neutral),
-      if (auto)
-        StatusChip(
-          label: tr('tx_auto'),
-          tone: StatusTone.accent,
-          icon: AppIcons.autoBadge,
-        ),
+    final code = tx.code;
+    if (code == null || code.isEmpty) return when;
+    if (when.isEmpty) return code;
+    return '$when · $code';
+  }
+
+  List<Widget> _chips() {
+    return [
+      if (tx.sourcePackage != null)
+        StatusChip(label: tr('tx_auto'), tone: StatusTone.accent, icon: AppIcons.autoBadge),
       if (hasNoWallet(tx))
         StatusChip(label: tr('tx_nowallet'), tone: StatusTone.danger),
       if (tx.category != null && tx.category!.isNotEmpty)
         StatusChip(label: tx.category!, tone: StatusTone.neutral),
     ];
+  }
 
+  Widget _title(ThemeData theme, Color amountColor) {
+    return Row(
+      children: [
+        DuoIcon(_directionIcon, size: 16, color: amountColor),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: '$_kindLabel: ', style: theme.textTheme.titleSmall?.copyWith(fontSize: 14.5, fontWeight: FontWeight.w600)),
+                TextSpan(text: _signedAmount, style: TextStyle(fontFamily: SsrFonts.numeric, fontSize: 15, fontWeight: FontWeight.w600, fontFeatures: const [FontFeature.tabularFigures()], color: amountColor)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final amountColor = _amountColor(context);
+    final subtitle = _subtitle;
     return Material(
-      color: selected
-          ? SsrColors.mint.withValues(alpha: 0.12)
-          : Colors.transparent,
+      color: selected ? SsrColors.mint.withValues(alpha: 0.12) : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -69,68 +102,54 @@ class TxRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: SsrColors.noirRaised,
-                  borderRadius: BorderRadius.circular(SsrRadius.tile),
-                  border: Border.all(color: SsrColors.noirLine),
-                ),
-                child: DuoIcon(
-                  iconForCategory(tx.category),
-                  color: _amountColor,
-                  size: 22,
-                ),
-              ),
+              _TxBadge(isOut: _isOut, category: tx.category),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        DuoIcon(_directionIcon, size: 16, color: _amountColor),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            '$_kindLabel: ${amt(tx.amount)}',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: _amountColor,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    _title(theme, amountColor),
                     const SizedBox(height: 6),
-                    Wrap(spacing: 6, runSpacing: 4, children: chips),
-                    if (when.isNotEmpty) ...[
+                    Wrap(spacing: 6, runSpacing: 4, children: _chips()),
+                    if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text(
-                        when,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: SsrColors.noirSecondary,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
+                      Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: SsrColors.noirSecondary, fontFeatures: const [FontFeature.tabularFigures()])),
                     ],
                     if (tx.note != null && tx.note!.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text(
-                        tx.note!,
-                        style: theme.textTheme.bodySmall,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      Text(tx.note!, style: theme.textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
                     ],
                   ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TxBadge extends StatelessWidget {
+  final bool isOut;
+  final String? category;
+
+  const _TxBadge({required this.isOut, required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: isOut ? AppColors.rust.withValues(alpha: 0.12) : AppColors.goldSoft,
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Center(
+        child: SvgPicture.asset(
+          svgForCategory(category),
+          width: 19,
+          colorFilter: ColorFilter.mode(isOut ? AppColors.rust : const Color(0xFF7A5E14), BlendMode.srcIn),
         ),
       ),
     );
