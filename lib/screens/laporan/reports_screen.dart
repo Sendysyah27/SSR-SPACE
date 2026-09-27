@@ -32,6 +32,7 @@ import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
+import 'package:ssr_space/widgets/tx_type_selector.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -668,13 +669,7 @@ class _FlowFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<String>(
-      style: SegmentedButton.styleFrom(
-        backgroundColor: SsrColors.noirSurface,
-        foregroundColor: SsrColors.noirSecondary,
-        selectedBackgroundColor: SsrColors.mint.withValues(alpha: 0.16),
-        selectedForegroundColor: SsrColors.mint,
-        side: const BorderSide(color: SsrColors.noirLine),
-      ),
+      style: ssrSegmentedStyle(),
       segments: [
         ButtonSegment(value: 'all', label: Text(tr('r_flow_all'))),
         ButtonSegment(value: 'in', label: Text(tr('tx_in'))),

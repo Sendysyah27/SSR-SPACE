@@ -15,6 +15,7 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/widgets/tx_type_selector.dart';
 
 /// Pengaturan: bahasa, mata uang, ukuran huruf, ganti PIN via magic link.
 class SettingsScreen extends StatefulWidget {
@@ -116,13 +117,7 @@ class _LangCard extends StatelessWidget {
       label: tr('st_lang'),
       children: [
         SegmentedButton<String>(
-          style: SegmentedButton.styleFrom(
-            backgroundColor: SsrColors.noirSurface,
-            foregroundColor: SsrColors.noirSecondary,
-            selectedBackgroundColor: SsrColors.mint.withValues(alpha: 0.16),
-            selectedForegroundColor: SsrColors.mint,
-            side: const BorderSide(color: SsrColors.noirLine),
-          ),
+          style: ssrSegmentedStyle(),
           segments: const [
             ButtonSegment(value: 'id', label: Text('Indonesia')),
             ButtonSegment(value: 'en', label: Text('English')),
@@ -312,13 +307,7 @@ class _ListStyleCard extends StatelessWidget {
         ValueListenableBuilder<String>(
           valueListenable: uiListStyle,
           builder: (context, value, _) => SegmentedButton<String>(
-            style: SegmentedButton.styleFrom(
-              backgroundColor: SsrColors.noirSurface,
-              foregroundColor: SsrColors.noirSecondary,
-              selectedBackgroundColor: SsrColors.mint.withValues(alpha: 0.16),
-              selectedForegroundColor: SsrColors.mint,
-              side: const BorderSide(color: SsrColors.noirLine),
-            ),
+            style: ssrSegmentedStyle(),
             segments: [
               ButtonSegment(
                 value: 'compact',

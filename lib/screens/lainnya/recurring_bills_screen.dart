@@ -11,6 +11,7 @@ import 'package:ssr_space/widgets/category_chips.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
+import 'package:ssr_space/widgets/tx_type_selector.dart';
 
 /// Daftar tagihan rutin (P2): kos, langganan, cicilan sebagai saran
 /// sekali ketuk di Beranda. Tanpa migration, simpan di prefs.
@@ -436,13 +437,7 @@ class _BillMetaFields extends StatelessWidget {
         CategoryChips(controller: catC),
         const SizedBox(height: SsrSpace.sm),
         SegmentedButton<String>(
-          style: SegmentedButton.styleFrom(
-            backgroundColor: SsrColors.noirSurface,
-            foregroundColor: SsrColors.noirSecondary,
-            selectedBackgroundColor: SsrColors.mint.withValues(alpha: 0.16),
-            selectedForegroundColor: SsrColors.mint,
-            side: const BorderSide(color: SsrColors.noirLine),
-          ),
+          style: ssrSegmentedStyle(),
           segments: [
             ButtonSegment(value: 'weekly', label: Text(tr('rb_weekly'))),
             ButtonSegment(value: 'monthly', label: Text(tr('rb_monthly'))),

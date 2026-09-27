@@ -177,7 +177,7 @@ class _CatPicker extends StatelessWidget {
               selectedColor: SsrColors.mint,
               labelStyle: TextStyle(
                 color: selected == c
-                    ? const Color(0xFF0C1210)
+                    ? SsrColors.noirBg
                     : SsrColors.noirSecondary,
                 fontWeight: FontWeight.w600,
               ),

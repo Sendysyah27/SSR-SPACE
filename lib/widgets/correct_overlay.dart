@@ -114,7 +114,7 @@ class CorrectOverlayState extends State<CorrectOverlay> {
                     onPressed: () => _act('lengkapi'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: SsrColors.mint,
-                      foregroundColor: const Color(0xFF0C1210),
+                      foregroundColor: SsrColors.noirBg,
                     ),
                     child: Text(ok),
                   ),

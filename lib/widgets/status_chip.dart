@@ -36,7 +36,7 @@ class StatusChip extends StatelessWidget {
       case StatusTone.danger:
         return SsrColors.rose;
       case StatusTone.ink:
-        return const Color(0xFF0C1210);
+        return SsrColors.noirBg;
       case StatusTone.neutral:
         return SsrColors.noirSecondary;
     }

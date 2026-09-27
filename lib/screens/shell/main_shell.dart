@@ -136,7 +136,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       floatingActionButton: FloatingActionButton(
         onPressed: _openInput,
         backgroundColor: SsrColors.mint,
-        foregroundColor: const Color(0xFF0C1210),
+        foregroundColor: SsrColors.noirBg,
         tooltip: tr('act_catat'),
         child: const DuoIcon(AppIcons.add),
       ),

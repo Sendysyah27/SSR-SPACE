@@ -2,6 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/strings.dart';
 
+/// Gaya segmented tunggal seluruh app: pilihan terisi mint penuh dengan
+/// teks noirBg, sisanya surface noir dengan teks sekunder, border mint/line.
+/// Dipakai TxTypeSelector + filter laporan + pengaturan + tagihan rutin.
+ButtonStyle ssrSegmentedStyle() {
+  return ButtonStyle(
+    backgroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) {
+        return SsrColors.mint;
+      }
+      return SsrColors.noirSurface;
+    }),
+    foregroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) {
+        return SsrColors.noirBg;
+      }
+      return SsrColors.noirSecondary;
+    }),
+    side: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) {
+        return const BorderSide(color: SsrColors.mint);
+      }
+      return const BorderSide(color: SsrColors.noirLine);
+    }),
+    textStyle: WidgetStateProperty.all(
+      const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+    ),
+  );
+}
+
 /// Pilihan jenis transaksi Masuk / Keluar / Transfer (pill toggle).
 /// Satu gaya untuk semua pemakaian: pilihan terisi mint penuh dengan
 /// teks gelap, sisanya surface noir dengan teks sekunder.
@@ -26,29 +55,7 @@ class TxTypeSelector extends StatelessWidget {
       selected: {value},
       onSelectionChanged: (v) => onChanged(v.first),
       showSelectedIcon: false,
-      style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return SsrColors.mint;
-          }
-          return SsrColors.noirSurface;
-        }),
-        foregroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return const Color(0xFF0C1210);
-          }
-          return SsrColors.noirSecondary;
-        }),
-        side: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return const BorderSide(color: SsrColors.mint);
-          }
-          return const BorderSide(color: SsrColors.noirLine);
-        }),
-        textStyle: WidgetStateProperty.all(
-          const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-      ),
+      style: ssrSegmentedStyle(),
     );
   }
 }
