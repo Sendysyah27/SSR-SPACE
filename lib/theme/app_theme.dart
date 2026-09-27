@@ -25,6 +25,26 @@ class SsrColors {
   static const gold = Color(0xFFC6A15B);
 }
 
+/// Token warna Ledger Premium (exact dari prompt desain, 2026-09-27).
+/// Satu-satunya sumber hex untuk UI baru. SsrColors dipertahankan
+/// hingga migrasi selesai (dihapus Task 6).
+class AppColors {
+  static const emerald = Color(0xFF0E4B44);
+  static const emeraldDeep = Color(0xFF0A332E);
+  static const gold = Color(0xFFC9A227);
+  static const goldSoft = Color(0xFFEDE2C1);
+  static const rust = Color(0xFFB23A2E);
+  static const cream = Color(0xFFF6F4EC);
+  static const ink = Color(0xFF171A19);
+  static const inkSoft = Color(0xFF5B6360);
+  static const line = Color(0xFFE4E0D4);
+  static const bgDark = Color(0xFF12100C);
+  static const surfaceDark = Color(0xFF1C1A16);
+  static const inkDark = Color(0xFFF1EEE6);
+  static const inkSoftDark = Color(0xFFA6A296);
+  static const lineDark = Color(0xFF2C2823);
+}
+
 class SsrMotion {
   static const fast = Duration(milliseconds: 150);
   static const base = Duration(milliseconds: 200);
@@ -405,4 +425,338 @@ class SsrTheme {
     color: SsrColors.noirInk,
     fontFeatures: [FontFeature.tabularFigures()],
   );
+}
+
+/// Theme Ledger Premium: light-first cream plus varian dark.
+/// Dipakai via MaterialApp theme/darkTheme/themeMode system di main.dart.
+class AppTheme {
+  static ThemeData light() {
+    const scheme = ColorScheme.light(
+      primary: AppColors.emerald,
+      onPrimary: AppColors.cream,
+      surface: Colors.white,
+      onSurface: AppColors.ink,
+      error: AppColors.rust,
+      onError: AppColors.cream,
+      outline: AppColors.line,
+    );
+    return ThemeData(
+      useMaterial3: true,
+      fontFamily: SsrFonts.body,
+      scaffoldBackgroundColor: AppColors.cream,
+      colorScheme: scheme,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.cream,
+        foregroundColor: AppColors.ink,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.3,
+          color: AppColors.ink,
+        ),
+      ),
+      textTheme: const TextTheme(
+        displaySmall: TextStyle(
+          fontFamily: SsrFonts.display,
+          fontSize: 32,
+          fontWeight: FontWeight.w400,
+          letterSpacing: -0.5,
+          color: AppColors.ink,
+        ),
+        titleLarge: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.2,
+          color: AppColors.ink,
+        ),
+        titleMedium: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: AppColors.ink,
+        ),
+        bodyLarge: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 16,
+          height: 1.5,
+          color: AppColors.ink,
+        ),
+        bodyMedium: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 14,
+          height: 1.5,
+          color: AppColors.ink,
+        ),
+        bodySmall: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 12,
+          height: 1.4,
+          color: AppColors.inkSoft,
+        ),
+        labelLarge: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: AppColors.ink,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          backgroundColor: AppColors.emerald,
+          foregroundColor: AppColors.cream,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(SsrRadius.button),
+          ),
+          textStyle: const TextStyle(
+            fontFamily: SsrFonts.body,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          foregroundColor: AppColors.ink,
+          side: const BorderSide(color: AppColors.line),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(SsrRadius.button),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          minimumSize: const Size(48, 44),
+          foregroundColor: AppColors.emerald,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.input),
+          borderSide: const BorderSide(color: AppColors.line),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.input),
+          borderSide: const BorderSide(color: AppColors.line),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.input),
+          borderSide: const BorderSide(color: AppColors.emerald, width: 1.6),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
+      ),
+      dividerTheme: const DividerThemeData(thickness: 0.8, space: 1),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.ink,
+        contentTextStyle: const TextStyle(
+          fontFamily: SsrFonts.body,
+          color: AppColors.cream,
+          fontSize: 14,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.tile),
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.cream;
+          }
+          return null;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.emerald;
+          }
+          return null;
+        }),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.emerald,
+      ),
+      listTileTheme: const ListTileThemeData(
+        contentPadding: EdgeInsets.symmetric(horizontal: 4),
+        minTileHeight: 52,
+      ),
+    );
+  }
+
+  static ThemeData dark() {
+    const scheme = ColorScheme.dark(
+      primary: AppColors.emerald,
+      onPrimary: AppColors.cream,
+      surface: AppColors.surfaceDark,
+      onSurface: AppColors.inkDark,
+      error: AppColors.rust,
+      onError: AppColors.inkDark,
+      outline: AppColors.lineDark,
+    );
+    return ThemeData(
+      useMaterial3: true,
+      fontFamily: SsrFonts.body,
+      scaffoldBackgroundColor: AppColors.bgDark,
+      colorScheme: scheme,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.bgDark,
+        foregroundColor: AppColors.inkDark,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.3,
+          color: AppColors.inkDark,
+        ),
+      ),
+      textTheme: const TextTheme(
+        displaySmall: TextStyle(
+          fontFamily: SsrFonts.display,
+          fontSize: 32,
+          fontWeight: FontWeight.w400,
+          letterSpacing: -0.5,
+          color: AppColors.inkDark,
+        ),
+        titleLarge: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.2,
+          color: AppColors.inkDark,
+        ),
+        titleMedium: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: AppColors.inkDark,
+        ),
+        bodyLarge: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 16,
+          height: 1.5,
+          color: AppColors.inkDark,
+        ),
+        bodyMedium: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 14,
+          height: 1.5,
+          color: AppColors.inkDark,
+        ),
+        bodySmall: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 12,
+          height: 1.4,
+          color: AppColors.inkSoftDark,
+        ),
+        labelLarge: TextStyle(
+          fontFamily: SsrFonts.body,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: AppColors.inkDark,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          backgroundColor: AppColors.emerald,
+          foregroundColor: AppColors.cream,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(SsrRadius.button),
+          ),
+          textStyle: const TextStyle(
+            fontFamily: SsrFonts.body,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          foregroundColor: AppColors.inkDark,
+          side: const BorderSide(color: AppColors.lineDark),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(SsrRadius.button),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          minimumSize: const Size(48, 44),
+          foregroundColor: AppColors.emerald,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surfaceDark,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.input),
+          borderSide: const BorderSide(color: AppColors.lineDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.input),
+          borderSide: const BorderSide(color: AppColors.lineDark),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.input),
+          borderSide: const BorderSide(color: AppColors.emerald, width: 1.6),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        thickness: 0.8,
+        space: 1,
+        color: AppColors.lineDark,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.surfaceDark,
+        contentTextStyle: const TextStyle(
+          fontFamily: SsrFonts.body,
+          color: AppColors.inkDark,
+          fontSize: 14,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SsrRadius.tile),
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.cream;
+          }
+          return null;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.emerald;
+          }
+          return null;
+        }),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.emerald,
+      ),
+      listTileTheme: const ListTileThemeData(
+        contentPadding: EdgeInsets.symmetric(horizontal: 4),
+        minTileHeight: 52,
+      ),
+    );
+  }
 }

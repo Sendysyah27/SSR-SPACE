@@ -7,15 +7,30 @@ Aplikasi pencatatan pemasukan dan pengeluaran multi-workspace untuk Indonesia. D
 ## Dials
 
 Dial: ENERGY 2 / RHYTHM 2 / MOTION 1.
-Design Read: aplikasi keuangan phone-first untuk pemakai Indonesia, bahasa visual buku kas gelap yang tenang dan fokus: hierarki tegas, permukaan bertingkat, transisi Material minimal. Dial ENERGY 2 / RHYTHM 2 / MOTION 1.
+Design Read: aplikasi keuangan phone-first untuk pemakai Indonesia, bahasa visual buku kas premium yang tenang dan fokus: hierarki tegas, permukaan bertingkat, transisi Material minimal. Dial ENERGY 2 / RHYTHM 2 / MOTION 1.
 
 ## Palette
 
-- Latar `#0C1210`, permukaan `#141C18`, permukaan terangkat `#1B2521`, garis `#2A3530`.
-- Tinta `#F2EFE6`, teks sekunder `#A8A39A`.
-- Aksen tunggal mint `#2DD4BF`. Mint artinya uang bertambah, menyala tenang di atas gelap untuk cek harian.
-- Sinyal makna: pemasukan mint, pengeluaran rose `#F87171`, momen emas `#C6A15B`, selalu ditemani label kata.
-- Semua pasangan teks pakai lolos WCAG AA (terukur 6.84 sampai 16.46; putih di mint 1.86 tidak dipakai, tombol primer memakai teks gelap `#0C1210` di mint 10.17).
+Otoritas: prompt dan HTML desain user (`New Design/ssr-space-design-implementation-prompt.md`
+dan `ssr-space-design-system.html`), ditranskripsi di
+`docs/superpowers/specs/2026-09-27-ledger-premium-design.md`.
+Adaptasi tercatat di spec tersebut bagian 8: font via bundel existing
+(tanpa `google_fonts`), ikon via SVG plus `flutter_svg`
+(tanpa `phosphor_flutter`), dark mengikuti token prompt.
+
+- Light: emerald `#0E4B44`, emeraldDeep `#0A332E`, gold `#C9A227`,
+  goldSoft `#EDE2C1`, rust `#B23A2E`, cream `#F6F4EC`, ink `#171A19`,
+  teks sekunder `#5B6360`, garis `#E4E0D4`.
+- Dark: latar `#12100C`, permukaan `#1C1A16`, tinta `#F1EEE6`,
+  teks sekunder `#A6A296`, garis `#2C2823`.
+- Gold adalah satu-satunya aksen dan tidak pernah dekoratif: hanya tag
+  SURPLUS, satu ring budget paling mendesak bulan ini, dan segmen donut
+  tabungan.
+- Sinyal makna: masuk emerald, keluar rust, tabungan gold, selalu
+  ditemani label kata.
+- Semua pasangan teks lolos WCAG AA (terukur 4.73 sampai 16.39;
+  terendah `#7A5E14` di goldSoft 4.73, dipakai hanya untuk teks di atas
+  tint, bukan solid).
 
 ## Tipografi
 
@@ -41,6 +56,10 @@ MOTION 1. Transisi bawaan Material + easing halus (150-250ms): ganti loading/kon
 
 Bottom nav 5 tab (Beranda, Transaksi, Budget, Laporan, Lainnya). Alasan: pola ibu jari HP, tujuan utama satu ketukan.
 
-## Emerald Noir
+## Ledger Premium
 
-Satu tema gelap untuk seluruh aplikasi, tanpa toggle. R-21: gelap adalah identitas. Angka uang tampil di permukaan terangkat (`noirRaised`) dengan digit tabular; garis ledger memakai `noirLine` di atas `noirBg`.
+Light-first cream untuk seluruh aplikasi, plus varian dark mengikuti
+token prompt. Mode ikut tema sistem via `AppTheme.light()` dan
+`AppTheme.dark()` di `main.dart`. Tanpa baca `platformBrightness` di
+widget. Angka uang tampil Fraunces tabular; garis ledger memakai `line`
+di atas `cream` (light) atau `lineDark` di atas `bgDark` (dark).
