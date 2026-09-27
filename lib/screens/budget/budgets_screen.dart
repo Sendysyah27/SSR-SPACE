@@ -658,28 +658,26 @@ class _BudgetCard extends StatelessWidget {
 }
 
 /// Cincin progres budget: terpakai (emerald, gold, atau rust) vs sisa.
-/// [color]/[soft] opsional untuk varian lain (misal emas tabungan);
+/// [color] opsional untuk varian lain (misal emas tabungan);
 /// sisa default ikut outline tema agar adaptif light dan dark.
 class _BudgetGauge extends StatelessWidget {
   final double progress;
   final bool over;
   final int pct;
   final Color? color;
-  final Color? soft;
 
   const _BudgetGauge({
     required this.progress,
     this.over = false,
     required this.pct,
     this.color,
-    this.soft,
   });
 
   @override
   Widget build(BuildContext context) {
     final used = progress.clamp(0.0, 1.0).toDouble();
     final main = color ?? (over ? AppColors.rust : AppColors.emerald);
-    final track = soft ?? Theme.of(context).colorScheme.outline;
+    final track = Theme.of(context).colorScheme.outline;
     return SizedBox(
       width: 56,
       height: 56,
