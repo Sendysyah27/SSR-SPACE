@@ -8,6 +8,7 @@ import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/tx_validation.dart';
 import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/services/wallet_usage.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
@@ -252,6 +253,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
           date: when.date,
           createdAt: when.createdAt,
         );
+      }
+      if (walletId != null) await noteWalletUsed(walletId!);
+      if (type == 'transfer' && toWalletId != null) {
+        await noteWalletUsed(toWalletId!);
       }
       if (!mounted) return;
       Navigator.pop(context, 'saved');
@@ -588,26 +593,38 @@ class _WalletSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: SsrSpace.sm),
-        DropdownButtonFormField<String>(
-          initialValue: walletId,
-          decoration: InputDecoration(labelText: tr('tx_f_wallet')),
-          items: [for (final w in wallets) _item(w, theme)],
-          onChanged: onWalletChanged,
-        ),
-        if (type == 'transfer') ...[
-          const SizedBox(height: SsrSpace.md),
-          DropdownButtonFormField<String>(
-            initialValue: toWalletId,
-            decoration: InputDecoration(labelText: tr('tx_f_towallet')),
-            items: [for (final w in wallets) _item(w, theme)],
-            onChanged: onToWalletChanged,
-          ),
-        ],
-      ],
+    return ValueListenableBuilder<Map<String, int>>(
+      valueListenable: walletUseCounts,
+      builder: (_, counts, __) {
+        final names = <String, String>{
+          for (final w in wallets) w.id: w.name,
+        };
+        final byId = <String, Wallet>{for (final w in wallets) w.id: w};
+        final ordered = [
+          for (final id in sortIdsByUse(counts, names)) byId[id]!,
+        ];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: SsrSpace.sm),
+            DropdownButtonFormField<String>(
+              initialValue: walletId,
+              decoration: InputDecoration(labelText: tr('tx_f_wallet')),
+              items: [for (final w in ordered) _item(w, theme)],
+              onChanged: onWalletChanged,
+            ),
+            if (type == 'transfer') ...[
+              const SizedBox(height: SsrSpace.md),
+              DropdownButtonFormField<String>(
+                initialValue: toWalletId,
+                decoration: InputDecoration(labelText: tr('tx_f_towallet')),
+                items: [for (final w in ordered) _item(w, theme)],
+                onChanged: onToWalletChanged,
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }

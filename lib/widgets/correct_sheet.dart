@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/services/app_categories.dart';
+import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/instant_correct.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -74,6 +75,8 @@ class _CorrectSheetState extends State<_CorrectSheet> {
         category: sel ?? t.category,
         note: keepNote ? t.note : (noteText.isEmpty ? null : noteText),
       );
+      if (t.walletId != null) await noteWalletUsed(t.walletId!);
+      if (t.toWalletId != null) await noteWalletUsed(t.toWalletId!);
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context)

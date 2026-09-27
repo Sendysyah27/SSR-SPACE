@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/reports_topn.dart';
+import 'package:ssr_space/services/wallet_usage.dart';
 
 const _kLocale = 'app_locale';
 const _kCurrency = 'app_currency';
@@ -17,6 +18,7 @@ const _kReminderEnabled = 'reminder_enabled';
 const _kReminderHour = 'reminder_hour';
 const _kReminderMinute = 'reminder_minute';
 const _kWidgetToday = 'widget_today';
+const _kWalletUse = 'wallet_use_count';
 
 /// Pengaturan aplikasi: bahasa, mata uang tampilan, skala font.
 /// Diisi di main() sebelum runApp; layar settings mengubah + simpan.
@@ -37,6 +39,10 @@ final reminderEnabled = ValueNotifier<bool>(false);
 final reminderHour = ValueNotifier<int>(7);
 final reminderMinute = ValueNotifier<int>(0);
 final widgetToday = ValueNotifier<bool>(false);
+
+/// Hitung pemakaian dompet manual (id ke jumlah), untuk urutan dropdown.
+/// Hanya naik lewat noteWalletUsed; auto-track tidak menyentuh.
+final walletUseCounts = ValueNotifier<Map<String, int>>({});
 
 Future<void> loadAppSettings(SharedPreferences prefs) async {
   final loc = prefs.getString(_kLocale) ?? 'id';
@@ -71,6 +77,7 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
   reminderHour.value = (prefs.getInt(_kReminderHour) ?? 7).clamp(0, 23);
   reminderMinute.value = (prefs.getInt(_kReminderMinute) ?? 0).clamp(0, 59);
   widgetToday.value = prefs.getBool(_kWidgetToday) ?? false;
+  walletUseCounts.value = decodeUsage(prefs.getString(_kWalletUse));
 }
 
 Future<void> setLocaleCode(String v) async {
@@ -165,6 +172,15 @@ Future<void> setWidgetToday(bool v) async {
   widgetToday.value = v;
   final prefs = await SharedPreferences.getInstance();
   await prefs.setBool(_kWidgetToday, v);
+}
+
+/// Catat satu pemakaian dompet manual. Id kosong diabaikan.
+/// Hanya dipanggil dari jalur simpan manual/koreksi yang sukses.
+Future<void> noteWalletUsed(String id) async {
+  if (id.isEmpty) return;
+  walletUseCounts.value = recordUse(walletUseCounts.value, id);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kWalletUse, encodeUsage(walletUseCounts.value));
 }
 
 /// Simbol per kode mata uang (kunci juga dipakai validasi).
