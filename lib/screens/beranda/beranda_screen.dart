@@ -174,7 +174,9 @@ class BerandaScreenState extends State<BerandaScreen> {
     await _load();
   }
 
-  /// Catat: buka sheet prefill, bila tersimpan majukan periode.
+  /// Catat: buka sheet prefill, bila tersimpan rekam riwayat bayar
+  /// (nominal master tagihan; nominal asli ada di baris transaksi)
+  /// lalu majukan periode.
   Future<void> _recordBill(RecurringBill bill) async {
     final ok = await openTxInputSheet(
       context,
@@ -184,7 +186,16 @@ class BerandaScreenState extends State<BerandaScreen> {
       initialWalletId: bill.walletId,
       initialNote: bill.label,
     );
-    if (ok) await _skipBill(bill);
+    if (!ok) return;
+    final all = await loadBills();
+    final idx = all.indexWhere((b) => b.id == bill.id);
+    if (idx < 0) return;
+    final rec = recordPayment(all[idx], all[idx].nextDue, bill.amount, DateTime.now());
+    all[idx] = rec.bill;
+    await saveBills(all);
+    final pays = await loadPayments();
+    await savePayments([rec.entry, ...pays]);
+    await _load();
   }
 
   static String _ymd(DateTime d) =>

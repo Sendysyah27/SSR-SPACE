@@ -150,6 +150,115 @@ List<RecurringBill> markWalletGone(
 
 String newBillId() => DateTime.now().millisecondsSinceEpoch.toString();
 
+/// Satu pembayaran tercatat: tagihan apa, jatuh tempo mana yang dibayar,
+/// nominal saat dibayar, dan kapan dicatat. Nominal bisa beda dari
+/// [RecurringBill.amount] bila user mengubahnya di sheet.
+class PaymentEntry {
+  final String billId;
+  final String date;
+  final double amount;
+  final String paidAt;
+
+  const PaymentEntry({
+    required this.billId,
+    required this.date,
+    required this.amount,
+    required this.paidAt,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'billId': billId,
+        'date': date,
+        'amount': amount,
+        'paidAt': paidAt,
+      };
+
+  static PaymentEntry? tryParse(dynamic raw) {
+    if (raw is! Map) return null;
+    final billId = raw['billId']?.toString() ?? '';
+    final date = raw['date']?.toString() ?? '';
+    final amount = (raw['amount'] as num?)?.toDouble();
+    final paidAt = raw['paidAt']?.toString() ?? '';
+    if (billId.isEmpty ||
+        DateTime.tryParse(date) == null ||
+        amount == null ||
+        amount <= 0 ||
+        paidAt.isEmpty) {
+      return null;
+    }
+    return PaymentEntry(
+      billId: billId,
+      date: date.substring(0, 10),
+      amount: amount,
+      paidAt: paidAt,
+    );
+  }
+}
+
+/// Hasil pencatatan: tagihan dengan nextDue maju + entri riwayat.
+/// [paidDate] = nextDue yang dibayar (sebelum maju), [amount] = nominal
+/// yang benar dibayar (ikut sheet bila diubah, bukan master).
+({RecurringBill bill, PaymentEntry entry}) recordPayment(
+  RecurringBill bill,
+  String paidDate,
+  double amount,
+  DateTime now,
+) {
+  final from = DateTime.tryParse(paidDate) ?? DateTime(now.year, now.month, now.day);
+  final advanced = advanceBill(bill, from);
+  return (
+    bill: bill.copyWith(nextDue: _ymd(advanced)),
+    entry: PaymentEntry(
+      billId: bill.id,
+      date: paidDate.substring(0, 10),
+      amount: amount,
+      paidAt: now.toIso8601String(),
+    ),
+  );
+}
+
+String _ymd(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
+
+/// Riwayat satu tagihan, terbaru dulu.
+List<PaymentEntry> historyFor(List<PaymentEntry> all, String billId) {
+  final out = all.where((e) => e.billId == billId).toList()
+    ..sort((a, b) => b.date.compareTo(a.date));
+  return out;
+}
+
+const _kPayments = 'recurring_payments';
+const maxPayments = 200;
+
+Future<List<PaymentEntry>> loadPayments() async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(_kPayments);
+  if (raw == null || raw.isEmpty) return [];
+  try {
+    final list = jsonDecode(raw) as List;
+    final out = <PaymentEntry>[];
+    for (final e in list) {
+      final p = PaymentEntry.tryParse(e);
+      if (p != null) out.add(p);
+      if (out.length >= maxPayments) break;
+    }
+    return out;
+  } catch (_) {
+    return [];
+  }
+}
+
+Future<void> savePayments(List<PaymentEntry> entries) async {
+  final capped = entries.take(maxPayments).toList();
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(
+    _kPayments,
+    jsonEncode([for (final e in capped) e.toJson()]),
+  );
+}
+
 const _kBills = 'recurring_bills';
 
 Future<List<RecurringBill>> loadBills() async {

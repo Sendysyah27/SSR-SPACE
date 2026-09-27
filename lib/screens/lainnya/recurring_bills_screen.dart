@@ -23,6 +23,7 @@ class RecurringBillsScreen extends StatefulWidget {
 
 class RecurringBillsScreenState extends State<RecurringBillsScreen> {
   List<RecurringBill> bills = [];
+  List<PaymentEntry> payments = [];
   List<Wallet> wallets = [];
   bool loading = true;
 
@@ -43,6 +44,7 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
       } catch (_) {}
     }
     final fixed = markWalletGone(loaded, {for (final w in ws) w.id});
+    final pays = await loadPayments();
     final changed = [
       for (var i = 0; i < loaded.length; i++)
         if (loaded[i].active != fixed[i].active) loaded[i],
@@ -51,6 +53,7 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
     if (!mounted) return;
     setState(() {
       bills = fixed;
+      payments = pays;
       wallets = ws;
       loading = false;
     });
@@ -149,6 +152,7 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
 
   Widget _billTile(RecurringBill bill) {
     final period = bill.period == 'weekly' ? tr('rb_weekly') : tr('rb_monthly');
+    final paid = historyFor(payments, bill.id).length;
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Row(
@@ -168,9 +172,18 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
                     '${amt(bill.amount)} · $period · ${bill.nextDue} · ${_walletName(bill.walletId)}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+                  Text(
+                    tr('rb_paid').replaceFirst('{n}', '$paid'),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ],
               ),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: tr('rb_history'),
+            onPressed: () => _openHistory(bill),
           ),
           Switch(value: bill.active, onChanged: (v) => _toggle(bill, v)),
           IconButton(
@@ -178,6 +191,56 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
             onPressed: () => _delete(bill),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _openHistory(RecurringBill bill) async {
+    final rows = historyFor(payments, bill.id);
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(SsrSpace.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '${tr('rb_history')} · ${bill.label}',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: SsrSpace.sm),
+              if (rows.isEmpty)
+                Text(
+                  tr('rb_history_empty'),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                )
+              else
+                for (final p in rows.take(30)) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text(p.date)),
+                        Text(
+                          amt(p.amount),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+            ],
+          ),
+        ),
       ),
     );
   }

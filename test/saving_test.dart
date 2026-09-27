@@ -60,4 +60,43 @@ void main() {
     expect(inOfMonth(txs, '2026-09'), 1070000);
     expect(inOfMonth(txs, '2026-07'), 0);
   });
+
+  test('pace: di jalur bila laju cukup', () {
+    final p = savingPace(
+      saved: 500000,
+      target: 1000000,
+      today: DateTime(2026, 9, 10),
+    );
+    expect(p.needPerDay, 500000 / 21);
+    expect(p.actualPerDay, 50000);
+    expect(p.onTrack, true);
+    expect(p.projected, 500000 + 50000 * 20);
+  });
+
+  test('pace: tertinggal bila laju kurang', () {
+    final p = savingPace(
+      saved: 100000,
+      target: 1000000,
+      today: DateTime(2026, 9, 20),
+    );
+    expect(p.onTrack, false);
+    expect(p.needPerDay, 900000 / 11);
+  });
+
+  test('pace: tercapai dan hari terakhir', () {
+    final done = savingPace(
+      saved: 1000000,
+      target: 1000000,
+      today: DateTime(2026, 9, 15),
+    );
+    expect(done.onTrack, true);
+    expect(done.needPerDay, 0);
+    final last = savingPace(
+      saved: 900000,
+      target: 1000000,
+      today: DateTime(2026, 9, 30),
+    );
+    expect(last.needPerDay, 100000);
+    expect(last.onTrack, false);
+  });
 }

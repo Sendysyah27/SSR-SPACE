@@ -420,6 +420,11 @@ class _SavingCard extends StatelessWidget {
     final b = budget;
     final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
     final done = pct >= 100;
+    final pace = savingPace(
+      saved: b.spent,
+      target: b.limit,
+      today: DateTime.now(),
+    );
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
@@ -459,6 +464,17 @@ class _SavingCard extends StatelessWidget {
               ),
             ],
           ),
+          if (!done && b.limit > 0) ...[
+            const SizedBox(height: SsrSpace.xs),
+            Text(
+              pace.onTrack
+                  ? tr('sv_pace_track')
+                      .replaceFirst('{m}', amt(pace.projected))
+                  : tr('sv_pace_need')
+                      .replaceFirst('{m}', amt(pace.needPerDay)),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
         ],
       ),
     );

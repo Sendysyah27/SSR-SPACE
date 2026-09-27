@@ -60,8 +60,7 @@ void main() {
     expect(out[1].active, false);
   });
 
-  test('parse toleran: rusak dibuang, cap 30', () {
-    expect(RecurringBill.tryParse({'a': 1}), isNull);
+  test('parse toleran: rusak dibuang, cap 30', () {    expect(RecurringBill.tryParse({'a': 1}), isNull);
     expect(RecurringBill.tryParse(_bill(amount: -5).toJson()), isNull);
     expect(
       RecurringBill.tryParse(_bill(period: 'yearly').toJson()),
@@ -72,5 +71,61 @@ void main() {
       (i) => _bill().copyWith(nextDue: '2026-09-05'),
     );
     expect(many.take(maxBills).length, 30);
+  });
+
+  test('catat memajukan nextDue dan merekam entri', () {
+    final rec = recordPayment(
+      _bill(nextDue: '2026-09-05'),
+      '2026-09-05',
+      50000,
+      DateTime(2026, 9, 27, 10, 0),
+    );
+    expect(rec.bill.nextDue, '2026-10-05');
+    expect(rec.entry.billId, 'b1');
+    expect(rec.entry.date, '2026-09-05');
+    expect(rec.entry.amount, 50000);
+  });
+
+  test('lewati tanpa insert tak merekam entri', () {
+    final b = _bill(nextDue: '2026-09-21', period: 'weekly');
+    expect(advanceBill(b, DateTime(2026, 9, 21)), DateTime(2026, 9, 28));
+  });
+
+  test('riwayat terbaru dulu, rusak dibuang', () {
+    final all = [
+      const PaymentEntry(
+        billId: 'b1',
+        date: '2026-08-05',
+        amount: 50000,
+        paidAt: '2026-08-05T10:00:00',
+      ),
+      const PaymentEntry(
+        billId: 'b1',
+        date: '2026-09-05',
+        amount: 50000,
+        paidAt: '2026-09-05T10:00:00',
+      ),
+      const PaymentEntry(
+        billId: 'b9',
+        date: '2026-09-05',
+        amount: 1000,
+        paidAt: '2026-09-05T10:00:00',
+      ),
+    ];
+    final rows = historyFor(all, 'b1');
+    expect(rows.length, 2);
+    expect(rows.first.date, '2026-09-05');
+    expect(PaymentEntry.tryParse({'a': 1}), isNull);
+    expect(
+      PaymentEntry.tryParse(
+        const PaymentEntry(
+          billId: 'b1',
+          date: '2026-09-05',
+          amount: -5,
+          paidAt: 'x',
+        ).toJson(),
+      ),
+      isNull,
+    );
   });
 }

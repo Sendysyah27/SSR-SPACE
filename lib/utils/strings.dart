@@ -290,6 +290,14 @@ const _t = <String, Map<String, String>>{
     'en': 'Saved {a} · {n} transactions',
   },
   'sv_only': {'id': 'Hanya tabungan', 'en': 'Only savings'},
+  'sv_pace_need': {
+    'id': 'Butuh {m}/hari agar tercapai',
+    'en': 'Needs {m}/day to reach it',
+  },
+  'sv_pace_track': {
+    'id': 'Di jalur, proyeksi {m}',
+    'en': 'On track, projected {m}',
+  },
   // Laporan
   'r_err_load': {
     'id': 'Gagal memuat laporan. Periksa koneksi.',
@@ -349,6 +357,12 @@ const _t = <String, Map<String, String>>{
   'rb_wallet_gone': {
     'id': 'Dompet tagihan ini sudah dihapus. Aktifkan lagi setelah pilih dompet baru.',
     'en': 'This bill\'s wallet was deleted. Re-enable it after picking a new wallet.',
+  },
+  'rb_paid': {'id': 'Terbayar {n}x', 'en': 'Paid {n}x'},
+  'rb_history': {'id': 'Riwayat bayar', 'en': 'Payment history'},
+  'rb_history_empty': {
+    'id': 'Belum ada pembayaran tercatat.',
+    'en': 'No payments recorded yet.',
   },
   'rb_del_t': {'id': 'Hapus tagihan', 'en': 'Delete bill'},
   'rb_del_s': {
