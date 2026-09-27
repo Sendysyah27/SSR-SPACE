@@ -384,7 +384,7 @@ class BerandaScreenState extends State<BerandaScreen> {
     final positive = surplus >= 0;
     return Container(
       padding: const EdgeInsets.all(SsrSpace.xl),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: SsrColors.noirRaised,
         borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
         border: Border(

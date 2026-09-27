@@ -295,7 +295,7 @@ class SsrTheme {
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(48, 48),
           backgroundColor: SsrColors.mint,
-          foregroundColor: Color(0xFF0C1210),
+          foregroundColor: SsrColors.noirBg,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(SsrRadius.button),

@@ -321,7 +321,7 @@ class _DetailHero extends StatelessWidget {
       padding: const EdgeInsets.all(SsrSpace.xl),
       decoration: BoxDecoration(
         color: SsrColors.noirRaised,
-        borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
+        borderRadius: const BorderRadius.all(Radius.circular(SsrRadius.hero)),
         border: Border.all(color: SsrColors.noirLine),
       ),
       child: Column(
