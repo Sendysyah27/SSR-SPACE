@@ -16,7 +16,7 @@ class StatusChip extends StatelessWidget {
     this.icon,
   });
 
-  Color get _bg {
+  Color _bgOf(bool dark) {
     switch (tone) {
       case StatusTone.accent:
         return AppColors.chipAutoBg;
@@ -25,11 +25,12 @@ class StatusChip extends StatelessWidget {
       case StatusTone.ink:
         return AppColors.goldSoft;
       case StatusTone.neutral:
-        return AppColors.line;
+        // Beige di light; abu-gelap di dark agar tak menyilaukan.
+        return dark ? AppColors.lineDark : AppColors.line;
     }
   }
 
-  Color get _fg {
+  Color _fgOf(bool dark) {
     switch (tone) {
       case StatusTone.accent:
         return AppColors.emerald;
@@ -38,24 +39,27 @@ class StatusChip extends StatelessWidget {
       case StatusTone.ink:
         return AppColors.chipSurplusText;
       case StatusTone.neutral:
-        return AppColors.inkSoft;
+        return dark ? AppColors.inkSoftDark : AppColors.inkSoft;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final bg = _bgOf(dark);
+    final fg = _fgOf(dark);
     final text = tone == StatusTone.ink ? label.toUpperCase() : label;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-        color: _bg,
+        color: bg,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            DuoIcon(icon!, size: 12, color: _fg),
+            DuoIcon(icon!, size: 12, color: fg),
             const SizedBox(width: 4),
           ],
           Text(
@@ -64,7 +68,7 @@ class StatusChip extends StatelessWidget {
               fontFamily: SsrFonts.body,
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
-              color: _fg,
+              color: fg,
               height: 1.2,
             ),
           ),

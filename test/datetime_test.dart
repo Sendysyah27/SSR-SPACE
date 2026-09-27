@@ -4,7 +4,7 @@ import 'package:ssr_space/utils/datetime.dart';
 void main() {
   test('txWhenLabel gabung tanggal dan jam', () {
     final iso = DateTime(2026, 9, 26, 12, 4).toIso8601String();
-    expect(txWhenLabel('2026-09-26', iso), '26 Sep 2026 • 12:04');
+    expect(txWhenLabel('2026-09-26', iso), '26 Sep 2026 · 12:04');
   });
 
   test('txWhenLabel tanggal saja bila jam kosong', () {

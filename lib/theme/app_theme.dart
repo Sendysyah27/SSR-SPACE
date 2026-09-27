@@ -43,6 +43,11 @@ class AppColors {
   static const inkDark = Color(0xFFF1EEE6);
   static const inkSoftDark = Color(0xFFA6A296);
   static const lineDark = Color(0xFF2C2823);
+  // Emerald terang khusus dark mode (carry LP-T6): emerald exact 0E4B44
+  // sebagai teks di bgDark hanya 1.91 (gagal AA), jadi peran teks/fill
+  // primer dark memakai ini (7.69 dua arah dengan teks bgDark). Adaptasi
+  // tercatat, bukan nilai prompt.
+  static const emeraldBright = Color(0xFF45B79B);
   // Chip ledger tetap (sama kedua mode): teks surplus, bg auto, bg warning.
   static const chipSurplusText = Color(0xFF7A5E14);
   static const chipAutoBg = Color(0xFFE4EFEA);
@@ -599,8 +604,8 @@ class AppTheme {
 
   static ThemeData dark() {
     const scheme = ColorScheme.dark(
-      primary: AppColors.emerald,
-      onPrimary: AppColors.cream,
+      primary: AppColors.emeraldBright,
+      onPrimary: AppColors.bgDark,
       surface: AppColors.surfaceDark,
       onSurface: AppColors.inkDark,
       error: AppColors.rust,
@@ -674,8 +679,8 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(48, 48),
-          backgroundColor: AppColors.emerald,
-          foregroundColor: AppColors.cream,
+          backgroundColor: AppColors.emeraldBright,
+          foregroundColor: AppColors.bgDark,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(SsrRadius.button),
@@ -700,7 +705,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           minimumSize: const Size(48, 44),
-          foregroundColor: AppColors.emerald,
+          foregroundColor: AppColors.emeraldBright,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -716,7 +721,8 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SsrRadius.input),
-          borderSide: const BorderSide(color: AppColors.emerald, width: 1.6),
+          borderSide:
+              const BorderSide(color: AppColors.emeraldBright, width: 1.6),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
@@ -743,19 +749,19 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.cream;
+            return AppColors.bgDark;
           }
           return null;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.emerald;
+            return AppColors.emeraldBright;
           }
           return null;
         }),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.emerald,
+        color: AppColors.emeraldBright,
       ),
       listTileTheme: const ListTileThemeData(
         contentPadding: EdgeInsets.symmetric(horizontal: 4),
