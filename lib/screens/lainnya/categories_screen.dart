@@ -9,18 +9,21 @@ import 'package:ssr_space/widgets/section_card.dart';
 
 /// Palet 8 warna kategori (dikurasi, bukan color wheel bebas).
 /// Slot 0..2 memakai varian ledger yang hidup di kedua mode
-/// (emerald/rust/gold ganti tiga slot lama);
+/// (primary/error/gold; dulu emerald/rust/gold);
 /// urutan slot tetap sehingga indeks tersimpan tidak bergeser makna.
-const _kMetaPalette = <Color>[
-  AppColors.emerald,
-  AppColors.rust,
-  AppColors.gold,
-  Color(0xFF2563EB),
-  Color(0xFF7C3AED),
-  Color(0xFFDB2777),
-  Color(0xFF65A30D),
-  Color(0xFF64748B),
-];
+List<Color> _metaPalette(BuildContext context) {
+  final scheme = Theme.of(context).colorScheme;
+  return <Color>[
+    scheme.primary,
+    scheme.error,
+    AppColors.gold,
+    const Color(0xFF2563EB),
+    const Color(0xFF7C3AED),
+    const Color(0xFFDB2777),
+    const Color(0xFF65A30D),
+    const Color(0xFF64748B),
+  ];
+}
 
 /// Ikon terkurasi untuk picker (kunci = nama field AppIcons).
 const _kMetaIcons = <String>[
@@ -150,7 +153,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               spacing: SsrSpace.sm,
               runSpacing: SsrSpace.sm,
               children: [
-                for (var i = 0; i < _kMetaPalette.length; i++)
+                for (var i = 0; i < _metaPalette(context).length; i++)
                   InkWell(
                     onTap: () => Navigator.pop(context, i),
                     child: Container(
@@ -158,7 +161,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: _kMetaPalette[i],
+                        color: _metaPalette(context)[i],
                         border: Border.all(
                           color: i == cur.color
                               ? Theme.of(ctx).colorScheme.onSurface
@@ -321,7 +324,7 @@ class _CatRow extends StatelessWidget {
             height: 20,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _kMetaPalette[meta.color],
+              color: _metaPalette(context)[meta.color],
             ),
           ),
         ),

@@ -459,6 +459,7 @@ class _MonthFlowChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final total = totalIn + spendOut + savingOut;
     final pctIn = total <= 0 ? 0 : (totalIn / total * 100).round();
     return SectionCard(
@@ -475,14 +476,14 @@ class _MonthFlowChart extends StatelessWidget {
             children: [
               Expanded(
                 child: _FlowLegend(
-                  color: AppColors.emerald,
+                  color: scheme.primary,
                   label: tr('tx_in'),
                   value: totalIn,
                 ),
               ),
               Expanded(
                 child: _FlowLegend(
-                  color: AppColors.rust,
+                  color: scheme.error,
                   label: tr('tx_out'),
                   value: spendOut,
                 ),
@@ -543,18 +544,19 @@ class _DonutDial extends StatelessWidget {
   }
 
   List<PieChartSectionData> _sections(Color track) {
+    final scheme = Theme.of(context).colorScheme;
     final live = <PieChartSectionData>[
       if (totalIn > 0)
         PieChartSectionData(
           value: totalIn,
-          color: AppColors.emerald,
+          color: scheme.primary,
           radius: 26,
           showTitle: false,
         ),
       if (spendOut > 0)
         PieChartSectionData(
           value: spendOut,
-          color: AppColors.rust,
+          color: scheme.error,
           radius: 26,
           showTitle: false,
         ),
@@ -803,6 +805,7 @@ class _RecapRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -818,7 +821,7 @@ class _RecapRow extends StatelessWidget {
           ),
           Text(
             amt(total),
-            style: SsrType.moneyMedium.copyWith(color: AppColors.rust),
+            style: SsrType.moneyMedium.copyWith(color: scheme.error),
           ),
         ],
       ),
@@ -835,19 +838,20 @@ class _RecapBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       width: 38,
       height: 38,
       decoration: BoxDecoration(
-        color: AppColors.rust.withValues(alpha: 0.12),
+        color: scheme.error.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(11),
       ),
       child: Center(
         child: SvgPicture.asset(
           svgForCategory(category),
           width: 19,
-          colorFilter: const ColorFilter.mode(
-            AppColors.rust,
+          colorFilter: ColorFilter.mode(
+            scheme.error,
             BlendMode.srcIn,
           ),
         ),
@@ -873,6 +877,7 @@ class _RecapOthers extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     if (result.others.isNotEmpty && !expanded) {
       return InkWell(
         onTap: onToggle,
@@ -891,7 +896,7 @@ class _RecapOthers extends StatelessWidget {
               ),
               Text(
                 amt(result.othersTotal),
-                style: SsrType.moneyMedium.copyWith(color: AppColors.rust),
+                style: SsrType.moneyMedium.copyWith(color: scheme.error),
               ),
             ],
           ),
@@ -1039,6 +1044,7 @@ class _MonthlySummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1049,7 +1055,7 @@ class _MonthlySummary extends StatelessWidget {
                 context,
                 tr('tx_in'),
                 totalIn,
-                AppColors.emerald,
+                scheme.primary,
               ),
             ),
             const SizedBox(width: SsrSpace.md),
@@ -1058,7 +1064,7 @@ class _MonthlySummary extends StatelessWidget {
                 context,
                 tr('tx_out'),
                 totalOut,
-                AppColors.rust,
+                scheme.error,
               ),
             ),
           ],
@@ -1088,6 +1094,7 @@ class _NetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1100,7 +1107,7 @@ class _NetCard extends StatelessWidget {
           Text(
             amt(net),
             style: SsrType.moneyLarge.copyWith(
-              color: net >= 0 ? AppColors.emerald : AppColors.rust,
+              color: net >= 0 ? scheme.primary : scheme.error,
             ),
           ),
         ],
