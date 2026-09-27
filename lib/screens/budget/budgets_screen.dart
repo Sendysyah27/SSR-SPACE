@@ -157,7 +157,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
               actions: [
                 TextButton(
                   style: TextButton.styleFrom(
-                    foregroundColor: SsrColors.danger,
+                    foregroundColor: SsrColors.rose,
                   ),
                   onPressed: () => Navigator.pop(ctx, 'delete'),
                   child: Text(tr('b_delete')),
@@ -219,7 +219,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
             child: Text(tr('cancel')),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: SsrColors.danger),
+            style: TextButton.styleFrom(foregroundColor: SsrColors.rose),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(tr('b_delete')),
           ),
@@ -367,20 +367,27 @@ class _OverAllocBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: SsrSpace.sm),
       padding: const EdgeInsets.all(SsrSpace.md),
       decoration: BoxDecoration(
-        color: SsrColors.dangerSoft,
+        color: SsrColors.rose.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(SsrRadius.tile),
+        border: Border.all(
+          color: SsrColors.rose.withValues(alpha: 0.45),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('b_over_alloc'),
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: SsrColors.noirInk,
+            ),
           ),
           const SizedBox(height: SsrSpace.xs),
           Text(
             '${amt(totalLimit)} vs ${amt(totalIn)}',
-            style: Theme.of(context).textTheme.bodySmall,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: SsrColors.noirSecondary,
+            ),
           ),
         ],
       ),
@@ -420,12 +427,9 @@ class _SavingCard extends StatelessWidget {
     final b = budget;
     final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
     final done = pct >= 100;
-    final pace = savingPace(
-      saved: b.spent,
-      target: b.limit,
-      today: DateTime.now(),
-    );
     return SectionCard(
+      color: SsrColors.gold.withValues(alpha: 0.14),
+      borderColor: SsrColors.gold.withValues(alpha: 0.45),
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,47 +445,93 @@ class _SavingCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   b.category,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: SsrColors.noirInk,
+                  ),
                 ),
               ),
               _SavingChip(pct: pct, done: done),
             ],
           ),
           const SizedBox(height: SsrSpace.xs),
-          Row(
-            children: [
-              _BudgetGauge(
-                progress: budgetProgress(b.spent, b.limit),
-                pct: done ? 100 : pct,
-                color: SsrColors.saving, soft: SsrColors.savingSoft,
-              ),
-              const SizedBox(width: SsrSpace.md),
-              Expanded(
-                child: Text(
-                  '${amt(b.spent)} ${tr('sv_of')} ${amt(b.limit)}',
-                  style: SsrType.moneyMedium,
-                ),
-              ),
-            ],
-          ),
-          if (!done && b.limit > 0) ...[
-            const SizedBox(height: SsrSpace.xs),
-            Text(
-              pace.onTrack
-                  ? tr('sv_pace_track')
-                      .replaceFirst('{m}', amt(pace.projected))
-                  : tr('sv_pace_need')
-                      .replaceFirst('{m}', amt(pace.needPerDay)),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+          _SavingProgress(budget: b, pct: pct, done: done),
+          _SavingPace(budget: b, done: done),
         ],
       ),
     );
   }
 }
 
-/// Chip persen emas; bila target tercapai tampilkan label selesai.
+/// Baris cincin emas + angka "terkumpul dari target" di kartu tabungan.
+class _SavingProgress extends StatelessWidget {
+  final Budget budget;
+  final int pct;
+  final bool done;
+
+  const _SavingProgress({
+    required this.budget,
+    required this.pct,
+    required this.done,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final b = budget;
+    return Row(
+      children: [
+        _BudgetGauge(
+          progress: budgetProgress(b.spent, b.limit),
+          pct: done ? 100 : pct,
+          color: SsrColors.gold,
+          soft: SsrColors.noirLine,
+        ),
+        const SizedBox(width: SsrSpace.md),
+        Expanded(
+          child: Text(
+            '${amt(b.spent)} ${tr('sv_of')} ${amt(b.limit)}',
+            style: SsrType.moneyMedium,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Baris pace tabungan; sembunyi sendiri bila target tercapai.
+class _SavingPace extends StatelessWidget {
+  final Budget budget;
+  final bool done;
+
+  const _SavingPace({required this.budget, required this.done});
+
+  @override
+  Widget build(BuildContext context) {
+    final b = budget;
+    if (done || b.limit <= 0) return const SizedBox.shrink();
+    final pace = savingPace(
+      saved: b.spent,
+      target: b.limit,
+      today: DateTime.now(),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: SsrSpace.xs),
+        Text(
+          pace.onTrack
+              ? tr('sv_pace_track').replaceFirst('{m}', amt(pace.projected))
+              : tr('sv_pace_need').replaceFirst('{m}', amt(pace.needPerDay)),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: SsrColors.noirSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Chip persen emas solid; teks gelap (pasangan #0C1210 di gold 7.80,
+/// lolos AA; tint emas di atas kartu tint hanya 4.03 sehingga tak dipakai).
 class _SavingChip extends StatelessWidget {
   final int pct;
   final bool done;
@@ -493,7 +543,7 @@ class _SavingChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: SsrColors.savingSoft,
+        color: SsrColors.gold,
         borderRadius: BorderRadius.circular(SsrRadius.chip),
       ),
       child: Text(
@@ -501,7 +551,7 @@ class _SavingChip extends StatelessWidget {
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: SsrColors.saving,
+          color: SsrColors.noirBg,
           height: 1.2,
         ),
       ),
@@ -523,6 +573,8 @@ class _BudgetCard extends StatelessWidget {
     final progress = budgetProgress(b.spent, b.limit);
     final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,7 +584,9 @@ class _BudgetCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   b.category,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: SsrColors.noirInk,
+                  ),
                 ),
               ),
               if (over)
@@ -580,7 +634,7 @@ class _BudgetGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final used = progress.clamp(0.0, 1.0).toDouble();
-    final main = color ?? (over ? SsrColors.danger : SsrColors.accent);
+    final main = color ?? (over ? SsrColors.rose : SsrColors.mint);
     return SizedBox(
       width: 56,
       height: 56,
@@ -608,8 +662,8 @@ class _BudgetGauge extends StatelessWidget {
 }
 
 PieChartData _gaugeData(double used, bool over, {Color? color, Color? soft}) {
-  final main = color ?? (over ? SsrColors.danger : SsrColors.accent);
-  final rest = soft ?? SsrColors.accentSoft;
+  final main = color ?? (over ? SsrColors.rose : SsrColors.mint);
+  final rest = soft ?? SsrColors.noirLine;
   return PieChartData(
     pieTouchData: PieTouchData(enabled: false),
     sectionsSpace: 0,
@@ -653,12 +707,16 @@ class _BudgetForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('b_form_title'),
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: SsrColors.noirInk,
+            ),
           ),
           const SizedBox(height: SsrSpace.md),
           TextField(
@@ -682,7 +740,7 @@ class _BudgetForm extends StatelessWidget {
             Text(
               formErr!,
               style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: SsrColors.danger),
+                  ?.copyWith(color: SsrColors.rose),
             ),
           ],
           const SizedBox(height: SsrSpace.lg),
