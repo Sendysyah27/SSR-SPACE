@@ -397,6 +397,13 @@ Setelah install APK v2.3.3+ & migration 07+08:
 - [ ] Budget: tiap kartu ada cincin gauge (bata bila lebih batas); angka `spent dari limit` serif
 - [ ] Matikan internet lalu buka tiap layar → skeleton meniru bentuk konten (bukan spinner); font Fraunces tetap tampil (offline)
 - [ ] Layar kosong (bulan tanpa transaksi/budget/dompet/undangan) → ilustrasi zamrud + copy lama + CTA jalan
+- [ ] Install APK iris4 → Profil: 9 seksi tampil, tiap baris dibuka (layar nyata atau dialog P2), nol dead tap
+- [ ] Pengaturan: ganti bahasa ID/EN → seluruh copy ikut; ganti kurs → angka ikut; font 0.85 dan 1.3 → tidak overflow
+- [ ] Cari pengaturan: ketik "dompet"/"wallet" → hasil tepat; kata asing → pesan "Tidak ada pengaturan yang cocok. Coba kata lain."
+- [ ] Impor CSV: tempel teks → pratinjau mapping benar → impor → transaksi masuk dompet yang dipilih
+- [ ] Pengingat harian: set jam → notifikasi muncul esok hari di jam itu; reboot HP → jadwal tetap jalan
+- [ ] Auto-track + overlay koreksi tetap jalan seperti sebelumnya (regresi iris3/iris4)
+- [ ] Tentang → versi `2.3.9+22`; Catatan perubahan → isi changelog tampil
 
 ---
 
@@ -483,6 +490,8 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `686316b`+`cfb0d54` | **Input transaksi premium** (run `36251716559` hijau, **123 test**): riwayat saja + `TxInputSheet` (tombol + tengah `centerFloat`, numpad custom, tanggal wajib + jam opsional → `date`+`created_at`, tanpa migration) + `tx_input_logic.dart` murni (lokal 30/30) + `test/tx_input_test.dart` (21 case). 3 subagents paralel; CI merah 1x (`)` numpad + doc-comment info) → fix. APK `SSR-SPACE-2.3.9-22-tx-premium.apk` |
 | `5af4d82`+`2b2e920` | **Tabungan premium** (run `36254042802` hijau, **127 test**): konvensi kategori tanpa migration (`saving.dart` murni 14/14 lokal + `test/saving_test.dart`); kartu target emas + `savings.svg`; banner limit>pemasukan; hapus budget + PIN; donut 3 iris; strip rincian dompet + filter. 2 subagents layar + review (clamp→num, const, dead API); merah 1x (`const_with_non_const` BorderRadius) → revert. APK `SSR-SPACE-2.3.9-22-tabungan-premium.apk` |
 | `d2c75d6` | **Fix blank hitam (hapus budget) + abu (ganti workspace)** (run `36273729676` hijau, 127 test): vonis dari `client_errors` — No element (`pop→pop→_submitPin`) = `onCompleted` PIN multi-fire → guard `_fired` di `pin_field.dart`; Stream already listened = `overlayListener` double-listen saat `pushReplacement` → `overlay_bus.dart` + migrasi `main_shell`; `AppInfo.version` → 2.3.9+22. APK `SSR-SPACE-2.3.9-22-fix-blank-hitam-abu.apk` |
+| (iris1-iris4) | **Profil + settings ramping + diet APK** (SDD 10 task): iris1 prefs/strings/hub/settings (run `36277436482` hijau, APK 65M = baseline); iris2 impor CSV (run `36278791306` hijau, 65M); iris3 reminder+search (run `36281671805` hijau, 67M, +2M dep notif); iris4 split per-ABI + size-report + minify (run `36282567001` hijau: universal 67M file, arm64 24.4M, armeabi 22.6M, x86_64 25.9M; native libflutter 11.7M + libapp 10.8M, dex 8.6M kena backport desugar) |
+| (iris5, lokal) | **Diet audit + penutup settings** (belum push): lepas `sqflite` + `path` dari pubspec (grep bukti nol import di lib/ dan test/; `path_provider` dipakai 2 layar jadi tetap); seluruh SVG/lottie/font/changelog terbukti dipakai (nol hapus file); filter `grep -E` size-report; tooltip jam pengingat; guard `_ListStyleCard`; koma ganti en-dash komentar; `close()` delegate search + kunci `search_no_result`; try/catch `_load` changelog; 7 one-pager P2 `docs/superpowers/specs/2026-09-26-p2-*.md` (semua tanpa migration) |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 

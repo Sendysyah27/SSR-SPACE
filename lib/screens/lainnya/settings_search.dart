@@ -350,25 +350,32 @@ class SettingsSearchDelegate extends SearchDelegate<String?> {
 
   @override
   Widget buildResults(BuildContext context) {
-    return _ResultList(entries: _match(query));
+    return _ResultList(
+      entries: _match(query),
+      onTap: (route) => close(context, route),
+    );
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    return _ResultList(entries: _match(query));
+    return _ResultList(
+      entries: _match(query),
+      onTap: (route) => close(context, route),
+    );
   }
 }
 
 /// Daftar hasil: ketuk menutup delegate dengan kunci rute entri.
 class _ResultList extends StatelessWidget {
   final List<SettingsSearchEntry> entries;
+  final ValueChanged<String> onTap;
 
-  const _ResultList({required this.entries});
+  const _ResultList({required this.entries, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     if (entries.isEmpty) {
-      return Center(child: Text(tr('search_settings_hint')));
+      return Center(child: Text(tr('search_no_result')));
     }
     return ListView.builder(
       itemCount: entries.length,
@@ -377,7 +384,7 @@ class _ResultList extends StatelessWidget {
         return ListTile(
           title: Text(tr(e.titleKey)),
           subtitle: Text(tr(e.sectionKey)),
-          onTap: () => Navigator.pop(context, e.route),
+          onTap: () => onTap(e.route),
         );
       },
     );

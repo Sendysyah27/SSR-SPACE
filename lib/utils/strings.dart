@@ -1084,6 +1084,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Cari pengaturan...',
     'en': 'Search settings...',
   },
+  'search_no_result': {
+    'id': 'Tidak ada pengaturan yang cocok. Coba kata lain.',
+    'en': 'No matching settings. Try another keyword.',
+  },
   'msg_p2': {
     'id': 'Bagian ini tahap P2. Pengaturan tetap tersimpan bila sudah ada.',
     'en': 'This section is phase P2. Settings stay saved where already present.',

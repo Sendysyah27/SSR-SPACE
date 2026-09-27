@@ -162,7 +162,7 @@ class _CurrencyCard extends StatelessWidget {
   }
 }
 
-/// Skala huruf aplikasi 0,85–1,30 + pratinjau nominal.
+/// Skala huruf aplikasi 0,85 sampai 1,30 + pratinjau nominal.
 class _FontCard extends StatelessWidget {
   final double value;
   final ValueChanged<double> onChanged;
@@ -285,7 +285,11 @@ class _ListStyleCard extends StatelessWidget {
                 label: Text(tr('st_list_comfortable')),
               ),
             ],
-            selected: {value},
+            selected: {
+              ['compact', 'comfortable'].contains(value)
+                  ? value
+                  : 'comfortable',
+            },
             showSelectedIcon: false,
             onSelectionChanged: (s) => setUiListStyle(s.first),
           ),
@@ -425,6 +429,7 @@ class _ReminderCard extends StatelessWidget {
                       ),
                       IconButton(
                         icon: const Icon(Icons.schedule),
+                        tooltip: tr('st_reminder_time'),
                         onPressed: () => _pick(context, h, m),
                       ),
                     ],
