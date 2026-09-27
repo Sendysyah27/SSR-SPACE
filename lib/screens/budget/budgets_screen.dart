@@ -157,7 +157,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
               actions: [
                 TextButton(
                   style: TextButton.styleFrom(
-                    foregroundColor: SsrColors.rose,
+                    foregroundColor: AppColors.rust,
                   ),
                   onPressed: () => Navigator.pop(ctx, 'delete'),
                   child: Text(tr('b_delete')),
@@ -219,7 +219,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
             child: Text(tr('cancel')),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: SsrColors.rose),
+            style: TextButton.styleFrom(foregroundColor: AppColors.rust),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(tr('b_delete')),
           ),
@@ -316,6 +316,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       );
     }
     final items = data?.items ?? [];
+    final urgent = urgentBudgetCategory(items);
     return Scaffold(
       appBar: AppBar(title: Text(_title)),
       body: ListView(
@@ -332,7 +333,11 @@ class BudgetsScreenState extends State<BudgetsScreen> {
               onAction: _focusForm,
             ),
           for (final b in items)
-            _BudgetEntry(budget: b, onTap: () => _openEdit(b)),
+            _BudgetEntry(
+              budget: b,
+              urgent: b.category == urgent,
+              onTap: () => _openEdit(b),
+            ),
           const SizedBox(height: SsrSpace.md),
           _BudgetForm(
             catC: catC,
@@ -346,6 +351,42 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       ),
     );
   }
+}
+
+/// Kategori belanja paling mendesak bulan ini: persen tertinggi di bawah
+/// 100 persen; bila semua sudah jebol, yang tertinggi. Satu nama saja.
+/// Kartu tabungan dikecualikan (cincinnya selalu emas, maknanya terkumpul,
+/// bukan terpakai). Murni baca, math progres tak berubah.
+String? urgentBudgetCategory(List<Budget> items) {
+  String? best;
+  var bestPct = -1.0;
+  for (final b in items) {
+    if (isSavingCategory(b.category) || b.limit <= 0) continue;
+    final pct = b.spent / b.limit;
+    if (pct < 1 && pct > bestPct) {
+      bestPct = pct;
+      best = b.category;
+    }
+  }
+  if (best != null) return best;
+  for (final b in items) {
+    if (isSavingCategory(b.category) || b.limit <= 0) continue;
+    final pct = b.spent / b.limit;
+    if (pct > bestPct) {
+      bestPct = pct;
+      best = b.category;
+    }
+  }
+  return best;
+}
+
+/// Warna cincin budget: jebol tampil rust, satu kategori mendesak tampil
+/// gold, sisanya emerald. Penentu mendesak lihat [urgentBudgetCategory].
+/// Bila yang mendesak ternyata sudah jebol, rust menang (jebol duluan).
+Color budgetRingColor({required bool over, required bool urgent}) {
+  if (over) return AppColors.rust;
+  if (urgent) return AppColors.gold;
+  return AppColors.emerald;
 }
 
 /// Banner: total limit bulan ini melebihi pemasukan bulan ini.
@@ -367,10 +408,10 @@ class _OverAllocBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: SsrSpace.sm),
       padding: const EdgeInsets.all(SsrSpace.md),
       decoration: BoxDecoration(
-        color: SsrColors.rose.withValues(alpha: 0.14),
+        color: AppColors.rust.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(SsrRadius.tile),
         border: Border.all(
-          color: SsrColors.rose.withValues(alpha: 0.45),
+          color: AppColors.rust.withValues(alpha: 0.45),
         ),
       ),
       child: Column(
@@ -378,16 +419,12 @@ class _OverAllocBanner extends StatelessWidget {
         children: [
           Text(
             tr('b_over_alloc'),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: SsrColors.noirInk,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: SsrSpace.xs),
           Text(
             '${amt(totalLimit)} vs ${amt(totalIn)}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: SsrColors.noirSecondary,
-            ),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
       ),
@@ -400,9 +437,14 @@ class _OverAllocBanner extends StatelessWidget {
 /// kartu biasa bila bukan. Ketuk untuk ubah/hapus.
 class _BudgetEntry extends StatelessWidget {
   final Budget budget;
+  final bool urgent;
   final VoidCallback onTap;
 
-  const _BudgetEntry({required this.budget, required this.onTap});
+  const _BudgetEntry({
+    required this.budget,
+    this.urgent = false,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -410,7 +452,7 @@ class _BudgetEntry extends StatelessWidget {
       onTap: onTap,
       child: isSavingCategory(budget.category)
           ? _SavingCard(budget: budget)
-          : _BudgetCard(budget: budget),
+          : _BudgetCard(budget: budget, urgent: urgent),
     );
   }
 }
@@ -428,8 +470,8 @@ class _SavingCard extends StatelessWidget {
     final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
     final done = pct >= 100;
     return SectionCard(
-      color: SsrColors.gold.withValues(alpha: 0.14),
-      borderColor: SsrColors.gold.withValues(alpha: 0.45),
+      color: AppColors.gold.withValues(alpha: 0.14),
+      borderColor: AppColors.gold.withValues(alpha: 0.45),
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -445,9 +487,7 @@ class _SavingCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   b.category,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: SsrColors.noirInk,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
               _SavingChip(pct: pct, done: done),
@@ -477,19 +517,19 @@ class _SavingProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final b = budget;
+    final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         _BudgetGauge(
           progress: budgetProgress(b.spent, b.limit),
           pct: done ? 100 : pct,
-          color: SsrColors.gold,
-          soft: SsrColors.noirLine,
+          color: AppColors.gold,
         ),
         const SizedBox(width: SsrSpace.md),
         Expanded(
           child: Text(
             '${amt(b.spent)} ${tr('sv_of')} ${amt(b.limit)}',
-            style: SsrType.moneyMedium,
+            style: SsrType.moneyMedium.copyWith(color: scheme.onSurface),
           ),
         ),
       ],
@@ -521,9 +561,7 @@ class _SavingPace extends StatelessWidget {
           pace.onTrack
               ? tr('sv_pace_track').replaceFirst('{m}', amt(pace.projected))
               : tr('sv_pace_need').replaceFirst('{m}', amt(pace.needPerDay)),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: SsrColors.noirSecondary,
-          ),
+          style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
     );
@@ -543,7 +581,7 @@ class _SavingChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: SsrColors.gold,
+        color: AppColors.gold,
         borderRadius: BorderRadius.circular(SsrRadius.chip),
       ),
       child: Text(
@@ -551,7 +589,7 @@ class _SavingChip extends StatelessWidget {
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: SsrColors.noirBg,
+          color: AppColors.bgDark,
           height: 1.2,
         ),
       ),
@@ -563,8 +601,9 @@ class _SavingChip extends StatelessWidget {
 /// "terpakai dari batas", dan bar progres.
 class _BudgetCard extends StatelessWidget {
   final Budget budget;
+  final bool urgent;
 
-  const _BudgetCard({required this.budget});
+  const _BudgetCard({required this.budget, this.urgent = false});
 
   @override
   Widget build(BuildContext context) {
@@ -572,9 +611,8 @@ class _BudgetCard extends StatelessWidget {
     final over = b.spent > b.limit;
     final progress = budgetProgress(b.spent, b.limit);
     final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
+    final ring = budgetRingColor(over: over, urgent: urgent);
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,9 +622,7 @@ class _BudgetCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   b.category,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: SsrColors.noirInk,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
               if (over)
@@ -598,12 +634,19 @@ class _BudgetCard extends StatelessWidget {
           const SizedBox(height: SsrSpace.xs),
           Row(
             children: [
-              _BudgetGauge(progress: progress, over: over, pct: pct),
+              _BudgetGauge(
+                progress: progress,
+                over: over,
+                pct: pct,
+                color: ring,
+              ),
               const SizedBox(width: SsrSpace.md),
               Expanded(
                 child: Text(
                   '${amt(b.spent)} dari ${amt(b.limit)}',
-                  style: SsrType.moneyMedium,
+                  style: SsrType.moneyMedium.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
               ),
             ],
@@ -614,8 +657,9 @@ class _BudgetCard extends StatelessWidget {
   }
 }
 
-/// Cincin progres budget: terpakai (zamrud/bata) vs sisa.
-/// [color]/[soft] opsional untuk varian lain (misal emas tabungan).
+/// Cincin progres budget: terpakai (emerald, gold, atau rust) vs sisa.
+/// [color]/[soft] opsional untuk varian lain (misal emas tabungan);
+/// sisa default ikut outline tema agar adaptif light dan dark.
 class _BudgetGauge extends StatelessWidget {
   final double progress;
   final bool over;
@@ -634,14 +678,15 @@ class _BudgetGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final used = progress.clamp(0.0, 1.0).toDouble();
-    final main = color ?? (over ? SsrColors.rose : SsrColors.mint);
+    final main = color ?? (over ? AppColors.rust : AppColors.emerald);
+    final track = soft ?? Theme.of(context).colorScheme.outline;
     return SizedBox(
       width: 56,
       height: 56,
       child: Stack(
         children: [
           PieChart(
-            _gaugeData(used, over, color: color, soft: soft),
+            _gaugeData(used, main, track),
             duration: SsrMotion.base,
             curve: SsrMotion.curve,
           ),
@@ -661,9 +706,7 @@ class _BudgetGauge extends StatelessWidget {
   }
 }
 
-PieChartData _gaugeData(double used, bool over, {Color? color, Color? soft}) {
-  final main = color ?? (over ? SsrColors.rose : SsrColors.mint);
-  final rest = soft ?? SsrColors.noirLine;
+PieChartData _gaugeData(double used, Color main, Color rest) {
   return PieChartData(
     pieTouchData: PieTouchData(enabled: false),
     sectionsSpace: 0,
@@ -707,16 +750,12 @@ class _BudgetForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('b_form_title'),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: SsrColors.noirInk,
-            ),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SsrSpace.md),
           TextField(
@@ -740,7 +779,7 @@ class _BudgetForm extends StatelessWidget {
             Text(
               formErr!,
               style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: SsrColors.rose),
+                  ?.copyWith(color: AppColors.rust),
             ),
           ],
           const SizedBox(height: SsrSpace.lg),

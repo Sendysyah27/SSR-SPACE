@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ssr_space/utils/mask.dart';
@@ -11,6 +12,7 @@ import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/billing_service.dart';
+import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/plan_limits.dart';
@@ -441,8 +443,9 @@ class _ReportSections extends StatelessWidget {
   }
 }
 
-/// Donut 3 iris bulan terpilih: mint (masuk), rose (belanja non-tabungan),
-/// gold (tabungan). Persen masuk di tengah, legenda mask-aware di bawah.
+/// Donut 3 iris bulan terpilih: emerald (masuk), rust (belanja
+/// non-tabungan), gold (tabungan). Persen masuk di tengah, legenda
+/// mask-aware di bawah.
 class _MonthFlowChart extends StatelessWidget {
   final double totalIn;
   final double spendOut;
@@ -459,8 +462,6 @@ class _MonthFlowChart extends StatelessWidget {
     final total = totalIn + spendOut + savingOut;
     final pctIn = total <= 0 ? 0 : (totalIn / total * 100).round();
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         children: [
           _DonutDial(
@@ -474,21 +475,21 @@ class _MonthFlowChart extends StatelessWidget {
             children: [
               Expanded(
                 child: _FlowLegend(
-                  color: SsrColors.mint,
+                  color: AppColors.emerald,
                   label: tr('tx_in'),
                   value: totalIn,
                 ),
               ),
               Expanded(
                 child: _FlowLegend(
-                  color: SsrColors.rose,
+                  color: AppColors.rust,
                   label: tr('tx_out'),
                   value: spendOut,
                 ),
               ),
               Expanded(
                 child: _FlowLegend(
-                  color: SsrColors.gold,
+                  color: AppColors.gold,
                   label: tr('sv_label'),
                   value: savingOut,
                 ),
@@ -519,6 +520,7 @@ class _DonutDial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final track = Theme.of(context).colorScheme.outline;
     return SizedBox(
       height: 180,
       child: Stack(
@@ -529,7 +531,7 @@ class _DonutDial extends StatelessWidget {
               sectionsSpace: 2,
               centerSpaceRadius: 52,
               startDegreeOffset: 270,
-              sections: _sections(),
+              sections: _sections(track),
             ),
             duration: SsrMotion.base,
             curve: SsrMotion.curve,
@@ -540,26 +542,26 @@ class _DonutDial extends StatelessWidget {
     );
   }
 
-  List<PieChartSectionData> _sections() {
+  List<PieChartSectionData> _sections(Color track) {
     final live = <PieChartSectionData>[
       if (totalIn > 0)
         PieChartSectionData(
           value: totalIn,
-          color: SsrColors.mint,
+          color: AppColors.emerald,
           radius: 26,
           showTitle: false,
         ),
       if (spendOut > 0)
         PieChartSectionData(
           value: spendOut,
-          color: SsrColors.rose,
+          color: AppColors.rust,
           radius: 26,
           showTitle: false,
         ),
       if (savingOut > 0)
         PieChartSectionData(
           value: savingOut,
-          color: SsrColors.gold,
+          color: AppColors.gold,
           radius: 26,
           showTitle: false,
         ),
@@ -568,7 +570,7 @@ class _DonutDial extends StatelessWidget {
     return [
       PieChartSectionData(
         value: 1,
-        color: SsrColors.noirLine,
+        color: track,
         radius: 26,
         showTitle: false,
       ),
@@ -576,7 +578,8 @@ class _DonutDial extends StatelessWidget {
   }
 }
 
-/// Persen masuk di tengah donut (noirInk eksplisit).
+/// Persen masuk di tengah donut (onSurface eksplisit agar terbaca
+/// di light dan dark).
 class _DonutCenter extends StatelessWidget {
   final int pctIn;
 
@@ -592,14 +595,12 @@ class _DonutCenter extends StatelessWidget {
             '$pctIn%',
             style: SsrTheme.money.copyWith(
               fontSize: 20,
-              color: SsrColors.noirInk,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           Text(
             tr('r_center'),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: SsrColors.noirSecondary,
-            ),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
       ),
@@ -638,18 +639,12 @@ class _FlowLegend extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SsrColors.noirSecondary,
-                ),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 2),
               Text(
                 amt(value),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+                style: SsrType.moneyMedium.copyWith(color: color),
               ),
             ],
           ),
@@ -722,16 +717,12 @@ class _TransferHints extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('r_hints').replaceFirst('{n}', '${pairs.length}'),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: SsrColors.noirInk,
-            ),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SsrSpace.xs),
           for (final p in pairs)
@@ -741,9 +732,7 @@ class _TransferHints extends StatelessWidget {
                 '${nameOf(p.outTx.walletId)} → ${nameOf(p.inTx.walletId ?? p.inTx.toWalletId)}'
                 ' · ${amt(p.amount)}'
                 ' · ${txTime(p.outTx.createdAt)} → ${txTime(p.inTx.createdAt)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SsrColors.noirSecondary,
-                ),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
         ],
@@ -777,14 +766,10 @@ class _CategoryRecapState extends State<_CategoryRecap> {
       children: [
         Text(
           tr('r_recap'),
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: SsrColors.noirInk,
-          ),
+          style: theme.textTheme.titleMedium,
         ),
         const SizedBox(height: SsrSpace.xs),
         SectionCard(
-          color: SsrColors.noirSurface,
-          borderColor: SsrColors.noirLine,
           padding: const EdgeInsets.symmetric(
             horizontal: SsrSpace.lg,
             vertical: SsrSpace.xs,
@@ -806,7 +791,9 @@ class _CategoryRecapState extends State<_CategoryRecap> {
   }
 }
 
-/// Satu baris rekap kategori: nama + nominal tabular noirInk.
+/// Satu baris rekap kategori: lencana SVG + label + nominal ala TxRow.
+/// Baris rekap selalu total belanja, jadi ikut varian Keluar (tint dan
+/// glif rust, nominal rust). Logika TopN tak berubah.
 class _RecapRow extends StatelessWidget {
   final String name;
   final double total;
@@ -820,23 +807,50 @@ class _RecapRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
+          _RecapBadge(category: name),
+          const SizedBox(width: SsrSpace.md),
           Expanded(
             child: Text(
               name,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: SsrColors.noirInk,
-              ),
+              style: theme.textTheme.bodyMedium,
             ),
           ),
           Text(
             amt(total),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: SsrColors.noirInk,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+            style: SsrType.moneyMedium.copyWith(color: AppColors.rust),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Lencana rekap: wadah 38x38 tint rust + glif rust 19px, ikut baris
+/// Keluar TxRow.
+class _RecapBadge extends StatelessWidget {
+  final String category;
+
+  const _RecapBadge({required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: AppColors.rust.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Center(
+        child: SvgPicture.asset(
+          svgForCategory(category),
+          width: 19,
+          colorFilter: const ColorFilter.mode(
+            AppColors.rust,
+            BlendMode.srcIn,
+          ),
+        ),
       ),
     );
   }
@@ -877,10 +891,7 @@ class _RecapOthers extends StatelessWidget {
               ),
               Text(
                 amt(result.othersTotal),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: SsrColors.noirInk,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+                style: SsrType.moneyMedium.copyWith(color: AppColors.rust),
               ),
             ],
           ),
@@ -936,14 +947,10 @@ class _TxListCard extends StatelessWidget {
       children: [
         Text(
           tr('r_tx_title'),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: SsrColors.noirInk,
-          ),
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: SsrSpace.xs),
         SectionCard(
-          color: SsrColors.noirSurface,
-          borderColor: SsrColors.noirLine,
           padding: const EdgeInsets.symmetric(
             horizontal: SsrSpace.sm,
             vertical: SsrSpace.xs,
@@ -995,19 +1002,21 @@ class _MonthlySummary extends StatelessWidget {
     Color color,
   ) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: SsrColors.noirSecondary,
-            ),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: SsrSpace.xs),
-          Text(amt(value), style: SsrTheme.money.copyWith(color: color)),
+          Text(
+            amt(value),
+            style: SsrType.moneyMedium.copyWith(
+              fontSize: 16,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
@@ -1036,7 +1045,12 @@ class _MonthlySummary extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _statCard(context, tr('tx_in'), totalIn, SsrColors.mint),
+              child: _statCard(
+                context,
+                tr('tx_in'),
+                totalIn,
+                AppColors.emerald,
+              ),
             ),
             const SizedBox(width: SsrSpace.md),
             Expanded(
@@ -1044,7 +1058,7 @@ class _MonthlySummary extends StatelessWidget {
                 context,
                 tr('tx_out'),
                 totalOut,
-                SsrColors.rose,
+                AppColors.rust,
               ),
             ),
           ],
@@ -1075,22 +1089,18 @@ class _NetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('beranda_diff').replaceFirst('{m}', monthLabel),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: SsrColors.noirSecondary,
-            ),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: SsrSpace.xs),
           Text(
             amt(net),
             style: SsrType.moneyLarge.copyWith(
-              color: net >= 0 ? SsrColors.mint : SsrColors.rose,
+              color: net >= 0 ? AppColors.emerald : AppColors.rust,
             ),
           ),
         ],
