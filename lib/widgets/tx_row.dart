@@ -28,9 +28,9 @@ class TxRow extends StatelessWidget {
   }
 
   Color get _amountColor {
-    if (tx.type == 'in') return SsrColors.accent;
-    if (tx.type == 'out') return SsrColors.danger;
-    return SsrColors.ink;
+    if (tx.type == 'in') return SsrColors.mint;
+    if (tx.type == 'out') return SsrColors.rose;
+    return SsrColors.noirInk;
   }
 
   IconData get _directionIcon {
@@ -59,7 +59,9 @@ class TxRow extends StatelessWidget {
     ];
 
     return Material(
-      color: selected ? SsrColors.accentSoft : Colors.transparent,
+      color: selected
+          ? SsrColors.mint.withValues(alpha: 0.12)
+          : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -71,12 +73,13 @@ class TxRow extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: SsrColors.accentSoft,
+                  color: SsrColors.noirRaised,
                   borderRadius: BorderRadius.circular(SsrRadius.tile),
+                  border: Border.all(color: SsrColors.noirLine),
                 ),
                 child: DuoIcon(
                   iconForCategory(tx.category),
-                  color: SsrColors.accent,
+                  color: _amountColor,
                   size: 22,
                 ),
               ),
@@ -109,7 +112,7 @@ class TxRow extends StatelessWidget {
                       Text(
                         when,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: SsrColors.secondary,
+                          color: SsrColors.noirSecondary,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),

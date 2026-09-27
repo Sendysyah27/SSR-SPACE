@@ -157,22 +157,24 @@ class _TxSummaryStrip extends StatelessWidget {
     }
     final net = totalIn - totalOut;
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Row(
         children: [
           _SummaryCell(
             label: tr('tx_in'),
             value: amt(totalIn),
-            color: SsrColors.accent,
+            color: SsrColors.mint,
           ),
           _SummaryCell(
             label: tr('tx_out'),
             value: amt(totalOut),
-            color: SsrColors.danger,
+            color: SsrColors.rose,
           ),
           _SummaryCell(
             label: tr(net >= 0 ? 'beranda_surplus' : 'beranda_defisit'),
             value: amt(net),
-            color: SsrColors.ink,
+            color: SsrColors.noirInk,
           ),
         ],
       ),
@@ -202,7 +204,7 @@ class _SummaryCell extends StatelessWidget {
           Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: SsrColors.secondary,
+              color: SsrColors.noirSecondary,
             ),
           ),
           const SizedBox(height: 2),
@@ -314,12 +316,22 @@ class _NoWalletBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: SsrSpace.sm),
       padding: const EdgeInsets.all(SsrSpace.md),
       decoration: BoxDecoration(
-        color: SsrColors.dangerSoft,
+        color: SsrColors.rose.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(SsrRadius.tile),
+        border: Border.all(
+          color: SsrColors.rose.withValues(alpha: 0.45),
+        ),
       ),
       child: Row(
         children: [
-          Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: SsrColors.noirInk,
+              ),
+            ),
+          ),
           TextButton(
             onPressed: onToggle,
             child: Text(
@@ -351,6 +363,13 @@ class _TxStateScaffold extends StatelessWidget {
             tooltip: tr('act_catat'),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: onAdd,
+        tooltip: tr('act_catat'),
+        backgroundColor: SsrColors.mint,
+        foregroundColor: SsrColors.noirBg,
+        child: const DuoIcon(AppIcons.add),
       ),
       body: body,
     );
