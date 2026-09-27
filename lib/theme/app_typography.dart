@@ -13,7 +13,7 @@ class SsrType {
     fontSize: 32,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.5,
-    color: Colors.white,
+    color: SsrColors.noirInk,
     fontFeatures: [FontFeature.tabularFigures()],
   );
 
@@ -23,7 +23,7 @@ class SsrType {
     fontSize: 26,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.3,
-    color: SsrColors.ink,
+    color: SsrColors.noirInk,
     fontFeatures: [FontFeature.tabularFigures()],
   );
 
@@ -32,7 +32,7 @@ class SsrType {
     fontFamily: SsrFonts.numeric,
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: SsrColors.ink,
+    color: SsrColors.noirInk,
     fontFeatures: [FontFeature.tabularFigures()],
   );
 }

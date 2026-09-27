@@ -9,6 +9,7 @@ import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/tx_day_group.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
@@ -18,6 +19,7 @@ import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/laporan/reports_screen.dart';
 import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
+import 'package:ssr_space/widgets/day_header.dart';
 import 'package:ssr_space/widgets/mask_toggle.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
@@ -250,11 +252,7 @@ class BerandaScreenState extends State<BerandaScreen> {
     final denom = totalIn + totalOut;
     final inShare = denom <= 0 ? 0.0 : totalIn / denom;
     final pctOut = totalOut <= 0 ? null : (surplus / totalOut * 100).round();
-    final groups = <String, List<SaasTransaction>>{};
-    for (final t in items) {
-      final d = (t.date ?? '').isEmpty ? '-' : t.date!;
-      groups.putIfAbsent(d, () => []).add(t);
-    }
+    final buckets = groupDayBuckets(items);
     final calmDates = [
       for (final t in items) DateTime.tryParse(t.date ?? ''),
     ].whereType<DateTime>().toList();
@@ -275,7 +273,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                 width: 8,
                 height: 8,
                 decoration: const BoxDecoration(
-                  color: SsrColors.accent,
+                  color: SsrColors.mint,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -366,15 +364,9 @@ class BerandaScreenState extends State<BerandaScreen> {
             ),
           )
         else
-          for (final d in groups.keys.take(7)) ...[
-            Padding(
-              padding: const EdgeInsets.only(
-                top: SsrSpace.md,
-                bottom: SsrSpace.xs,
-              ),
-              child: Text(dayLabel(d), style: theme.textTheme.bodySmall),
-            ),
-            for (final t in groups[d]!.take(5)) ...[
+          for (final b in buckets.take(7)) ...[
+            DayHeader(dateKey: b.key, count: b.items.length),
+            for (final t in b.items.take(5)) ...[
               TxRow(tx: t),
               const Divider(height: 1),
             ],
@@ -393,17 +385,12 @@ class BerandaScreenState extends State<BerandaScreen> {
     final positive = surplus >= 0;
     return Container(
       padding: const EdgeInsets.all(SsrSpace.xl),
-      decoration: BoxDecoration(
-        color: SsrColors.ink,
-        borderRadius: const BorderRadius.all(Radius.circular(SsrRadius.hero)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: SsrColors.ink.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
+      decoration: const BoxDecoration(
+        color: SsrColors.noirRaised,
+        borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
+        border: Border(
+          top: BorderSide(color: SsrColors.gold, width: 2),
+        ),
       ),
       child: Stack(
         children: [
@@ -416,7 +403,7 @@ class BerandaScreenState extends State<BerandaScreen> {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0x14FFFFFF),
+                  color: Color(0x122DD4BF),
                 ),
               ),
             ),
@@ -438,8 +425,8 @@ class BerandaScreenState extends State<BerandaScreen> {
               const SizedBox(height: SsrSpace.xs),
               Text(
                 tr('beranda_diff').replaceFirst('{m}', _monthLower()),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
+                style: const TextStyle(
+                  color: SsrColors.noirSecondary,
                   fontSize: 13,
                 ),
               ),
@@ -448,7 +435,10 @@ class BerandaScreenState extends State<BerandaScreen> {
                 Text(
                   tr('beranda_vs_out')
                       .replaceFirst('{p}', '${pctOut >= 0 ? '+' : ''}$pctOut'),
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: const TextStyle(
+                    color: SsrColors.noirInk,
+                    fontSize: 13,
+                  ),
                 ),
               ],
               const SizedBox(height: SsrSpace.lg),
@@ -460,8 +450,8 @@ class BerandaScreenState extends State<BerandaScreen> {
                       children: [
                         Text(
                           tr('tx_in'),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
+                          style: const TextStyle(
+                            color: SsrColors.noirSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -469,7 +459,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                         Text(
                           amt(totalIn),
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: SsrColors.mint,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                             fontFeatures: [FontFeature.tabularFigures()],
@@ -484,8 +474,8 @@ class BerandaScreenState extends State<BerandaScreen> {
                       children: [
                         Text(
                           tr('tx_out'),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
+                          style: const TextStyle(
+                            color: SsrColors.noirSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -493,7 +483,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                         Text(
                           amt(totalOut),
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: SsrColors.rose,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                             fontFeatures: [FontFeature.tabularFigures()],
@@ -509,11 +499,11 @@ class BerandaScreenState extends State<BerandaScreen> {
                 height: 8,
                 child: Stack(
                   children: [
-                    Positioned.fill(
+                    const Positioned.fill(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
+                          color: SsrColors.noirLine,
+                          borderRadius: BorderRadius.all(Radius.circular(4)),
                         ),
                       ),
                     ),
@@ -535,7 +525,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                               heightFactor: 1,
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  color: SsrColors.accent,
+                                  color: SsrColors.mint,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
@@ -565,6 +555,8 @@ class _CalmWeeks extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -578,11 +570,9 @@ class _CalmWeeks extends StatelessWidget {
                   height: 12,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: filled ? SsrColors.accent : Colors.transparent,
+                    color: filled ? SsrColors.mint : Colors.transparent,
                     border: Border.all(
-                      color: filled
-                          ? SsrColors.accent
-                          : theme.colorScheme.outline,
+                      color: filled ? SsrColors.mint : SsrColors.noirLine,
                     ),
                   ),
                 ),
@@ -615,6 +605,8 @@ class _BillsSuggest extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

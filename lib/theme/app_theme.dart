@@ -386,7 +386,7 @@ class SsrTheme {
     fontFamily: SsrFonts.body,
     fontSize: 16,
     fontWeight: FontWeight.w600,
-    color: SsrColors.ink,
+    color: SsrColors.noirInk,
     fontFeatures: [FontFeature.tabularFigures()],
   );
   static const moneyLarge = TextStyle(
@@ -394,7 +394,7 @@ class SsrTheme {
     fontSize: 26,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.3,
-    color: SsrColors.ink,
+    color: SsrColors.noirInk,
     fontFeatures: [FontFeature.tabularFigures()],
   );
   static const moneyOnDark = TextStyle(
@@ -402,7 +402,7 @@ class SsrTheme {
     fontSize: 32,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.5,
-    color: Colors.white,
+    color: SsrColors.noirInk,
     fontFeatures: [FontFeature.tabularFigures()],
   );
 }
