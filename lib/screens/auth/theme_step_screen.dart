@@ -21,7 +21,7 @@ class ThemeStepScreen extends StatefulWidget {
 class _ThemeStepScreenState extends State<ThemeStepScreen> {
   static const _iconAuto = IconData(0xE566, fontFamily: SsrFonts.icon);
   static const _iconNoir = IconData(0xE330, fontFamily: SsrFonts.icon);
-  static const _iconCheck = IconData(0xE183, fontFamily: SsrFonts.icon);
+  static const _iconCheck = IconData(0xE184, fontFamily: SsrFonts.icon);
 
   late String _pilih;
 
