@@ -91,7 +91,9 @@ class _BillingScreenState extends State<BillingScreen> {
         children: [
           Text(
             tr('bl_active').replaceFirst('{p}', plan.isEmpty ? '-' : (isPro ? tr('bl_pro') : tr('bl_free'))),
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: SsrColors.noirInk,
+            ),
           ),
           const SizedBox(height: SsrSpace.lg),
           _FreePlanCard(isPro: isPro),
@@ -162,14 +164,14 @@ class _ProPlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _PlanCard(
-      borderColor: SsrColors.accent,
+      borderColor: SsrColors.mint,
       title: tr('bl_pro'),
       statusChip: isPro
           ? StatusChip(label: tr('bl_active_chip'), tone: StatusTone.accent)
           : StatusChip(label: tr('bl_upgrade_chip'), tone: StatusTone.neutral),
       price: Text(
         '${rp(proPrice)}/bulan',
-        style: SsrTheme.money.copyWith(fontSize: 18, color: SsrColors.accent),
+        style: SsrTheme.money.copyWith(fontSize: 18, color: SsrColors.mint),
       ),
       features: [tr('bl_f_pro1'), tr('bl_f_pro2'), tr('bl_f_pro3')],
       extra: [
@@ -221,7 +223,7 @@ class _PlanCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: SsrSpace.sm),
       child: Row(
         children: [
-          const DuoIcon(AppIcons.check, size: 18, color: SsrColors.accent),
+          const DuoIcon(AppIcons.check, size: 18, color: SsrColors.mint),
           const SizedBox(width: SsrSpace.sm),
           Expanded(
             child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
@@ -236,7 +238,8 @@ class _PlanCard extends StatelessWidget {
     final chip = statusChip;
     return SectionCard(
       margin: margin,
-      borderColor: borderColor,
+      color: SsrColors.noirSurface,
+      borderColor: borderColor ?? SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -245,7 +248,9 @@ class _PlanCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: SsrColors.noirInk,
+                  ),
                 ),
               ),
               if (chip != null) chip,

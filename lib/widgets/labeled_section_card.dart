@@ -3,7 +3,7 @@ import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 
 /// SectionCard dengan label kecil (bodySmall) + jarak xs di atas isi.
-/// Dipakai di layar Lainnya (5 kartu) dan Dompet (kartu total aset) -
+/// Dipakai di seksi hub Lainnya dan Dompet (kartu total aset) -
 /// gaya label persis sama di semua pemakai (bodySmall), jadi aman digabung.
 class LabeledSectionCard extends StatelessWidget {
   final String label;

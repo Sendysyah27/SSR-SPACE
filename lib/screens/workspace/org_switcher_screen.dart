@@ -259,7 +259,7 @@ class _OrgPickerBody extends StatelessWidget {
         Text(
           tr('org_pick'),
           style: Theme.of(context).textTheme.bodyMedium
-              ?.copyWith(color: SsrColors.secondary),
+              ?.copyWith(color: SsrColors.noirSecondary),
         ),
         const SizedBox(height: SsrSpace.lg),
         if (orgs.isEmpty)
@@ -309,6 +309,8 @@ class _OrgListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.md,
         vertical: SsrSpace.xs,
@@ -342,33 +344,21 @@ class _OrgRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = (m['organizations']?['name'] ?? '-').toString();
     final isOwner = m['role'] == 'owner';
-    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
     return InkWell(
       onTap: () => onSelect(m),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: SsrColors.accentSoft,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  color: SsrColors.accent,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
-              ),
-            ),
+            _OrgAvatar(name: name),
             const SizedBox(width: SsrSpace.md),
             Expanded(
-              child: Text(name, style: Theme.of(context).textTheme.titleMedium),
+              child: Text(
+                name,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: SsrColors.noirInk,
+                ),
+              ),
             ),
             const SizedBox(width: SsrSpace.sm),
             StatusChip(
@@ -381,6 +371,36 @@ class _OrgRow extends StatelessWidget {
               icon: const DuoIcon(AppIcons.settings),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Avatar lingkaran inisial nama workspace di atas noir terangkat.
+class _OrgAvatar extends StatelessWidget {
+  final String name;
+
+  const _OrgAvatar({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: SsrColors.noirRaised,
+        shape: BoxShape.circle,
+        border: Border.all(color: SsrColors.noirLine),
+      ),
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: SsrColors.mint,
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
         ),
       ),
     );
@@ -408,12 +428,16 @@ class _CreateOrgForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('org_new'),
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: SsrColors.noirInk,
+            ),
           ),
           const SizedBox(height: SsrSpace.md),
           TextField(
@@ -452,12 +476,16 @@ class _JoinOrgForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Punya kode undangan?',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: SsrColors.noirInk,
+            ),
           ),
           const SizedBox(height: SsrSpace.md),
           TextField(

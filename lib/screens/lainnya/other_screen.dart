@@ -107,7 +107,7 @@ class _OtherScreenState extends State<OtherScreen> {
             child: Text(tr('cancel')),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: SsrColors.danger),
+            style: TextButton.styleFrom(foregroundColor: SsrColors.rose),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(tr('o_logout')),
           ),
@@ -164,7 +164,7 @@ class _OtherScreenState extends State<OtherScreen> {
             child: Text(tr('cancel')),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: SsrColors.danger),
+            style: TextButton.styleFrom(foregroundColor: SsrColors.rose),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(tr('tx_delete')),
           ),
@@ -272,6 +272,20 @@ class _OtherScreenState extends State<OtherScreen> {
 
   bool backingUp = false;
 
+  /// AppBar hub: judul + aksi cari pengaturan.
+  AppBar _appBar() {
+    return AppBar(
+      title: Text(tr('nav_lainnya')),
+      actions: [
+        IconButton(
+          icon: const DuoIcon(AppIcons.search),
+          tooltip: tr('search_settings_hint'),
+          onPressed: _openSearch,
+        ),
+      ],
+    );
+  }
+
   Future<void> _backup() async {
     if (backingUp) return;
     setState(() => backingUp = true);
@@ -325,16 +339,7 @@ class _OtherScreenState extends State<OtherScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(tr('nav_lainnya')),
-        actions: [
-          IconButton(
-            icon: const DuoIcon(AppIcons.search),
-            tooltip: tr('search_settings_hint'),
-            onPressed: _openSearch,
-          ),
-        ],
-      ),
+      appBar: _appBar(),
       body: FutureBuilder<_OtherMeta>(
         future: _metaFuture,
         builder: (_, snap) {
@@ -506,6 +511,8 @@ class _HeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -514,7 +521,9 @@ class _HeaderCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   orgName,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: SsrColors.noirInk,
+                  ),
                 ),
               ),
               StatusChip(
@@ -564,6 +573,8 @@ class _DataSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('pf_data'),
       children: [
         NavTile(
@@ -619,6 +630,8 @@ class _TrackingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('pf_tracking'),
       children: [
         NavTile(
@@ -664,6 +677,8 @@ class _BackupSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('pf_backup'),
       children: [
         NavTile(
@@ -719,6 +734,8 @@ class _WorkspaceSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('pf_workspace'),
       children: [
         NavTile(
@@ -762,6 +779,8 @@ class _AppearanceSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('pf_appearance'),
       children: [
         ValueListenableBuilder<bool>(
@@ -791,6 +810,8 @@ class _LangMoneySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('pf_langmoney'),
       children: [
         NavTile(icon: AppIcons.menu, title: tr('st_lang'), onTap: onSettings),
@@ -809,6 +830,8 @@ class _ReminderSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('pf_reminder'),
       children: [
         NavTile(
@@ -832,6 +855,8 @@ class _SecuritySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('pf_security'),
       children: [
         NavTile(icon: AppIcons.lock, title: tr('st_pin'), onTap: onSettings),
@@ -876,6 +901,8 @@ class _AboutSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('pf_about'),
       children: [
         NavTile(

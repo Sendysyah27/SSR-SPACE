@@ -263,6 +263,8 @@ class _PasteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('imp_title'),
       children: [
@@ -271,10 +273,7 @@ class _PasteCard extends StatelessWidget {
           minLines: 5,
           maxLines: 8,
           enabled: !importing,
-          decoration: const InputDecoration(
-            hintText: _kCsvHint,
-            border: OutlineInputBorder(),
-          ),
+          decoration: const InputDecoration(hintText: _kCsvHint),
         ),
         const SizedBox(height: SsrSpace.md),
         PrimaryButton(
@@ -313,6 +312,8 @@ class _MappingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('imp_preview'),
       children: [for (final f in _kMapFields) _mapRow(f.$2, mapping[f.$1])],
@@ -355,6 +356,8 @@ class _RowsCard extends StatelessWidget {
     final rest = rows.length - shown.length;
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -459,6 +462,8 @@ class _FallbackCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('imp_import'),
       children: [
@@ -505,13 +510,18 @@ class _ErrorsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('imp_errors').replaceFirst('{n}', '${errors.length}'),
       children: [
         for (final e in errors)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: SsrSpace.xs),
-            child: Text('${e.lineNo}: ${e.message}'),
+            child: Text(
+              '${e.lineNo}: ${e.message}',
+              style: const TextStyle(color: SsrColors.rose),
+            ),
           ),
       ],
     );

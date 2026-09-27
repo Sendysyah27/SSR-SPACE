@@ -155,6 +155,8 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
     final paid = historyFor(payments, bill.id).length;
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Row(
         children: [
           Expanded(
@@ -165,7 +167,9 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
                 children: [
                   Text(
                     bill.label,
-                    style: Theme.of(context).textTheme.titleSmall,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: SsrColors.noirInk,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -380,50 +384,92 @@ class _BillEditorState extends State<_BillEditor> {
               decoration: InputDecoration(labelText: tr('rb_amount')),
             ),
             const SizedBox(height: SsrSpace.sm),
-            CategoryChips(controller: catC),
-            const SizedBox(height: SsrSpace.sm),
-            SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'weekly',
-                  label: Text(tr('rb_weekly')),
-                ),
-                ButtonSegment(
-                  value: 'monthly',
-                  label: Text(tr('rb_monthly')),
-                ),
-              ],
-              selected: {period},
-              showSelectedIcon: false,
-              onSelectionChanged: (s) => setState(() => period = s.first),
-            ),
-            if (period == 'monthly') ...[
-              const SizedBox(height: SsrSpace.sm),
-              TextField(
-                controller: anchorC,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: tr('rb_anchor')),
-              ),
-            ],
-            const SizedBox(height: SsrSpace.sm),
-            DropdownButtonFormField<String>(
-              initialValue: walletId,
-              items: [
-                for (final w in widget.wallets)
-                  DropdownMenuItem(value: w.id, child: Text(w.name)),
-              ],
-              onChanged: (v) => setState(() => walletId = v),
-              decoration: InputDecoration(labelText: tr('tx_f_wallet')),
+            _BillMetaFields(
+              catC: catC,
+              period: period,
+              onPeriodChanged: (v) => setState(() => period = v),
+              anchorC: anchorC,
+              wallets: widget.wallets,
+              walletId: walletId,
+              onWalletChanged: (v) => setState(() => walletId = v),
             ),
             if (err != null) ...[
               const SizedBox(height: SsrSpace.sm),
-              Text(err!, style: const TextStyle(color: SsrColors.danger)),
+              Text(err!, style: const TextStyle(color: SsrColors.rose)),
             ],
             const SizedBox(height: SsrSpace.md),
             FilledButton(onPressed: _submit, child: Text(tr('save'))),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Field tengah editor tagihan: chip kategori, periode, jangkar
+/// tanggal, dan dompet (logika submit tetap di state editor).
+class _BillMetaFields extends StatelessWidget {
+  final TextEditingController catC;
+  final String period;
+  final ValueChanged<String> onPeriodChanged;
+  final TextEditingController anchorC;
+  final List<Wallet> wallets;
+  final String? walletId;
+  final ValueChanged<String?> onWalletChanged;
+
+  const _BillMetaFields({
+    required this.catC,
+    required this.period,
+    required this.onPeriodChanged,
+    required this.anchorC,
+    required this.wallets,
+    required this.walletId,
+    required this.onWalletChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CategoryChips(controller: catC),
+        const SizedBox(height: SsrSpace.sm),
+        SegmentedButton<String>(
+          style: SegmentedButton.styleFrom(
+            backgroundColor: SsrColors.noirSurface,
+            foregroundColor: SsrColors.noirSecondary,
+            selectedBackgroundColor: SsrColors.mint.withValues(alpha: 0.16),
+            selectedForegroundColor: SsrColors.mint,
+            side: const BorderSide(color: SsrColors.noirLine),
+          ),
+          segments: [
+            ButtonSegment(value: 'weekly', label: Text(tr('rb_weekly'))),
+            ButtonSegment(value: 'monthly', label: Text(tr('rb_monthly'))),
+          ],
+          selected: {period},
+          showSelectedIcon: false,
+          onSelectionChanged: (s) => onPeriodChanged(s.first),
+        ),
+        if (period == 'monthly') ...[
+          const SizedBox(height: SsrSpace.sm),
+          TextField(
+            controller: anchorC,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(labelText: tr('rb_anchor')),
+          ),
+        ],
+        const SizedBox(height: SsrSpace.sm),
+        DropdownButtonFormField<String>(
+          initialValue: walletId,
+          items: [
+            for (final w in wallets)
+              DropdownMenuItem(value: w.id, child: Text(w.name)),
+          ],
+          onChanged: onWalletChanged,
+          decoration: InputDecoration(labelText: tr('tx_f_wallet')),
+        ),
+      ],
     );
   }
 }

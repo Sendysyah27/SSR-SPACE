@@ -48,6 +48,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
+          const _P2StatusLine(),
+          const SizedBox(height: SsrSpace.md),
           _LangCard(
             value: localeCode.value,
             onChanged: (v) => setLocaleCode(v),
@@ -88,6 +90,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
+/// Satu baris status jujur tahap P2 untuk seluruh layar ini, ganti
+/// 6 subtitle msg_p2 per kartu yang berulang (kalimat jujur dipertahankan).
+class _P2StatusLine extends StatelessWidget {
+  const _P2StatusLine();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall);
+  }
+}
+
 /// Bahasa aplikasi: Indonesia / English.
 class _LangCard extends StatelessWidget {
   final String value;
@@ -98,9 +111,18 @@ class _LangCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_lang'),
       children: [
         SegmentedButton<String>(
+          style: SegmentedButton.styleFrom(
+            backgroundColor: SsrColors.noirSurface,
+            foregroundColor: SsrColors.noirSecondary,
+            selectedBackgroundColor: SsrColors.mint.withValues(alpha: 0.16),
+            selectedForegroundColor: SsrColors.mint,
+            side: const BorderSide(color: SsrColors.noirLine),
+          ),
           segments: const [
             ButtonSegment(value: 'id', label: Text('Indonesia')),
             ButtonSegment(value: 'en', label: Text('English')),
@@ -140,6 +162,8 @@ class _CurrencyCard extends StatelessWidget {
             : tr('st_fx_cache')
                   .replaceFirst('{d}', '${at.day}-${at.month}-${at.year}'));
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_currency'),
       children: [
         DropdownButtonFormField<String>(
@@ -175,6 +199,8 @@ class _FontCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_font'),
       children: [
         Text(amt(100000)),
@@ -198,6 +224,8 @@ class _DefaultCurrencyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_def_currency'),
       children: [
         ValueListenableBuilder<String>(
@@ -214,8 +242,6 @@ class _DefaultCurrencyCard extends StatelessWidget {
             },
           ),
         ),
-        const SizedBox(height: SsrSpace.sm),
-        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -228,6 +254,8 @@ class _TopNCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_topn'),
       children: [
         ValueListenableBuilder<bool>(
@@ -240,8 +268,6 @@ class _TopNCard extends StatelessWidget {
             onChanged: setReportsTopN,
           ),
         ),
-        const SizedBox(height: SsrSpace.sm),
-        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -254,6 +280,8 @@ class _AnimsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_anims'),
       children: [
         ValueListenableBuilder<bool>(
@@ -265,8 +293,6 @@ class _AnimsCard extends StatelessWidget {
             onChanged: setUiAnims,
           ),
         ),
-        const SizedBox(height: SsrSpace.sm),
-        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -279,11 +305,20 @@ class _ListStyleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_list_style'),
       children: [
         ValueListenableBuilder<String>(
           valueListenable: uiListStyle,
           builder: (context, value, _) => SegmentedButton<String>(
+            style: SegmentedButton.styleFrom(
+              backgroundColor: SsrColors.noirSurface,
+              foregroundColor: SsrColors.noirSecondary,
+              selectedBackgroundColor: SsrColors.mint.withValues(alpha: 0.16),
+              selectedForegroundColor: SsrColors.mint,
+              side: const BorderSide(color: SsrColors.noirLine),
+            ),
             segments: [
               ButtonSegment(
                 value: 'compact',
@@ -303,8 +338,6 @@ class _ListStyleCard extends StatelessWidget {
             onSelectionChanged: (s) => setUiListStyle(s.first),
           ),
         ),
-        const SizedBox(height: SsrSpace.sm),
-        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -319,6 +352,8 @@ class _DateStyleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_date_style'),
       children: [
         ValueListenableBuilder<String>(
@@ -335,8 +370,6 @@ class _DateStyleCard extends StatelessWidget {
             },
           ),
         ),
-        const SizedBox(height: SsrSpace.sm),
-        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -349,6 +382,8 @@ class _HeroStyleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_hero_style'),
       children: [
         ValueListenableBuilder<String>(
@@ -367,8 +402,6 @@ class _HeroStyleCard extends StatelessWidget {
             },
           ),
         ),
-        const SizedBox(height: SsrSpace.sm),
-        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -415,6 +448,8 @@ class _ReminderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_reminder_time'),
       children: [
         ValueListenableBuilder<bool>(
@@ -476,6 +511,8 @@ class _WidgetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_widget_today'),
       children: [
         ValueListenableBuilder<bool>(
@@ -507,6 +544,8 @@ class _ResetCorrectCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_reset_correct'),
       children: [
         OutlinedButton(
@@ -622,6 +661,8 @@ class _PinCardState extends State<_PinCard> {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('st_pin'),
       children: [
         _PinFeedback(msg: msg, err: err),
@@ -659,7 +700,7 @@ class _PinFeedback extends StatelessWidget {
           Text(
             err!,
             style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: SsrColors.danger),
+                ?.copyWith(color: SsrColors.rose),
           ),
           const SizedBox(height: SsrSpace.sm),
         ],

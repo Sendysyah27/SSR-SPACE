@@ -129,7 +129,7 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
               tr('wsm_kick'),
-              style: const TextStyle(color: SsrColors.danger),
+              style: const TextStyle(color: SsrColors.rose),
             ),
           ),
         ],
@@ -319,10 +319,10 @@ class _DetailHero extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(SsrSpace.xl),
-      decoration: BoxDecoration(
-        color: SsrColors.ink,
-        borderRadius: const BorderRadius.all(Radius.circular(SsrRadius.hero)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: const BoxDecoration(
+        color: SsrColors.noirRaised,
+        borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
+        border: Border.all(color: SsrColors.noirLine),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,7 +332,7 @@ class _DetailHero extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
-                ?.copyWith(color: Colors.white),
+                ?.copyWith(color: SsrColors.noirInk),
           ),
           const SizedBox(height: SsrSpace.md),
           Row(
@@ -341,8 +341,8 @@ class _DetailHero extends StatelessWidget {
               const SizedBox(width: SsrSpace.sm),
               Text(
                 '$count ${tr('wsm_members')}',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.75),
+                style: const TextStyle(
+                  color: SsrColors.noirSecondary,
                   fontSize: 13,
                 ),
               ),
@@ -363,7 +363,7 @@ class _InviteNote extends StatelessWidget {
     return Text(
       tr('wsm_invite_active'),
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: SsrColors.secondary,
+        color: SsrColors.noirSecondary,
       ),
     );
   }
@@ -388,6 +388,8 @@ class _MembersCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.md,
         vertical: SsrSpace.xs,
@@ -399,7 +401,9 @@ class _MembersCard extends StatelessWidget {
             padding: const EdgeInsets.only(top: SsrSpace.sm),
             child: Text(
               tr('wsm_members'),
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: SsrColors.noirInk,
+              ),
             ),
           ),
           for (var i = 0; i < members.length; i++) ...[
@@ -471,13 +475,14 @@ class _MemberAvatar extends StatelessWidget {
       height: 36,
       alignment: Alignment.center,
       decoration: const BoxDecoration(
-        color: SsrColors.accentSoft,
+        color: SsrColors.noirRaised,
         shape: BoxShape.circle,
+        border: Border.all(color: SsrColors.noirLine),
       ),
       child: Text(
         initial,
         style: const TextStyle(
-          color: SsrColors.accent,
+          color: SsrColors.mint,
           fontWeight: FontWeight.w700,
           fontSize: 14,
         ),
@@ -507,7 +512,7 @@ class _KickAction extends StatelessWidget {
             )
           : TextButton(
               style: TextButton.styleFrom(
-                foregroundColor: SsrColors.danger,
+                foregroundColor: SsrColors.rose,
               ),
               onPressed: onKick,
               child: Text(tr('wsm_kick')),
@@ -536,21 +541,22 @@ class _DangerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ready = delC.text == name;
     return SectionCard(
-      borderColor: SsrColors.danger,
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.rose,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('wsm_danger'),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: SsrColors.danger,
+              color: SsrColors.rose,
             ),
           ),
           const SizedBox(height: SsrSpace.sm),
           Text(
             tr('wsm_delete_body'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: SsrColors.secondary,
+              color: SsrColors.noirSecondary,
             ),
           ),
           const SizedBox(height: SsrSpace.md),
@@ -586,8 +592,8 @@ class _DeleteButton extends StatelessWidget {
       height: 48,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: SsrColors.danger,
-          foregroundColor: Colors.white,
+          backgroundColor: SsrColors.rose,
+          foregroundColor: SsrColors.noirBg,
         ),
         onPressed: ready && !deleting ? onDelete : null,
         child: deleting
@@ -596,7 +602,7 @@ class _DeleteButton extends StatelessWidget {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.4,
-                  color: Colors.white,
+                  color: SsrColors.noirBg,
                 ),
               )
             : Text(tr('wsm_delete')),

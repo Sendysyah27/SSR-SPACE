@@ -8,10 +8,13 @@ import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 
 /// Palet 8 warna kategori (dikurasi, bukan color wheel bebas).
+/// Slot 0..2 memakai varian noir yang hidup di permukaan gelap
+/// (mint/rose/gold ganti accent/danger/saving lama yang muram di noir);
+/// urutan slot tetap sehingga indeks tersimpan tidak bergeser makna.
 const _kMetaPalette = <Color>[
-  SsrColors.accent,
-  SsrColors.danger,
-  SsrColors.saving,
+  SsrColors.mint,
+  SsrColors.rose,
+  SsrColors.gold,
   Color(0xFF2563EB),
   Color(0xFF7C3AED),
   Color(0xFFDB2777),
@@ -158,7 +161,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         color: _kMetaPalette[i],
                         border: Border.all(
                           color: i == cur.color
-                              ? Colors.black
+                              ? SsrColors.noirInk
                               : Colors.transparent,
                           width: 2,
                         ),
@@ -201,8 +204,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         borderRadius: BorderRadius.circular(SsrRadius.chip),
                         border: Border.all(
                           color: k == cur.icon
-                              ? SsrColors.accent
-                              : const Color(0xFFE8E6DF),
+                              ? SsrColors.mint
+                              : SsrColors.noirLine,
                         ),
                       ),
                       child: DuoIcon(_metaIconData(k)),
@@ -269,6 +272,8 @@ class _CatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.sm,
         vertical: SsrSpace.xs,
@@ -277,49 +282,74 @@ class _CatCard extends StatelessWidget {
         children: [
           for (var i = 0; i < items.length; i++) ...[
             if (i > 0) const Divider(height: 1),
-            Row(
-              children: [
-                InkWell(
-                  onTap: () => onColor(items[i]),
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _kMetaPalette[(meta[items[i]] ?? CatMeta.def)
-                          .color],
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: DuoIcon(
-                    _metaIconData(
-                      (meta[items[i]] ?? CatMeta.def).icon,
-                    ),
-                  ),
-                  onPressed: () => onIcon(items[i]),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 8,
-                    ),
-                    child: Text(
-                      items[i],
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const DuoIcon(AppIcons.trash),
-                  onPressed: () => onDelete(i),
-                ),
-              ],
+            _CatRow(
+              name: items[i],
+              meta: meta[items[i]] ?? CatMeta.def,
+              onDelete: () => onDelete(i),
+              onColor: onColor,
+              onIcon: onIcon,
             ),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Satu baris kategori: dot warna + ikon + nama + hapus.
+class _CatRow extends StatelessWidget {
+  final String name;
+  final CatMeta meta;
+  final VoidCallback onDelete;
+  final ValueChanged<String> onColor;
+  final ValueChanged<String> onIcon;
+
+  const _CatRow({
+    required this.name,
+    required this.meta,
+    required this.onDelete,
+    required this.onColor,
+    required this.onIcon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        InkWell(
+          onTap: () => onColor(name),
+          child: Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _kMetaPalette[meta.color],
+            ),
+          ),
+        ),
+        IconButton(
+          icon: DuoIcon(_metaIconData(meta.icon)),
+          onPressed: () => onIcon(name),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: 12,
+              horizontal: 8,
+            ),
+            child: Text(
+              name,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: SsrColors.noirInk,
+              ),
+            ),
+          ),
+        ),
+        IconButton(
+          icon: const DuoIcon(AppIcons.trash),
+          onPressed: onDelete,
+        ),
+      ],
     );
   }
 }

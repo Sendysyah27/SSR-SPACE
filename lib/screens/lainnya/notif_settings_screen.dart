@@ -203,21 +203,13 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading) {
-      return Scaffold(
-        appBar: AppBar(title: Text(tr('nt_title'))),
-        body: const NotifSettingsSkeleton(),
-      );
-    }
+    if (loading) return const _NotifLoading();
     return Scaffold(
       appBar: AppBar(title: Text(tr('nt_title'))),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
-          Text(
-            'Aplikasi membaca notifikasi bank dan dompet di HP ini saja, lalu mencatatnya otomatis ke workspace aktif. Isi pesan tidak diunggah. Yang dikirim: nominal, jenis, nama app, dan hash.',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          const _NotifIntro(),
           const SizedBox(height: SsrSpace.md),
           _StatusCard(
             master: master,
@@ -254,6 +246,32 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Paragraf pembuka: apa yang dibaca dan apa yang dikirim (copy identik).
+class _NotifIntro extends StatelessWidget {
+  const _NotifIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'Aplikasi membaca notifikasi bank dan dompet di HP ini saja, lalu mencatatnya otomatis ke workspace aktif. Isi pesan tidak diunggah. Yang dikirim: nominal, jenis, nama app, dan hash.',
+      style: Theme.of(context).textTheme.bodyMedium,
+    );
+  }
+}
+
+/// Kerangka muat: AppBar + skeleton kartu status/bank/recent.
+class _NotifLoading extends StatelessWidget {
+  const _NotifLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(tr('nt_title'))),
+      body: const NotifSettingsSkeleton(),
     );
   }
 }
@@ -295,6 +313,8 @@ class _StatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -303,7 +323,9 @@ class _StatusCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   tr('nt_card_status'),
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: SsrColors.noirInk,
+                  ),
                 ),
               ),
               StatusChip(
@@ -356,6 +378,8 @@ class _CorrectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       label: tr('ic_title'),
       children: [
         SwitchListTile(
@@ -490,7 +514,7 @@ class _ServiceLine extends StatelessWidget {
 }
 
 /// Satu baris status berlabel: judul (labelLarge) + isi di bawahnya +
-/// elemen trailing (chip / tombol) — dipakai 3× di kartu status.
+/// elemen trailing (chip / tombol), dipakai 3x di kartu status.
 class _StatusLine extends StatelessWidget {
   final String label;
   final Widget below;
@@ -552,10 +576,17 @@ class _BankMappingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(tr('nt_banks'), style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            tr('nt_banks'),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: SsrColors.noirInk,
+            ),
+          ),
           const SizedBox(height: SsrSpace.xs),
           if (wallets.isEmpty)
             Text(
@@ -608,12 +639,16 @@ class _RecentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('nt_lastseen'),
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: SsrColors.noirInk,
+            ),
           ),
           const SizedBox(height: SsrSpace.xs),
           Text(
