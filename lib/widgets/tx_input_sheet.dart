@@ -254,10 +254,12 @@ class _TxInputSheetState extends State<TxInputSheet> {
           createdAt: when.createdAt,
         );
       }
-      if (walletId != null) await noteWalletUsed(walletId!);
-      if (type == 'transfer' && toWalletId != null) {
-        await noteWalletUsed(toWalletId!);
-      }
+      try {
+        if (walletId != null) await noteWalletUsed(walletId!);
+        if (type == 'transfer' && toWalletId != null) {
+          await noteWalletUsed(toWalletId!);
+        }
+      } catch (_) {}
       if (!mounted) return;
       Navigator.pop(context, 'saved');
     } catch (e) {

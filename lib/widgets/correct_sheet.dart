@@ -75,8 +75,10 @@ class _CorrectSheetState extends State<_CorrectSheet> {
         category: sel ?? t.category,
         note: keepNote ? t.note : (noteText.isEmpty ? null : noteText),
       );
-      if (t.walletId != null) await noteWalletUsed(t.walletId!);
-      if (t.toWalletId != null) await noteWalletUsed(t.toWalletId!);
+      try {
+        if (t.walletId != null) await noteWalletUsed(t.walletId!);
+        if (t.toWalletId != null) await noteWalletUsed(t.toWalletId!);
+      } catch (_) {}
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context)

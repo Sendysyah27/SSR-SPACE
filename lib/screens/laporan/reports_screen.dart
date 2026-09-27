@@ -261,7 +261,7 @@ class ReportsScreenState extends State<ReportsScreen> {
                     spendOut,
                     savingOut,
                     net,
-                    filtered.isNotEmpty,
+                    items.isNotEmpty,
                   ),
                   'recap': _CategoryRecap(
                     key: ValueKey('recap-$month'),
@@ -560,7 +560,7 @@ class _WalletFilterDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String?>(
-      value: value,
+      initialValue: value,
       decoration: InputDecoration(labelText: tr('r_filter_wallet')),
       items: [
         DropdownMenuItem<String?>(value: null, child: Text(tr('r_filter_all'))),
