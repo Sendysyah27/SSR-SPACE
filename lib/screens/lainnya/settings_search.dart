@@ -219,7 +219,7 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     titleKey: 'ab_about',
     en: 'about version app',
     sectionKey: 'pf_about',
-    route: kSearchP2,
+    route: kSearchHub,
   ),
   SettingsSearchEntry(
     titleKey: 'ab_changelog',
@@ -231,25 +231,25 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     titleKey: 'ab_help',
     en: 'help support',
     sectionKey: 'pf_about',
-    route: kSearchP2,
+    route: kSearchHub,
   ),
   SettingsSearchEntry(
     titleKey: 'ab_feedback',
     en: 'send feedback email suggestion',
     sectionKey: 'pf_about',
-    route: kSearchP2,
+    route: kSearchHub,
   ),
   SettingsSearchEntry(
     titleKey: 'ab_share',
     en: 'share app recommend',
     sectionKey: 'pf_about',
-    route: kSearchP2,
+    route: kSearchHub,
   ),
   SettingsSearchEntry(
     titleKey: 'ab_privacy',
     en: 'privacy policy data',
     sectionKey: 'pf_about',
-    route: kSearchP2,
+    route: kSearchHub,
   ),
   // Baris layar impor (mendarat di pratinjau impor).
   SettingsSearchEntry(
