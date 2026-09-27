@@ -17,7 +17,7 @@ import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
 
-/// Pengaturan: bahasa, mata uang, ukuran huruf, ganti PIN via magic link.
+/// Pengaturan: bahasa, tema, mata uang, ukuran huruf, ganti PIN via magic link.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -77,6 +77,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const _DateStyleCard(),
           const SizedBox(height: SsrSpace.md),
           const _HeroStyleCard(),
+          const SizedBox(height: SsrSpace.md),
+          ValueListenableBuilder<String>(
+            valueListenable: themeChoice,
+            builder: (context, theme, _) =>
+                _ThemeCard(value: theme, onChanged: (v) => setThemeChoice(v)),
+          ),
           const SizedBox(height: SsrSpace.md),
           const _ReminderCard(),
           const SizedBox(height: SsrSpace.md),
@@ -373,6 +379,35 @@ class _HeroStyleCard extends StatelessWidget {
             },
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// Tema aplikasi: Otomatis (ikut sistem) atau Noir.
+class _ThemeCard extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _ThemeCard({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_theme'),
+      children: [
+        SegmentedButton<String>(
+          style: ssrSegmentedStyle(context),
+          segments: [
+            ButtonSegment(value: 'otomatis', label: Text(tr('th_auto'))),
+            ButtonSegment(value: 'noir', label: Text(tr('th_noir'))),
+          ],
+          selected: {value},
+          showSelectedIcon: false,
+          onSelectionChanged: (s) => onChanged(s.first),
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        Text(tr('th_theme_desc'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
