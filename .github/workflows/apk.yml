@@ -151,9 +151,9 @@ jobs:
           # Pengingat harian (flutter_local_notifications): POST_NOTIFICATIONS
           # untuk Android 13+ plus RECEIVE_BOOT_COMPLETED agar jadwal
           # harian bisa dijadwal ulang saat app start setelah reboot.
-          # Catatan Task 9 (minify/shrink): bila minifyEnabled=true, tambah
-          # keep-rules plugin ini di android/app/proguard-rules.pro:
-          # -keep class com.dexterous.flutterlocalnotifications.** { *; }
+          # Task 9: minifyEnabled=true tanpa rules file custom — plugin
+          # membawa consumer-rules sendiri; receiver manifest di-keep
+          # otomatis oleh AGP (lihat step minify di bawah).
           if 'android.permission.POST_NOTIFICATIONS' not in s:
               s = s.replace(
                   '</manifest>',
@@ -206,8 +206,6 @@ jobs:
           assert 'com.ssr.space.ssrspace' in m.read_text()
           print('deeplink intent-filter ok')
           EOF
-      - run: flutter analyze
-      - run: flutter test
       - name: Setup release signing
         env:
           SSR_KEYSTORE_B64: ${{ secrets.SSR_KEYSTORE_B64 }}
@@ -325,13 +323,87 @@ jobs:
               assert 'desugar_jdk_libs' in groovy.read_text()
           print('desugaring enabled')
           EOF
+      - run: |
+          python3 - <<'EOF'
+          import pathlib, re
+          # Minify + shrinkResources pada buildType release (KTS+Groovy).
+          # Tanpa rules file custom: plugin Flutter membawa consumer-rules
+          # sendiri; class yang dirujuk manifest (NotificationListener,
+          # ForegroundService, OverlayService, BootReceiver) di-keep
+          # otomatis oleh AGP. Tolerant: regex-or-dump, tanpa assert
+          # buta pada anchor template (pelajaran desugar Task 8).
+          # Idempoten: lewati bila flag sudah ada.
+          kts = pathlib.Path('android/app/build.gradle.kts')
+          groovy = pathlib.Path('android/app/build.gradle')
+          target = kts if kts.exists() else groovy
+          assert target.exists(), 'app build gradle tak ketemu'
+          s = target.read_text()
+          if 'isMinifyEnabled' in s or 'minifyEnabled' in s:
+              print('minify sudah aktif, lewati:', target)
+          else:
+              bt = re.search(r'buildTypes\s*\{', s)
+              if not bt:
+                  print('--- buildTypes tak ketemu, dump 40 baris ---')
+                  for line in s.splitlines()[:40]:
+                      print(repr(line))
+                  raise SystemExit(1)
+              rel = re.search(r'release\s*\{', s[bt.end():])
+              if not rel:
+                  print('--- release block tak ketemu, dump ---')
+                  for line in s.splitlines():
+                      if 'buildTypes' in line or 'release' in line:
+                          print(repr(line))
+                  raise SystemExit(1)
+              pos = bt.end() + rel.end()
+              if target == kts:
+                  ins = (
+                      '\n            isMinifyEnabled = true\n'
+                      '            isShrinkResources = true'
+                  )
+              else:
+                  ins = (
+                      '\n            minifyEnabled true\n'
+                      '            shrinkResources true'
+                  )
+              s = s[:pos] + ins + s[pos:]
+              target.write_text(s)
+              print('minify patch ok:', target)
+          t = target.read_text()
+          assert 'isMinifyEnabled = true' in t or 'minifyEnabled true' in t
+          assert 'isShrinkResources = true' in t or 'shrinkResources true' in t
+          print('minify verify ok')
+          EOF
+      - run: flutter analyze
+      - run: flutter test
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
       - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
         env:
           SSR_KEYSTORE_PASS: ${{ secrets.SSR_KEYSTORE_PASS }}
           SSR_KEY_ALIAS: ${{ secrets.SSR_KEY_ALIAS }}
           SSR_KEY_PASS: ${{ secrets.SSR_KEY_PASS }}
+      - run: flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+        env:
+          SSR_KEYSTORE_PASS: ${{ secrets.SSR_KEYSTORE_PASS }}
+          SSR_KEY_ALIAS: ${{ secrets.SSR_KEY_ALIAS }}
+          SSR_KEY_PASS: ${{ secrets.SSR_KEY_PASS }}
+      - name: Size report
+        run: |
+          ls -lh build/app/outputs/flutter-apk/
+          echo '--- top-30 entries universal APK by size ---'
+          unzip -l build/app/outputs/flutter-apk/app-release.apk | sort -k1 -nr | head -30
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ssr-space-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ssr-space-apk-arm64-v8a
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ssr-space-apk-armeabi-v7a
+          path: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ssr-space-apk-x86_64
+          path: build/app/outputs/flutter-apk/app-x86_64-release.apk
