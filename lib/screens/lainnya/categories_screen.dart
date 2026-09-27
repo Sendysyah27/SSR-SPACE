@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/app_categories.dart';
+import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -12,17 +13,7 @@ import 'package:ssr_space/widgets/section_card.dart';
 /// (primary/error/gold; dulu emerald/rust/gold);
 /// urutan slot tetap sehingga indeks tersimpan tidak bergeser makna.
 List<Color> _metaPalette(BuildContext context) {
-  final scheme = Theme.of(context).colorScheme;
-  return <Color>[
-    scheme.primary,
-    scheme.error,
-    AppColors.gold,
-    const Color(0xFF2563EB),
-    const Color(0xFF7C3AED),
-    const Color(0xFFDB2777),
-    const Color(0xFF65A30D),
-    const Color(0xFF64748B),
-  ];
+  return List<Color>.generate(8, (i) => metaSlotColor(context, i));
 }
 
 /// Ikon terkurasi untuk picker (kunci = nama field AppIcons).
@@ -88,7 +79,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   void initState() {
     super.initState();
     items = [...appCategories.value];
-    loadCategoryMeta().then((m) {
+    refreshCategoryMeta().then((m) {
       if (mounted) setState(() => meta = m);
     });
   }

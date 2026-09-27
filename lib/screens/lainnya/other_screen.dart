@@ -152,6 +152,32 @@ class _OtherScreenState extends State<OtherScreen> {
     );
   }
 
+  /// Dialog info hub (Tentang/Bantuan/Privasi): isi sama persis dengan
+  /// dialog di seksi Tentang, supaya hasil search tak diam tak beraksi.
+  /// [short] = 'about' | 'help' | 'privacy' (awalan 'hub_' sudah dikupas).
+  Future<void> _showHubInfo(String short) async {
+    if (!mounted) return;
+    final key = 'ab_$short';
+    final body = switch (short) {
+      'help' => tr('ab_help_body'),
+      'privacy' => tr('ab_privacy_body'),
+      _ => '${tr('sp_tagline')}\n${AppInfo.version}',
+    };
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr(key)),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(tr('back')),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Hapus cache lokal saja (pending koreksi + pref popup overlay).
   /// Tak pernah menyentuh data Supabase.
   Future<void> _clearLocalCache() async {
@@ -229,13 +255,30 @@ class _OtherScreenState extends State<OtherScreen> {
   }
 
   /// Hasil pencarian pengaturan: layar nyata di-push, aksi dijalankan,
-  /// baris P2 menampilkan dialog msg_p2. 'hub' berarti sudah di sini.
+  /// baris P2 menampilkan dialog msg_p2. Kunci hub (o_mask, tentang)
+  /// langsung beraksi di sini supaya tak ada hasil yang diam tak beraksi.
   Future<void> _openSearch() async {
     final key = await showSearch<String?>(
       context: context,
       delegate: SettingsSearchDelegate(),
     );
-    if (!mounted || key == null || key == kSearchHub) return;
+    if (!mounted || key == null) return;
+    if (key == 'hub_mask') {
+      await setMaskAmounts(!maskAmounts.value);
+      return;
+    }
+    if (key == 'hub_about' || key == 'hub_help' || key == 'hub_privacy') {
+      await _showHubInfo(key.substring(4));
+      return;
+    }    if (key == 'hub_share') {
+      Share.share('${tr('au_title')} - ${tr('in_brand_sub')}');
+      return;
+    }
+    if (key == 'hub_feedback') {
+      Share.share('${tr('ab_feedback')} ${tr('au_title')} ${AppInfo.version}');
+      return;
+    }
+    if (key == kSearchHub) return;
     switch (key) {
       case 'wallets':
         await _push(const WalletsScreen());
@@ -375,7 +418,7 @@ class _OtherScreenState extends State<OtherScreen> {
             onExport: () => _push(const ReportsScreen()),
             onImportP2: () => _push(const ImportPreviewScreen()),
             onClearCache: _clearLocalCache,
-            onSettings: () => _push(const SettingsScreen()),
+            onSettings: (f) => _push(SettingsScreen(focus: f)),
             onChangelog: () => _push(const UpdateLogScreen()),
             onLogout: _confirmLogout,
           );
@@ -408,7 +451,7 @@ class _HubList extends StatelessWidget {
   final VoidCallback onExport;
   final VoidCallback onImportP2;
   final VoidCallback onClearCache;
-  final VoidCallback onSettings;
+  final void Function(String?) onSettings;
   final VoidCallback onChangelog;
   final VoidCallback onLogout;
 
@@ -763,7 +806,7 @@ class _WorkspaceSection extends StatelessWidget {
 
 /// TAMPILAN: toggle samarkan nominal + pintu pengaturan.
 class _AppearanceSection extends StatelessWidget {
-  final VoidCallback onSettings;
+  final void Function(String?) onSettings;
 
   const _AppearanceSection({required this.onSettings});
 
@@ -784,7 +827,11 @@ class _AppearanceSection extends StatelessWidget {
           ),
         ),
         const Divider(height: 1),
-        NavTile(icon: AppIcons.menu, title: tr('st_font'), onTap: onSettings),
+        NavTile(
+          icon: AppIcons.menu,
+          title: tr('st_font'),
+          onTap: () => onSettings('font'),
+        ),
       ],
     );
   }
@@ -792,7 +839,7 @@ class _AppearanceSection extends StatelessWidget {
 
 /// BAHASA DAN UANG: pintu pengaturan (Task 4 isi kartu bahasanya).
 class _LangMoneySection extends StatelessWidget {
-  final VoidCallback onSettings;
+  final void Function(String?) onSettings;
 
   const _LangMoneySection({required this.onSettings});
 
@@ -802,7 +849,11 @@ class _LangMoneySection extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('pf_langmoney'),
       children: [
-        NavTile(icon: AppIcons.menu, title: tr('st_lang'), onTap: onSettings),
+        NavTile(
+          icon: AppIcons.menu,
+          title: tr('st_lang'),
+          onTap: () => onSettings('lang'),
+        ),
       ],
     );
   }
@@ -810,7 +861,7 @@ class _LangMoneySection extends StatelessWidget {
 
 /// PENGINGAT: pintu pengaturan (Task 7 isi kartu pengingatnya).
 class _ReminderSection extends StatelessWidget {
-  final VoidCallback onSettings;
+  final void Function(String?) onSettings;
 
   const _ReminderSection({required this.onSettings});
 
@@ -823,7 +874,7 @@ class _ReminderSection extends StatelessWidget {
         NavTile(
           icon: AppIcons.menu,
           title: tr('st_reminder_on'),
-          onTap: onSettings,
+          onTap: () => onSettings('reminder'),
         ),
       ],
     );
@@ -832,7 +883,7 @@ class _ReminderSection extends StatelessWidget {
 
 /// KEAMANAN: pintu PIN + keluar sesi.
 class _SecuritySection extends StatelessWidget {
-  final VoidCallback onSettings;
+  final void Function(String?) onSettings;
   final VoidCallback onLogout;
 
   const _SecuritySection({required this.onSettings, required this.onLogout});
@@ -843,7 +894,11 @@ class _SecuritySection extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('pf_security'),
       children: [
-        NavTile(icon: AppIcons.lock, title: tr('st_pin'), onTap: onSettings),
+        NavTile(
+          icon: AppIcons.lock,
+          title: tr('st_pin'),
+          onTap: () => onSettings('pin'),
+        ),
         const Divider(height: 1),
         NavTile(icon: AppIcons.logout, title: tr('o_logout'), onTap: onLogout),
       ],

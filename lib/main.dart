@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/app_categories.dart';
+import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/error_reporter.dart';
@@ -38,6 +39,7 @@ Future<void> main() async {
   await loadMaskAmounts(prefs);
   await loadAppSettings(prefs);
   await loadAppCategories(prefs);
+  await refreshCategoryMeta();
   await CurrencyService.loadCache(prefs);
   unawaited(CurrencyService.refresh());
   try {

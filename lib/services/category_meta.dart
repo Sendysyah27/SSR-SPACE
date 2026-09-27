@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Subkategori + meta warna/ikon per kategori (P2), logika murni + IO prefs.
@@ -75,6 +76,10 @@ Map<String, CatMeta> sanitizeMeta(Map<String, dynamic> raw) {
 
 const _kMeta = 'app_category_meta';
 
+/// Peta meta yang sedang berlaku, didengar TxRow + rekap laporan.
+/// Diisi [refreshCategoryMeta] saat start dan tiap [saveCategoryMeta].
+final categoryMeta = ValueNotifier<Map<String, CatMeta>>({});
+
 Future<Map<String, CatMeta>> loadCategoryMeta() async {
   final prefs = await SharedPreferences.getInstance();
   final raw = prefs.getString(_kMeta);
@@ -93,4 +98,13 @@ Future<void> saveCategoryMeta(Map<String, CatMeta> meta) async {
     _kMeta,
     jsonEncode({for (final e in meta.entries) e.key: e.value.toJson()}),
   );
+  categoryMeta.value = Map<String, CatMeta>.of(meta);
+}
+
+/// Muat ulang dari prefs + umumkan ke [categoryMeta]. Dipanggil main()
+/// sekali saat start dan layar kategori setelah simpan-tak-langsung.
+Future<Map<String, CatMeta>> refreshCategoryMeta() async {
+  final m = await loadCategoryMeta();
+  categoryMeta.value = m;
+  return m;
 }

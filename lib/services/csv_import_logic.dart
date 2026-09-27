@@ -81,7 +81,19 @@ double parseAmountValue(String s) {
   } else if (hasComma) {
     norm = t.replaceAll(',', '.');
   } else if (hasDot) {
-    norm = RegExp(r'\.\d{2}$').hasMatch(t) ? t : t.replaceAll('.', '');
+    // Titik saja: pecahan nol semua (15000.0 ala ekspor) = buang titik;
+    // titik tunggal desimal betulan (10.5) dipertahankan; titik ganda
+    // = ribuan, dibuang semua (1.234.567). Multi-titik berujung 2 digit
+    // dibiarkan ke tryParse supaya tetap throw seperti dulu.
+    final frac = RegExp(r'\.(\d+)$').firstMatch(t)?.group(1) ?? '';
+    final single = t.indexOf('.') == t.lastIndexOf('.');
+    if (frac.isNotEmpty && RegExp(r'^0+$').hasMatch(frac)) {
+      norm = t.replaceAll('.', '');
+    } else if (single || RegExp(r'\.\d{2}$').hasMatch(t)) {
+      norm = t;
+    } else {
+      norm = t.replaceAll('.', '');
+    }
   } else {
     norm = t;
   }
@@ -242,10 +254,12 @@ Map<String, int> _headerIndexes(List<String> header) {
         iJenis = i;
       case 'dompet':
       case 'wallet':
+      case 'dompet_id':
         iDompet = i;
       case 'ke_dompet':
       case 'to_wallet':
       case 'ke dompet':
+      case 'ke_dompet_id':
         iKeDompet = i;
       case 'kategori':
       case 'category':

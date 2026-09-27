@@ -38,9 +38,13 @@ Map<String, String?> importHeaderMapping(String text) {
 }
 
 /// Cocokkan nama dompet CSV ke id dompet org (tak sensitif huruf).
+/// Terima juga id persis (untuk CSV cadangan berisi dompet_id UUID).
 String? matchWalletId(List<Wallet> wallets, String name) {
   final t = name.trim().toLowerCase();
   if (t.isEmpty) return null;
+  for (final w in wallets) {
+    if (w.id.toLowerCase() == t) return w.id;
+  }
   for (final w in wallets) {
     if (w.name.trim().toLowerCase() == t) return w.id;
   }
@@ -220,9 +224,10 @@ class _ImportPreviewState extends State<ImportPreviewScreen> {
             ),
           if (pv == null)
             _EmptyHint(onPreview: _onPreview)
-          else if (pv.rows.isEmpty)
-            _ErrorsCard(errors: pv.errors)
-          else ...[
+          else if (pv.rows.isEmpty) ...[
+            _MappingCard(mapping: _mapping ?? const {}),
+            _ErrorsCard(errors: pv.errors),
+          ] else ...[
             _MappingCard(mapping: _mapping ?? const {}),
             _RowsCard(
               rows: pv.rows,
@@ -488,6 +493,14 @@ class _FallbackCard extends StatelessWidget {
           onPressed: canImport && !importing ? onImport : null,
           loading: importing,
         ),
+        if (!canImport && !importing)
+          Padding(
+            padding: const EdgeInsets.only(top: SsrSpace.sm),
+            child: Text(
+              tr('imp_need_wallet'),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
       ],
     );
   }

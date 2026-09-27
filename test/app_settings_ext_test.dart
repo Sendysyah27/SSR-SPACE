@@ -28,6 +28,10 @@ void main() {
     expect(themeChoice.value, 'noir');
     await setThemeChoice('invalid');
     expect(themeChoice.value, 'noir');
+    await setThemeChoice('otomatis');
+    expect(themeChoice.value, 'otomatis');
+    await setThemeChoice('invalid');
+    expect(themeChoice.value, 'otomatis');
     SharedPreferences.setMockInitialValues({'app_theme_choice': 'noir'});
     final p2 = await SharedPreferences.getInstance();
     await loadAppSettings(p2);

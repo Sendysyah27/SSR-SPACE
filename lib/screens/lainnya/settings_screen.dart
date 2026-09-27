@@ -17,9 +17,14 @@ import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
 
-/// Pengaturan: bahasa, tema, mata uang, ukuran huruf, ganti PIN via magic link.
+/// Pengaturan: bahasa, tema, mata uang, ukuran huruf, ganti PIN
+/// (verifikasi PIN lama; lupa PIN via magic link email sebagai cadangan).
+/// [focus] = kunci kartu yang dibuka otomatis (dari pintu hub Profil):
+/// 'lang' | 'font' | 'reminder' | 'pin'. Null = dari atas seperti biasa.
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final String? focus;
+
+  const SettingsScreen({super.key, this.focus});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -28,6 +33,32 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String? fxMsg;
   bool fxBusy = false;
+  final _langKey = GlobalKey();
+  final _fontKey = GlobalKey();
+  final _reminderKey = GlobalKey();
+  final _pinKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    final f = widget.focus;
+    if (f == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final key = switch (f) {
+        'lang' => _langKey,
+        'font' => _fontKey,
+        'reminder' => _reminderKey,
+        'pin' => _pinKey,
+        _ => null,
+      };
+      if (key?.currentContext != null) {
+        Scrollable.ensureVisible(
+          key!.currentContext!,
+          duration: const Duration(milliseconds: 300),
+        );
+      }
+    });
+  }
 
   Future<void> _refreshFx() async {
     setState(() {
@@ -51,20 +82,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           const _P2StatusLine(),
           const SizedBox(height: SsrSpace.md),
-          _LangCard(
-            value: localeCode.value,
-            onChanged: (v) => setLocaleCode(v),
+          ValueListenableBuilder<String>(
+            valueListenable: localeCode,
+            builder: (context, loc, _) => Container(
+              key: _langKey,
+              child: _LangCard(
+                value: loc,
+                onChanged: (v) => setLocaleCode(v),
+              ),
+            ),
           ),
           const SizedBox(height: SsrSpace.md),
-          _CurrencyCard(
-            value: currencyCode.value,
-            fxBusy: fxBusy,
-            fxMsg: fxMsg,
-            onChanged: (v) => setCurrencyCode(v),
-            onRefresh: _refreshFx,
+          ValueListenableBuilder<String>(
+            valueListenable: currencyCode,
+            builder: (context, cur, _) => _CurrencyCard(
+              value: cur,
+              fxBusy: fxBusy,
+              fxMsg: fxMsg,
+              onChanged: (v) => setCurrencyCode(v),
+              onRefresh: _refreshFx,
+            ),
           ),
           const SizedBox(height: SsrSpace.md),
-          _FontCard(value: fontScale.value, onChanged: (v) => setFontScale(v)),
+          ValueListenableBuilder<double>(
+            valueListenable: fontScale,
+            builder: (context, fs, _) => Container(
+              key: _fontKey,
+              child: _FontCard(value: fs, onChanged: (v) => setFontScale(v)),
+            ),
+          ),
           const SizedBox(height: SsrSpace.md),
           const _DefaultCurrencyCard(),
           const SizedBox(height: SsrSpace.md),
@@ -84,13 +130,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _ThemeCard(value: theme, onChanged: (v) => setThemeChoice(v)),
           ),
           const SizedBox(height: SsrSpace.md),
-          const _ReminderCard(),
+          Container(key: _reminderKey, child: const _ReminderCard()),
           const SizedBox(height: SsrSpace.md),
           const _WidgetCard(),
           const SizedBox(height: SsrSpace.md),
           const _ResetCorrectCard(),
           const SizedBox(height: SsrSpace.md),
-          const _PinCard(),
+          Container(key: _pinKey, child: const _PinCard()),
         ],
       ),
     );
@@ -557,8 +603,8 @@ class _ResetCorrectCard extends StatelessWidget {
   }
 }
 
-/// Ganti PIN: kirim magic link ke email -> ketuk link (app terbuka
-/// otomatis, token ditukar sesi) -> PIN baru 2x.
+/// Ganti PIN: verifikasi PIN lama dulu -> PIN baru 2x.
+/// Lupa PIN lama? Kirim magic link ke email (jalur lama) sebagai cadangan.
 class _PinCard extends StatefulWidget {
   const _PinCard();
 
@@ -567,10 +613,11 @@ class _PinCard extends StatefulWidget {
 }
 
 class _PinCardState extends State<_PinCard> {
-  String step = 'idle';
+  String step = 'checkOld';
   String? msg;
   String? err;
   bool busy = false;
+  final oldC = TextEditingController();
   final pinC = TextEditingController();
   final pin2C = TextEditingController();
 
@@ -584,6 +631,7 @@ class _PinCardState extends State<_PinCard> {
   @override
   void dispose() {
     pinLinkVerified.removeListener(_onLinkVerified);
+    oldC.dispose();
     pinC.dispose();
     pin2C.dispose();
     super.dispose();
@@ -592,6 +640,40 @@ class _PinCardState extends State<_PinCard> {
   void _onLinkVerified() {
     if (pinLinkVerified.value && mounted && step == 'sent') {
       setState(() => step = 'verified');
+    }
+  }
+
+  Future<void> _checkOld() async {
+    setState(() {
+      busy = true;
+      err = null;
+      msg = null;
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final svc = SessionService(prefs);
+      if (!svc.hasPin) {
+        if (!mounted) return;
+        setState(() => step = 'newPin');
+        return;
+      }
+      if (svc.isLockedOut) {
+        if (!mounted) return;
+        setState(() => err = tr('lk_lockout'));
+        return;
+      }
+      final ok = await svc.verifyPin(oldC.text);
+      if (!mounted) return;
+      if (ok) {
+        setState(() => step = 'newPin');
+        oldC.clear();
+      } else {
+        setState(
+          () => err = svc.isLockedOut ? tr('lk_lockout') : tr('b_pin_wrong'),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
     }
   }
 
@@ -645,7 +727,7 @@ class _PinCardState extends State<_PinCard> {
       if (!mounted) return;
       PinLinkVerify.reset();
       setState(() {
-        step = 'idle';
+        step = 'checkOld';
         msg = tr('st_pin_changed');
       });
       pinC.clear();
@@ -664,6 +746,26 @@ class _PinCardState extends State<_PinCard> {
       label: tr('st_pin'),
       children: [
         _PinFeedback(msg: msg, err: err),
+        if (step == 'checkOld') ...[
+          Text(tr('st_pin_old'), style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: SsrSpace.sm),
+          PinField(controller: oldC, length: 6, autofocus: true),
+          const SizedBox(height: SsrSpace.md),
+          PrimaryButton(
+            label: tr('st_pin_next'),
+            loading: busy,
+            onPressed: _checkOld,
+          ),
+          TextButton(
+            onPressed: busy
+                ? null
+                : () => setState(() {
+                    step = 'idle';
+                    err = null;
+                  }),
+            child: Text(tr('st_pin_forgot')),
+          ),
+        ],
         if (step == 'idle')
           PrimaryButton(
             label: tr('st_pin_send'),
@@ -671,7 +773,7 @@ class _PinCardState extends State<_PinCard> {
             onPressed: _send,
           ),
         if (step == 'sent') _WaitLink(busy: busy, onResend: _send),
-        if (step == 'verified')
+        if (step == 'verified' || step == 'newPin')
           _NewPinForm(pinC: pinC, pin2C: pin2C, busy: busy, onSave: _savePin),
       ],
     );

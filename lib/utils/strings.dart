@@ -517,6 +517,12 @@ const _t = <String, Map<String, String>>{
     'id': 'Email user tidak ditemukan.',
     'en': 'User email not found.',
   },
+  'st_pin_old': {'id': 'PIN lama (6 digit)', 'en': 'Old PIN (6 digits)'},
+  'st_pin_next': {'id': 'Lanjut', 'en': 'Continue'},
+  'st_pin_forgot': {
+    'id': 'Lupa PIN? Kirim link ke email',
+    'en': 'Forgot PIN? Send link to email',
+  },
   // Auth & sesi
   'sp_tagline': {
     'id': 'Simple. Secure. Reliable.\nYour Finance Space.',
@@ -1158,6 +1164,10 @@ const _t = <String, Map<String, String>>{
   'imp_done': {
     'id': 'Impor selesai: {n} transaksi.',
     'en': 'Import done: {n} transactions.',
+  },
+  'imp_need_wallet': {
+    'id': 'Pilih workspace dan buat minimal 1 dompet dulu, baru bisa impor.',
+    'en': 'Pick a workspace and create at least 1 wallet first, then import.',
   },
   // Tentang
   'ab_about': {'id': 'Tentang SSR SPACE', 'en': 'About SSR SPACE'},

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_icons.dart';
+import 'package:ssr_space/theme/app_theme.dart';
 
 IconData iconForCategory(String? category) {
   final c = (category ?? '').toLowerCase();
@@ -71,4 +72,57 @@ String svgForCategory(String? category) {
   }
   if (c.contains('transfer')) return 'assets/illustrations/cat_transfer.svg';
   return 'assets/illustrations/cat_other.svg';
+}
+
+/// SVG untuk kunci ikon hasil kustomisasi user (picker kategori).
+/// Kunci di luar daftar dikenal jatuh ke cat_other (tak pernah throw).
+String svgForMetaIcon(String key) {
+  switch (key) {
+    case 'food':
+      return 'assets/illustrations/cat_food.svg';
+    case 'transport':
+      return 'assets/illustrations/cat_transport.svg';
+    case 'shopping':
+      return 'assets/illustrations/cat_shop.svg';
+    case 'bills':
+      return 'assets/illustrations/cat_bill.svg';
+    case 'health':
+      return 'assets/illustrations/cat_health.svg';
+    case 'education':
+      return 'assets/illustrations/cat_edu.svg';
+    case 'entertainment':
+      return 'assets/illustrations/cat_fun.svg';
+    case 'topup':
+    case 'income':
+    case 'wallet':
+      return 'assets/illustrations/cat_wallet.svg';
+    case 'transfer':
+      return 'assets/illustrations/cat_transfer.svg';
+    default:
+      return 'assets/illustrations/cat_other.svg';
+  }
+}
+
+/// Palet 8 warna kategori (sama persis dengan picker layar kategori).
+/// Slot 0..2 ikut tema (primary/error/gold), sisanya fixed.
+Color metaSlotColor(BuildContext context, int index) {
+  final scheme = Theme.of(context).colorScheme;
+  switch (index) {
+    case 0:
+      return scheme.primary;
+    case 1:
+      return scheme.error;
+    case 2:
+      return AppColors.gold;
+    case 3:
+      return const Color(0xFF2563EB);
+    case 4:
+      return const Color(0xFF7C3AED);
+    case 5:
+      return const Color(0xFFDB2777);
+    case 6:
+      return const Color(0xFF65A30D);
+    default:
+      return const Color(0xFF64748B);
+  }
 }

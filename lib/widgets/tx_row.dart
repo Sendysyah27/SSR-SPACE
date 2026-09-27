@@ -4,6 +4,7 @@ import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/tx_wallet_check.dart';
 import 'package:ssr_space/services/category_icons.dart';
+import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/transaction.dart';
@@ -141,20 +142,49 @@ class _TxBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        color: isOut ? scheme.error.withValues(alpha: 0.12) : AppColors.goldSoft,
-        borderRadius: BorderRadius.circular(11),
-      ),
-      child: Center(
-        child: SvgPicture.asset(
-          svgForCategory(category),
-          width: 19,
-          colorFilter: ColorFilter.mode(isOut ? scheme.error : const Color(0xFF7A5E14), BlendMode.srcIn),
-        ),
-      ),
+    return ValueListenableBuilder<Map<String, CatMeta>>(
+      valueListenable: categoryMeta,
+      builder: (context, meta, _) {
+        final m = meta[topOf(category)];
+        if (m == null) {
+          return Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: isOut
+                  ? scheme.error.withValues(alpha: 0.12)
+                  : AppColors.goldSoft,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Center(
+              child: SvgPicture.asset(
+                svgForCategory(category),
+                width: 19,
+                colorFilter: ColorFilter.mode(
+                  isOut ? scheme.error : const Color(0xFF7A5E14),
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+          );
+        }
+        final c = metaSlotColor(context, m.color);
+        return Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: c.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Center(
+            child: SvgPicture.asset(
+              svgForMetaIcon(m.icon),
+              width: 19,
+              colorFilter: ColorFilter.mode(c, BlendMode.srcIn),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -119,7 +119,7 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     titleKey: 'o_mask',
     en: 'mask amounts hide privacy',
     sectionKey: 'pf_appearance',
-    route: kSearchHub,
+    route: 'hub_mask',
   ),
   SettingsSearchEntry(
     titleKey: 'st_font',
@@ -220,7 +220,7 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     titleKey: 'ab_about',
     en: 'about version app',
     sectionKey: 'pf_about',
-    route: kSearchHub,
+    route: 'hub_about',
   ),
   SettingsSearchEntry(
     titleKey: 'ab_changelog',
@@ -232,25 +232,25 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     titleKey: 'ab_help',
     en: 'help support',
     sectionKey: 'pf_about',
-    route: kSearchHub,
+    route: 'hub_help',
   ),
   SettingsSearchEntry(
     titleKey: 'ab_feedback',
     en: 'send feedback email suggestion',
     sectionKey: 'pf_about',
-    route: kSearchHub,
+    route: 'hub_feedback',
   ),
   SettingsSearchEntry(
     titleKey: 'ab_share',
     en: 'share app recommend',
     sectionKey: 'pf_about',
-    route: kSearchHub,
+    route: 'hub_share',
   ),
   SettingsSearchEntry(
     titleKey: 'ab_privacy',
     en: 'privacy policy data',
     sectionKey: 'pf_about',
-    route: kSearchHub,
+    route: 'hub_privacy',
   ),
   // Baris layar impor (mendarat di pratinjau impor).
   SettingsSearchEntry(

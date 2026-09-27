@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 
 void main() {
@@ -30,5 +32,28 @@ void main() {
     expect(topOf(''), '');
     expect(topOf(null), '');
     expect(topOf('Tabungan > Darurat'), 'Tabungan');
+  });
+
+  test('svg kustomisasi: kunci dikenal + asing fallback', () {
+    expect(svgForMetaIcon('food'), 'assets/illustrations/cat_food.svg');
+    expect(svgForMetaIcon('transfer'), 'assets/illustrations/cat_transfer.svg');
+    expect(svgForMetaIcon('wallet'), 'assets/illustrations/cat_wallet.svg');
+    expect(
+      svgForMetaIcon('kunci_asing'),
+      'assets/illustrations/cat_other.svg',
+    );
+  });
+
+  test('simpan meta umumkan ke notifier + muat ulang', () async {
+    SharedPreferences.setMockInitialValues({});
+    await refreshCategoryMeta();
+    expect(categoryMeta.value, isEmpty);
+    await saveCategoryMeta({
+      'Makan': const CatMeta(color: 0, icon: 'food'),
+    });
+    expect(categoryMeta.value['Makan']?.icon, 'food');
+    expect(categoryMeta.value['Makan']?.color, 0);
+    await refreshCategoryMeta();
+    expect(categoryMeta.value['Makan']?.icon, 'food');
   });
 }

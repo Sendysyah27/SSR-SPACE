@@ -93,11 +93,25 @@ class ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
+  /// CSV sebulan penuh (abaikan filter dompet sesi): header sama dengan
+  /// alias impor (tanggal,jenis,nominal,dompet,ke_dompet,...) sehingga
+  /// hasilnya bisa ditempel balik di Impor CSV. Nominal bulat ditulis
+  /// tanpa desimal supaya tak terbaca 10x lipat.
   Future<void> _exportCsv() async {
+    String num(double v) =>
+        v % 1 == 0 ? v.toInt().toString() : v.toString();
     final rows = <List<dynamic>>[
-      ['tanggal', 'jenis', 'nominal', 'kategori', 'catatan'],
+      ['tanggal', 'jenis', 'nominal', 'dompet', 'ke_dompet', 'kategori', 'catatan'],
       for (final t in items)
-        [t.date ?? '', t.type, t.amount, t.category ?? '', t.note ?? ''],
+        [
+          t.date ?? '',
+          t.type,
+          num(t.amount),
+          walletNames[t.walletId] ?? '',
+          walletNames[t.toWalletId] ?? '',
+          t.category ?? '',
+          t.note ?? '',
+        ],
     ];
     final dir = await getTemporaryDirectory();
     final f = File('${dir.path}/laporan-ssr-space.csv');
@@ -828,8 +842,8 @@ class _RecapRow extends StatelessWidget {
   }
 }
 
-/// Lencana rekap: wadah 38x38 tint rust + glif rust 19px, ikut baris
-/// Keluar TxRow.
+/// Lencana rekap: tint + glif ikut kustomisasi kategori bila ada,
+/// else tint rust + glif rust 19px ikut baris Keluar TxRow.
 class _RecapBadge extends StatelessWidget {
   final String category;
 
@@ -838,23 +852,30 @@ class _RecapBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        color: scheme.error.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(11),
-      ),
-      child: Center(
-        child: SvgPicture.asset(
-          svgForCategory(category),
-          width: 19,
-          colorFilter: ColorFilter.mode(
-            scheme.error,
-            BlendMode.srcIn,
+    return ValueListenableBuilder<Map<String, CatMeta>>(
+      valueListenable: categoryMeta,
+      builder: (context, meta, _) {
+        final m = meta[topOf(category)];
+        final base = m == null ? scheme.error : metaSlotColor(context, m.color);
+        final svg = m == null
+            ? svgForCategory(category)
+            : svgForMetaIcon(m.icon);
+        return Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: base.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(11),
           ),
-        ),
-      ),
+          child: Center(
+            child: SvgPicture.asset(
+              svg,
+              width: 19,
+              colorFilter: ColorFilter.mode(base, BlendMode.srcIn),
+            ),
+          ),
+        );
+      },
     );
   }
 }

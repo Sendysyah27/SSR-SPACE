@@ -162,4 +162,38 @@ void main() {
       isNull,
     );
   });
+
+  test('parseAmountValue nominal ekspor .0 tak jadi 10x + desimal tunggal', () {
+    expect(parseAmountValue('15000.0'), 15000);
+    expect(parseAmountValue('15000.00'), 15000);
+    expect(parseAmountValue('10.5'), 10.5);
+    expect(parseAmountValue('IDR 25.000'), 25000);
+  });
+
+  test('preview header cadangan dompet_id/ke_dompet_id terbaca', () {
+    const csv =
+        'id,kode,tanggal,jenis,nominal,kategori,catatan,dompet_id,ke_dompet_id,sumber_aplikasi\n'
+        '1,TX-1,2026-09-26,in,15000.0,Gaji,,abc-123,,\n';
+    final p = parseCsvPreview(csv);
+    expect(p.errors, isEmpty);
+    expect(p.rows.length, 1);
+    expect(p.rows.first.amount, 15000);
+    expect(p.rows.first.walletName, 'abc-123');
+    final m = parseHeaderNames(
+      'tanggal,jenis,nominal,dompet_id,ke_dompet_id',
+      ',',
+    );
+    expect(m['wallet'], 'dompet_id');
+    expect(m['towallet'], 'ke_dompet_id');
+  });
+
+  test('preview header laporan (dompet nama) lolos penuh', () {
+    const csv =
+        'tanggal,jenis,nominal,dompet,ke_dompet,kategori,catatan\n'
+        '2026-09-26,transfer,30000,DANA,BCA,,,\n';
+    final p = parseCsvPreview(csv);
+    expect(p.errors, isEmpty);
+    expect(p.rows.first.type, 'transfer');
+    expect(p.rows.first.toWalletName, 'BCA');
+  });
 }
