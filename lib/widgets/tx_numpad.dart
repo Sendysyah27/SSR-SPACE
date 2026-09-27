@@ -71,7 +71,7 @@ class TxNumpad extends StatelessWidget {
 }
 
 /// Satu tombol numpad: 60px (di atas minimum sentuh 44px), surface
-/// terangkat dengan garis noir, cipratan mint saat ditekan.
+/// terangkat dengan garis outline, cipratan primer saat ditekan.
 class _NumpadKey extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
@@ -85,26 +85,27 @@ class _NumpadKey extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: SsrColors.noirRaised,
+      color: scheme.outline.withValues(alpha: 0.35),
       borderRadius: BorderRadius.circular(SsrRadius.tile),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(SsrRadius.tile),
-        side: const BorderSide(color: SsrColors.noirLine),
+        side: BorderSide(color: scheme.outline),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(SsrRadius.tile),
-        splashColor: SsrColors.mint.withValues(alpha: 0.22),
-        highlightColor: SsrColors.mint.withValues(alpha: 0.12),
+        splashColor: scheme.primary.withValues(alpha: 0.22),
+        highlightColor: scheme.primary.withValues(alpha: 0.12),
         onTap: onTap,
         onLongPress: onLongPress,
         child: SizedBox(
           height: 60,
           child: Center(
             child: IconTheme(
-              data: const IconThemeData(color: SsrColors.noirInk, size: 24),
+              data: IconThemeData(color: scheme.onSurface, size: 24),
               child: DefaultTextStyle(
-                style: const TextStyle(color: SsrColors.noirInk),
+                style: TextStyle(color: scheme.onSurface),
                 child: child,
               ),
             ),

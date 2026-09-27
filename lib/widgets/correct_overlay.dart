@@ -8,6 +8,8 @@ import 'package:ssr_space/theme/app_theme.dart';
 /// Isi overlay koreksi instan: ringkasan + Lengkapi/Tutup.
 /// Berjalan di isolate overlay; data masuk via shareData ({tx,title,body,ok,no}).
 /// Menutup sendiri setelah 30 detik.
+/// Tanpa Theme ambient (entry overlay themeless) sehingga memakai token
+/// ledger gelap AppColors langsung, bukan colorScheme.
 class CorrectOverlay extends StatefulWidget {
   const CorrectOverlay({super.key});
 
@@ -68,9 +70,9 @@ class CorrectOverlayState extends State<CorrectOverlay> {
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 48),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: SsrColors.noirRaised,
+            color: AppColors.surfaceDark,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: SsrColors.noirLine),
+            border: Border.all(color: AppColors.lineDark),
             boxShadow: const [
               BoxShadow(
                 color: Colors.black54,
@@ -88,7 +90,7 @@ class CorrectOverlayState extends State<CorrectOverlay> {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: SsrColors.noirInk,
+                  color: AppColors.inkDark,
                 ),
               ),
               const SizedBox(height: 4),
@@ -96,7 +98,7 @@ class CorrectOverlayState extends State<CorrectOverlay> {
                 body,
                 style: const TextStyle(
                   fontSize: 15,
-                  color: SsrColors.noirInk,
+                  color: AppColors.inkDark,
                 ),
               ),
               const SizedBox(height: 12),
@@ -105,7 +107,7 @@ class CorrectOverlayState extends State<CorrectOverlay> {
                   TextButton(
                     onPressed: () => _act('tutup'),
                     style: TextButton.styleFrom(
-                      foregroundColor: SsrColors.mint,
+                      foregroundColor: AppColors.emeraldBright,
                     ),
                     child: Text(no),
                   ),
@@ -113,8 +115,8 @@ class CorrectOverlayState extends State<CorrectOverlay> {
                   ElevatedButton(
                     onPressed: () => _act('lengkapi'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: SsrColors.mint,
-                      foregroundColor: SsrColors.noirBg,
+                      backgroundColor: AppColors.emeraldBright,
+                      foregroundColor: AppColors.bgDark,
                     ),
                     child: Text(ok),
                   ),

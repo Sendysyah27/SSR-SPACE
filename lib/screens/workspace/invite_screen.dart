@@ -247,22 +247,19 @@ class _InviteCreateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             orgName.isEmpty ? tr('iv_noorg_t') : orgName,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: SsrColors.noirInk,
-            ),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SsrSpace.sm),
           Text(
             tr('iv_share_hint'),
-            style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(color: SsrColors.noirSecondary),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
           ),
           const SizedBox(height: SsrSpace.md),
           DropdownButtonFormField<String>(
@@ -359,8 +356,6 @@ class _InviteListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (invites.isEmpty) {
       return SectionCard(
-        color: SsrColors.noirSurface,
-        borderColor: SsrColors.noirLine,
         child: Column(
           children: [
             SvgPicture.asset(
@@ -379,8 +374,6 @@ class _InviteListCard extends StatelessWidget {
       );
     }
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.md,
         vertical: SsrSpace.xs,

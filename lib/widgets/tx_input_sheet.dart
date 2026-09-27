@@ -58,7 +58,6 @@ Future<bool> openTxInputSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: SsrColors.noirSurface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
@@ -368,7 +367,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
               const SizedBox(height: SsrSpace.sm),
               Text(
                 formErr!,
-                style: const TextStyle(color: SsrColors.rose, fontSize: 13),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
               ),
             ],
             const SizedBox(height: SsrSpace.md),
@@ -385,8 +387,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
                 child: OutlinedButton(
                   onPressed: _confirmDelete,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: SsrColors.rose,
-                    side: const BorderSide(color: SsrColors.rose),
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                   child: Text(tr('tx_delete')),
                 ),
@@ -405,13 +409,14 @@ class _DragHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Container(
         width: 40,
         height: 4,
         margin: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
         decoration: BoxDecoration(
-          color: SsrColors.noirLine,
+          color: scheme.outline,
           borderRadius: BorderRadius.circular(2),
         ),
       ),
@@ -448,7 +453,6 @@ class _SheetHeader extends StatelessWidget {
                 Text(
                   code!,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: SsrColors.noirSecondary,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -580,6 +584,7 @@ class _WalletSection extends StatelessWidget {
 
   DropdownMenuItem<String> _item(Wallet w, ThemeData theme) {
     final bal = balances[w.id];
+    final muted = theme.textTheme.bodySmall?.color;
     return DropdownMenuItem(
       value: w.id,
       child: Text(
@@ -587,7 +592,7 @@ class _WalletSection extends StatelessWidget {
         style: bal == null
             ? null
             : theme.textTheme.bodyMedium?.copyWith(
-                color: SsrColors.noirSecondary,
+                color: muted,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
       ),

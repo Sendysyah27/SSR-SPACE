@@ -112,12 +112,10 @@ class _LangCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_lang'),
       children: [
         SegmentedButton<String>(
-          style: ssrSegmentedStyle(),
+          style: ssrSegmentedStyle(context),
           segments: const [
             ButtonSegment(value: 'id', label: Text('Indonesia')),
             ButtonSegment(value: 'en', label: Text('English')),
@@ -157,8 +155,6 @@ class _CurrencyCard extends StatelessWidget {
             : tr('st_fx_cache')
                   .replaceFirst('{d}', '${at.day}-${at.month}-${at.year}'));
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_currency'),
       children: [
         DropdownButtonFormField<String>(
@@ -194,8 +190,6 @@ class _FontCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_font'),
       children: [
         Text(amt(100000)),
@@ -219,8 +213,6 @@ class _DefaultCurrencyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_def_currency'),
       children: [
         ValueListenableBuilder<String>(
@@ -249,8 +241,6 @@ class _TopNCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_topn'),
       children: [
         ValueListenableBuilder<bool>(
@@ -275,8 +265,6 @@ class _AnimsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_anims'),
       children: [
         ValueListenableBuilder<bool>(
@@ -300,8 +288,6 @@ class _ListStyleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_list_style'),
       children: [
         ValueListenableBuilder<String>(
@@ -341,8 +327,6 @@ class _DateStyleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_date_style'),
       children: [
         ValueListenableBuilder<String>(
@@ -371,8 +355,6 @@ class _HeroStyleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_hero_style'),
       children: [
         ValueListenableBuilder<String>(
@@ -437,8 +419,6 @@ class _ReminderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_reminder_time'),
       children: [
         ValueListenableBuilder<bool>(
@@ -500,8 +480,6 @@ class _WidgetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_widget_today'),
       children: [
         ValueListenableBuilder<bool>(
@@ -533,8 +511,6 @@ class _ResetCorrectCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_reset_correct'),
       children: [
         OutlinedButton(
@@ -650,8 +626,6 @@ class _PinCardState extends State<_PinCard> {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('st_pin'),
       children: [
         _PinFeedback(msg: msg, err: err),
@@ -688,8 +662,9 @@ class _PinFeedback extends StatelessWidget {
         if (err != null) ...[
           Text(
             err!,
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: SsrColors.rose),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.error,
+            ),
           ),
           const SizedBox(height: SsrSpace.sm),
         ],

@@ -258,8 +258,9 @@ class _OrgPickerBody extends StatelessWidget {
       children: [
         Text(
           tr('org_pick'),
-          style: Theme.of(context).textTheme.bodyMedium
-              ?.copyWith(color: SsrColors.noirSecondary),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).textTheme.bodySmall?.color,
+          ),
         ),
         const SizedBox(height: SsrSpace.lg),
         if (orgs.isEmpty)
@@ -309,8 +310,6 @@ class _OrgListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.md,
         vertical: SsrSpace.xs,
@@ -355,9 +354,7 @@ class _OrgRow extends StatelessWidget {
             Expanded(
               child: Text(
                 name,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: SsrColors.noirInk,
-                ),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
             const SizedBox(width: SsrSpace.sm),
@@ -377,7 +374,7 @@ class _OrgRow extends StatelessWidget {
   }
 }
 
-/// Avatar lingkaran inisial nama workspace di atas noir terangkat.
+/// Avatar lingkaran inisial nama workspace di atas surface terangkat.
 class _OrgAvatar extends StatelessWidget {
   final String name;
 
@@ -385,20 +382,21 @@ class _OrgAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final initial = name.isEmpty ? '?' : name[0].toUpperCase();
     return Container(
       width: 40,
       height: 40,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: SsrColors.noirRaised,
+        color: scheme.outline.withValues(alpha: 0.35),
         shape: BoxShape.circle,
-        border: Border.all(color: SsrColors.noirLine),
+        border: Border.all(color: scheme.outline),
       ),
       child: Text(
         initial,
-        style: const TextStyle(
-          color: SsrColors.mint,
+        style: TextStyle(
+          color: scheme.primary,
           fontWeight: FontWeight.w700,
           fontSize: 15,
         ),
@@ -428,16 +426,12 @@ class _CreateOrgForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('org_new'),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: SsrColors.noirInk,
-            ),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SsrSpace.md),
           TextField(
@@ -476,16 +470,12 @@ class _JoinOrgForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Punya kode undangan?',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: SsrColors.noirInk,
-            ),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SsrSpace.md),
           TextField(

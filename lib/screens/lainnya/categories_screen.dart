@@ -8,13 +8,13 @@ import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 
 /// Palet 8 warna kategori (dikurasi, bukan color wheel bebas).
-/// Slot 0..2 memakai varian noir yang hidup di permukaan gelap
-/// (mint/rose/gold ganti accent/danger/saving lama yang muram di noir);
+/// Slot 0..2 memakai varian ledger yang hidup di kedua mode
+/// (emerald/rust/gold ganti tiga slot lama);
 /// urutan slot tetap sehingga indeks tersimpan tidak bergeser makna.
 const _kMetaPalette = <Color>[
-  SsrColors.mint,
-  SsrColors.rose,
-  SsrColors.gold,
+  AppColors.emerald,
+  AppColors.rust,
+  AppColors.gold,
   Color(0xFF2563EB),
   Color(0xFF7C3AED),
   Color(0xFFDB2777),
@@ -141,7 +141,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final cur = meta[name] ?? CatMeta.def;
     final idx = await showDialog<int>(
       context: context,
-      builder: (_) => SimpleDialog(
+      builder: (ctx) => SimpleDialog(
         title: Text(tr('sub_color')),
         children: [
           Padding(
@@ -161,7 +161,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         color: _kMetaPalette[i],
                         border: Border.all(
                           color: i == cur.color
-                              ? SsrColors.noirInk
+                              ? Theme.of(ctx).colorScheme.onSurface
                               : Colors.transparent,
                           width: 2,
                         ),
@@ -185,7 +185,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final cur = meta[name] ?? CatMeta.def;
     final key = await showDialog<String>(
       context: context,
-      builder: (_) => SimpleDialog(
+      builder: (ctx) => SimpleDialog(
         title: Text(tr('sub_icon')),
         children: [
           Padding(
@@ -204,8 +204,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         borderRadius: BorderRadius.circular(SsrRadius.chip),
                         border: Border.all(
                           color: k == cur.icon
-                              ? SsrColors.mint
-                              : SsrColors.noirLine,
+                              ? Theme.of(ctx).colorScheme.primary
+                              : Theme.of(ctx).colorScheme.outline,
                         ),
                       ),
                       child: DuoIcon(_metaIconData(k)),
@@ -272,8 +272,6 @@ class _CatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.sm,
         vertical: SsrSpace.xs,
@@ -339,9 +337,7 @@ class _CatRow extends StatelessWidget {
             ),
             child: Text(
               name,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: SsrColors.noirInk,
-              ),
+              style: Theme.of(context).textTheme.bodyLarge,
             ),
           ),
         ),

@@ -313,8 +313,6 @@ class _StatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -323,9 +321,7 @@ class _StatusCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   tr('nt_card_status'),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: SsrColors.noirInk,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
               StatusChip(
@@ -378,8 +374,6 @@ class _CorrectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('ic_title'),
       children: [
         SwitchListTile(
@@ -576,16 +570,12 @@ class _BankMappingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('nt_banks'),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: SsrColors.noirInk,
-            ),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SsrSpace.xs),
           if (wallets.isEmpty)
@@ -639,16 +629,12 @@ class _RecentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('nt_lastseen'),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: SsrColors.noirInk,
-            ),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SsrSpace.xs),
           Text(

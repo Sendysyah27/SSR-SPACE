@@ -6,7 +6,7 @@ import 'package:ssr_space/utils/money.dart';
 import 'package:ssr_space/utils/strings.dart';
 
 const _ink = PdfColor.fromInt(0xFF1C1B1A);
-const _accent = PdfColor.fromInt(0xFF0F766E);
+const _accent = PdfColor.fromInt(0xFF0E4B44);
 const _accentSoft = PdfColor.fromInt(0xFFE6F3F1);
 const _danger = PdfColor.fromInt(0xFFB3261E);
 const _dangerSoft = PdfColor.fromInt(0xFFF9E8E6);

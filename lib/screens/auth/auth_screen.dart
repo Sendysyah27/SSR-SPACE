@@ -206,8 +206,9 @@ class _AuthHeader extends StatelessWidget {
         const SizedBox(height: SsrSpace.sm),
         Text(
           tr('au_sub'),
-          style: Theme.of(context).textTheme.bodyMedium
-              ?.copyWith(color: SsrColors.noirSecondary),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).textTheme.bodySmall?.color,
+          ),
         ),
         const SizedBox(height: SsrSpace.xxl),
       ],
@@ -299,6 +300,7 @@ class _AuthMessages extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -306,8 +308,8 @@ class _AuthMessages extends StatelessWidget {
           const SizedBox(height: SsrSpace.md),
           _messageRow(
             text: err!,
-            bg: SsrColors.noirRaised,
-            fg: SsrColors.rose,
+            bg: scheme.error.withValues(alpha: 0.08),
+            fg: scheme.error,
             icon: AppIcons.warning,
           ),
         ],
@@ -315,8 +317,8 @@ class _AuthMessages extends StatelessWidget {
           const SizedBox(height: SsrSpace.md),
           _messageRow(
             text: info!,
-            bg: SsrColors.noirRaised,
-            fg: SsrColors.mint,
+            bg: scheme.primary.withValues(alpha: 0.08),
+            fg: scheme.primary,
             icon: AppIcons.mail,
           ),
         ],

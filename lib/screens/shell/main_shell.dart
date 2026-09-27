@@ -14,7 +14,6 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/correct_sheet.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
-import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/other_screen.dart';
@@ -114,6 +113,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: ValueListenableBuilder<bool>(
         valueListenable: maskAmounts,
@@ -135,8 +135,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openInput,
-        backgroundColor: SsrColors.mint,
-        foregroundColor: SsrColors.noirBg,
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
         tooltip: tr('act_catat'),
         child: const DuoIcon(AppIcons.add),
       ),
@@ -146,7 +146,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 }
 
-/// Navigasi bawah 5 tab: bar noir, aktif mint, nonaktif sekunder.
+/// Navigasi bawah 5 tab: bar surface, aktif primer, nonaktif sekunder.
 class _MainBottomBar extends StatelessWidget {
   final int index;
   final ValueChanged<int> onSelect;
@@ -178,26 +178,28 @@ class _MainBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final unselected =
+        Theme.of(context).textTheme.bodySmall?.color ?? scheme.onSurface;
     return NavigationBarTheme(
       data: NavigationBarThemeData(
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
-            color: selected ? SsrColors.mint : SsrColors.noirSecondary,
+            color: selected ? scheme.primary : unselected,
           );
         }),
       ),
       child: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: onSelect,
-        backgroundColor: SsrColors.noirSurface,
-        indicatorColor: SsrColors.mint.withValues(alpha: 0.16),
+        indicatorColor: scheme.primary.withValues(alpha: 0.16),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            color: selected ? SsrColors.mint : SsrColors.noirSecondary,
+            color: selected ? scheme.primary : unselected,
           );
         }),
         destinations: _destinations,

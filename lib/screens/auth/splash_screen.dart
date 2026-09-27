@@ -120,7 +120,7 @@ class _SplashLoading extends StatelessWidget {
                 style: Theme.of(context).textTheme.displaySmall,
               ),
               const SizedBox(height: SsrSpace.md),
-              Container(width: 56, height: 1, color: SsrColors.gold),
+              Container(width: 56, height: 1, color: AppColors.gold),
               const SizedBox(height: SsrSpace.md),
               Text(
                 tr('sp_tagline'),
@@ -147,10 +147,10 @@ class _SplashError extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const DuoIcon(
+        DuoIcon(
           AppIcons.cloudOff,
           size: 40,
-          color: SsrColors.noirSecondary,
+          color: Theme.of(context).textTheme.bodySmall?.color,
         ),
         const SizedBox(height: SsrSpace.md),
         Text(

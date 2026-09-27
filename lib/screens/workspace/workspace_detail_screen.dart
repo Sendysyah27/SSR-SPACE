@@ -29,7 +29,7 @@ String roleLabel(String role) {
 StatusTone roleTone(String role) =>
     role == 'member' ? StatusTone.neutral : StatusTone.accent;
 
-/// Detail workspace: hero gelap, daftar anggota, zona danger.
+/// Detail workspace: hero, daftar anggota, zona danger.
 /// Org berbentuk map baris switcher (m['organizations'], m['role']).
 class WorkspaceDetailScreen extends StatefulWidget {
   final Map<String, dynamic> org;
@@ -129,7 +129,7 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
               tr('wsm_kick'),
-              style: const TextStyle(color: SsrColors.rose),
+              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
             ),
           ),
         ],
@@ -303,7 +303,7 @@ class _DetailBody extends StatelessWidget {
   }
 }
 
-/// Hero gelap: nama workspace + chip peran + jumlah anggota.
+/// Hero: nama workspace + chip peran + jumlah anggota.
 class _DetailHero extends StatelessWidget {
   final String name;
   final String myRole;
@@ -317,22 +317,20 @@ class _DetailHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(SsrSpace.xl),
       decoration: BoxDecoration(
-        color: SsrColors.noirRaised,
+        color: scheme.surface,
         borderRadius: const BorderRadius.all(Radius.circular(SsrRadius.hero)),
-        border: Border.all(color: SsrColors.noirLine),
+        border: Border.all(color: scheme.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             name,
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(color: SsrColors.noirInk),
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: SsrSpace.md),
           Row(
@@ -341,10 +339,7 @@ class _DetailHero extends StatelessWidget {
               const SizedBox(width: SsrSpace.sm),
               Text(
                 '$count ${tr('wsm_members')}',
-                style: const TextStyle(
-                  color: SsrColors.noirSecondary,
-                  fontSize: 13,
-                ),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
           ),
@@ -362,9 +357,7 @@ class _InviteNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       tr('wsm_invite_active'),
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: SsrColors.noirSecondary,
-      ),
+      style: Theme.of(context).textTheme.bodySmall,
     );
   }
 }
@@ -388,8 +381,6 @@ class _MembersCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.md,
         vertical: SsrSpace.xs,
@@ -401,9 +392,7 @@ class _MembersCard extends StatelessWidget {
             padding: const EdgeInsets.only(top: SsrSpace.sm),
             child: Text(
               tr('wsm_members'),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: SsrColors.noirInk,
-              ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
           for (var i = 0; i < members.length; i++) ...[
@@ -469,20 +458,21 @@ class _MemberAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final initial = short.isEmpty ? '?' : short[0].toUpperCase();
     return Container(
       width: 36,
       height: 36,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: SsrColors.noirRaised,
+        color: scheme.outline.withValues(alpha: 0.35),
         shape: BoxShape.circle,
-        border: Border.all(color: SsrColors.noirLine),
+        border: Border.all(color: scheme.outline),
       ),
       child: Text(
         initial,
-        style: const TextStyle(
-          color: SsrColors.mint,
+        style: TextStyle(
+          color: scheme.primary,
           fontWeight: FontWeight.w700,
           fontSize: 14,
         ),
@@ -512,7 +502,7 @@ class _KickAction extends StatelessWidget {
             )
           : TextButton(
               style: TextButton.styleFrom(
-                foregroundColor: SsrColors.rose,
+                foregroundColor: Theme.of(context).colorScheme.error,
               ),
               onPressed: onKick,
               child: Text(tr('wsm_kick')),
@@ -539,24 +529,25 @@ class _DangerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = Theme.of(context).textTheme.bodySmall?.color;
     final ready = delC.text == name;
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.rose,
+      borderColor: scheme.error,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('wsm_danger'),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: SsrColors.rose,
+              color: scheme.error,
             ),
           ),
           const SizedBox(height: SsrSpace.sm),
           Text(
             tr('wsm_delete_body'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: SsrColors.noirSecondary,
+              color: muted,
             ),
           ),
           const SizedBox(height: SsrSpace.md),
@@ -587,22 +578,23 @@ class _DeleteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: SsrColors.rose,
-          foregroundColor: SsrColors.noirBg,
+          backgroundColor: scheme.error,
+          foregroundColor: scheme.onError,
         ),
         onPressed: ready && !deleting ? onDelete : null,
         child: deleting
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.4,
-                  color: SsrColors.noirBg,
+                  color: scheme.onError,
                 ),
               )
             : Text(tr('wsm_delete')),

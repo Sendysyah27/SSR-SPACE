@@ -107,7 +107,9 @@ class _OtherScreenState extends State<OtherScreen> {
             child: Text(tr('cancel')),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: SsrColors.rose),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(ctx).colorScheme.error,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(tr('o_logout')),
           ),
@@ -164,7 +166,9 @@ class _OtherScreenState extends State<OtherScreen> {
             child: Text(tr('cancel')),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: SsrColors.rose),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(ctx).colorScheme.error,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(tr('tx_delete')),
           ),
@@ -511,8 +515,6 @@ class _HeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -521,9 +523,7 @@ class _HeaderCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   orgName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: SsrColors.noirInk,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
               StatusChip(
@@ -573,8 +573,6 @@ class _DataSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('pf_data'),
       children: [
         NavTile(
@@ -630,8 +628,6 @@ class _TrackingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('pf_tracking'),
       children: [
         NavTile(
@@ -677,8 +673,6 @@ class _BackupSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('pf_backup'),
       children: [
         NavTile(
@@ -734,8 +728,6 @@ class _WorkspaceSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('pf_workspace'),
       children: [
         NavTile(
@@ -779,8 +771,6 @@ class _AppearanceSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('pf_appearance'),
       children: [
         ValueListenableBuilder<bool>(
@@ -810,8 +800,6 @@ class _LangMoneySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('pf_langmoney'),
       children: [
         NavTile(icon: AppIcons.menu, title: tr('st_lang'), onTap: onSettings),
@@ -830,8 +818,6 @@ class _ReminderSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('pf_reminder'),
       children: [
         NavTile(
@@ -855,8 +841,6 @@ class _SecuritySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('pf_security'),
       children: [
         NavTile(icon: AppIcons.lock, title: tr('st_pin'), onTap: onSettings),
@@ -901,8 +885,6 @@ class _AboutSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       label: tr('pf_about'),
       children: [
         NavTile(

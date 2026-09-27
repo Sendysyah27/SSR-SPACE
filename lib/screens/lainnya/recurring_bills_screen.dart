@@ -156,8 +156,6 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
     final paid = historyFor(payments, bill.id).length;
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Row(
         children: [
           Expanded(
@@ -168,9 +166,7 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
                 children: [
                   Text(
                     bill.label,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: SsrColors.noirInk,
-                    ),
+                    style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -396,7 +392,12 @@ class _BillEditorState extends State<_BillEditor> {
             ),
             if (err != null) ...[
               const SizedBox(height: SsrSpace.sm),
-              Text(err!, style: const TextStyle(color: SsrColors.rose)),
+              Text(
+                err!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
             ],
             const SizedBox(height: SsrSpace.md),
             FilledButton(onPressed: _submit, child: Text(tr('save'))),
@@ -437,7 +438,7 @@ class _BillMetaFields extends StatelessWidget {
         CategoryChips(controller: catC),
         const SizedBox(height: SsrSpace.sm),
         SegmentedButton<String>(
-          style: ssrSegmentedStyle(),
+          style: ssrSegmentedStyle(context),
           segments: [
             ButtonSegment(value: 'weekly', label: Text(tr('rb_weekly'))),
             ButtonSegment(value: 'monthly', label: Text(tr('rb_monthly'))),

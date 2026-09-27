@@ -66,6 +66,7 @@ class _LockScreenState extends State<LockScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -79,14 +80,14 @@ class _LockScreenState extends State<LockScreen> {
                   height: 56,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: SsrColors.noirRaised,
+                    color: scheme.outline.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(SsrRadius.tile),
-                    border: Border.all(color: SsrColors.noirLine),
+                    border: Border.all(color: scheme.outline),
                   ),
-                  child: const DuoIcon(
+                  child: DuoIcon(
                     AppIcons.lock,
                     size: 26,
-                    color: SsrColors.mint,
+                    color: scheme.primary,
                   ),
                 ),
                 const SizedBox(height: SsrSpace.lg),
@@ -98,8 +99,9 @@ class _LockScreenState extends State<LockScreen> {
                 Text(
                   tr('lk_sub'),
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium
-                      ?.copyWith(color: SsrColors.noirSecondary),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
                 ),
                 const SizedBox(height: SsrSpace.lg),
                 PinField(

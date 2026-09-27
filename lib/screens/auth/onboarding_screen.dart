@@ -121,7 +121,8 @@ class _OnboardingBody extends StatelessWidget {
     required this.onSubmit,
   });
 
-  Widget _stepDots() {
+  Widget _stepDots(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final step = (pinC.text.isNotEmpty || pin2C.text.isNotEmpty) ? 1 : 0;
     return Row(
       children: [
@@ -131,7 +132,7 @@ class _OnboardingBody extends StatelessWidget {
               width: 18,
               height: 2,
               margin: const EdgeInsets.symmetric(horizontal: SsrSpace.xs),
-              color: SsrColors.noirLine,
+              color: scheme.outline,
             ),
           AnimatedContainer(
             duration: SsrMotion.fast,
@@ -139,7 +140,7 @@ class _OnboardingBody extends StatelessWidget {
             width: i <= step ? 22 : 8,
             height: 8,
             decoration: BoxDecoration(
-              color: i <= step ? SsrColors.mint : SsrColors.noirLine,
+              color: i <= step ? scheme.primary : scheme.outline,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -160,11 +161,12 @@ class _OnboardingBody extends StatelessWidget {
         const SizedBox(height: SsrSpace.xs),
         Text(
           tr('ob_sub'),
-          style: Theme.of(context).textTheme.bodyMedium
-              ?.copyWith(color: SsrColors.noirSecondary),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).textTheme.bodySmall?.color,
+          ),
         ),
         const SizedBox(height: SsrSpace.xl),
-        _stepDots(),
+        _stepDots(context),
         const SizedBox(height: SsrSpace.xl),
         Text(tr('ob_profile'), style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: SsrSpace.md),
