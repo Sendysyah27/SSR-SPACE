@@ -15,8 +15,8 @@ class SsrColors {
   static const saving = Color(0xFFB45309);
   static const savingSoft = Color(0xFFFBEDD3);
   static const surfaceMuted = Color(0xFFF3F2EE);
-  // Token Emerald Noir dihapus LP-T8 (nol rujukan di lib/).
-  // Mode gelap kini AppTheme.dark(); aksen via colorScheme.
+  // Token Noir dipakai SsrTheme.noir() (pilihan tema Noir, 2026-09-27).
+  // Mode gelap ikut sistem = AppTheme.dark(); aksen via colorScheme.
   static const mint = Color(0xFF2DD4BF);
   static const rose = Color(0xFFF87171);
   static const gold = Color(0xFFC6A15B);

@@ -417,3 +417,4 @@ For UI, copy, people, mobile layout, or code comments work, read `antislop.md` (
 - Code comments: `skills/antislop-code/SKILL.md`
 Before starting, ask the user when antislop applies: during the work, or after it is done.
 <!-- antislop:end -->
+- **Pilihan tema Otomatis+Noir (2026-09-27, SDD 7 task, run CI berikut):** prefs `app_theme_choice` + `themeChoice` (default `otomatis`, fail-safe) + `SsrTheme.noir()` restore dari `0bdeb7b` + wiring `main` (noir → theme+darkTheme kembar, themeMode tetap system) + picker SegmentedButton di settings + `ThemeStepScreen` setup user baru (setelah consent, sebelum auth) + 127 `AppColors.` mati di 14 file dikonversi ke colorScheme (mapping spec §3; emeraldDeep/gold/chip TETAP; overlay TETAP). Bump `2.4.3+26`. Spec `docs/superpowers/specs/2026-09-27-theme-chooser-design.md`, plan `docs/superpowers/plans/2026-09-27-theme-chooser.md`.
