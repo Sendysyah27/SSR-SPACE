@@ -25,6 +25,7 @@ class WalletRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
       child: Row(
@@ -33,9 +34,9 @@ class WalletRow extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: SsrColors.noirRaised,
+              color: scheme.outline.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(SsrRadius.tile),
-              border: Border.all(color: SsrColors.noirLine),
+              border: Border.all(color: scheme.outline),
             ),
             child: Center(child: WalletArt(type)),
           ),
@@ -57,7 +58,10 @@ class WalletRow extends StatelessWidget {
               textAlign: TextAlign.end,
               style: balanceText == tr('w_notloaded')
                   ? Theme.of(context).textTheme.bodySmall
-                  : SsrTheme.money.copyWith(fontSize: 14),
+                  : SsrTheme.money.copyWith(
+                      fontSize: 14,
+                      color: scheme.onSurface,
+                    ),
             ),
           ),
         ],

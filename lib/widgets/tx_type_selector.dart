@@ -2,28 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/strings.dart';
 
-/// Gaya segmented tunggal seluruh app: pilihan terisi mint penuh dengan
-/// teks noirBg, sisanya surface noir dengan teks sekunder, border mint/line.
-/// Dipakai TxTypeSelector + filter laporan + pengaturan + tagihan rutin.
-ButtonStyle ssrSegmentedStyle() {
+/// Gaya segmented tunggal seluruh app: pilihan terisi primer penuh,
+/// sisanya surface dengan teks sekunder, border primer/outline.
+/// Tanpa context ikut brightness sistem (themeMode app = system);
+/// dengan context ikut colorScheme ambient.
+ButtonStyle ssrSegmentedStyle([BuildContext? context]) {
+  if (context != null) {
+    final scheme = Theme.of(context).colorScheme;
+    final unselectedFg =
+        Theme.of(context).textTheme.bodySmall?.color ?? scheme.onSurface;
+    return ButtonStyle(
+      backgroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return scheme.primary;
+        }
+        return scheme.surface;
+      }),
+      foregroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return scheme.onPrimary;
+        }
+        return unselectedFg;
+      }),
+      side: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return BorderSide(color: scheme.primary);
+        }
+        return BorderSide(color: scheme.outline);
+      }),
+      textStyle: WidgetStateProperty.all(
+        const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+  final dark =
+      WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+      Brightness.dark;
+  final selectedBg = dark ? AppColors.emeraldBright : AppColors.emerald;
   return ButtonStyle(
     backgroundColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.selected)) {
-        return SsrColors.mint;
+        return selectedBg;
       }
-      return SsrColors.noirSurface;
+      return dark ? AppColors.surfaceDark : Colors.white;
     }),
     foregroundColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.selected)) {
-        return SsrColors.noirBg;
+        return dark ? AppColors.bgDark : AppColors.cream;
       }
-      return SsrColors.noirSecondary;
+      return dark ? AppColors.inkSoftDark : AppColors.inkSoft;
     }),
     side: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.selected)) {
-        return const BorderSide(color: SsrColors.mint);
+        return BorderSide(color: selectedBg);
       }
-      return const BorderSide(color: SsrColors.noirLine);
+      return BorderSide(
+        color: dark ? AppColors.lineDark : AppColors.line,
+      );
     }),
     textStyle: WidgetStateProperty.all(
       const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
@@ -32,8 +67,8 @@ ButtonStyle ssrSegmentedStyle() {
 }
 
 /// Pilihan jenis transaksi Masuk / Keluar / Transfer (pill toggle).
-/// Satu gaya untuk semua pemakaian: pilihan terisi mint penuh dengan
-/// teks gelap, sisanya surface noir dengan teks sekunder.
+/// Satu gaya untuk semua pemakaian: pilihan terisi primer penuh,
+/// sisanya surface dengan teks sekunder.
 class TxTypeSelector extends StatelessWidget {
   final String value;
   final ValueChanged<String> onChanged;
@@ -55,7 +90,7 @@ class TxTypeSelector extends StatelessWidget {
       selected: {value},
       onSelectionChanged: (v) => onChanged(v.first),
       showSelectedIcon: false,
-      style: ssrSegmentedStyle(),
+      style: ssrSegmentedStyle(context),
     );
   }
 }

@@ -156,25 +156,24 @@ class _TxSummaryStrip extends StatelessWidget {
       }
     }
     final net = totalIn - totalOut;
+    final scheme = Theme.of(context).colorScheme;
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Row(
         children: [
           _SummaryCell(
             label: tr('tx_in'),
             value: amt(totalIn),
-            color: SsrColors.mint,
+            color: scheme.primary,
           ),
           _SummaryCell(
             label: tr('tx_out'),
             value: amt(totalOut),
-            color: SsrColors.rose,
+            color: scheme.error,
           ),
           _SummaryCell(
             label: tr(net >= 0 ? 'beranda_surplus' : 'beranda_defisit'),
             value: amt(net),
-            color: SsrColors.noirInk,
+            color: scheme.onSurface,
           ),
         ],
       ),
@@ -203,9 +202,7 @@ class _SummaryCell extends StatelessWidget {
         children: [
           Text(
             label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: SsrColors.noirSecondary,
-            ),
+            style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 2),
           Text(
@@ -316,10 +313,10 @@ class _NoWalletBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: SsrSpace.sm),
       padding: const EdgeInsets.all(SsrSpace.md),
       decoration: BoxDecoration(
-        color: SsrColors.rose.withValues(alpha: 0.14),
+        color: AppColors.rust.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(SsrRadius.tile),
         border: Border.all(
-          color: SsrColors.rose.withValues(alpha: 0.45),
+          color: AppColors.rust.withValues(alpha: 0.45),
         ),
       ),
       child: Row(
@@ -327,9 +324,7 @@ class _NoWalletBanner extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: SsrColors.noirInk,
-              ),
+              style: theme.textTheme.bodyMedium,
             ),
           ),
           TextButton(
@@ -353,6 +348,7 @@ class _TxStateScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text(tr('nav_transaksi')),
@@ -367,8 +363,8 @@ class _TxStateScaffold extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: onAdd,
         tooltip: tr('act_catat'),
-        backgroundColor: SsrColors.mint,
-        foregroundColor: SsrColors.noirBg,
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
         child: const DuoIcon(AppIcons.add),
       ),
       body: body,

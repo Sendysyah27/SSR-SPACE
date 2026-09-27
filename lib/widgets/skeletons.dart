@@ -9,11 +9,12 @@ class _Zone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Skeletonizer.zone(
       enabled: true,
-      effect: const ShimmerEffect(
-        baseColor: SsrColors.noirRaised,
-        highlightColor: SsrColors.noirLine,
+      effect: ShimmerEffect(
+        baseColor: scheme.outline,
+        highlightColor: scheme.surface,
       ),
       child: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),

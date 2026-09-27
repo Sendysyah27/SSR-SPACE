@@ -47,18 +47,19 @@ class EmptyView extends StatelessWidget {
     if (ill != null) {
       return SvgPicture.asset(ill, height: 120, fit: BoxFit.contain);
     }
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        color: SsrColors.noirRaised,
+        color: scheme.outline.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(SsrRadius.card),
-        border: Border.all(color: SsrColors.noirLine),
+        border: Border.all(color: scheme.outline),
       ),
       child: DuoIcon(
         icon,
         size: 28,
-        color: Theme.of(context).colorScheme.primary,
+        color: scheme.primary,
       ),
     );
   }

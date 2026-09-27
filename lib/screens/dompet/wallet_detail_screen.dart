@@ -150,9 +150,8 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -162,9 +161,9 @@ class _SummaryCard extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: SsrColors.noirRaised,
+                  color: scheme.outline.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(SsrRadius.tile),
-                  border: Border.all(color: SsrColors.noirLine),
+                  border: Border.all(color: scheme.outline),
                 ),
                 child: Center(child: WalletArt(type)),
               ),
@@ -173,7 +172,10 @@ class _SummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: SsrSpace.xs),
-          Text(balanceText, style: SsrTheme.moneyLarge),
+          Text(
+            balanceText,
+            style: SsrTheme.moneyLarge.copyWith(color: scheme.onSurface),
+          ),
           const SizedBox(height: SsrSpace.xs),
           Text(
             tr('wd_count').replaceFirst('{n}', '$count'),
@@ -203,15 +205,15 @@ class _SavingStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.gold.withValues(alpha: 0.14),
-      borderColor: SsrColors.gold.withValues(alpha: 0.45),
+      color: AppColors.gold.withValues(alpha: 0.14),
+      borderColor: AppColors.gold.withValues(alpha: 0.45),
       child: Row(
         children: [
           Container(
             width: 10,
             height: 10,
             decoration: const BoxDecoration(
-              color: SsrColors.gold,
+              color: AppColors.gold,
               shape: BoxShape.circle,
             ),
           ),
@@ -221,9 +223,7 @@ class _SavingStrip extends StatelessWidget {
               tr('sv_wallet_line')
                   .replaceFirst('{a}', amt(total))
                   .replaceFirst('{n}', '$count'),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: SsrColors.noirInk,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
           TextButton(
@@ -246,8 +246,6 @@ class _HistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final buckets = groupDayBuckets(items);
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.sm,
         vertical: SsrSpace.xs,

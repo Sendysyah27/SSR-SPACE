@@ -260,10 +260,15 @@ class _WalletOverview extends StatelessWidget {
         if (t != null)
           LabeledSectionCard(
             margin: const EdgeInsets.only(bottom: SsrSpace.md),
-            color: SsrColors.noirSurface,
-            borderColor: SsrColors.noirLine,
             label: tr('w_total'),
-            children: [Text(amt(t), style: SsrTheme.moneyLarge)],
+            children: [
+              Text(
+                amt(t),
+                style: SsrTheme.moneyLarge.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
           ),
         if (items.isEmpty)
           EmptyView(
@@ -308,8 +313,6 @@ class _NewWalletForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -326,8 +329,9 @@ class _NewWalletForm extends StatelessWidget {
             const SizedBox(height: SsrSpace.sm),
             Text(
               formErr!,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: SsrColors.rose),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
           ],
           const SizedBox(height: SsrSpace.lg),
@@ -387,8 +391,6 @@ class _WalletListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.md,
@@ -431,19 +433,17 @@ class _CompositionStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('comp_title'),
-            style: text.titleMedium?.copyWith(color: SsrColors.noirInk),
+            style: text.titleMedium,
           ),
           Text(
             tr('comp_sub'),
-            style: text.bodySmall?.copyWith(color: SsrColors.noirSecondary),
+            style: text.bodySmall,
           ),
           const SizedBox(height: SsrSpace.md),
           _CompChart(comp: comp),
@@ -473,21 +473,21 @@ class _CompChart extends StatelessWidget {
             children: [
               _compRow(
                 context,
-                SsrColors.mint,
+                AppColors.emerald,
                 tr('comp_liquid'),
                 comp.liquid,
                 comp.liquidPct,
               ),
               _compRow(
                 context,
-                SsrColors.gold,
+                AppColors.gold,
                 tr('w_savings'),
                 comp.savings,
                 comp.savingsPct,
               ),
               _compRow(
                 context,
-                SsrColors.noirSecondary,
+                Theme.of(context).colorScheme.outline,
                 tr('w_investment'),
                 comp.investments,
                 comp.investmentsPct,
@@ -507,6 +507,7 @@ class _CompDonut extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final investments = Theme.of(context).colorScheme.outline;
     return PieChart(
       PieChartData(
         pieTouchData: PieTouchData(enabled: false),
@@ -517,21 +518,21 @@ class _CompDonut extends StatelessWidget {
           if (comp.liquid > 0)
             PieChartSectionData(
               value: comp.liquid,
-              color: SsrColors.mint,
+              color: AppColors.emerald,
               radius: 14,
               showTitle: false,
             ),
           if (comp.savings > 0)
             PieChartSectionData(
               value: comp.savings,
-              color: SsrColors.gold,
+              color: AppColors.gold,
               radius: 14,
               showTitle: false,
             ),
           if (comp.investments > 0)
             PieChartSectionData(
               value: comp.investments,
-              color: SsrColors.noirSecondary,
+              color: investments,
               radius: 14,
               showTitle: false,
             ),
@@ -548,6 +549,7 @@ Widget _compRow(
   double value,
   double pct,
 ) {
+  final text = Theme.of(context).textTheme;
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: SsrSpace.xs),
     child: Row(
@@ -561,16 +563,13 @@ Widget _compRow(
         Expanded(
           child: Text(
             label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: SsrColors.noirSecondary,
-            ),
+            style: text.bodyMedium?.copyWith(color: text.bodySmall?.color),
           ),
         ),
         Text(
           '${amt(value)} ${(pct * 100).round()}%',
-          style: const TextStyle(
-            color: SsrColors.noirInk,
-            fontFeatures: [FontFeature.tabularFigures()],
+          style: text.bodyMedium?.copyWith(
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
       ],

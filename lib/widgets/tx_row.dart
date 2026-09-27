@@ -94,7 +94,9 @@ class TxRow extends StatelessWidget {
     final amountColor = _amountColor(context);
     final subtitle = _subtitle;
     return Material(
-      color: selected ? SsrColors.mint.withValues(alpha: 0.12) : Colors.transparent,
+      color: selected
+          ? theme.colorScheme.primary.withValues(alpha: 0.12)
+          : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -113,7 +115,7 @@ class TxRow extends StatelessWidget {
                     Wrap(spacing: 6, runSpacing: 4, children: _chips()),
                     if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: SsrColors.noirSecondary, fontFeatures: const [FontFeature.tabularFigures()])),
+                      Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
                     ],
                     if (tx.note != null && tx.note!.isNotEmpty) ...[
                       const SizedBox(height: 4),

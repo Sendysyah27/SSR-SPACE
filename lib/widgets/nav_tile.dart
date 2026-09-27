@@ -34,7 +34,10 @@ class NavTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (c != null) ...[c, const SizedBox(width: SsrSpace.sm)],
-          const DuoIcon(AppIcons.chevron, color: SsrColors.noirSecondary),
+          DuoIcon(
+            AppIcons.chevron,
+            color: Theme.of(context).textTheme.bodySmall?.color,
+          ),
         ],
       ),
       onTap: onTap,
@@ -49,15 +52,16 @@ class _NavIconTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: SsrColors.noirRaised,
+        color: scheme.outline.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(SsrRadius.tile),
-        border: Border.all(color: SsrColors.noirLine),
+        border: Border.all(color: scheme.outline),
       ),
-      child: DuoIcon(icon, color: SsrColors.mint, size: 20),
+      child: DuoIcon(icon, color: scheme.primary, size: 20),
     );
   }
 }

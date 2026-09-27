@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/strings.dart';
 
@@ -20,16 +19,12 @@ class DayHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: SsrColors.noirInk,
-              ),
+              style: theme.textTheme.titleSmall,
             ),
           ),
           Text(
             sub,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: SsrColors.noirSecondary,
-            ),
+            style: theme.textTheme.bodySmall,
           ),
         ],
       ),

@@ -6,6 +6,9 @@ import 'app_theme.dart';
 /// Angka kolom (list transaksi, saldo dompet, kartu laporan) tetap
 /// Plus Jakarta Sans, karena Fraunces tidak punya fitur `tnum`
 /// dan digitnya bisa meleset sejajar.
+///
+/// Tanpa warna eksplisit: mewarisi warna teks theme (ink light,
+/// inkDark dark) kecuali pemanggil copyWith warna sendiri.
 class SsrType {
   /// Nominal hero di kartu gelap Beranda.
   static const heroMoney = TextStyle(
@@ -13,7 +16,6 @@ class SsrType {
     fontSize: 32,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.5,
-    color: SsrColors.noirInk,
     fontFeatures: [FontFeature.tabularFigures()],
   );
 
@@ -23,7 +25,6 @@ class SsrType {
     fontSize: 26,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.3,
-    color: SsrColors.noirInk,
     fontFeatures: [FontFeature.tabularFigures()],
   );
 
@@ -32,7 +33,6 @@ class SsrType {
     fontFamily: SsrFonts.numeric,
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: SsrColors.noirInk,
     fontFeatures: [FontFeature.tabularFigures()],
   );
 }
