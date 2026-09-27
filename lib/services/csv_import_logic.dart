@@ -81,14 +81,18 @@ double parseAmountValue(String s) {
   } else if (hasComma) {
     norm = t.replaceAll(',', '.');
   } else if (hasDot) {
-    // Titik saja: pecahan nol semua (15000.0 ala ekspor) = buang titik;
-    // titik tunggal desimal betulan (10.5) dipertahankan; titik ganda
-    // = ribuan, dibuang semua (1.234.567). Multi-titik berujung 2 digit
-    // dibiarkan ke tryParse supaya tetap throw seperti dulu.
+    // Titik saja: pecahan nol semua berarti '15000.0'/'.00' (desimal ala
+    // ekspor) -> buang titik + pecahan; tapi '.000' = ribuan ID ->
+    // buang titik saja. Titik tunggal desimal betulan (10.5)
+    // dipertahankan; titik ganda = ribuan, dibuang semua (1.234.567).
+    // Multi-titik berujung 2 digit dibiarkan ke tryParse supaya tetap
+    // throw seperti dulu.
     final frac = RegExp(r'\.(\d+)$').firstMatch(t)?.group(1) ?? '';
     final single = t.indexOf('.') == t.lastIndexOf('.');
     if (frac.isNotEmpty && RegExp(r'^0+$').hasMatch(frac)) {
-      norm = t.replaceAll('.', '');
+      norm = frac.length == 3
+          ? t.replaceAll('.', '')
+          : t.substring(0, t.lastIndexOf('.'));
     } else if (single || RegExp(r'\.\d{2}$').hasMatch(t)) {
       norm = t;
     } else {
