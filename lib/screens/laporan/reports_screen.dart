@@ -664,7 +664,7 @@ class _FlowFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<String>(
-      style: ssrSegmentedStyle(),
+      style: ssrSegmentedStyle(context),
       segments: [
         ButtonSegment(value: 'all', label: Text(tr('r_flow_all'))),
         ButtonSegment(value: 'in', label: Text(tr('tx_in'))),

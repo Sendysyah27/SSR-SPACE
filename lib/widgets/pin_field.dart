@@ -75,7 +75,7 @@ class _PinFieldState extends State<PinField> {
           color: widget.error != null
               ? AppColors.rust
               : isCurrent || filled
-              ? AppColors.emerald
+              ? scheme.primary
               : scheme.outline,
           width: isCurrent ? 2 : 1.5,
         ),

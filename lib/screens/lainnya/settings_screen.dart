@@ -293,7 +293,7 @@ class _ListStyleCard extends StatelessWidget {
         ValueListenableBuilder<String>(
           valueListenable: uiListStyle,
           builder: (context, value, _) => SegmentedButton<String>(
-            style: ssrSegmentedStyle(),
+            style: ssrSegmentedStyle(context),
             segments: [
               ButtonSegment(
                 value: 'compact',

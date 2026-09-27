@@ -15,16 +15,18 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: loading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.emerald,
-          foregroundColor: AppColors.cream,
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
           disabledBackgroundColor:
-              AppColors.emerald.withValues(alpha: 0.4),
-          disabledForegroundColor: AppColors.cream.withValues(alpha: 0.4),
+              scheme.primary.withValues(alpha: 0.4),
+          disabledForegroundColor:
+              scheme.onPrimary.withValues(alpha: 0.4),
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           shape: RoundedRectangleBorder(
