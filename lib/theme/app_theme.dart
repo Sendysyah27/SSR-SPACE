@@ -43,6 +43,10 @@ class AppColors {
   static const inkDark = Color(0xFFF1EEE6);
   static const inkSoftDark = Color(0xFFA6A296);
   static const lineDark = Color(0xFF2C2823);
+  // Chip ledger tetap (sama kedua mode): teks surplus, bg auto, bg warning.
+  static const chipSurplusText = Color(0xFF7A5E14);
+  static const chipAutoBg = Color(0xFFE4EFEA);
+  static const chipWarnBg = Color(0xFFF6E4E1);
 }
 
 class SsrMotion {
@@ -56,8 +60,8 @@ class SsrRadius {
   static const chip = 8.0;
   static const input = 12.0;
   static const tile = 12.0;
-  static const button = 14.0;
-  static const card = 16.0;
+  static const button = 12.0;
+  static const card = 24.0;
   static const hero = 24.0;
 }
 

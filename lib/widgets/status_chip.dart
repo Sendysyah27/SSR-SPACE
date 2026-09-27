@@ -19,50 +19,37 @@ class StatusChip extends StatelessWidget {
   Color get _bg {
     switch (tone) {
       case StatusTone.accent:
-        return SsrColors.mint.withValues(alpha: 0.14);
+        return AppColors.chipAutoBg;
       case StatusTone.danger:
-        return SsrColors.rose.withValues(alpha: 0.14);
+        return AppColors.chipWarnBg;
       case StatusTone.ink:
-        return SsrColors.noirInk;
+        return AppColors.goldSoft;
       case StatusTone.neutral:
-        return SsrColors.noirRaised;
+        return AppColors.line;
     }
   }
 
   Color get _fg {
     switch (tone) {
       case StatusTone.accent:
-        return SsrColors.mint;
+        return AppColors.emerald;
       case StatusTone.danger:
-        return SsrColors.rose;
+        return AppColors.rust;
       case StatusTone.ink:
-        return SsrColors.noirBg;
+        return AppColors.chipSurplusText;
       case StatusTone.neutral:
-        return SsrColors.noirSecondary;
-    }
-  }
-
-  Color get _border {
-    switch (tone) {
-      case StatusTone.accent:
-        return SsrColors.mint.withValues(alpha: 0.45);
-      case StatusTone.danger:
-        return SsrColors.rose.withValues(alpha: 0.45);
-      case StatusTone.ink:
-        return SsrColors.noirInk;
-      case StatusTone.neutral:
-        return SsrColors.noirLine;
+        return AppColors.inkSoft;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final text = tone == StatusTone.ink ? label.toUpperCase() : label;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
         color: _bg,
-        borderRadius: BorderRadius.circular(SsrRadius.chip),
-        border: Border.all(color: _border),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -72,9 +59,10 @@ class StatusChip extends StatelessWidget {
             const SizedBox(width: 4),
           ],
           Text(
-            label,
+            text,
             style: TextStyle(
-              fontSize: 11,
+              fontFamily: SsrFonts.body,
+              fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: _fg,
               height: 1.2,

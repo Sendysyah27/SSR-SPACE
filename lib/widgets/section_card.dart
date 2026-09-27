@@ -11,7 +11,7 @@ class SectionCard extends StatelessWidget {
   const SectionCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(SsrSpace.lg),
+    this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
     this.margin = EdgeInsets.zero,
     this.color,
     this.borderColor,
@@ -19,13 +19,22 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: margin,
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? SsrColors.noirSurface,
+        color: color ?? scheme.surface,
         borderRadius: BorderRadius.circular(SsrRadius.card),
-        border: Border.all(color: borderColor ?? SsrColors.noirLine),
+        border: Border.all(color: borderColor ?? scheme.outline),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: dark ? 0.4 : 0.08),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: child,
     );

@@ -61,34 +61,53 @@ class _PinFieldState extends State<PinField> {
     super.dispose();
   }
 
-  Widget _box(int i, bool filled, bool isCurrent) {
-    return Expanded(
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOutCubic,
-        height: 52,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        decoration: BoxDecoration(
-          color: SsrColors.noirSurface,
-          borderRadius: BorderRadius.circular(SsrRadius.input),
-          border: Border.all(
-            color: widget.error != null
-                ? SsrColors.rose
-                : isCurrent || filled
-                ? SsrColors.mint
-                : SsrColors.noirLine,
-            width: isCurrent ? 1.8 : 1.2,
-          ),
+  Widget _box(BuildContext context, int i, bool filled, bool isCurrent) {
+    final scheme = Theme.of(context).colorScheme;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOutCubic,
+      width: 38,
+      height: 46,
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: widget.error != null
+              ? AppColors.rust
+              : isCurrent || filled
+              ? AppColors.emerald
+              : scheme.outline,
+          width: isCurrent ? 2 : 1.5,
         ),
-        alignment: Alignment.center,
-        child: Text(
-          filled ? (widget.obscure ? '•' : widget.controller.text[i]) : '',
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: SsrColors.noirInk,
-          ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        filled ? (widget.obscure ? '•' : widget.controller.text[i]) : '',
+        style: TextStyle(
+          fontFamily: SsrFonts.numeric,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: scheme.onSurface,
         ),
+      ),
+    );
+  }
+
+  Widget _boxesRow(BuildContext context, String text) {
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < widget.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            _box(
+              context,
+              i,
+              i < text.length,
+              i == text.length && _focus.hasFocus,
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -100,7 +119,7 @@ class _PinFieldState extends State<PinField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 52,
+          height: 46,
           child: Stack(
             children: [
               Opacity(
@@ -119,16 +138,7 @@ class _PinFieldState extends State<PinField> {
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => _focus.requestFocus(),
-                child: Row(
-                  children: [
-                    for (var i = 0; i < widget.length; i++)
-                      _box(
-                        i,
-                        i < text.length,
-                        i == text.length && _focus.hasFocus,
-                      ),
-                  ],
-                ),
+                child: _boxesRow(context, text),
               ),
             ],
           ),
@@ -137,7 +147,7 @@ class _PinFieldState extends State<PinField> {
           const SizedBox(height: 8),
           Text(
             widget.error!,
-            style: const TextStyle(color: SsrColors.rose, fontSize: 13),
+            style: const TextStyle(color: AppColors.rust, fontSize: 13),
           ),
         ],
       ],
