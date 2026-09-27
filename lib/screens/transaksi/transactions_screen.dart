@@ -308,15 +308,16 @@ class _NoWalletBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: SsrSpace.sm),
       padding: const EdgeInsets.all(SsrSpace.md),
       decoration: BoxDecoration(
-        color: AppColors.rust.withValues(alpha: 0.12),
+        color: scheme.error.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(SsrRadius.tile),
         border: Border.all(
-          color: AppColors.rust.withValues(alpha: 0.45),
+          color: scheme.error.withValues(alpha: 0.45),
         ),
       ),
       child: Row(

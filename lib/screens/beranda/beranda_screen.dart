@@ -241,6 +241,7 @@ class BerandaScreenState extends State<BerandaScreen> {
 
   Widget _content({Key? key}) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final totalIn = items
         .where((t) => t.type == 'in')
         .fold<double>(0, (s, t) => s + t.amount);
@@ -271,8 +272,8 @@ class BerandaScreenState extends State<BerandaScreen> {
               Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.emerald,
+                decoration: BoxDecoration(
+                  color: scheme.primary,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -384,8 +385,9 @@ class BerandaScreenState extends State<BerandaScreen> {
     final positive = surplus >= 0;
     // Teks hero: cream di light, inkDark di dark, keduanya di atas
     // emeraldDeep. Ikut brightness tema aplikasi, bukan platform.
+    final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final onHero = dark ? AppColors.inkDark : AppColors.cream;
+    final onHero = dark ? scheme.onSurface : scheme.onPrimary;
     final heroLabel = TextStyle(
       color: onHero.withValues(alpha: 0.7),
       fontSize: 12,
@@ -535,6 +537,7 @@ class _CalmWeeks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return SectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,10 +552,10 @@ class _CalmWeeks extends StatelessWidget {
                   height: 12,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: filled ? AppColors.emerald : Colors.transparent,
+                    color: filled ? scheme.primary : Colors.transparent,
                     border: Border.all(
                       color: filled
-                          ? AppColors.emerald
+                          ? scheme.primary
                           : theme.colorScheme.outline,
                     ),
                   ),
