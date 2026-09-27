@@ -137,31 +137,61 @@ class ReportsScreenState extends State<ReportsScreen> {
     _load();
   }
 
-  Widget _summarySection(
-    double totalIn,
-    double totalOut,
-    double spendOut,
-    double savingOut,
-    double net,
-    bool hasItems,
-  ) {
-    final hasFlow = totalIn + spendOut + savingOut > 0;
+  void _onWalletChanged(String? v) => setState(() => filterWallet = v);
+
+  void _toggleOrdering() => setState(() => reordering = !reordering);
+
+  /// Angka turunan sebulan dari list yang sudah difilter dompet.
+  /// Isi identik dengan hitungan inline build sebelumnya.
+  _MonthFigures _totalsFor(List<SaasTransaction> filtered) {
+    final totalIn = filtered
+        .where((t) => t.type == 'in')
+        .fold<double>(0, (s, t) => s + t.amount);
+    final totalOut = filtered
+        .where((t) => t.type == 'out')
+        .fold<double>(0, (s, t) => s + t.amount);
+    final net = totalIn - totalOut;
+    // Iris tabungan: OUT berkategori Tabungan/Savings (sumber sama: filtered).
+    final savingOut = savingOutOf(filtered);
+    var spendOut = totalOut - savingOut;
+    if (spendOut < 0) spendOut = 0;
+    final catTotals = <String, double>{};
+    for (final t in filtered) {
+      if (t.type != 'out') continue;
+      // Grup di lapis kategori (abaikan sub) agar konsisten dengan budget.
+      final top = topOf(t.category);
+      final name = top.isEmpty ? tr('cat_other') : top;
+      catTotals[name] = (catTotals[name] ?? 0) + t.amount;
+    }
+    return _MonthFigures(
+      items: filtered,
+      totalIn: totalIn,
+      totalOut: totalOut,
+      spendOut: spendOut,
+      savingOut: savingOut,
+      net: net,
+      catTotals: catTotals,
+    );
+  }
+
+  Widget _summarySection(_MonthFigures f, bool hasItems) {
+    final hasFlow = f.totalIn + f.spendOut + f.savingOut > 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (hasFlow) ...[
           _MonthFlowChart(
-            totalIn: totalIn,
-            spendOut: spendOut,
-            savingOut: savingOut,
+            totalIn: f.totalIn,
+            spendOut: f.spendOut,
+            savingOut: f.savingOut,
           ),
           const SizedBox(height: SsrSpace.md),
         ],
         _MonthlySummary(
           monthLabel: monthLabel(month),
-          totalIn: totalIn,
-          totalOut: totalOut,
-          net: net,
+          totalIn: f.totalIn,
+          totalOut: f.totalOut,
+          net: f.net,
           exporting: exporting,
           hasItems: hasItems,
           onExportCsv: () => _runExport(_exportCsv, 'CSV'),
@@ -190,115 +220,26 @@ class ReportsScreenState extends State<ReportsScreen> {
     if (err != null) {
       return _ReportsScaffold(ErrorView(message: err!, onRetry: _load));
     }
-    final filtered = filterByWallet(items, filterWallet);
-    final totalIn = filtered
-        .where((t) => t.type == 'in')
-        .fold<double>(0, (s, t) => s + t.amount);
-    final totalOut = filtered
-        .where((t) => t.type == 'out')
-        .fold<double>(0, (s, t) => s + t.amount);
-    final net = totalIn - totalOut;
-    // Iris tabungan: OUT berkategori Tabungan/Savings (sumber sama: filtered).
-    final savingOut = savingOutOf(filtered);
-    var spendOut = totalOut - savingOut;
-    if (spendOut < 0) spendOut = 0;
-    final catTotals = <String, double>{};
-    for (final t in filtered) {
-      if (t.type != 'out') continue;
-      // Grup di lapis kategori (abaikan sub) agar konsisten dengan budget.
-      final top = topOf(t.category);
-      final name = top.isEmpty ? tr('cat_other') : top;
-      catTotals[name] = (catTotals[name] ?? 0) + t.amount;
-    }
+    final figs = _totalsFor(filterByWallet(items, filterWallet));
     return _ReportsScaffold(
       Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              SsrSpace.lg,
-              SsrSpace.lg,
-              SsrSpace.lg,
-              0,
-            ),
-            child: MonthPicker(month: month, onChanged: _onMonthChanged),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              SsrSpace.lg,
-              SsrSpace.sm,
-              SsrSpace.lg,
-              0,
-            ),
-            child: _WalletFilterDropdown(
-              value: filterWallet,
-              names: walletNames,
-              onChanged: (v) => setState(() => filterWallet = v),
-            ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => setState(() => reordering = !reordering),
-              child: Text(
-                tr(reordering ? 'r_arrange_done' : 'r_arrange'),
-              ),
-            ),
+          _ReportHeader(
+            month: month,
+            onMonth: _onMonthChanged,
+            wallet: filterWallet,
+            names: walletNames,
+            onWallet: _onWalletChanged,
+            ordering: reordering,
+            onOrder: _toggleOrdering,
           ),
           Expanded(
-            child: ListenableBuilder(
-              listenable: Listenable.merge([
-                reportSectionOrder,
-                reportsTopN,
-              ]),
-              builder: (context, _) {
-                final order = sanitizeSectionOrder(
-                  reportSectionOrder.value,
-                );
-                final sections = <String, Widget>{
-                  'summary': _summarySection(
-                    totalIn,
-                    totalOut,
-                    spendOut,
-                    savingOut,
-                    net,
-                    items.isNotEmpty,
-                  ),
-                  'recap': _CategoryRecap(
-                    key: ValueKey('recap-$month'),
-                    totals: catTotals,
-                    topN: reportsTopN.value,
-                  ),
-                  'list': _listSection(filtered),
-                };
-                final kids = [
-                  for (final id in order)
-                    if (id == 'recap' && catTotals.isEmpty)
-                      const SizedBox.shrink(key: ValueKey('recap-empty'))
-                    else
-                      Padding(
-                        key: ValueKey('sec-$id'),
-                        padding: const EdgeInsets.fromLTRB(
-                          SsrSpace.lg,
-                          0,
-                          SsrSpace.lg,
-                          SsrSpace.lg,
-                        ),
-                        child: sections[id]!,
-                      ),
-                ];
-                if (!reordering) {
-                  return ListView(children: kids);
-                }
-                return ReorderableListView(
-                  onReorderItem: (oldI, newI) async {
-                    final next = List<String>.of(order);
-                    final moved = next.removeAt(oldI);
-                    next.insert(newI, moved);
-                    await setReportSectionOrder(next);
-                  },
-                  children: kids,
-                );
-              },
+            child: _ReportSections(
+              month: month,
+              reordering: reordering,
+              summary: _summarySection(figs, items.isNotEmpty),
+              recapTotals: figs.catTotals,
+              list: _listSection(figs.items),
             ),
           ),
         ],
@@ -346,8 +287,161 @@ class ReportsScreenState extends State<ReportsScreen> {
   }
 }
 
-/// Donut 3 iris bulan terpilih: zamrud (masuk), bata (belanja non-tabungan),
-/// emas (tabungan). Persen masuk di tengah, legenda mask-aware di bawah.
+/// Angka turunan sebulan dari list yang sudah difilter dompet.
+class _MonthFigures {
+  final List<SaasTransaction> items;
+  final double totalIn;
+  final double totalOut;
+  final double spendOut;
+  final double savingOut;
+  final double net;
+  final Map<String, double> catTotals;
+
+  const _MonthFigures({
+    required this.items,
+    required this.totalIn,
+    required this.totalOut,
+    required this.spendOut,
+    required this.savingOut,
+    required this.net,
+    required this.catTotals,
+  });
+}
+
+/// Kepala Laporan: month picker + filter dompet + toggle susun ulang.
+/// Murni visual; state dan logika tetap milik ReportsScreenState.
+class _ReportHeader extends StatelessWidget {
+  final String month;
+  final ValueChanged<String> onMonth;
+  final String? wallet;
+  final Map<String, String> names;
+  final ValueChanged<String?> onWallet;
+  final bool ordering;
+  final VoidCallback onOrder;
+
+  const _ReportHeader({
+    required this.month,
+    required this.onMonth,
+    required this.wallet,
+    required this.names,
+    required this.onWallet,
+    required this.ordering,
+    required this.onOrder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            SsrSpace.lg,
+            SsrSpace.lg,
+            SsrSpace.lg,
+            0,
+          ),
+          child: MonthPicker(month: month, onChanged: onMonth),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            SsrSpace.lg,
+            SsrSpace.sm,
+            SsrSpace.lg,
+            0,
+          ),
+          child: _WalletFilterDropdown(
+            value: wallet,
+            names: names,
+            onChanged: onWallet,
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: onOrder,
+            child: Text(tr(ordering ? 'r_arrange_done' : 'r_arrange')),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Daftar seksi Laporan (ringkasan, rekap, daftar) ikut urutan TopN/reorder.
+/// Murni relokasi builder ListenableBuilder dari build; logika identik.
+class _ReportSections extends StatelessWidget {
+  final String month;
+  final bool reordering;
+  final Widget summary;
+  final Map<String, double> recapTotals;
+  final Widget list;
+
+  const _ReportSections({
+    required this.month,
+    required this.reordering,
+    required this.summary,
+    required this.recapTotals,
+    required this.list,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([reportSectionOrder, reportsTopN]),
+      builder: (context, _) {
+        final order = sanitizeSectionOrder(reportSectionOrder.value);
+        final sections = <String, Widget>{
+          'summary': summary,
+          'recap': _CategoryRecap(
+            key: ValueKey('recap-$month'),
+            totals: recapTotals,
+            topN: reportsTopN.value,
+          ),
+          'list': list,
+        };
+        final kids = _sectionKids(order, sections, recapTotals.isEmpty);
+        if (!reordering) {
+          return ListView(children: kids);
+        }
+        return ReorderableListView(
+          onReorderItem: (oldI, newI) async {
+            final next = List<String>.of(order);
+            final moved = next.removeAt(oldI);
+            next.insert(newI, moved);
+            await setReportSectionOrder(next);
+          },
+          children: kids,
+        );
+      },
+    );
+  }
+
+  List<Widget> _sectionKids(
+    List<String> order,
+    Map<String, Widget> sections,
+    bool recapEmpty,
+  ) {
+    return [
+      for (final id in order)
+        if (id == 'recap' && recapEmpty)
+          const SizedBox.shrink(key: ValueKey('recap-empty'))
+        else
+          Padding(
+            key: ValueKey('sec-$id'),
+            padding: const EdgeInsets.fromLTRB(
+              SsrSpace.lg,
+              0,
+              SsrSpace.lg,
+              SsrSpace.lg,
+            ),
+            child: sections[id]!,
+          ),
+    ];
+  }
+}
+
+/// Donut 3 iris bulan terpilih: mint (masuk), rose (belanja non-tabungan),
+/// gold (tabungan). Persen masuk di tengah, legenda mask-aware di bawah.
 class _MonthFlowChart extends StatelessWidget {
   final double totalIn;
   final double spendOut;
@@ -364,6 +458,8 @@ class _MonthFlowChart extends StatelessWidget {
     final total = totalIn + spendOut + savingOut;
     final pctIn = total <= 0 ? 0 : (totalIn / total * 100).round();
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         children: [
           _DonutDial(
@@ -377,21 +473,21 @@ class _MonthFlowChart extends StatelessWidget {
             children: [
               Expanded(
                 child: _FlowLegend(
-                  color: SsrColors.accent,
+                  color: SsrColors.mint,
                   label: tr('tx_in'),
                   value: totalIn,
                 ),
               ),
               Expanded(
                 child: _FlowLegend(
-                  color: SsrColors.danger,
+                  color: SsrColors.rose,
                   label: tr('tx_out'),
                   value: spendOut,
                 ),
               ),
               Expanded(
                 child: _FlowLegend(
-                  color: SsrColors.saving,
+                  color: SsrColors.gold,
                   label: tr('sv_label'),
                   value: savingOut,
                 ),
@@ -422,29 +518,6 @@ class _DonutDial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sections = <PieChartSectionData>[
-      if (totalIn > 0)
-        PieChartSectionData(
-          value: totalIn,
-          color: SsrColors.accent,
-          radius: 26,
-          showTitle: false,
-        ),
-      if (spendOut > 0)
-        PieChartSectionData(
-          value: spendOut,
-          color: SsrColors.danger,
-          radius: 26,
-          showTitle: false,
-        ),
-      if (savingOut > 0)
-        PieChartSectionData(
-          value: savingOut,
-          color: SsrColors.saving,
-          radius: 26,
-          showTitle: false,
-        ),
-    ];
     return SizedBox(
       height: 180,
       child: Stack(
@@ -455,30 +528,76 @@ class _DonutDial extends StatelessWidget {
               sectionsSpace: 2,
               centerSpaceRadius: 52,
               startDegreeOffset: 270,
-              sections: sections.isEmpty
-                  ? [
-                      PieChartSectionData(
-                        value: 1,
-                        color: SsrColors.surfaceMuted,
-                        radius: 26,
-                        showTitle: false,
-                      ),
-                    ]
-                  : sections,
+              sections: _sections(),
             ),
             duration: SsrMotion.base,
             curve: SsrMotion.curve,
           ),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('$pctIn%', style: SsrTheme.money.copyWith(fontSize: 20)),
-                Text(
-                  tr('r_center'),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
+          _DonutCenter(pctIn: pctIn),
+        ],
+      ),
+    );
+  }
+
+  List<PieChartSectionData> _sections() {
+    final live = <PieChartSectionData>[
+      if (totalIn > 0)
+        PieChartSectionData(
+          value: totalIn,
+          color: SsrColors.mint,
+          radius: 26,
+          showTitle: false,
+        ),
+      if (spendOut > 0)
+        PieChartSectionData(
+          value: spendOut,
+          color: SsrColors.rose,
+          radius: 26,
+          showTitle: false,
+        ),
+      if (savingOut > 0)
+        PieChartSectionData(
+          value: savingOut,
+          color: SsrColors.gold,
+          radius: 26,
+          showTitle: false,
+        ),
+    ];
+    if (live.isNotEmpty) return live;
+    return [
+      PieChartSectionData(
+        value: 1,
+        color: SsrColors.noirLine,
+        radius: 26,
+        showTitle: false,
+      ),
+    ];
+  }
+}
+
+/// Persen masuk di tengah donut (noirInk eksplisit).
+class _DonutCenter extends StatelessWidget {
+  final int pctIn;
+
+  const _DonutCenter({required this.pctIn});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$pctIn%',
+            style: SsrTheme.money.copyWith(
+              fontSize: 20,
+              color: SsrColors.noirInk,
+            ),
+          ),
+          Text(
+            tr('r_center'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: SsrColors.noirSecondary,
             ),
           ),
         ],
@@ -487,7 +606,8 @@ class _DonutDial extends StatelessWidget {
   }
 }
 
-/// Titik warna + "Label · Rp…" (lewat amt, ikut privacy mode).
+/// Titik warna + dua baris: label lalu nominal penuh lewat amt
+/// (ikut privacy mode). Tanpa truncate: nominal panjang turun baris utuh.
 class _FlowLegend extends StatelessWidget {
   final Color color;
   final String label;
@@ -502,18 +622,35 @@ class _FlowLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: 10,
           height: 10,
+          margin: const EdgeInsets.only(top: 3),
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: SsrSpace.sm),
         Expanded(
-          child: Text(
-            '$label · ${amt(value)}',
-            style: Theme.of(context).textTheme.bodyMedium,
-            overflow: TextOverflow.ellipsis,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: SsrColors.noirSecondary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                amt(value),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -531,6 +668,13 @@ class _FlowFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<String>(
+      style: SegmentedButton.styleFrom(
+        backgroundColor: SsrColors.noirSurface,
+        foregroundColor: SsrColors.noirSecondary,
+        selectedBackgroundColor: SsrColors.mint.withValues(alpha: 0.16),
+        selectedForegroundColor: SsrColors.mint,
+        side: const BorderSide(color: SsrColors.noirLine),
+      ),
       segments: [
         ButtonSegment(value: 'all', label: Text(tr('r_flow_all'))),
         ButtonSegment(value: 'in', label: Text(tr('tx_in'))),
@@ -583,12 +727,16 @@ class _TransferHints extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('r_hints').replaceFirst('{n}', '${pairs.length}'),
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: SsrColors.noirInk,
+            ),
           ),
           const SizedBox(height: SsrSpace.xs),
           for (final p in pairs)
@@ -598,7 +746,9 @@ class _TransferHints extends StatelessWidget {
                 '${nameOf(p.outTx.walletId)} → ${nameOf(p.inTx.walletId ?? p.inTx.toWalletId)}'
                 ' · ${amt(p.amount)}'
                 ' · ${txTime(p.outTx.createdAt)} → ${txTime(p.inTx.createdAt)}',
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: SsrColors.noirSecondary,
+                ),
               ),
             ),
         ],
@@ -630,84 +780,134 @@ class _CategoryRecapState extends State<_CategoryRecap> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(tr('r_recap'), style: theme.textTheme.titleMedium),
+        Text(
+          tr('r_recap'),
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: SsrColors.noirInk,
+          ),
+        ),
         const SizedBox(height: SsrSpace.xs),
         SectionCard(
+          color: SsrColors.noirSurface,
+          borderColor: SsrColors.noirLine,
           padding: const EdgeInsets.symmetric(
             horizontal: SsrSpace.lg,
             vertical: SsrSpace.xs,
           ),
           child: Column(
             children: [
-              for (final c in result.top) _row(context, c.name, c.total),
-              if (result.others.isNotEmpty && !expanded)
-                InkWell(
-                  onTap: () => setState(() => expanded = true),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            tr('r_others').replaceFirst(
-                              '{n}',
-                              '${result.others.length}',
-                            ),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          amt(result.othersTotal),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontFeatures: const [
-                              FontFeature.tabularFigures(),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              if (expanded) ...[
-                for (final c in result.others) _row(context, c.name, c.total),
-                InkWell(
-                  onTap: () => setState(() => expanded = false),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Text(
-                      tr('r_collapse'),
-                      style: TextStyle(color: theme.colorScheme.primary),
-                    ),
-                  ),
-                ),
-              ],
+              for (final c in result.top)
+                _RecapRow(name: c.name, total: c.total),
+              _RecapOthers(
+                result: result,
+                expanded: expanded,
+                onToggle: () => setState(() => expanded = !expanded),
+              ),
             ],
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _row(BuildContext context, String name, double total) {
+/// Satu baris rekap kategori: nama + nominal tabular noirInk.
+class _RecapRow extends StatelessWidget {
+  final String name;
+  final double total;
+
+  const _RecapRow({required this.name, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           Expanded(
-            child: Text(name, overflow: TextOverflow.ellipsis),
+            child: Text(
+              name,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: SsrColors.noirInk,
+              ),
+            ),
           ),
           Text(
             amt(total),
             style: theme.textTheme.bodyMedium?.copyWith(
+              color: SsrColors.noirInk,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Baris Others rekap: prompt kembang saat ciut, daftar sisa plus
+/// tombol tutup saat kembang. Cabang dan kondisi tampil identik
+/// dengan logika inline sebelumnya.
+class _RecapOthers extends StatelessWidget {
+  final TopNResult result;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  const _RecapOthers({
+    required this.result,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (result.others.isNotEmpty && !expanded) {
+      return InkWell(
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  tr('r_others').replaceFirst('{n}', '${result.others.length}'),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                amt(result.othersTotal),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: SsrColors.noirInk,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (!expanded) return const SizedBox.shrink();
+    return Column(
+      children: [
+        for (final c in result.others)
+          _RecapRow(name: c.name, total: c.total),
+        InkWell(
+          onTap: onToggle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              tr('r_collapse'),
+              style: TextStyle(color: theme.colorScheme.primary),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -739,9 +939,16 @@ class _TxListCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(tr('r_tx_title'), style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          tr('r_tx_title'),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: SsrColors.noirInk,
+          ),
+        ),
         const SizedBox(height: SsrSpace.xs),
         SectionCard(
+          color: SsrColors.noirSurface,
+          borderColor: SsrColors.noirLine,
           padding: const EdgeInsets.symmetric(
             horizontal: SsrSpace.sm,
             vertical: SsrSpace.xs,
@@ -793,10 +1000,17 @@ class _MonthlySummary extends StatelessWidget {
     Color color,
   ) {
     return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: SsrColors.noirSecondary,
+            ),
+          ),
           const SizedBox(height: SsrSpace.xs),
           Text(amt(value), style: SsrTheme.money.copyWith(color: color)),
         ],
@@ -827,7 +1041,7 @@ class _MonthlySummary extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _statCard(context, tr('tx_in'), totalIn, SsrColors.accent),
+              child: _statCard(context, tr('tx_in'), totalIn, SsrColors.mint),
             ),
             const SizedBox(width: SsrSpace.md),
             Expanded(
@@ -835,30 +1049,13 @@ class _MonthlySummary extends StatelessWidget {
                 context,
                 tr('tx_out'),
                 totalOut,
-                SsrColors.danger,
+                SsrColors.rose,
               ),
             ),
           ],
         ),
         const SizedBox(height: SsrSpace.md),
-        SectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                tr('beranda_diff').replaceFirst('{m}', monthLabel),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: SsrSpace.xs),
-              Text(
-                amt(net),
-                style: SsrType.moneyLarge.copyWith(
-                  color: net >= 0 ? SsrColors.accent : SsrColors.danger,
-                ),
-              ),
-            ],
-          ),
-        ),
+        _NetCard(monthLabel: monthLabel, net: net),
         const SizedBox(height: SsrSpace.md),
         Row(
           children: [
@@ -868,6 +1065,41 @@ class _MonthlySummary extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Kartu Selisih bulan: label + nominal Fraunces (mint bila surplus,
+// rose bila defisit) di atas kartu noir.
+class _NetCard extends StatelessWidget {
+  final String monthLabel;
+  final double net;
+
+  const _NetCard({required this.monthLabel, required this.net});
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      color: SsrColors.noirSurface,
+      borderColor: SsrColors.noirLine,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('beranda_diff').replaceFirst('{m}', monthLabel),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: SsrColors.noirSecondary,
+            ),
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Text(
+            amt(net),
+            style: SsrType.moneyLarge.copyWith(
+              color: net >= 0 ? SsrColors.mint : SsrColors.rose,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
