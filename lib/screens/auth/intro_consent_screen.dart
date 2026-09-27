@@ -433,7 +433,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                 SsrSpace.xxl,
                 SsrSpace.lg,
               ),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: _ruleColor)),
               ),
               child: Row(

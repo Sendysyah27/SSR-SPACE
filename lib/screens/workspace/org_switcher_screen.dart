@@ -390,7 +390,7 @@ class _OrgAvatar extends StatelessWidget {
       width: 40,
       height: 40,
       alignment: Alignment.center,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SsrColors.noirRaised,
         shape: BoxShape.circle,
         border: Border.all(color: SsrColors.noirLine),

@@ -319,7 +319,7 @@ class _DetailHero extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(SsrSpace.xl),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SsrColors.noirRaised,
         borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
         border: Border.all(color: SsrColors.noirLine),
@@ -474,7 +474,7 @@ class _MemberAvatar extends StatelessWidget {
       width: 36,
       height: 36,
       alignment: Alignment.center,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SsrColors.noirRaised,
         shape: BoxShape.circle,
         border: Border.all(color: SsrColors.noirLine),

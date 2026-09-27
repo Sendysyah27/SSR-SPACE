@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/calm_streak.dart';
 import 'package:ssr_space/services/month.dart';
@@ -385,7 +384,7 @@ class BerandaScreenState extends State<BerandaScreen> {
     final positive = surplus >= 0;
     return Container(
       padding: const EdgeInsets.all(SsrSpace.xl),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SsrColors.noirRaised,
         borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
         border: Border(
