@@ -204,6 +204,9 @@ const _t = <String, Map<String, String>>{
     'id': '{n} transaksi membentuk saldo ini',
     'en': '{n} transactions make up this balance',
   },
+  // Kelompok hari
+  'day_no_date': {'id': 'Tanpa tanggal', 'en': 'No date'},
+  'day_count': {'id': '{n} transaksi', 'en': '{n} transactions'},
   // Bulan panjang
   'm01': {'id': 'Januari', 'en': 'January'},
   'm02': {'id': 'Februari', 'en': 'February'},

@@ -5,9 +5,11 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/tx_day_group.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/widgets/day_header.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
@@ -236,6 +238,7 @@ class _HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final buckets = groupDayBuckets(items);
     return SectionCard(
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.sm,
@@ -243,9 +246,12 @@ class _HistoryCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const Divider(height: 1),
-            TxRow(tx: items[i]),
+          for (final b in buckets) ...[
+            DayHeader(dateKey: b.key, count: b.items.length),
+            for (var i = 0; i < b.items.length; i++) ...[
+              if (i > 0) const Divider(height: 1),
+              TxRow(tx: b.items[i]),
+            ],
           ],
         ],
       ),

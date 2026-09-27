@@ -4,11 +4,13 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/tx_day_group.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/tx_wallet_check.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/transaction.dart';
+import 'package:ssr_space/widgets/day_header.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
@@ -266,9 +268,12 @@ class _TxHistorySection extends StatelessWidget {
             ),
           )
         else
-          for (final t in shown) ...[
-            TxRow(tx: t, onTap: () => onTap(t)),
-            const Divider(height: 1),
+          for (final b in groupDayBuckets(shown)) ...[
+            DayHeader(dateKey: b.key, count: b.items.length),
+            for (final t in b.items) ...[
+              TxRow(tx: t, onTap: () => onTap(t)),
+              const Divider(height: 1),
+            ],
           ],
       ],
     );
