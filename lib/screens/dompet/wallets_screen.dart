@@ -460,6 +460,7 @@ class _CompChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final liquid = Theme.of(context).colorScheme.primary;
     return Row(
       children: [
         SizedBox(
@@ -473,7 +474,7 @@ class _CompChart extends StatelessWidget {
             children: [
               _compRow(
                 context,
-                AppColors.emerald,
+                liquid,
                 tr('comp_liquid'),
                 comp.liquid,
                 comp.liquidPct,
@@ -507,6 +508,7 @@ class _CompDonut extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final liquid = Theme.of(context).colorScheme.primary;
     final investments = Theme.of(context).colorScheme.outline;
     return PieChart(
       PieChartData(
@@ -518,7 +520,7 @@ class _CompDonut extends StatelessWidget {
           if (comp.liquid > 0)
             PieChartSectionData(
               value: comp.liquid,
-              color: AppColors.emerald,
+              color: liquid,
               radius: 14,
               showTitle: false,
             ),
