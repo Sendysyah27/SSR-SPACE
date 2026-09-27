@@ -41,9 +41,9 @@ Future<void> main() async {
   await CurrencyService.loadCache(prefs);
   unawaited(CurrencyService.refresh());
   try {
-    if (prefs.getBool('reminder_enabled') ?? false) {
-      final h = (prefs.getInt('reminder_hour') ?? 7).clamp(0, 23);
-      final m = (prefs.getInt('reminder_minute') ?? 0).clamp(0, 59);
+    if (reminderEnabled.value) {
+      final h = reminderHour.value.clamp(0, 23);
+      final m = reminderMinute.value.clamp(0, 59);
       await ReminderService.init();
       await ReminderService.scheduleDaily(h, m);
     }

@@ -1054,7 +1054,7 @@ const _t = <String, Map<String, String>>{
   },
   // Impor CSV
   'imp_title': {'id': 'Impor CSV', 'en': 'Import CSV'},
-  'imp_pick': {'id': 'Pilih file', 'en': 'Choose file'},
+  'imp_pick': {'id': 'Tempel CSV', 'en': 'Paste CSV'},
   'imp_map_date': {'id': 'Kolom tanggal', 'en': 'Date column'},
   'imp_map_amount': {'id': 'Kolom nominal', 'en': 'Amount column'},
   'imp_map_type': {'id': 'Kolom jenis', 'en': 'Type column'},
@@ -1076,9 +1076,17 @@ const _t = <String, Map<String, String>>{
   'ab_about': {'id': 'Tentang SSR SPACE', 'en': 'About SSR SPACE'},
   'ab_changelog': {'id': 'Catatan perubahan', 'en': 'Changelog'},
   'ab_help': {'id': 'Bantuan', 'en': 'Help'},
+  'ab_help_body': {
+    'id': 'Periksa koneksi lalu coba lagi. Bila masih gagal, catat pesan galat yang muncul.',
+    'en': 'Check your connection and try again. If it still fails, note the error message shown.',
+  },
   'ab_feedback': {'id': 'Kirim masukan', 'en': 'Send feedback'},
   'ab_share': {'id': 'Bagikan aplikasi', 'en': 'Share the app'},
   'ab_privacy': {'id': 'Privasi', 'en': 'Privacy'},
+  'ab_privacy_body': {
+    'id': 'Data tersimpan aman di cloud dan hanya bisa diakses dalam workspace-mu.',
+    'en': 'Data is stored securely in the cloud and only accessible within your workspace.',
+  },
   // Cari + penanda tahap
   'search_settings_hint': {
     'id': 'Cari pengaturan...',

@@ -39,6 +39,13 @@ class InstantCorrect {
     await prefs.remove(_kPending);
   }
 
+  /// Hapus memori koreksi instan (pending + pref popup). Tak sentuh data.
+  static Future<void> clearMemory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kPending);
+    await prefs.remove(_kPopup);
+  }
+
   /// Ringkasan satu baris: "Masuk Rp50.000 • DANA". Murni, bisa di-test.
   static String summary({
     required String type,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
+import 'package:ssr_space/services/instant_correct.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/reminder_service.dart';
 import 'package:ssr_space/services/session_service.dart';
@@ -211,6 +212,8 @@ class _DefaultCurrencyCard extends StatelessWidget {
             },
           ),
         ),
+        const SizedBox(height: SsrSpace.sm),
+        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -235,6 +238,8 @@ class _TopNCard extends StatelessWidget {
             onChanged: setReportsTopN,
           ),
         ),
+        const SizedBox(height: SsrSpace.sm),
+        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -258,6 +263,8 @@ class _AnimsCard extends StatelessWidget {
             onChanged: setUiAnims,
           ),
         ),
+        const SizedBox(height: SsrSpace.sm),
+        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -294,6 +301,8 @@ class _ListStyleCard extends StatelessWidget {
             onSelectionChanged: (s) => setUiListStyle(s.first),
           ),
         ),
+        const SizedBox(height: SsrSpace.sm),
+        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -324,6 +333,8 @@ class _DateStyleCard extends StatelessWidget {
             },
           ),
         ),
+        const SizedBox(height: SsrSpace.sm),
+        Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -473,9 +484,7 @@ class _ResetCorrectCard extends StatelessWidget {
   const _ResetCorrectCard();
 
   Future<void> _reset(BuildContext context) async {
-    final p = await SharedPreferences.getInstance();
-    await p.remove('pending_correct_tx');
-    await p.remove('correct_popup');
+    await InstantCorrect.clearMemory();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(tr('st_reset_correct_done'))));

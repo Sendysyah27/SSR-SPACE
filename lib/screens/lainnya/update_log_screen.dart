@@ -20,13 +20,7 @@ class _UpdateLogScreenState extends State<UpdateLogScreen> {
     _future = _load();
   }
 
-  Future<String> _load() async {
-    try {
-      return await rootBundle.loadString('assets/changelog_id.md');
-    } catch (_) {
-      rethrow;
-    }
-  }
+  Future<String> _load() => rootBundle.loadString('assets/changelog_id.md');
 
   void _retry() {
     setState(() => _future = _load());

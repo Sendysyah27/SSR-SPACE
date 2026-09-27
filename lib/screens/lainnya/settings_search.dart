@@ -254,7 +254,7 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
   // Baris layar impor (mendarat di pratinjau impor).
   SettingsSearchEntry(
     titleKey: 'imp_pick',
-    en: 'choose file csv',
+    en: 'paste csv',
     sectionKey: 'imp_title',
     route: 'import',
   ),

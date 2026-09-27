@@ -135,4 +135,31 @@ void main() {
     expect(p.rows.first.toWalletName, 'BCA');
     expect(p.rows.first.type, 'transfer');
   });
+
+  test('parseHeaderNames sel kutip berisi delim tetap petakan, asing null', () {
+    final m = parseHeaderNames('"cat, lama",tanggal,nominal,jenis', ',');
+    expect(m['date'], 'tanggal');
+    expect(m['note'], isNull);
+  });
+
+  test('resolveToWalletId fallback bila beda, null bila sama', () {
+    expect(
+      resolveToWalletId(
+        type: 'transfer',
+        matchedToId: null,
+        srcId: 'w1',
+        fallbackId: 'w2',
+      ),
+      'w2',
+    );
+    expect(
+      resolveToWalletId(
+        type: 'transfer',
+        matchedToId: null,
+        srcId: 'w1',
+        fallbackId: 'w1',
+      ),
+      isNull,
+    );
+  });
 }

@@ -41,10 +41,19 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
   final fs = prefs.getDouble(_kFontScale) ?? 1.0;
   fontScale.value = fs.clamp(0.85, 1.3);
   uiAnims.value = prefs.getBool(_kUiAnims) ?? true;
-  uiListStyle.value = prefs.getString(_kUiListStyle) ?? 'comfortable';
-  uiDateStyle.value = prefs.getString(_kUiDateStyle) ?? 'system';
-  uiHeroStyle.value = prefs.getString(_kUiHeroStyle) ?? 'emerald-calm';
-  homeMenuOrder.value = prefs.getStringList(_kHomeMenuOrder) ?? [];
+  final ls = prefs.getString(_kUiListStyle);
+  uiListStyle.value = (ls == 'compact' || ls == 'comfortable')
+      ? ls
+      : 'comfortable';
+  final ds = prefs.getString(_kUiDateStyle);
+  uiDateStyle.value = (ds == 'system' || ds == 'calendar' || ds == 'spinner')
+      ? ds
+      : 'system';
+  final hs = prefs.getString(_kUiHeroStyle);
+  uiHeroStyle.value = (hs == 'emerald-calm') ? hs : 'emerald-calm';
+  homeMenuOrder.value = List<String>.of(
+    prefs.getStringList(_kHomeMenuOrder) ?? [],
+  );
   final defCur = prefs.getString(_kInputDefaultCurrency) ?? 'IDR';
   inputDefaultCurrency.value = kCurrencySymbols.containsKey(defCur)
       ? defCur
@@ -81,33 +90,40 @@ Future<void> setUiAnims(bool v) async {
 }
 
 Future<void> setUiListStyle(String v) async {
-  uiListStyle.value = v;
+  final nv = (v == 'compact' || v == 'comfortable') ? v : 'comfortable';
+  uiListStyle.value = nv;
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(_kUiListStyle, v);
+  await prefs.setString(_kUiListStyle, nv);
 }
 
 Future<void> setUiDateStyle(String v) async {
-  uiDateStyle.value = v;
+  final nv = (v == 'system' || v == 'calendar' || v == 'spinner')
+      ? v
+      : 'system';
+  uiDateStyle.value = nv;
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(_kUiDateStyle, v);
+  await prefs.setString(_kUiDateStyle, nv);
 }
 
 Future<void> setUiHeroStyle(String v) async {
-  uiHeroStyle.value = v;
+  final nv = (v == 'emerald-calm') ? v : 'emerald-calm';
+  uiHeroStyle.value = nv;
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(_kUiHeroStyle, v);
+  await prefs.setString(_kUiHeroStyle, nv);
 }
 
 Future<void> setHomeMenuOrder(List<String> v) async {
-  homeMenuOrder.value = v;
+  final nv = List<String>.of(v);
+  homeMenuOrder.value = nv;
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList(_kHomeMenuOrder, v);
+  await prefs.setStringList(_kHomeMenuOrder, nv);
 }
 
 Future<void> setInputDefaultCurrency(String v) async {
-  inputDefaultCurrency.value = v;
+  final nv = kCurrencySymbols.containsKey(v) ? v : 'IDR';
+  inputDefaultCurrency.value = nv;
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(_kInputDefaultCurrency, v);
+  await prefs.setString(_kInputDefaultCurrency, nv);
 }
 
 Future<void> setReportsTopN(bool v) async {

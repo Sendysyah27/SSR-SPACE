@@ -34,7 +34,7 @@ lib/services/reminder_service.dart wrapper tipis: jadwal exact harian timezone-a
 
 ## 6. Search, statik, hapus cache
 
-settings_search_delegate cari judul ID plus EN semua baris seksi 2. update_log_screen.dart statik baca assets/changelog_id.md bundel. About pakai AppInfo.version. Help statik. Feedback mailto. Share share_plus teks. Hapus cache lokal: hapus prefs/overlay/pending_correct_tx saja, tak pernah hapus data Supabase, konfirmasi dulu, pesan sukses jelas.
+settings_search_delegate cari judul ID plus EN semua baris seksi 2. update_log_screen.dart statik baca assets/changelog_id.md bundel. About dialog statis pakai AppInfo.version. Help dan Privacy dialog statis. Feedback via share sheet, Share via teks share_plus. Hapus cache lokal: hapus prefs/overlay/pending_correct_tx saja, tak pernah hapus data Supabase, konfirmasi dulu, pesan sukses jelas.
 
 ## 7. Slim-APK (urut, diukur)
 

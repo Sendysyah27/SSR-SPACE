@@ -155,7 +155,7 @@ class _OtherScreenState extends State<OtherScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(tr('pf_backup')),
+        title: Text(tr('st_reset_correct')),
         content: Text(tr('st_reset_correct')),
         actions: [
           TextButton(
@@ -171,9 +171,7 @@ class _OtherScreenState extends State<OtherScreen> {
       ),
     );
     if (ok != true || !mounted) return;
-    final p = await SharedPreferences.getInstance();
-    await p.remove('pending_correct_tx');
-    await p.remove('correct_popup');
+    await InstantCorrect.clearMemory();
     _refreshMeta();
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -369,7 +367,6 @@ class _OtherScreenState extends State<OtherScreen> {
             onSettings: () => _push(const SettingsScreen()),
             onChangelog: () => _push(const UpdateLogScreen()),
             onLogout: _confirmLogout,
-            onP2: () => _showP2(),
           );
         },
       ),
@@ -402,7 +399,6 @@ class _HubList extends StatelessWidget {
   final VoidCallback onSettings;
   final VoidCallback onChangelog;
   final VoidCallback onLogout;
-  final VoidCallback onP2;
 
   const _HubList({
     required this.orgName,
@@ -428,7 +424,6 @@ class _HubList extends StatelessWidget {
     required this.onSettings,
     required this.onChangelog,
     required this.onLogout,
-    required this.onP2,
   });
 
   List<Widget> _upper() {
@@ -475,7 +470,7 @@ class _HubList extends StatelessWidget {
       _LangMoneySection(onSettings: onSettings),
       _ReminderSection(onSettings: onSettings),
       _SecuritySection(onSettings: onSettings, onLogout: onLogout),
-      _AboutSection(onP2: onP2, onChangelog: onChangelog),
+      _AboutSection(onChangelog: onChangelog),
     ];
   }
 
@@ -834,12 +829,36 @@ class _SecuritySection extends StatelessWidget {
   }
 }
 
-/// TENTANG: baris statis, changelog membuka layar log, sisanya P2.
+/// TENTANG: changelog membuka layar log; bagikan dan masukan via
+/// share sheet; bantuan, privasi, dan tentang berupa dialog statis.
 class _AboutSection extends StatelessWidget {
-  final VoidCallback onP2;
   final VoidCallback onChangelog;
 
-  const _AboutSection({required this.onP2, required this.onChangelog});
+  const _AboutSection({required this.onChangelog});
+
+  Future<void> _info(BuildContext context, String titleKey, String body) {
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr(titleKey)),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(tr('back')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _shareApp() {
+    Share.share('${tr('au_title')} - ${tr('in_brand_sub')}');
+  }
+
+  void _feedback() {
+    Share.share('${tr('ab_feedback')} ${tr('au_title')} ${AppInfo.version}');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -850,7 +869,11 @@ class _AboutSection extends StatelessWidget {
           icon: AppIcons.menu,
           title: tr('ab_about'),
           subtitle: AppInfo.version,
-          onTap: onP2,
+          onTap: () => _info(
+            context,
+            'ab_about',
+            '${tr('sp_tagline')}\n${AppInfo.version}',
+          ),
         ),
         const Divider(height: 1),
         NavTile(
@@ -859,13 +882,29 @@ class _AboutSection extends StatelessWidget {
           onTap: onChangelog,
         ),
         const Divider(height: 1),
-        NavTile(icon: AppIcons.error, title: tr('ab_help'), onTap: onP2),
+        NavTile(
+          icon: AppIcons.error,
+          title: tr('ab_help'),
+          onTap: () => _info(context, 'ab_help', tr('ab_help_body')),
+        ),
         const Divider(height: 1),
-        NavTile(icon: AppIcons.invite, title: tr('ab_feedback'), onTap: onP2),
+        NavTile(
+          icon: AppIcons.invite,
+          title: tr('ab_feedback'),
+          onTap: _feedback,
+        ),
         const Divider(height: 1),
-        NavTile(icon: AppIcons.addUser, title: tr('ab_share'), onTap: onP2),
+        NavTile(
+          icon: AppIcons.addUser,
+          title: tr('ab_share'),
+          onTap: _shareApp,
+        ),
         const Divider(height: 1),
-        NavTile(icon: AppIcons.lock, title: tr('ab_privacy'), onTap: onP2),
+        NavTile(
+          icon: AppIcons.lock,
+          title: tr('ab_privacy'),
+          onTap: () => _info(context, 'ab_privacy', tr('ab_privacy_body')),
+        ),
       ],
     );
   }

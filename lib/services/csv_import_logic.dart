@@ -38,7 +38,7 @@ class CsvImportPreview {
   const CsvImportPreview(this.rows, this.errors);
 }
 
-/// Tebak pemisah kolom: ',' bila koma >= titik-koma, else ';' —
+/// Tebak pemisah kolom: koma bila koma >= titik-koma, else ';',
 /// kecuali tab yang terbanyak, maka '\t'.
 String detectDelimiter(String text) {
   var commas = 0;
@@ -200,11 +200,16 @@ List<String> _splitCsvLine(String line, String delim) {
 
 String _cell(List<String> cells, int idx) {
   if (idx < 0 || idx >= cells.length) return '';
-  var c = cells[idx].trim();
-  if (c.length >= 2 && c.startsWith('"') && c.endsWith('"')) {
-    c = c.substring(1, c.length - 1).replaceAll('""', '"').trim();
+  return _unquote(cells[idx]);
+}
+
+/// Buang kutip pembungkus + trim (cermin _splitCsvLine untuk satu sel).
+String _unquote(String c) {
+  var s = c.trim();
+  if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
+    s = s.substring(1, s.length - 1).replaceAll('""', '"').trim();
   }
-  return c;
+  return s;
 }
 
 bool _isFormula(String s) {
@@ -214,23 +219,9 @@ bool _isFormula(String s) {
   return c == 61 || c == 43 || c == 45 || c == 64;
 }
 
-/// Parse teks CSV jadi preview baris + error per baris. Header
-/// case-insensitive (lowercase+trim) dengan alias ID/EN; wajib ada
-/// kolom tanggal + nominal + jenis. Baris kosong dilewati diam-diam;
-/// sel formula dinetralkan untuk field teks, tapi nominal formula
-/// = error baris. Tak pernah throw untuk error data.
-CsvImportPreview parseCsvPreview(String text) {
-  final delim = detectDelimiter(text);
-  final lines = text.split('\n');
-  if (lines.isEmpty || lines.every((l) => l.trim().isEmpty)) {
-    return const CsvImportPreview([], [
-      CsvImportError(0, 'header kurang: tanggal, nominal, jenis'),
-    ]);
-  }
-  final header = _splitCsvLine(
-    lines.first,
-    delim,
-  ).map((h) => h.trim().toLowerCase()).toList();
+/// Indeks kolom per field dari header lowercase+trim. Alias ID/EN tunggal
+/// dipakai parseCsvPreview dan parseHeaderNames supaya tak divergen.
+Map<String, int> _headerIndexes(List<String> header) {
   var iTanggal = -1;
   var iNominal = -1;
   var iJenis = -1;
@@ -264,6 +255,79 @@ CsvImportPreview parseCsvPreview(String text) {
         iCatatan = i;
     }
   }
+  return {
+    'date': iTanggal,
+    'amount': iNominal,
+    'type': iJenis,
+    'wallet': iDompet,
+    'towallet': iKeDompet,
+    'cat': iKategori,
+    'note': iCatatan,
+  };
+}
+
+/// Petakan baris header ke field impor (nama header asli atau null).
+/// Dipakai layar pratinjau; alias SAMA dengan parseCsvPreview.
+Map<String, String?> parseHeaderNames(String headerLine, String delim) {
+  final cells = _splitCsvLine(headerLine, delim);
+  final lowered = cells.map((h) => h.trim().toLowerCase()).toList();
+  final idx = _headerIndexes(lowered);
+  String? nameAt(String field) {
+    final i = idx[field] ?? -1;
+    if (i < 0 || i >= cells.length) return null;
+    return _unquote(cells[i]);
+  }
+
+  return {
+    'date': nameAt('date'),
+    'amount': nameAt('amount'),
+    'type': nameAt('type'),
+    'wallet': nameAt('wallet'),
+    'towallet': nameAt('towallet'),
+    'cat': nameAt('cat'),
+    'note': nameAt('note'),
+  };
+}
+
+/// Aturan tujuan transfer CSV: non-transfer selalu null; transfer pakai
+/// id cocok dulu, else fallback bila beda dari asal, else null.
+String? resolveToWalletId({
+  required String type,
+  required String? matchedToId,
+  required String? srcId,
+  required String? fallbackId,
+}) {
+  if (type != 'transfer') return null;
+  if (matchedToId != null) return matchedToId;
+  if (fallbackId != null && fallbackId != srcId) return fallbackId;
+  return null;
+}
+
+/// Parse teks CSV jadi preview baris + error per baris. Header
+/// case-insensitive (lowercase+trim) dengan alias ID/EN; wajib ada
+/// kolom tanggal + nominal + jenis. Baris kosong dilewati diam-diam;
+/// sel formula dinetralkan untuk field teks, tapi nominal formula
+/// = error baris. Tak pernah throw untuk error data.
+CsvImportPreview parseCsvPreview(String text) {
+  final delim = detectDelimiter(text);
+  final lines = text.split('\n');
+  if (lines.isEmpty || lines.every((l) => l.trim().isEmpty)) {
+    return const CsvImportPreview([], [
+      CsvImportError(0, 'header kurang: tanggal, nominal, jenis'),
+    ]);
+  }
+  final header = _splitCsvLine(
+    lines.first,
+    delim,
+  ).map((h) => h.trim().toLowerCase()).toList();
+  final idx = _headerIndexes(header);
+  final iTanggal = idx['date']!;
+  final iNominal = idx['amount']!;
+  final iJenis = idx['type']!;
+  final iDompet = idx['wallet']!;
+  final iKeDompet = idx['towallet']!;
+  final iKategori = idx['cat']!;
+  final iCatatan = idx['note']!;
   final missing = <String>[];
   if (iTanggal < 0) missing.add('tanggal');
   if (iNominal < 0) missing.add('nominal');

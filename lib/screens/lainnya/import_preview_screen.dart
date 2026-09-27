@@ -29,34 +29,12 @@ const _kMapFields = <(String, String)>[
   ('note', 'imp_map_note'),
 ];
 
-/// Baca ulang header baris pertama dengan alias yang sama persis dengan
-/// parser (csv_import_logic): field -> nama header asli, null bila tak ada.
-/// Murni baca, tak dipakai untuk tulis.
+/// Baca ulang header baris pertama via parseHeaderNames (logika murni,
+/// alias sama persis dengan parser): field -> nama header asli.
 Map<String, String?> importHeaderMapping(String text) {
   final nl = text.indexOf('\n');
   final head = (nl < 0 ? text : text.substring(0, nl)).trim();
-  final delim = detectDelimiter(text);
-  final cells = head.isEmpty ? <String>[] : head.split(delim);
-  String? find(List<String> aliases) {
-    for (final c in cells) {
-      var s = c.trim();
-      if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
-        s = s.substring(1, s.length - 1).trim();
-      }
-      if (aliases.contains(s.toLowerCase())) return s;
-    }
-    return null;
-  }
-
-  return {
-    'date': find(const ['tanggal', 'date']),
-    'amount': find(const ['nominal', 'amount']),
-    'type': find(const ['jenis', 'type']),
-    'wallet': find(const ['dompet', 'wallet']),
-    'towallet': find(const ['ke_dompet', 'to_wallet', 'ke dompet']),
-    'cat': find(const ['kategori', 'category']),
-    'note': find(const ['catatan', 'note']),
-  };
+  return parseHeaderNames(head, detectDelimiter(text));
 }
 
 /// Cocokkan nama dompet CSV ke id dompet org (tak sensitif huruf).
@@ -150,15 +128,12 @@ class _ImportPreviewState extends State<ImportPreviewScreen> {
   String? _walletFor(CsvImportRow r) =>
       matchWalletId(_wallets, r.walletName) ?? _fallbackWalletId;
 
-  String? _toWalletFor(CsvImportRow r, String? src) {
-    if (r.type != 'transfer') return null;
-    final m = matchWalletId(_wallets, r.toWalletName);
-    if (m != null) return m;
-    if (_fallbackWalletId != null && _fallbackWalletId != src) {
-      return _fallbackWalletId;
-    }
-    return null;
-  }
+  String? _toWalletFor(CsvImportRow r, String? src) => resolveToWalletId(
+    type: r.type,
+    matchedToId: matchWalletId(_wallets, r.toWalletName),
+    srcId: src,
+    fallbackId: _fallbackWalletId,
+  );
 
   String? _catFor(CsvImportRow r) =>
       matchCategory(appCategories.value, r.category) ?? _fallbackCategory;
@@ -399,11 +374,12 @@ class _RowsCard extends StatelessWidget {
     final catName = cat ?? tr('cat_other');
     final String detail;
     if (r.type == 'transfer') {
-      final toWid =
-          matchWalletId(wallets, r.toWalletName) ??
-          (fallbackWalletId != null && fallbackWalletId != wid
-              ? fallbackWalletId
-              : null);
+      final toWid = resolveToWalletId(
+        type: r.type,
+        matchedToId: matchWalletId(wallets, r.toWalletName),
+        srcId: wid,
+        fallbackId: fallbackWalletId,
+      );
       final dstName = _walletNameOf(wallets, toWid, tr('nt_wallet_unset'));
       detail = '$srcName → $dstName - $catName';
     } else {
