@@ -272,7 +272,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                 width: 8,
                 height: 8,
                 decoration: const BoxDecoration(
-                  color: SsrColors.mint,
+                  color: AppColors.emerald,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -382,32 +382,28 @@ class BerandaScreenState extends State<BerandaScreen> {
     int? pctOut,
   ) {
     final positive = surplus >= 0;
+    // Teks hero: cream di light, inkDark di dark, keduanya di atas
+    // emeraldDeep. Ikut brightness tema aplikasi, bukan platform.
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final onHero = dark ? AppColors.inkDark : AppColors.cream;
+    final heroLabel = TextStyle(
+      color: onHero.withValues(alpha: 0.7),
+      fontSize: 12,
+    );
+    final heroValue = TextStyle(
+      fontFamily: SsrFonts.numeric,
+      color: onHero,
+      fontWeight: FontWeight.w600,
+      fontSize: 14,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
     return Container(
       padding: const EdgeInsets.all(SsrSpace.xl),
       decoration: const BoxDecoration(
-        color: SsrColors.noirRaised,
+        color: AppColors.emeraldDeep,
         borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
-        border: Border(
-          top: BorderSide(color: SsrColors.gold, width: 2),
-        ),
       ),
-      child: Stack(
-        children: [
-          const Positioned(
-            top: -70,
-            right: -50,
-            child: SizedBox(
-              width: 180,
-              height: 180,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0x122DD4BF),
-                ),
-              ),
-            ),
-          ),
-          Column(
+      child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Align(
@@ -416,16 +412,19 @@ class BerandaScreenState extends State<BerandaScreen> {
                   label: positive
                       ? tr('beranda_surplus')
                       : tr('beranda_defisit'),
-                  tone: positive ? StatusTone.accent : StatusTone.danger,
+                  tone: positive ? StatusTone.ink : StatusTone.danger,
                 ),
               ),
               const SizedBox(height: SsrSpace.md),
-              Text(amt(surplus), style: SsrType.heroMoney),
+              Text(
+                amt(surplus),
+                style: SsrType.heroMoney.copyWith(color: onHero),
+              ),
               const SizedBox(height: SsrSpace.xs),
               Text(
                 tr('beranda_diff').replaceFirst('{m}', _monthLower()),
-                style: const TextStyle(
-                  color: SsrColors.noirSecondary,
+                style: TextStyle(
+                  color: onHero.withValues(alpha: 0.7),
                   fontSize: 13,
                 ),
               ),
@@ -434,8 +433,8 @@ class BerandaScreenState extends State<BerandaScreen> {
                 Text(
                   tr('beranda_vs_out')
                       .replaceFirst('{p}', '${pctOut >= 0 ? '+' : ''}$pctOut'),
-                  style: const TextStyle(
-                    color: SsrColors.noirInk,
+                  style: TextStyle(
+                    color: onHero,
                     fontSize: 13,
                   ),
                 ),
@@ -449,20 +448,12 @@ class BerandaScreenState extends State<BerandaScreen> {
                       children: [
                         Text(
                           tr('tx_in'),
-                          style: const TextStyle(
-                            color: SsrColors.noirSecondary,
-                            fontSize: 12,
-                          ),
+                          style: heroLabel,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           amt(totalIn),
-                          style: const TextStyle(
-                            color: SsrColors.mint,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
+                          style: heroValue,
                         ),
                       ],
                     ),
@@ -473,20 +464,12 @@ class BerandaScreenState extends State<BerandaScreen> {
                       children: [
                         Text(
                           tr('tx_out'),
-                          style: const TextStyle(
-                            color: SsrColors.noirSecondary,
-                            fontSize: 12,
-                          ),
+                          style: heroLabel,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           amt(totalOut),
-                          style: const TextStyle(
-                            color: SsrColors.rose,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
+                          style: heroValue,
                         ),
                       ],
                     ),
@@ -498,11 +481,12 @@ class BerandaScreenState extends State<BerandaScreen> {
                 height: 8,
                 child: Stack(
                   children: [
-                    const Positioned.fill(
+                    Positioned.fill(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: SsrColors.noirLine,
-                          borderRadius: BorderRadius.all(Radius.circular(4)),
+                          color: onHero.withValues(alpha: 0.25),
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(4)),
                         ),
                       ),
                     ),
@@ -524,7 +508,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                               heightFactor: 1,
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  color: SsrColors.mint,
+                                  color: onHero,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
@@ -538,8 +522,6 @@ class BerandaScreenState extends State<BerandaScreen> {
               ),
             ],
           ),
-        ],
-      ),
     );
   }
 }
@@ -554,8 +536,6 @@ class _CalmWeeks extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -569,9 +549,11 @@ class _CalmWeeks extends StatelessWidget {
                   height: 12,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: filled ? SsrColors.mint : Colors.transparent,
+                    color: filled ? AppColors.emerald : Colors.transparent,
                     border: Border.all(
-                      color: filled ? SsrColors.mint : SsrColors.noirLine,
+                      color: filled
+                          ? AppColors.emerald
+                          : theme.colorScheme.outline,
                     ),
                   ),
                 ),
@@ -604,8 +586,6 @@ class _BillsSuggest extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return SectionCard(
-      color: SsrColors.noirSurface,
-      borderColor: SsrColors.noirLine,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
