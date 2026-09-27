@@ -324,6 +324,8 @@ const _t = <String, Map<String, String>>{
   },
   'r_tx_title': {'id': 'Transaksi', 'en': 'Transactions'},
   'r_flow_all': {'id': 'Semua', 'en': 'All'},
+  'r_filter_all': {'id': 'Semua dompet', 'en': 'All wallets'},
+  'r_filter_wallet': {'id': 'Dompet', 'en': 'Wallet'},
   'r_center': {'id': 'masuk', 'en': 'in'},
   'r_hints': {
     'id': 'Kemungkinan transfer ({n})',

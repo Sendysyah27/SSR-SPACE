@@ -20,6 +20,7 @@ import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/transfer_detect.dart';
 import 'package:ssr_space/services/tx_day_group.dart';
+import 'package:ssr_space/services/wallet_filter.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -43,6 +44,7 @@ class ReportsScreenState extends State<ReportsScreen> {
   List<SaasTransaction> items = [];
   Map<String, String> walletNames = {};
   String flowFilter = 'all';
+  String? filterWallet;
   bool loading = true;
   bool exporting = false;
   bool reordering = false;
@@ -74,6 +76,9 @@ class ReportsScreenState extends State<ReportsScreen> {
       setState(() {
         items = txs;
         walletNames = {for (final w in ws) w.id: w.name};
+        if (filterWallet != null && !walletNames.containsKey(filterWallet)) {
+          filterWallet = null;
+        }
         loading = false;
       });
     } catch (_) {
@@ -138,6 +143,7 @@ class ReportsScreenState extends State<ReportsScreen> {
     double spendOut,
     double savingOut,
     double net,
+    bool hasItems,
   ) {
     final hasFlow = totalIn + spendOut + savingOut > 0;
     return Column(
@@ -157,7 +163,7 @@ class ReportsScreenState extends State<ReportsScreen> {
           totalOut: totalOut,
           net: net,
           exporting: exporting,
-          hasItems: items.isNotEmpty,
+          hasItems: hasItems,
           onExportCsv: () => _runExport(_exportCsv, 'CSV'),
           onExportPdf: () => _guardPdf(),
         ),
@@ -184,19 +190,20 @@ class ReportsScreenState extends State<ReportsScreen> {
     if (err != null) {
       return _ReportsScaffold(ErrorView(message: err!, onRetry: _load));
     }
-    final totalIn = items
+    final filtered = filterByWallet(items, filterWallet);
+    final totalIn = filtered
         .where((t) => t.type == 'in')
         .fold<double>(0, (s, t) => s + t.amount);
-    final totalOut = items
+    final totalOut = filtered
         .where((t) => t.type == 'out')
         .fold<double>(0, (s, t) => s + t.amount);
     final net = totalIn - totalOut;
-    // Iris tabungan: OUT berkategori Tabungan/Savings (sumber sama: items bulan ini).
-    final savingOut = savingOutOf(items);
+    // Iris tabungan: OUT berkategori Tabungan/Savings (sumber sama: filtered).
+    final savingOut = savingOutOf(filtered);
     var spendOut = totalOut - savingOut;
     if (spendOut < 0) spendOut = 0;
     final catTotals = <String, double>{};
-    for (final t in items) {
+    for (final t in filtered) {
       if (t.type != 'out') continue;
       // Grup di lapis kategori (abaikan sub) agar konsisten dengan budget.
       final top = topOf(t.category);
@@ -214,6 +221,19 @@ class ReportsScreenState extends State<ReportsScreen> {
               0,
             ),
             child: MonthPicker(month: month, onChanged: _onMonthChanged),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              SsrSpace.lg,
+              SsrSpace.sm,
+              SsrSpace.lg,
+              0,
+            ),
+            child: _WalletFilterDropdown(
+              value: filterWallet,
+              names: walletNames,
+              onChanged: (v) => setState(() => filterWallet = v),
+            ),
           ),
           Align(
             alignment: Alignment.centerRight,
@@ -241,13 +261,14 @@ class ReportsScreenState extends State<ReportsScreen> {
                     spendOut,
                     savingOut,
                     net,
+                    filtered.isNotEmpty,
                   ),
                   'recap': _CategoryRecap(
                     key: ValueKey('recap-$month'),
                     totals: catTotals,
                     topN: reportsTopN.value,
                   ),
-                  'list': _listSection(),
+                  'list': _listSection(filtered),
                 };
                 final kids = [
                   for (final id in order)
@@ -287,11 +308,11 @@ class ReportsScreenState extends State<ReportsScreen> {
 
   String _walletName(String? id) => walletNames[id] ?? tr('tx_f_wallet');
 
-  Widget _listSection() {
-    final visible = items
+  Widget _listSection(List<SaasTransaction> filtered) {
+    final visible = filtered
         .where((t) => flowFilter == 'all' || t.type == flowFilter)
         .toList();
-    final pairs = detectTransferPairs(items);
+    final pairs = detectTransferPairs(filtered);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -304,7 +325,7 @@ class ReportsScreenState extends State<ReportsScreen> {
           _TransferHints(pairs: pairs, nameOf: _walletName),
           const SizedBox(height: SsrSpace.md),
         ],
-        if (items.isEmpty)
+        if (filtered.isEmpty)
           EmptyView(
             icon: AppIcons.reports,
             illustration: 'assets/illustrations/empty_laporan.svg',
@@ -519,6 +540,34 @@ class _FlowFilter extends StatelessWidget {
       selected: {value},
       showSelectedIcon: false,
       onSelectionChanged: (s) => onChanged(s.first),
+    );
+  }
+}
+
+/// Filter dompet di Laporan: Semua atau satu dompet.
+/// Pilihan null berarti Semua; diterapkan sebelum grup hari.
+class _WalletFilterDropdown extends StatelessWidget {
+  final String? value;
+  final Map<String, String> names;
+  final ValueChanged<String?> onChanged;
+
+  const _WalletFilterDropdown({
+    required this.value,
+    required this.names,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<String?>(
+      value: value,
+      decoration: InputDecoration(labelText: tr('r_filter_wallet')),
+      items: [
+        DropdownMenuItem<String?>(value: null, child: Text(tr('r_filter_all'))),
+        for (final e in names.entries)
+          DropdownMenuItem<String?>(value: e.key, child: Text(e.value)),
+      ],
+      onChanged: onChanged,
     );
   }
 }
