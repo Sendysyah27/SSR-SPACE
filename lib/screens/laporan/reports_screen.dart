@@ -532,7 +532,7 @@ class _DonutDial extends StatelessWidget {
               sectionsSpace: 2,
               centerSpaceRadius: 52,
               startDegreeOffset: 270,
-              sections: _sections(track),
+              sections: _sections(track, Theme.of(context).colorScheme),
             ),
             duration: SsrMotion.base,
             curve: SsrMotion.curve,
@@ -543,8 +543,7 @@ class _DonutDial extends StatelessWidget {
     );
   }
 
-  List<PieChartSectionData> _sections(Color track) {
-    final scheme = Theme.of(context).colorScheme;
+  List<PieChartSectionData> _sections(Color track, ColorScheme scheme) {
     final live = <PieChartSectionData>[
       if (totalIn > 0)
         PieChartSectionData(
