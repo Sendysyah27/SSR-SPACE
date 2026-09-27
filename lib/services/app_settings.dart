@@ -43,14 +43,14 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
   uiAnims.value = prefs.getBool(_kUiAnims) ?? true;
   final ls = prefs.getString(_kUiListStyle);
   uiListStyle.value = (ls == 'compact' || ls == 'comfortable')
-      ? ls
+      ? ls!
       : 'comfortable';
   final ds = prefs.getString(_kUiDateStyle);
   uiDateStyle.value = (ds == 'system' || ds == 'calendar' || ds == 'spinner')
-      ? ds
+      ? ds!
       : 'system';
   final hs = prefs.getString(_kUiHeroStyle);
-  uiHeroStyle.value = (hs == 'emerald-calm') ? hs : 'emerald-calm';
+  uiHeroStyle.value = (hs == 'emerald-calm') ? hs! : 'emerald-calm';
   homeMenuOrder.value = List<String>.of(
     prefs.getStringList(_kHomeMenuOrder) ?? [],
   );
