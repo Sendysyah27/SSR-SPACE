@@ -344,7 +344,7 @@ class _BillEditorState extends State<_BillEditor> {
             ],
             const SizedBox(height: SsrSpace.sm),
             DropdownButtonFormField<String>(
-              value: walletId,
+              initialValue: walletId,
               items: [
                 for (final w in widget.wallets)
                   DropdownMenuItem(value: w.id, child: Text(w.name)),
@@ -354,7 +354,7 @@ class _BillEditorState extends State<_BillEditor> {
             ),
             if (err != null) ...[
               const SizedBox(height: SsrSpace.sm),
-              Text(err!, style: TextStyle(color: SsrColors.danger)),
+              Text(err!, style: const TextStyle(color: SsrColors.danger)),
             ],
             const SizedBox(height: SsrSpace.md),
             FilledButton(onPressed: _submit, child: Text(tr('save'))),

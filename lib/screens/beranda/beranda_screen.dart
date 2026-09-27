@@ -43,7 +43,7 @@ class BerandaScreenState extends State<BerandaScreen> {
   String month = currentMonth();
   String orgName = '-';
   List<SaasTransaction> items = [];
-  List<RecurringBill> dueBills = [];
+  List<RecurringBill> billsDue = [];
   bool loading = true;
   String? err;
 
@@ -67,7 +67,7 @@ class BerandaScreenState extends State<BerandaScreen> {
         setState(() {
           loading = false;
           items = [];
-          dueBills = [];
+          billsDue = [];
         });
         return;
       }
@@ -77,7 +77,7 @@ class BerandaScreenState extends State<BerandaScreen> {
       setState(() {
         orgName = prefs.getString('active_org_name') ?? '-';
         items = txs;
-        dueBills = dueBills(allBills, DateTime.now());
+        billsDue = dueBills(allBills, DateTime.now());
         loading = false;
       });
       _pushTodaySnapshot(txs);
@@ -314,9 +314,9 @@ class BerandaScreenState extends State<BerandaScreen> {
           ],
         ),
         const SizedBox(height: SsrSpace.xl),
-        if (dueBills.isNotEmpty) ...[
+        if (billsDue.isNotEmpty) ...[
           _BillsSuggest(
-            bills: dueBills,
+            bills: billsDue,
             onRecord: _recordBill,
             onSkip: _skipBill,
           ),

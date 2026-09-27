@@ -267,8 +267,7 @@ class ReportsScreenState extends State<ReportsScreen> {
                   return ListView(children: kids);
                 }
                 return ReorderableListView(
-                  onReorder: (oldI, newI) async {
-                    if (newI > oldI) newI -= 1;
+                  onReorderItem: (oldI, newI) async {
                     final next = List<String>.of(order);
                     final moved = next.removeAt(oldI);
                     next.insert(newI, moved);
