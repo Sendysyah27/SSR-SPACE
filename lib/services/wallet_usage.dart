@@ -10,14 +10,14 @@ Map<String, int> recordUse(Map<String, int> counts, String id) {
   final out = Map<String, int>.of(counts);
   out[id] = ((out[id] ?? 0) + 1).clamp(1, _maxHit);
   if (out.length <= walletUsageCap) return out;
-  final sorted = out.entries.toList()
-    ..sort((a, b) {
-      final byHit = a.value.compareTo(b.value);
-      if (byHit != 0) return byHit;
-      return a.key.compareTo(b.key);
-    });
-  final drop = sorted.first.key;
-  out.remove(drop);
+  final entries = out.entries.toList();
+  final order = <String, int>{for (var i = 0; i < entries.length; i++) entries[i].key: i};
+  entries.sort((a, b) {
+    final byHit = a.value.compareTo(b.value);
+    if (byHit != 0) return byHit;
+    return order[a.key]!.compareTo(order[b.key]!);
+  });
+  out.remove(entries.first.key);
   return out;
 }
 

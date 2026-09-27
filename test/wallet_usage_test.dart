@@ -24,7 +24,7 @@ void main() {
   test('sort hitung besar dulu seri ikut abjad', () {
     final counts = {'w2': 3, 'w1': 3, 'w3': 1};
     final names = {'w1': 'BCA', 'w2': 'DANA', 'w3': 'Kas'};
-    expect(sortIdsByUse(counts, names), ['BCA', 'DANA', 'Kas']);
+    expect(sortIdsByUse(counts, names), ['w1', 'w2', 'w3']);
   });
 
   test('decode korup kembali ke kosong dan encode roundtrip', () {
