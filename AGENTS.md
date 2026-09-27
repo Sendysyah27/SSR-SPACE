@@ -11,7 +11,7 @@ Panduan kerja untuk agent / contributor di repo ini. Baca dulu sebelum ubah kode
 | Nama | **SSR SPACE** |
 | Path | `/data/data/com.termux/files/home/SSR SPACE` |
 | Remote | `https://github.com/Sendysyah27/SSR-SPACE.git` |
-| Versi | `2.3.9+22` (`pubspec.yaml`) |
+| Versi | `2.4.0+23` (`pubspec.yaml`) |
 | Stack | Flutter (stable) + Supabase (Auth + Postgres RLS) + Notification Listener |
 | Bahasa UI | Indonesia |
 | Build | GitHub Actions (`.github/workflows/apk.yml`), **bukan** lokal Termux |
@@ -105,7 +105,8 @@ Arah pengembangan ke **skala banyak user** — urutan wajib dijaga, jangan melom
 - **Profil, settings ramping, dan diet APK (2026-09-27, SDD 10 task, iris4 run `36282567001` hijau; iris5 + fix wave digabung push penutup):** hub Profil ganti menu Lainnya (seksi Data, Pelacakan, Cadangan, Workspace, Tampilan, Bahasa, Pengingat, Keamanan, Tentang; tiap baris buka layar nyata atau dialog P2, nol dead tap) + `SettingsScreen` kartu baru (mata uang bawaan, Top-N, animasi, gaya list, gaya tanggal, gaya hero emerald-calm, pengingat harian exact + persist reboot via `flutter_local_notifications` + `timezone`, stub widget hari ini, reset memori koreksi, ganti PIN magic-link) + pencarian pengaturan (`settings_search.dart`, kunci rute `p2`/`hub`) + impor CSV tempel-teks dengan pratinjau mapping + Tentang statis + changelog aset. Diet: baseline 65M (iris1) jadi 67M universal / 24.4M arm64 (iris4, +2M dari dep notif; native dominan libflutter 11.7M + libapp 10.8M, dex 8.6M kena backport desugar) + split per-ABI + size-report + minify aman tanpa rules custom. Task 10 penutup: audit diet (lepas `sqflite` + `path` dari pubspec, bukti grep nol import; seluruh SVG/lottie/font/changelog terbukti dipakai, nol hapus file) + 7 microfix review + 7 one-pager P2 di `docs/superpowers/specs/2026-09-26-p2-*.md` (semua tanpa migration). Batas sadar: smoke device ikut checklist AUDIT §5.
 - **Fix wave review final (2026-09-27, digabung push penutup):** kejujuran + dedup se-cabang: subtitle `msg_p2` di 5 kartu settings; `imp_pick` jadi Tempel/Paste CSV; About nyata (bagi app + masukan via share sheet, dialog Bantuan/Privasi/Tentang dengan `AppInfo.version`); `parseHeaderNames` + `resolveToWalletId` murni di `csv_import_logic` (dipakai layar + tile, 4 expects baru); `InstantCorrect.clearMemory()` dipakai settings + hub (dialog hub pakai judul `st_reset_correct`); main pakai notifier reminder; validasi setter `app_settings` + fallback load; `_load` changelog tanpa try/catch; o_mask tetap hub-close (tanpa kunci pas, lihat laporan task-10).
 - **Batch P2 (2026-09-27, 7 spec tanpa migration, run `36289760838` hijau):** reminder-copy (`reminder_copy.dart` murni + 14 kunci `rmc_*` + body dinamis di `ReminderService`); calm-streak (`calm_streak.dart` murni + kartu 8 dot di Beranda, data bulan tampil, kosong → sembunyi); reports-topn (`reports_topn.dart` murni + `_CategoryRecap` Top-8+Others + susun section via `ReorderableListView` + prefs `reports_section_order`); recurring-bills (`recurring_bills.dart` + `RecurringBillsScreen` di hub Data + kartu saran Beranda Catat/Lewati + prefill `TxInputSheet`); subcategory (`category_meta.dart` format `A > B` + picker warna/ikon di `CategoriesScreen` + field sub di sheet, budget tolak `>`, agregasi budget/laporan grup lapis atas); wallet-svg (3 SVG redrawn + `WalletArt` di `WalletRow`+header detail); widget-QS (`widget_snapshot.dart` murni + `today_widget.dart` penulis prefs + provider & tile native diinject CI `apk.yml`). Batas sadar: widget refresh ikut `onUpdate` sistem (bisa basi, label tanggal jujur); fallback teks native ID; sheet koreksi instan tak kenal sub (tetap top-level).
-- **Histori bayar + pace tabungan (2026-09-27, follow-up Ollo §7, belum push):** `PaymentEntry` + prefs `recurring_payments` (cap-200) + `recordPayment()` murni; Catat di Beranda merekam entry (nominal master, nominal asli di baris tx) + majukan nextDue; tile tagihan `Terbayar {n}x` + dialog riwayat; `savingPace()` murni (butuh/hari, aktual/hari, onTrack, proyeksi) + baris pace di `_SavingCard` (sembunyi bila tercapai). Tanpa migration. Antislop mode During (dial DESIGN.md 2/2/2, tanpa bahasa visual baru).
+- **Histori bayar + pace tabungan (2026-09-27, follow-up Ollo §7, run `36291123007` hijau):** `PaymentEntry` + prefs `recurring_payments` (cap-200) + `recordPayment()` murni; Catat di Beranda merekam entry (nominal master, nominal asli di baris tx) + majukan nextDue; tile tagihan `Terbayar {n}x` + dialog riwayat; `savingPace()` murni (butuh/hari, aktual/hari, onTrack, proyeksi) + baris pace di `_SavingCard` (sembunyi bila tercapai). Tanpa migration. Antislop mode During (dial DESIGN.md 2/2/2, tanpa bahasa visual baru).
+- **Paket R Ollo (2026-09-27, 4 spec + 4 plan, SDD 8 task, belum push):** R1 grup per-hari (`tx_day_group.dart` + `DayHeader` di Transaksi/Laporan/Riwayat Dompet); R2 filter statistik per-dompet session-only di Laporan (export CSV/PDF tetap sebulan penuh, strict-scope); R3 picker Most-used (prefs `wallet_use_count`, hook manual/koreksi saja, stale diabaikan); R4 komposisi Liquid/Savings/Investments (tipe baru client-only, strip sembunyi bila <2 bucket). Semua tanpa migration/dep baru. Fix round: sort-test ekspektasi ids + eviksi insertion-index (sort Dart tak stabil).
 
 Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari `track_master`; parser/gate `_onEvent` TIDAK berubah.
 
@@ -113,7 +114,8 @@ Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari
 ```
 1. Analisa / baca file terkait
 2. Ubah kode + test (TDD kalau logika murni: parse, hash, gate)
-3. git add → commit message jelas → push origin main
+3. Bump version wajib (Skema A §7): `pubspec.yaml` + `AppInfo.version` samakan, catat di AUDIT §7
+4. git add → commit message jelas → push origin main
 4. pantau: gh run watch $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
 5. bila hijau: gh run download <run-id> -n ssr-space-apk
 6. file final → /sdcard/Download/SSR-SPACE/ (rapi, nama jelas)
@@ -393,6 +395,7 @@ ls -t /sdcard/DCIM/Screenshots | head -5
 6. **Test** untuk logic murni (parse, hash, budget math) wajib; jalankan via CI.
 7. File deliverable → `/sdcard/Download/SSR-SPACE/`. **Tester: hanya varian kecil `*-arm64.apk`** (universal di-skip, hemat tempat & share).
 8. Konfirmasi sebelum commit besar / push kalau user belum minta.
+9. **Version wajib naik tiap update app (Skema A):** setiap perubahan kode (`lib/`, `supabase/`, `.github/`, `pubspec.yaml`, `assets/`) yang di-push ke `main` wajib bump version — `pubspec.yaml` (`version:`) dan `lib/utils/app_info.dart` (`AppInfo.version`) harus identik; fix kecil → `+build` saja (`2.3.9+22` → `2.3.9+23`), fitur/perilaku baru → `+patch/minor`; catat versi baru di `AUDIT.md` §7. Docs-only (`AGENTS.md`/`AUDIT.md`/`README.md`/`docs/`) boleh tanpa bump. Tanpa bump = jangan push.
 
 ---
 
