@@ -312,7 +312,7 @@ class _CatCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline),
+                  icon: const DuoIcon(AppIcons.trash),
                   onPressed: () => onDelete(i),
                 ),
               ],
@@ -344,7 +344,7 @@ class _AddRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: SsrSpace.sm),
-        IconButton.filled(icon: const Icon(Icons.add), onPressed: onAdd),
+        IconButton.filled(icon: const DuoIcon(AppIcons.add), onPressed: onAdd),
       ],
     );
   }

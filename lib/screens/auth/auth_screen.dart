@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/auth_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
@@ -306,7 +307,7 @@ class _AuthMessages extends StatelessWidget {
             text: err!,
             bg: SsrColors.dangerSoft,
             fg: SsrColors.danger,
-            icon: Icons.error_outline,
+            icon: AppIcons.warning,
           ),
         ],
         if (info != null) ...[
@@ -315,7 +316,7 @@ class _AuthMessages extends StatelessWidget {
             text: info!,
             bg: SsrColors.accentSoft,
             fg: SsrColors.accent,
-            icon: Icons.mark_email_read_outlined,
+            icon: AppIcons.mail,
           ),
         ],
         if (showResend)

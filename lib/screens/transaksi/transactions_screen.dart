@@ -347,7 +347,7 @@ class _TxStateScaffold extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: onAdd,
-            icon: const Icon(Icons.add),
+            icon: const DuoIcon(AppIcons.add),
             tooltip: tr('act_catat'),
           ),
         ],

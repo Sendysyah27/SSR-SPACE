@@ -8,6 +8,7 @@ import 'package:ssr_space/services/reminder_service.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/today_widget.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -440,7 +441,7 @@ class _ReminderCard extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.schedule),
+                        icon: const DuoIcon(AppIcons.clock),
                         tooltip: tr('st_reminder_time'),
                         onPressed: () => _pick(context, h, m),
                       ),

@@ -87,6 +87,21 @@ class AppIcons {
   static const addUser = IconData(0xe4d1, fontFamily: kPhosphorDuotoneFamily);
   static const success = IconData(0xe607, fontFamily: kPhosphorDuotoneFamily);
 
+  // Aksi & utilitas umum (pengganti Material Icons)
+  static const close = IconData(0xe4f7, fontFamily: kPhosphorDuotoneFamily);
+  static const back = IconData(0xe059, fontFamily: kPhosphorDuotoneFamily);
+  static const check = IconData(0xe183, fontFamily: kPhosphorDuotoneFamily);
+  static const trash = IconData(0xe4a7, fontFamily: kPhosphorDuotoneFamily);
+  static const search = IconData(0xe30d, fontFamily: kPhosphorDuotoneFamily);
+  static const history = IconData(0xe1a1, fontFamily: kPhosphorDuotoneFamily);
+  static const clock = IconData(0xe19b, fontFamily: kPhosphorDuotoneFamily);
+  static const calendar = IconData(0xe10b, fontFamily: kPhosphorDuotoneFamily);
+  static const backspace = IconData(0xe0af, fontFamily: kPhosphorDuotoneFamily);
+  static const settings = IconData(0xe271, fontFamily: kPhosphorDuotoneFamily);
+  static const warning = IconData(0xe4e3, fontFamily: kPhosphorDuotoneFamily);
+  static const mail = IconData(0xe219, fontFamily: kPhosphorDuotoneFamily);
+  static const cloudOff = IconData(0xe1b7, fontFamily: kPhosphorDuotoneFamily);
+
   /// Lapisan sekunder untuk [icon] (diri sendiri bila tak dikenal).
   static IconData subOf(IconData icon) {
     switch (icon.codePoint) {
@@ -172,6 +187,30 @@ class AppIcons {
         return const IconData(0xe4d0, fontFamily: kPhosphorDuotoneFamily);
       case 0xe607:
         return const IconData(0xe606, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe4f7:
+        return const IconData(0xe4f6, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe059:
+        return const IconData(0xe058, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe183:
+        return const IconData(0xe182, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe4a7:
+        return const IconData(0xe4a6, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe30d:
+        return const IconData(0xe30c, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe1a1:
+        return const IconData(0xe1a0, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe19b:
+        return const IconData(0xe19a, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe10b:
+        return const IconData(0xe10a, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe0af:
+        return const IconData(0xe0ae, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe271:
+        return const IconData(0xe270, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe4e3:
+        return const IconData(0xe4e2, fontFamily: kPhosphorDuotoneFamily);
+      case 0xe219:
+        return const IconData(0xe218, fontFamily: kPhosphorDuotoneFamily);
       default:
         return icon;
     }

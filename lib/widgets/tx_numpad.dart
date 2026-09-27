@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 
 /// Numpad ala e-wallet untuk input nominal: 1-9, 000, 0, hapus.
@@ -45,7 +46,7 @@ class TxNumpad extends StatelessWidget {
                         ? _NumpadKey(
                             onTap: _backspace,
                             onLongPress: _clear,
-                            child: const Icon(Icons.backspace_outlined),
+                            child: const DuoIcon(AppIcons.backspace),
                           )
                         : _NumpadKey(
                             onTap: () => _press(key),

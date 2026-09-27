@@ -6,6 +6,7 @@ import 'package:ssr_space/screens/workspace/org_switcher_screen.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/workspace_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -212,7 +213,7 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
       IconButton(
         tooltip: tr('o_invite'),
         onPressed: _openInvite,
-        icon: const Icon(Icons.person_add_outlined),
+        icon: const DuoIcon(AppIcons.addUser),
       ),
     ];
   }

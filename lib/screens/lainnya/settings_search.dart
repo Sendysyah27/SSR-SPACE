@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/utils/strings.dart';
 
 /// Kunci rute hasil pencarian.
@@ -336,14 +337,17 @@ class SettingsSearchDelegate extends SearchDelegate<String?> {
   List<Widget>? buildActions(BuildContext context) {
     if (query.isEmpty) return null;
     return [
-      IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+      IconButton(
+        icon: const DuoIcon(AppIcons.close),
+        onPressed: () => query = '',
+      ),
     ];
   }
 
   @override
   Widget? buildLeading(BuildContext context) {
     return IconButton(
-      icon: const Icon(Icons.arrow_back),
+      icon: const DuoIcon(AppIcons.back),
       onPressed: () => close(context, null),
     );
   }

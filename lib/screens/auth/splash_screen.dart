@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/onboarding_screen.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
@@ -144,8 +145,8 @@ class _SplashError extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(
-          Icons.cloud_off_outlined,
+        const DuoIcon(
+          AppIcons.cloudOff,
           size: 40,
           color: SsrColors.secondary,
         ),

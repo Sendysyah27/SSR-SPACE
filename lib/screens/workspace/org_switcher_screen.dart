@@ -8,6 +8,7 @@ import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/shell/main_shell.dart';
 import 'package:ssr_space/screens/workspace/workspace_detail_screen.dart';
@@ -263,7 +264,7 @@ class _OrgPickerBody extends StatelessWidget {
         const SizedBox(height: SsrSpace.lg),
         if (orgs.isEmpty)
           EmptyView(
-            icon: Icons.workspaces_outlined,
+            icon: AppIcons.workspace,
             title: tr('org_empty_t'),
             subtitle: tr('org_empty_s'),
             actionLabel: tr('org_empty_a'),
@@ -377,7 +378,7 @@ class _OrgRow extends StatelessWidget {
             IconButton(
               tooltip: tr('wsm_detail'),
               onPressed: () => onManage(m),
-              icon: const Icon(Icons.settings_outlined),
+              icon: const DuoIcon(AppIcons.settings),
             ),
           ],
         ),

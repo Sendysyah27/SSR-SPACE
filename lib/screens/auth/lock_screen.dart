@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/shell/main_shell.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
@@ -81,8 +82,8 @@ class _LockScreenState extends State<LockScreen> {
                     color: SsrColors.accentSoft,
                     borderRadius: BorderRadius.circular(SsrRadius.tile),
                   ),
-                  child: const Icon(
-                    Icons.lock_outline,
+                  child: const DuoIcon(
+                    AppIcons.lock,
                     size: 28,
                     color: SsrColors.accent,
                   ),

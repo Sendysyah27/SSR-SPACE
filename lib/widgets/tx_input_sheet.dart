@@ -9,6 +9,7 @@ import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/tx_validation.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/wallet_usage.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
@@ -455,7 +456,7 @@ class _SheetHeader extends StatelessWidget {
         ),
         IconButton(
           onPressed: onClose,
-          icon: const Icon(Icons.close),
+          icon: const DuoIcon(AppIcons.close),
           tooltip: tr('back'),
         ),
       ],
@@ -523,7 +524,7 @@ class _DateTimeSection extends StatelessWidget {
             ),
             OutlinedButton.icon(
               onPressed: onPickDate,
-              icon: const Icon(Icons.calendar_month, size: 18),
+              icon: const DuoIcon(AppIcons.calendar, size: 18),
               label: Text(dayLabel(txYmd(day))),
             ),
           ],
@@ -540,7 +541,7 @@ class _DateTimeSection extends StatelessWidget {
             if (useTime)
               OutlinedButton.icon(
                 onPressed: onPickTime,
-                icon: const Icon(Icons.schedule, size: 18),
+                icon: const DuoIcon(AppIcons.clock, size: 18),
                 label: Text(
                   '${time.hour.toString().padLeft(2, '0')}:'
                   '${time.minute.toString().padLeft(2, '0')}',

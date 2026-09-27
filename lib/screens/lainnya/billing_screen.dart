@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/money.dart';
 import 'package:ssr_space/services/billing_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
@@ -220,7 +221,7 @@ class _PlanCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: SsrSpace.sm),
       child: Row(
         children: [
-          const Icon(Icons.check, size: 18, color: SsrColors.accent),
+          const DuoIcon(AppIcons.check, size: 18, color: SsrColors.accent),
           const SizedBox(width: SsrSpace.sm),
           Expanded(
             child: Text(label, style: Theme.of(context).textTheme.bodyMedium),

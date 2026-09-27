@@ -329,7 +329,7 @@ class _OtherScreenState extends State<OtherScreen> {
         title: Text(tr('nav_lainnya')),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: const DuoIcon(AppIcons.search),
             tooltip: tr('search_settings_hint'),
             onPressed: _openSearch,
           ),

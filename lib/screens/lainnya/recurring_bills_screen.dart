@@ -124,7 +124,7 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
       appBar: AppBar(title: Text(tr('rb_title'))),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openEditor(null),
-        child: const Icon(Icons.add),
+        child: const DuoIcon(AppIcons.add),
       ),
       body: _body(),
     );
@@ -181,13 +181,13 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.history),
+            icon: const DuoIcon(AppIcons.history),
             tooltip: tr('rb_history'),
             onPressed: () => _openHistory(bill),
           ),
           Switch(value: bill.active, onChanged: (v) => _toggle(bill, v)),
           IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: const DuoIcon(AppIcons.trash),
             onPressed: () => _delete(bill),
           ),
         ],
