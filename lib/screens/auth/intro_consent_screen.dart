@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
-import 'package:ssr_space/screens/auth/splash_screen.dart';
+import 'package:ssr_space/screens/auth/theme_step_screen.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/utils/strings.dart';
 
@@ -57,8 +57,10 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              SplashScreen(session: widget.session, skipAuth: widget.skipAuth),
+          builder: (_) => ThemeStepScreen(
+            session: widget.session,
+            skipAuth: widget.skipAuth,
+          ),
         ),
       );
     } catch (_) {
