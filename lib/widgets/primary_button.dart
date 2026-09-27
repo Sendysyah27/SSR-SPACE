@@ -22,13 +22,13 @@ class PrimaryButton extends StatelessWidget {
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 180),
           child: loading
-              ? const SizedBox(
-                  key: ValueKey('loading'),
+              ? SizedBox(
+                  key: const ValueKey('loading'),
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.4,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
                 )
               : Text(label, key: ValueKey(label)),

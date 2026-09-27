@@ -135,8 +135,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openInput,
-        backgroundColor: SsrColors.accent,
-        foregroundColor: Colors.white,
+        backgroundColor: SsrColors.mint,
+        foregroundColor: const Color(0xFF0C1210),
         tooltip: tr('act_catat'),
         child: const DuoIcon(AppIcons.add),
       ),
@@ -146,7 +146,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 }
 
-/// Navigasi bawah 5 tab dengan indikator & ikon zamrud saat aktif.
+/// Navigasi bawah 5 tab: bar noir, aktif mint, nonaktif sekunder.
 class _MainBottomBar extends StatelessWidget {
   final int index;
   final ValueChanged<int> onSelect;
@@ -183,21 +183,21 @@ class _MainBottomBar extends StatelessWidget {
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
-            color: selected ? SsrColors.accent : SsrColors.secondary,
+            color: selected ? SsrColors.mint : SsrColors.noirSecondary,
           );
         }),
       ),
       child: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: onSelect,
-        backgroundColor: Colors.white,
-        indicatorColor: SsrColors.accentSoft,
+        backgroundColor: SsrColors.noirSurface,
+        indicatorColor: SsrColors.mint.withValues(alpha: 0.16),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            color: selected ? SsrColors.accent : SsrColors.secondary,
+            color: selected ? SsrColors.mint : SsrColors.noirSecondary,
           );
         }),
         destinations: _destinations,

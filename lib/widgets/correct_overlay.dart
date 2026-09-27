@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:ssr_space/theme/app_theme.dart';
 
 /// Isi overlay koreksi instan: ringkasan + Lengkapi/Tutup.
 /// Berjalan di isolate overlay; data masuk via shareData ({tx,title,body,ok,no}).
@@ -67,11 +68,12 @@ class CorrectOverlayState extends State<CorrectOverlay> {
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 48),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: SsrColors.noirRaised,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: SsrColors.noirLine),
             boxShadow: const [
               BoxShadow(
-                color: Colors.black26,
+                color: Colors.black54,
                 blurRadius: 12,
                 offset: Offset(0, 4),
               ),
@@ -86,17 +88,34 @@ class CorrectOverlayState extends State<CorrectOverlay> {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
+                  color: SsrColors.noirInk,
                 ),
               ),
               const SizedBox(height: 4),
-              Text(body, style: const TextStyle(fontSize: 15)),
+              Text(
+                body,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: SsrColors.noirInk,
+                ),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  TextButton(onPressed: () => _act('tutup'), child: Text(no)),
+                  TextButton(
+                    onPressed: () => _act('tutup'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: SsrColors.mint,
+                    ),
+                    child: Text(no),
+                  ),
                   const Spacer(),
                   ElevatedButton(
                     onPressed: () => _act('lengkapi'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: SsrColors.mint,
+                      foregroundColor: const Color(0xFF0C1210),
+                    ),
                     child: Text(ok),
                   ),
                 ],

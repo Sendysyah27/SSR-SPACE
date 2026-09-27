@@ -58,6 +58,7 @@ Future<bool> openTxInputSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    backgroundColor: SsrColors.noirSurface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
@@ -367,7 +368,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
               const SizedBox(height: SsrSpace.sm),
               Text(
                 formErr!,
-                style: const TextStyle(color: SsrColors.danger, fontSize: 13),
+                style: const TextStyle(color: SsrColors.rose, fontSize: 13),
               ),
             ],
             const SizedBox(height: SsrSpace.md),
@@ -384,8 +385,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
                 child: OutlinedButton(
                   onPressed: _confirmDelete,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: SsrColors.danger,
-                    side: const BorderSide(color: SsrColors.danger),
+                    foregroundColor: SsrColors.rose,
+                    side: const BorderSide(color: SsrColors.rose),
                   ),
                   child: Text(tr('tx_delete')),
                 ),
@@ -410,7 +411,7 @@ class _DragHandle extends StatelessWidget {
         height: 4,
         margin: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
         decoration: BoxDecoration(
-          color: SsrColors.secondary.withValues(alpha: 0.35),
+          color: SsrColors.noirLine,
           borderRadius: BorderRadius.circular(2),
         ),
       ),
@@ -447,7 +448,7 @@ class _SheetHeader extends StatelessWidget {
                 Text(
                   code!,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: SsrColors.secondary,
+                    color: SsrColors.noirSecondary,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -586,7 +587,7 @@ class _WalletSection extends StatelessWidget {
         style: bal == null
             ? null
             : theme.textTheme.bodyMedium?.copyWith(
-                color: SsrColors.secondary,
+                color: SsrColors.noirSecondary,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
       ),

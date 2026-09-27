@@ -19,6 +19,7 @@ Future<void> showCorrectSheet(
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    backgroundColor: SsrColors.noirSurface,
     builder: (_) => _CorrectSheet(tx: tx, orgId: orgId),
   );
   await InstantCorrect.clearPending();
@@ -113,7 +114,7 @@ class _CorrectSheetState extends State<_CorrectSheet> {
             Text(
               '$_dirLabel: ${amt(widget.tx.amount)}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: SsrColors.secondary,
+                color: SsrColors.noirSecondary,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -172,6 +173,22 @@ class _CatPicker extends StatelessWidget {
               label: Text(c),
               selected: selected == c,
               onSelected: (_) => onPick(c),
+              backgroundColor: SsrColors.noirRaised,
+              selectedColor: SsrColors.mint,
+              labelStyle: TextStyle(
+                color: selected == c
+                    ? const Color(0xFF0C1210)
+                    : SsrColors.noirSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+              side: BorderSide(
+                color: selected == c
+                    ? SsrColors.mint
+                    : SsrColors.noirLine,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(SsrRadius.chip),
+              ),
             ),
         ],
       ),

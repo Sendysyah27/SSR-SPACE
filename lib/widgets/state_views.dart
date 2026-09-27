@@ -51,8 +51,9 @@ class EmptyView extends StatelessWidget {
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        color: const Color(0xFFE6F3F1),
+        color: SsrColors.noirRaised,
         borderRadius: BorderRadius.circular(SsrRadius.card),
+        border: Border.all(color: SsrColors.noirLine),
       ),
       child: DuoIcon(
         icon,

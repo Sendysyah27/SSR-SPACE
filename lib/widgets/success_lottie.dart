@@ -26,11 +26,12 @@ class _FlashCard extends StatelessWidget {
       height: 120,
       padding: const EdgeInsets.all(SsrSpace.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SsrColors.noirRaised,
         borderRadius: BorderRadius.circular(SsrRadius.card),
+        border: Border.all(color: SsrColors.noirLine),
         boxShadow: [
           BoxShadow(
-            color: SsrColors.ink.withValues(alpha: 0.16),
+            color: Colors.black.withValues(alpha: 0.45),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -40,7 +41,7 @@ class _FlashCard extends StatelessWidget {
         'assets/lottie/check_pop.json',
         repeat: false,
         errorBuilder: (context, error, stackTrace) =>
-            const DuoIcon(AppIcons.success, color: SsrColors.accent, size: 48),
+            const DuoIcon(AppIcons.success, color: SsrColors.mint, size: 48),
       ),
     );
   }

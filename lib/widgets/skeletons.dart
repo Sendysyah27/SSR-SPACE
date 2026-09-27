@@ -11,6 +11,10 @@ class _Zone extends StatelessWidget {
   Widget build(BuildContext context) {
     return Skeletonizer.zone(
       enabled: true,
+      effect: const ShimmerEffect(
+        baseColor: SsrColors.noirRaised,
+        highlightColor: SsrColors.noirLine,
+      ),
       child: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: children,

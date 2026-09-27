@@ -19,26 +19,39 @@ class StatusChip extends StatelessWidget {
   Color get _bg {
     switch (tone) {
       case StatusTone.accent:
-        return SsrColors.accentSoft;
+        return SsrColors.mint.withValues(alpha: 0.14);
       case StatusTone.danger:
-        return SsrColors.dangerSoft;
+        return SsrColors.rose.withValues(alpha: 0.14);
       case StatusTone.ink:
-        return SsrColors.ink;
+        return SsrColors.noirInk;
       case StatusTone.neutral:
-        return SsrColors.surfaceMuted;
+        return SsrColors.noirRaised;
     }
   }
 
   Color get _fg {
     switch (tone) {
       case StatusTone.accent:
-        return SsrColors.accent;
+        return SsrColors.mint;
       case StatusTone.danger:
-        return SsrColors.danger;
+        return SsrColors.rose;
       case StatusTone.ink:
-        return Colors.white;
+        return const Color(0xFF0C1210);
       case StatusTone.neutral:
-        return SsrColors.secondary;
+        return SsrColors.noirSecondary;
+    }
+  }
+
+  Color get _border {
+    switch (tone) {
+      case StatusTone.accent:
+        return SsrColors.mint.withValues(alpha: 0.45);
+      case StatusTone.danger:
+        return SsrColors.rose.withValues(alpha: 0.45);
+      case StatusTone.ink:
+        return SsrColors.noirInk;
+      case StatusTone.neutral:
+        return SsrColors.noirLine;
     }
   }
 
@@ -49,6 +62,7 @@ class StatusChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: _bg,
         borderRadius: BorderRadius.circular(SsrRadius.chip),
+        border: Border.all(color: _border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

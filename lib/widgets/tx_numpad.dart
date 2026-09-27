@@ -4,7 +4,7 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 
 /// Numpad ala e-wallet untuk input nominal: 1-9, 000, 0, hapus.
-/// Keyboard sistem tidak pernah dibuka — satu tangan, malam hari.
+/// Keyboard sistem tidak pernah dibuka. Satu tangan, malam hari.
 /// State berupa [digits] (buffer mentah); konversi ke nominal via
 /// `majorFromDigits` di sisi pemanggil (sadar desimal mata uang).
 class TxNumpad extends StatelessWidget {
@@ -70,8 +70,8 @@ class TxNumpad extends StatelessWidget {
   }
 }
 
-/// Satu tombol numpad: 60px (di atas minimum sentuh 44px), sudut
-/// tile mengikuti radius sistem, tanpa glow/dekorasi.
+/// Satu tombol numpad: 60px (di atas minimum sentuh 44px), surface
+/// terangkat dengan garis noir, cipratan mint saat ditekan.
 class _NumpadKey extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
@@ -86,19 +86,25 @@ class _NumpadKey extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: SsrColors.accentSoft,
+      color: SsrColors.noirRaised,
       borderRadius: BorderRadius.circular(SsrRadius.tile),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(SsrRadius.tile),
+        side: const BorderSide(color: SsrColors.noirLine),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(SsrRadius.tile),
+        splashColor: SsrColors.mint.withValues(alpha: 0.22),
+        highlightColor: SsrColors.mint.withValues(alpha: 0.12),
         onTap: onTap,
         onLongPress: onLongPress,
         child: SizedBox(
           height: 60,
           child: Center(
             child: IconTheme(
-              data: const IconThemeData(color: SsrColors.ink, size: 24),
+              data: const IconThemeData(color: SsrColors.noirInk, size: 24),
               child: DefaultTextStyle(
-                style: const TextStyle(color: SsrColors.ink),
+                style: const TextStyle(color: SsrColors.noirInk),
                 child: child,
               ),
             ),

@@ -3,8 +3,8 @@ import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/strings.dart';
 
 /// Pilihan jenis transaksi Masuk / Keluar / Transfer (pill toggle).
-/// Dipakai di form layar Transaksi; style disalin persis dari aslinya
-/// (selected = latar zamrud, teks putih, outline mengikuti tema).
+/// Satu gaya untuk semua pemakaian: pilihan terisi mint penuh dengan
+/// teks gelap, sisanya surface noir dengan teks sekunder.
 class TxTypeSelector extends StatelessWidget {
   final String value;
   final ValueChanged<String> onChanged;
@@ -29,21 +29,21 @@ class TxTypeSelector extends StatelessWidget {
       style: ButtonStyle(
         backgroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return SsrColors.accent;
+            return SsrColors.mint;
           }
-          return Colors.white;
+          return SsrColors.noirSurface;
         }),
         foregroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return Colors.white;
+            return const Color(0xFF0C1210);
           }
-          return SsrColors.ink;
+          return SsrColors.noirSecondary;
         }),
         side: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const BorderSide(color: SsrColors.accent);
+            return const BorderSide(color: SsrColors.mint);
           }
-          return BorderSide(color: Theme.of(context).colorScheme.outline);
+          return const BorderSide(color: SsrColors.noirLine);
         }),
         textStyle: WidgetStateProperty.all(
           const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
