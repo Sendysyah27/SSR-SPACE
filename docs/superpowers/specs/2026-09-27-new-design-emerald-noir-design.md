@@ -1,4 +1,4 @@
-# Design: New Design Emerald Noir (rombak visual penuh) - 2026-09-27
+# Design: New Design Emerald Noir (SUPERSEDED oleh 2026-09-27-ledger-premium-design.md — prompt + HTML user adalah otoritas)
 
 Keputusan user: rombak semua layar yang masih slop ke arah visual baru
 **Emerald Noir** (dark-first premium), output kode Flutter di repo sekaligus
