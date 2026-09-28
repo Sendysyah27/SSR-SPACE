@@ -73,21 +73,46 @@ jobs:
           EOF
       - run: |
           python3 - <<'EOF'
-          import glob, os, pathlib
+          import glob, os, pathlib, re
           # SPIKE THROWAWAY NFC (revert bareng kode): build.gradle plugin
-          # prepaid masih memakai jcenter() (mati & dihapus dari Gradle
-          # modern) -> ganti mavenCentral(). Idempoten + assert keras.
-          cands = glob.glob(os.path.expanduser(
-              '~/.pub-cache/hosted/pub.dev/prepaid_lib_flutter_null_safety-*/'
-              'android/build.gradle'))
+          # prepaid jadul, 3 tambalan agar lolos toolchain modern:
+          # 1. jcenter() mati -> mavenCentral().
+          # 2. namespace wajib AGP 8+ -> ambil dari package= di manifest
+          #    plugin sendiri.
+          # 3. compileSdk minimal 34.
+          # Idempoten + assert keras. Ronde terakhir: bila masih merah
+          # karena isi native-nya (embedding v1 dsb), pendekatan A divonis
+          # mati dan spike di-revert.
+          base = os.path.expanduser(
+              '~/.pub-cache/hosted/pub.dev/prepaid_lib_flutter_null_safety-*/android')
+          cands = glob.glob(base + '/build.gradle')
           assert len(cands) == 1, f'prepaid build.gradle tak ketemu: {cands}'
           p = pathlib.Path(cands[0])
           s = p.read_text()
           if 'jcenter()' in s:
               s = s.replace('jcenter()', 'mavenCentral()')
-              p.write_text(s)
-          assert 'jcenter()' not in p.read_text(), 'jcenter masih ada'
-          print('prepaid jcenter patch ok:', cands[0])
+          if 'namespace' not in s:
+              mans = glob.glob(os.path.expanduser(
+                  '~/.pub-cache/hosted/pub.dev/prepaid_lib_flutter_null_safety-*/'
+                  'android/src/main/AndroidManifest.xml'))
+              assert len(mans) == 1, f'manifest prepaid tak ketemu: {mans}'
+              m = pathlib.Path(mans[0]).read_text()
+              mm = re.search(r'package="([^"]+)"', m)
+              assert mm, 'package attr tak ketemu:\n' + m[:800]
+              assert 'android {' in s, 'blok android tak ketemu'
+              s = s.replace('android {',
+                            'android {\n    namespace "' + mm.group(1) + '"', 1)
+          m2 = re.search(r'compileSdkVersion\s+(\d+)', s)
+          if m2 and int(m2.group(1)) < 34:
+              s = s.replace(m2.group(0), 'compileSdkVersion 34')
+          m3 = re.search(r'compileSdk\s+(\d+)', s)
+          if m3 and int(m3.group(1)) < 34:
+              s = s.replace(m3.group(0), 'compileSdk 34')
+          p.write_text(s)
+          t = p.read_text()
+          assert 'jcenter()' not in t, 'jcenter masih ada'
+          assert 'namespace' in t, 'namespace gagal disuntik'
+          print('prepaid native patch ok:', cands[0])
           EOF
       - run: |
           if [ ! -d android ]; then
