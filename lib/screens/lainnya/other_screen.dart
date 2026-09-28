@@ -10,6 +10,8 @@ import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/services/space_logic.dart';
+import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -25,6 +27,7 @@ import 'package:ssr_space/screens/lainnya/settings_screen.dart';
 import 'package:ssr_space/screens/laporan/reports_screen.dart';
 import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
 import 'package:ssr_space/screens/workspace/invite_screen.dart';
+import 'package:ssr_space/screens/workspace/space_activity_screen.dart';
 import 'package:ssr_space/screens/workspace/workspace_detail_screen.dart';
 import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
 // E-Money NFC.
@@ -38,6 +41,7 @@ import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/nav_tile.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
 class _OtherMeta {
@@ -299,6 +303,8 @@ class _OtherScreenState extends State<OtherScreen> {
         await _push(const InviteScreen());
       case 'detail':
         await _openWorkspaceDetail();
+      case 'space_activity':
+        await _push(const SpaceActivityScreen());
       case 'billing':
         await _push(const BillingScreen());
       case 'settings':
@@ -406,6 +412,7 @@ class _OtherScreenState extends State<OtherScreen> {
             onSwitch: () => _push(OrgSwitcherScreen(session: widget.session)),
             onInvite: () => _push(const InviteScreen()),
             onDetail: _openWorkspaceDetail,
+            onActivity: () => _push(const SpaceActivityScreen()),
             onBilling: () => _push(const BillingScreen()),
             onWallets: () => _push(const WalletsScreen()),
             onCategories: () => _push(const CategoriesScreen()),
@@ -439,6 +446,7 @@ class _HubList extends StatelessWidget {
   final VoidCallback onSwitch;
   final VoidCallback onInvite;
   final VoidCallback onDetail;
+  final VoidCallback onActivity;
   final VoidCallback onBilling;
   final VoidCallback onWallets;
   final VoidCallback onCategories;
@@ -465,6 +473,7 @@ class _HubList extends StatelessWidget {
     required this.onSwitch,
     required this.onInvite,
     required this.onDetail,
+    required this.onActivity,
     required this.onBilling,
     required this.onWallets,
     required this.onCategories,
@@ -516,6 +525,7 @@ class _HubList extends StatelessWidget {
         onSwitch: onSwitch,
         onInvite: onInvite,
         onDetail: onDetail,
+        onActivity: onActivity,
         onBilling: onBilling,
       ),
     ];
@@ -753,6 +763,7 @@ class _WorkspaceSection extends StatelessWidget {
   final VoidCallback onSwitch;
   final VoidCallback onInvite;
   final VoidCallback onDetail;
+  final VoidCallback onActivity;
   final VoidCallback onBilling;
 
   const _WorkspaceSection({
@@ -761,8 +772,23 @@ class _WorkspaceSection extends StatelessWidget {
     required this.onSwitch,
     required this.onInvite,
     required this.onDetail,
+    required this.onActivity,
     required this.onBilling,
   });
+
+  /// Jumlah log aktivitas lebih baru dari terakhir dibaca. Fail-open 0.
+  Future<int> _newCount() async {
+    try {
+      final orgId = await activeOrgId();
+      if (orgId.isEmpty) return 0;
+      final svc = SpaceService();
+      final rows = await svc.activity(orgId);
+      final seen = await svc.lastSeen(orgId);
+      return unseenCount(rows.map((r) => r.at).toList(), seen);
+    } catch (_) {
+      return 0;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -788,6 +814,19 @@ class _WorkspaceSection extends StatelessWidget {
           title: tr('wsm_detail'),
           subtitle: orgName,
           onTap: onDetail,
+        ),
+        const Divider(height: 1),
+        FutureBuilder<int>(
+          future: _newCount(),
+          builder: (context, snap) {
+            final n = snap.data ?? 0;
+            return NavTile(
+              icon: AppIcons.history,
+              title: tr('sp_activity'),
+              subtitle: n > 0 ? '$n ${tr('sp_new')}' : null,
+              onTap: onActivity,
+            );
+          },
         ),
         const Divider(height: 1),
         NavTile(

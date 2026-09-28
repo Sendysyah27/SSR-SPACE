@@ -103,6 +103,12 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     route: 'detail',
   ),
   SettingsSearchEntry(
+    titleKey: 'sp_activity',
+    en: 'space activity feed who recorded',
+    sectionKey: 'pf_workspace',
+    route: 'space_activity',
+  ),
+  SettingsSearchEntry(
     titleKey: 'o_billing',
     en: 'billing plan pro free upgrade',
     sectionKey: 'pf_workspace',
