@@ -93,8 +93,16 @@ void main() {
     expect(saveErrorStatus(err), 'Sudah pernah dicatat');
   });
 
-  test('saveErrorStatus: error lain Gagal simpan dengan code', () {
+  test('saveErrorStatus: 42501 jadi pesan bendahara', () {
     const err = PostgrestException(message: 'boom', code: '42501');
-    expect(saveErrorStatus(err), 'Gagal simpan: 42501');
+    expect(
+      saveErrorStatus(err),
+      'Hanya bendahara yang bisa catat di Space ini.',
+    );
+  });
+
+  test('saveErrorStatus: error lain Gagal simpan dengan code', () {
+    const err = PostgrestException(message: 'boom', code: 'P0001');
+    expect(saveErrorStatus(err), 'Gagal simpan: P0001');
   });
 }
