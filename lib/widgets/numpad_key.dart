@@ -21,7 +21,6 @@ class NumpadKey extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Material(
       color: scheme.outline.withValues(alpha: 0.35),
-      borderRadius: BorderRadius.circular(SsrRadius.tile),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(SsrRadius.tile),
         side: BorderSide(color: scheme.outline),
