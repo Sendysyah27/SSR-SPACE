@@ -74,15 +74,13 @@ jobs:
       - run: |
           python3 - <<'EOF'
           import glob, os, pathlib, re
-          # SPIKE THROWAWAY NFC (revert bareng kode): build.gradle plugin
+          # NFC e-money (terbukti spike 2026-09-28): build.gradle plugin
           # prepaid jadul, 3 tambalan agar lolos toolchain modern:
           # 1. jcenter() mati -> mavenCentral().
           # 2. namespace wajib AGP 8+ -> ambil dari package= di manifest
           #    plugin sendiri.
           # 3. compileSdk minimal 35 (flutter_nfc_kit transitif butuh 35+).
-          # Idempoten + assert keras. Ronde terakhir: bila masih merah
-          # karena isi native-nya (embedding v1 dsb), pendekatan A divonis
-          # mati dan spike di-revert.
+          # Tambalan permanen selama pakai prepaid 1.0.1; assert = vonis cepat.
           base = os.path.expanduser(
               '~/.pub-cache/hosted/pub.dev/prepaid_lib_flutter_null_safety-*/android')
           cands = glob.glob(base + '/build.gradle')
@@ -241,7 +239,7 @@ jobs:
           import pathlib
           m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
           s = m.read_text()
-          # SPIKE THROWAWAY NFC (revert bareng kode): izin + fitur hardware.
+          # NFC e-money: izin + fitur hardware.
           # required=false supaya HP non-NFC tetap bisa install;
           # dukungan NFC dicek saat runtime di layar uji.
           if 'android.permission.NFC' not in s:
@@ -258,7 +256,7 @@ jobs:
           assert 'android.permission.NFC' in m.read_text()
           assert 'android.hardware.nfc' in m.read_text()
           print('nfc spike permission ok')
-          # SPIKE THROWAWAY NFC (revert bareng kode): plugin prepaid
+          # NFC e-money: plugin prepaid
           # butuh minSdk 26, template app 24 -> naikkan ke 26.
           # Konsekuensi produk (Android 8.0+) dibahas di fase desain.
           gkts = pathlib.Path('android/app/build.gradle.kts')

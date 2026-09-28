@@ -1,10 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.4.10+44.
+Versi terpasang: 2.4.11+45.
 
-## Yang baru di 2.4.10+44 (spike sementara, di-revert)
+## Yang baru di 2.4.11
 
-1. Layar uji NFC throwaway di Profil → Data: tempel kartu e-money untuk baca UID/nomor/saldo/bank. Bukan fitur asli, dibuang habis spike.
+1. E-Money NFC di Profil → Data: tempel kartu Mandiri/e-money untuk baca saldo, nomor, dan riwayat kartu; kartu bisa diberi label dan ditautkan ke dompet; cek terakhir tersimpan lokal. Baca saja — tanpa top-up dan tanpa transaksi otomatis.
 
 ## Yang baru di 2.4.10
 
