@@ -177,6 +177,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         );
         return;
       }
+      if (!mounted) return;
       final ok = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
