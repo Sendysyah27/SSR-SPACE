@@ -34,7 +34,7 @@ void main() {
   });
 
   test('NfcCard round-trip + tolak uid kosong', () {
-    final c = NfcCard(
+    final c = const NfcCard(
       uid: 'CFEF1CCD',
       bank: 'MANDIRI',
       last4: '3976',

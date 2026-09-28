@@ -323,7 +323,8 @@ class _ResultSheetState extends State<_ResultSheet> {
 
   Future<void> _onSave() async {
     await widget.onSave(widget.read, _walletId);
-    if (context.mounted) Navigator.pop(context);
+    if (!mounted) return;
+    Navigator.pop(context);
   }
 
   @override
