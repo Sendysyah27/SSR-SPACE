@@ -125,6 +125,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
               onCatat: () => _select(1),
               onBudget: () => _select(2),
               onLaporan: () => _select(3),
+              onProfil: () => _select(4),
             ),
             TransactionsScreen(key: txKey),
             BudgetsScreen(key: budgetKey),

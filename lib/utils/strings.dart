@@ -1184,6 +1184,70 @@ const _t = <String, Map<String, String>>{
     'id': 'Data tersimpan aman di cloud dan hanya bisa diakses dalam workspace-mu.',
     'en': 'Data is stored securely in the cloud and only accessible within your workspace.',
   },
+  // Bantuan: tutorial + tanya jawab
+  'hp_title': {'id': 'Bantuan', 'en': 'Help'},
+  'hp_guide': {'id': 'Cara memakai', 'en': 'How to use'},
+  'hp_faq': {'id': 'Tanya jawab', 'en': 'FAQ'},
+  'hp_start_t': {'id': 'Mulai: workspace dan dompet', 'en': 'Start: workspace and wallets'},
+  'hp_start_b': {
+    'id': 'Daftar lalu verifikasi email. Buat atau pilih workspace, tambah dompet (Kas, DANA, Bank), lalu catat pertama lewat tombol +.',
+    'en': 'Sign up then verify your email. Create or pick a workspace, add wallets (cash, e-wallet, bank), then record your first entry with the + button.',
+  },
+  'hp_record_t': {'id': 'Mencatat transaksi', 'en': 'Recording transactions'},
+  'hp_record_b': {
+    'id': 'Tombol + tengah: ketik nominal di numpad, pilih Masuk, Keluar, atau Transfer. Dompet wajib diisi; tanggal default hari ini, jam opsional. Ketuk baris untuk ubah atau hapus.',
+    'en': 'Middle + button: type the amount on the numpad, pick Income, Expense, or Transfer. Wallet is required; date defaults to today, time optional. Tap a row to edit or delete.',
+  },
+  'hp_track_t': {'id': 'Pelacakan otomatis', 'en': 'Auto tracking'},
+  'hp_track_b': {
+    'id': 'Profil, Pelacakan otomatis: beri izin akses notifikasi, nyalakan master, petakan tiap bank ke dompet. Transaksi masuk otomatis berlabel Otomatis; benarkan kategori lewat overlay atau sheet koreksi.',
+    'en': 'Profile, Auto tracking: grant notification access, turn the master on, map each bank to a wallet. Entries arrive automatically labeled Otomatis; fix the category via the overlay or correction sheet.',
+  },
+  'hp_budget_t': {'id': 'Budget dan tabungan', 'en': 'Budgets and savings'},
+  'hp_budget_b': {
+    'id': 'Budget per kategori per bulan; cincin penuh berarti jebol. Kategori Tabungan jadi target emas lengkap dengan laju per hari.',
+    'en': 'Monthly budget per category; a full ring means over budget. The Savings category becomes a gold target with a per-day pace.',
+  },
+  'hp_report_t': {'id': 'Laporan dan cadangan', 'en': 'Reports and backup'},
+  'hp_report_b': {
+    'id': 'Laporan: saring per bulan dan per dompet, ekspor CSV (bisa ditempel balik di Impor CSV) atau PDF. Cadangan 3 CSV tersedia dari Profil.',
+    'en': 'Reports: filter by month and wallet, export CSV (can be pasted back into CSV Import) or PDF. A 3-file CSV backup is available from Profile.',
+  },
+  'hp_pin_t': {'id': 'PIN dan keamanan', 'en': 'PIN and security'},
+  'hp_pin_b': {
+    'id': 'PIN 6 digit; 5x salah dikunci 60 detik; app mengunci otomatis setelah 5 menit. Ganti PIN cukup verifikasi PIN lama; lupa PIN pakai link email.',
+    'en': '6-digit PIN; 5 wrong tries lock for 60 seconds; the app auto-locks after 5 minutes. Changing PIN only needs the old PIN; forgot it, use the email link.',
+  },
+  'hp_q1': {'id': 'Saldo dompet beda dengan Beranda?', 'en': 'Wallet balance differs from Home?'},
+  'hp_a1': {
+    'id': 'Beranda menampilkan arus bulan berjalan, Dompet menampilkan total sepanjang waktu. Transfer diabaikan Beranda, dan transaksi tanpa dompet tak masuk total aset.',
+    'en': 'Home shows this month flow, Wallets show the all-time total. Home ignores transfers, and wallet-less entries never join total assets.',
+  },
+  'hp_q2': {'id': 'Notifikasi bank tak tercatat?', 'en': 'Bank notification not recorded?'},
+  'hp_a2': {
+    'id': 'Cek master pelacakan ON, izin akses notifikasi, dan service hidup. Sebagian bank menaruh isi di kolom khusus; pakai Pindai lalu Simpan manual bila perlu.',
+    'en': 'Check tracking master is ON, notification access granted, and the service alive. Some banks hide content in a special field; use Scan then manual Save if needed.',
+  },
+  'hp_q3': {'id': 'Impor CSV gagal?', 'en': 'CSV import failed?'},
+  'hp_a3': {
+    'id': 'Header wajib ada tanggal, nominal, dan jenis. Format Indonesia (1.234,50) didukung. Hasil ekspor aplikasi bisa ditempel balik langsung.',
+    'en': 'Headers must include date, amount, and type. Indonesian format (1.234,50) is supported. The app export output can be pasted straight back.',
+  },
+  'hp_q4': {'id': 'Lupa PIN?', 'en': 'Forgot PIN?'},
+  'hp_a4': {
+    'id': 'Di Pengaturan, PIN keamanan, ketuk Lupa PIN? Kirim link ke email. Buka email, ketuk link, app terbuka dan PIN baru bisa disimpan.',
+    'en': 'In Settings, Security PIN, tap Forgot PIN? Send link to email. Open the email, tap the link, the app opens and a new PIN can be saved.',
+  },
+  'hp_q5': {'id': 'Ganti HP, data hilang?', 'en': 'New phone, data lost?'},
+  'hp_a5': {
+    'id': 'Tidak. Data tersimpan di cloud per workspace: masuk dengan akun yang sama lalu pilih workspace-mu. CSV cadangan hanya untuk arsip pribadi.',
+    'en': 'No. Data lives in the cloud per workspace: sign in with the same account then pick your workspace. The CSV backup is only for personal archive.',
+  },
+  'hp_q6': {'id': 'Pengaturan seolah tak berubah?', 'en': 'Setting seems unchanged?'},
+  'hp_a6': {
+    'id': 'Tutup lalu buka lagi layarnya; sebagian kartu butuh rebuild. Pastikan memakai versi terbaru (lihat Tentang di Profil).',
+    'en': 'Close and reopen the screen; some cards need a rebuild. Make sure you run the latest version (see About in Profile).',
+  },
   // Cari + penanda tahap
   'search_settings_hint': {
     'id': 'Cari pengaturan...',

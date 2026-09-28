@@ -230,9 +230,9 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
   ),
   SettingsSearchEntry(
     titleKey: 'ab_help',
-    en: 'help support',
+    en: 'help support tutorial faq',
     sectionKey: 'pf_about',
-    route: 'hub_help',
+    route: 'help',
   ),
   SettingsSearchEntry(
     titleKey: 'ab_feedback',

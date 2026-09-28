@@ -18,6 +18,7 @@ import 'package:ssr_space/utils/app_info.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/billing_screen.dart';
 import 'package:ssr_space/screens/lainnya/categories_screen.dart';
+import 'package:ssr_space/screens/lainnya/help_screen.dart';
 import 'package:ssr_space/screens/lainnya/recurring_bills_screen.dart';
 import 'package:ssr_space/screens/lainnya/import_preview_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_screen.dart';
@@ -267,7 +268,7 @@ class _OtherScreenState extends State<OtherScreen> {
       await setMaskAmounts(!maskAmounts.value);
       return;
     }
-    if (key == 'hub_about' || key == 'hub_help' || key == 'hub_privacy') {
+    if (key == 'hub_about' || key == 'hub_privacy') {
       await _showHubInfo(key.substring(4));
       return;
     }    if (key == 'hub_share') {
@@ -306,6 +307,8 @@ class _OtherScreenState extends State<OtherScreen> {
         await _push(const SettingsScreen());
       case 'changelog':
         await _push(const UpdateLogScreen());
+      case 'help':
+        await _push(const HelpScreen());
       case 'backup':
         await _backup();
       case 'clearCache':
@@ -420,6 +423,7 @@ class _OtherScreenState extends State<OtherScreen> {
             onClearCache: _clearLocalCache,
             onSettings: (f) => _push(SettingsScreen(focus: f)),
             onChangelog: () => _push(const UpdateLogScreen()),
+            onHelp: () => _push(const HelpScreen()),
             onLogout: _confirmLogout,
           );
         },
@@ -453,6 +457,7 @@ class _HubList extends StatelessWidget {
   final VoidCallback onClearCache;
   final void Function(String?) onSettings;
   final VoidCallback onChangelog;
+  final VoidCallback onHelp;
   final VoidCallback onLogout;
 
   const _HubList({
@@ -479,6 +484,7 @@ class _HubList extends StatelessWidget {
     required this.onClearCache,
     required this.onSettings,
     required this.onChangelog,
+    required this.onHelp,
     required this.onLogout,
   });
 
@@ -527,7 +533,7 @@ class _HubList extends StatelessWidget {
       _LangMoneySection(onSettings: onSettings),
       _ReminderSection(onSettings: onSettings),
       _SecuritySection(onSettings: onSettings, onLogout: onLogout),
-      _AboutSection(onChangelog: onChangelog),
+      _AboutSection(onChangelog: onChangelog, onHelp: onHelp),
     ];
   }
 
@@ -906,12 +912,13 @@ class _SecuritySection extends StatelessWidget {
   }
 }
 
-/// TENTANG: changelog membuka layar log; bagikan dan masukan via
-/// share sheet; bantuan, privasi, dan tentang berupa dialog statis.
+/// TENTANG: changelog membuka layar log; bantuan membuka layar tutorial;
+/// bagikan dan masukan via share sheet; privasi dan tentang dialog statis.
 class _AboutSection extends StatelessWidget {
   final VoidCallback onChangelog;
+  final VoidCallback onHelp;
 
-  const _AboutSection({required this.onChangelog});
+  const _AboutSection({required this.onChangelog, required this.onHelp});
 
   Future<void> _info(BuildContext context, String titleKey, String body) {
     return showDialog<void>(
@@ -962,7 +969,7 @@ class _AboutSection extends StatelessWidget {
         NavTile(
           icon: AppIcons.error,
           title: tr('ab_help'),
-          onTap: () => _info(context, 'ab_help', tr('ab_help_body')),
+          onTap: onHelp,
         ),
         const Divider(height: 1),
         NavTile(

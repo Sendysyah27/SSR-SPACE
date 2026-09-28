@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
@@ -276,7 +277,7 @@ class _CatCard extends StatelessWidget {
             if (i > 0) const Divider(height: 1),
             _CatRow(
               name: items[i],
-              meta: meta[items[i]] ?? CatMeta.def,
+              meta: meta[items[i]],
               onDelete: () => onDelete(i),
               onColor: onColor,
               onIcon: onIcon,
@@ -288,10 +289,12 @@ class _CatCard extends StatelessWidget {
   }
 }
 
-/// Satu baris kategori: dot warna + ikon + nama + hapus.
+/// Satu baris kategori: dot warna + badge ikon + nama + hapus.
+/// Badge ikon WYSIWYG: resolusi sama persis dengan TxRow (meta lokal
+/// -> svg kustom + warna; tanpa meta -> svg kata kunci + tint primer).
 class _CatRow extends StatelessWidget {
   final String name;
-  final CatMeta meta;
+  final CatMeta? meta;
   final VoidCallback onDelete;
   final ValueChanged<String> onColor;
   final ValueChanged<String> onIcon;
@@ -306,6 +309,12 @@ class _CatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final m = meta;
+    final base = m == null
+        ? Theme.of(context).colorScheme.primary
+        : metaSlotColor(context, m.color);
+    final svg = m == null ? svgForCategory(name) : svgForMetaIcon(m.icon);
+    final dot = m == null ? metaSlotColor(context, 7) : base;
     return Row(
       children: [
         InkWell(
@@ -315,13 +324,29 @@ class _CatRow extends StatelessWidget {
             height: 20,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _metaPalette(context)[meta.color],
+              color: dot,
             ),
           ),
         ),
-        IconButton(
-          icon: DuoIcon(_metaIconData(meta.icon)),
-          onPressed: () => onIcon(name),
+        const SizedBox(width: 4),
+        InkWell(
+          onTap: () => onIcon(name),
+          borderRadius: BorderRadius.circular(11),
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: base.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Center(
+              child: SvgPicture.asset(
+                svg,
+                width: 19,
+                colorFilter: ColorFilter.mode(base, BlendMode.srcIn),
+              ),
+            ),
+          ),
         ),
         Expanded(
           child: Padding(

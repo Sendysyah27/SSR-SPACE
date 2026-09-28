@@ -11,7 +11,7 @@ Panduan kerja untuk agent / contributor di repo ini. Baca dulu sebelum ubah kode
 | Nama | **SSR SPACE** |
 | Path | `/data/data/com.termux/files/home/SSR SPACE` |
 | Remote | `https://github.com/Sendysyah27/SSR-SPACE.git` |
-| Versi | `2.4.2+25` (`pubspec.yaml`) |
+| Versi | `2.4.4+27` (`pubspec.yaml`) |
 | Stack | Flutter (stable) + Supabase (Auth + Postgres RLS) + Notification Listener |
 | Bahasa UI | Indonesia |
 | Build | GitHub Actions (`.github/workflows/apk.yml`), **bukan** lokal Termux |
@@ -397,7 +397,7 @@ ls -t /sdcard/DCIM/Screenshots | head -5
 6. **Test** untuk logic murni (parse, hash, budget math) wajib; jalankan via CI.
 7. File deliverable → `/sdcard/Download/SSR-SPACE/`. **Tester: hanya varian kecil `*-arm64.apk`** (universal di-skip, hemat tempat & share).
 8. Konfirmasi sebelum commit besar / push kalau user belum minta.
-9. **Version wajib naik tiap update app (Skema A):** setiap perubahan kode (`lib/`, `supabase/`, `.github/`, `pubspec.yaml`, `assets/`) yang di-push ke `main` wajib bump version — `pubspec.yaml` (`version:`) dan `lib/utils/app_info.dart` (`AppInfo.version`) harus identik; fix kecil → `+build` saja (`2.3.9+22` → `2.3.9+23`), fitur/perilaku baru → `+patch/minor`; catat versi baru di `AUDIT.md` §7. Docs-only (`AGENTS.md`/`AUDIT.md`/`README.md`/`docs/`) boleh tanpa bump. Tanpa bump = jangan push.
+9. **Version wajib naik tiap update app (Skema A):** setiap perubahan kode (`lib/`, `supabase/`, `.github/`, `pubspec.yaml`, `assets/`) yang di-push ke `main` wajib bump version — `pubspec.yaml` (`version:`) dan `lib/utils/app_info.dart` (`AppInfo.version`) harus identik; fix kecil → `+build` saja (`2.3.9+22` → `2.3.9+23`), fitur/perilaku baru → `+patch/minor`; catat versi baru di `AUDIT.md` §7. **Tiap bump version wajib tambah entri `assets/changelog_id.md`** (seksi "Yang baru di X.Y.Z" paling atas + sesuaikan "Versi terpasang") — changelog adalah janji ke user, jangan basi. Docs-only (`AGENTS.md`/`AUDIT.md`/`README.md`/`docs/`) boleh tanpa bump. Tanpa bump = jangan push.
 
 ---
 
@@ -418,3 +418,4 @@ For UI, copy, people, mobile layout, or code comments work, read `antislop.md` (
 Before starting, ask the user when antislop applies: during the work, or after it is done.
 <!-- antislop:end -->
 - **Pilihan tema Otomatis+Noir (2026-09-27, SDD 7 task, run CI berikut):** prefs `app_theme_choice` + `themeChoice` (default `otomatis`, fail-safe) + `SsrTheme.noir()` restore dari `0bdeb7b` + wiring `main` (noir → theme+darkTheme kembar, themeMode tetap system) + picker SegmentedButton di settings + `ThemeStepScreen` setup user baru (setelah consent, sebelum auth) + 127 `AppColors.` mati di 14 file dikonversi ke colorScheme (mapping spec §3; emeraldDeep/gold/chip TETAP; overlay TETAP). Bump `2.4.3+26`. Spec `docs/superpowers/specs/2026-09-27-theme-chooser-design.md`, plan `docs/superpowers/plans/2026-09-27-theme-chooser.md`.
+- **Fix 5 bug user (2026-09-28, `932c420`+`94c1201`, run `36359719439` hijau, 218 test):** (1) tema tak bisa balik Otomatis — `setThemeChoice` tolak semua selain `noir` → terima `otomatis`+`noir`, tolak sisanya (test tetap harapkan invalid no-op); (2) CSV round-trip — `15000.0` dibaca 150000 (buang titik tanpa nolnya) → pecahan nol 1-2 digit dibuang bareng titik, `.000` tetap ribuan, desimal tunggal `10.5` didukung; alias header `dompet_id`/`ke_dompet_id` (format cadangan); `matchWalletId` kenal UUID; pratinjau kosong tampilkan mapping + alasan tombol mati (`imp_need_wallet`); ekspor laporan tambah kolom `dompet,ke_dompet` + nominal bulat tanpa `.0`; (3) ikon kategori — meta tersimpan tapi nol konsumen → notifier global `categoryMeta` (seed di `main`, update tiap save) + `svgForMetaIcon`/`metaSlotColor` dipakai `TxRow._TxBadge` + `_RecapBadge` (tanpa meta = tampilan ledger lama); (4) settings — kartu Bahasa/Mata uang/Font dibungkus builder (reaktif), pintu hub bawa `focus` + auto-scroll (`SettingsScreen(focus)`), 6 hasil search `hub_*` beraksi nyata (toggle mask/dialog/share) bukan no-op — review menemukan delegate kembalikan `route` bukan titleKey → route distinktif `hub_mask/hub_about/...`; (5) ganti PIN via PIN lama dulu (`checkOld` → `verifyPin`, lockout jujur, tanpa-PIN langsung ke baru) + email magic-link jadi cadangan "Lupa PIN?" (kunci baru `st_pin_old/next/forgot`). Pelajaran: `dart` tanpa `--enable-asserts` memberi PASS palsu (2 fail CI lolos lokal) — selalu `--enable-asserts`; CI sempat merah 1x (fix `.0` setengah: `15000.0`→`150000`). Bump `2.4.4+27`. APK `SSR-SPACE-2.4.4-27-fix-5bug-arm64.apk`.

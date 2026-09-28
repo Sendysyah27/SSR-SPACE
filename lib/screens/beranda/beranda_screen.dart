@@ -33,8 +33,15 @@ class BerandaScreen extends StatefulWidget {
   final VoidCallback? onCatat;
   final VoidCallback? onBudget;
   final VoidCallback? onLaporan;
+  final VoidCallback? onProfil;
 
-  const BerandaScreen({super.key, this.onCatat, this.onBudget, this.onLaporan});
+  const BerandaScreen({
+    super.key,
+    this.onCatat,
+    this.onBudget,
+    this.onLaporan,
+    this.onProfil,
+  });
 
   @override
   State<BerandaScreen> createState() => BerandaScreenState();
@@ -206,8 +213,29 @@ class BerandaScreenState extends State<BerandaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final initial = orgName.trim().isEmpty || orgName == '-'
+        ? '?'
+        : orgName.trim()[0].toUpperCase();
     return Scaffold(
       appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: widget.onProfil,
+            child: CircleAvatar(
+              backgroundColor: scheme.primaryContainer,
+              child: Text(
+                initial,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: scheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ),
         title: Text(tr('nav_beranda')),
         actions: const [MaskToggle()],
       ),
