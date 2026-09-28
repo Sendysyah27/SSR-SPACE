@@ -451,6 +451,81 @@ exception when others then
 end $$;
 set role authenticated;
 
+-- ===== T16-T20: We Space (migration_15) =====
+-- User fiktif BARU (carol/dave sudah di-kick di T13, jangan dipakai).
+reset role;
+insert into auth.users (id) values
+  ('55555555-5555-4555-8555-555555555555'),
+  ('66666666-6666-4666-8666-666666666666')
+on conflict (id) do nothing;
+insert into org_members (org_id, user_id, role) values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '55555555-5555-4555-8555-555555555555', 'member'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '66666666-6666-4666-8666-666666666666', 'admin')
+on conflict do nothing;
+set role authenticated;
+
+-- T16: mode bebas (default) → member bisa insert.
+set test.user_id = '55555555-5555-4555-8555-555555555555';
+insert into transactions (org_id, type, amount, wallet_id, note, date)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 7000,
+  'eeeeeeee-eeee-4eee-8eee-eeeeeeeeee01', 'T16 bebas-member', current_date);
+select t_assert(exists (select 1 from transactions where note = 'T16 bebas-member'),
+  'T16 bebas-member insert lolos');
+
+-- T20a (duluankan): set_space_mode oleh member DITOLAK.
+do $$
+begin
+  perform public.set_space_mode('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'bendahara');
+  raise exception 'ASSERT GAGAL: T20 member bisa set mode';
+exception when others then
+  if sqlerrm not like '%NOT_ADMIN%' then raise; end if;
+end $$;
+
+-- Owner set bendahara (jalur RPC resmi).
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select public.set_space_mode('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'bendahara');
+select t_assert((select space_mode from organizations where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1') = 'bendahara',
+  'T20 owner set bendahara lolos');
+select t_assert(exists (select 1 from audit_logs
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1' and event = 'space_mode_change'),
+  'T20 audit space_mode_change tertulis');
+
+-- T17: mode bendahara → member insert DITOLAK RLS.
+set test.user_id = '55555555-5555-4555-8555-555555555555';
+do $$
+begin
+  insert into transactions (org_id, type, amount, wallet_id, note, date)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 7001,
+    'eeeeeeee-eeee-4eee-8eee-eeeeeeeeee01', 'T17 harus-gagal', current_date);
+  raise exception 'ASSERT GAGAL: T17 member bisa tulis di mode bendahara';
+exception when others then
+  if sqlerrm not like '%row-level security%' then raise; end if;
+end $$;
+
+-- T18: bendahara → owner + admin tetap bisa tulis.
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+insert into transactions (org_id, type, amount, wallet_id, note, date)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 7002,
+  'eeeeeeee-eeee-4eee-8eee-eeeeeeeeee01', 'T18 owner-bendahara', current_date);
+set test.user_id = '66666666-6666-4666-8666-666666666666';
+insert into transactions (org_id, type, amount, wallet_id, note, date)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 7003,
+  'eeeeeeee-eeee-4eee-8eee-eeeeeeeeee01', 'T18 admin-bendahara', current_date);
+select t_assert(exists (select 1 from transactions where note = 'T18 admin-bendahara'),
+  'T18 admin tulis di bendahara lolos');
+
+-- T19: baca member tetap jalan di mode bendahara.
+set test.user_id = '55555555-5555-4555-8555-555555555555';
+select t_assert((select count(*) from transactions
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1') >= 3,
+  'T19 member baca di bendahara lolos');
+
+-- T20b: owner kembalikan bebas (bersih untuk test lain).
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select public.set_space_mode('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'bebas');
+select t_assert((select space_mode from organizations where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1') = 'bebas',
+  'T20 mode kembali bebas');
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');
