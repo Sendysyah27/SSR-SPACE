@@ -27,6 +27,8 @@ import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
 import 'package:ssr_space/screens/workspace/invite_screen.dart';
 import 'package:ssr_space/screens/workspace/workspace_detail_screen.dart';
 import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
+// SPIKE THROWAWAY NFC (revert): entry layar uji baca saldo e-money.
+import 'package:ssr_space/screens/lainnya/nfc_spike_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_search.dart';
 import 'package:ssr_space/screens/lainnya/update_log_screen.dart';
 import 'package:ssr_space/screens/workspace/org_switcher_screen.dart';
@@ -415,6 +417,8 @@ class _OtherScreenState extends State<OtherScreen> {
             onBudgets: () => _push(const BudgetsScreen()),
             onHistory: () => _push(const TransactionsScreen()),
             onBills: () => _push(const RecurringBillsScreen()),
+            // SPIKE THROWAWAY NFC (revert): tile uji di seksi Data.
+            onNfcSpike: () => _push(const NfcSpikeScreen()),
             onTracking: () => _push(const NotifSettingsScreen()),
             onPopupChanged: _setPopup,
             onBackup: _backup,
@@ -449,6 +453,8 @@ class _HubList extends StatelessWidget {
   final VoidCallback onBudgets;
   final VoidCallback onHistory;
   final VoidCallback onBills;
+  // SPIKE THROWAWAY NFC (revert).
+  final VoidCallback onNfcSpike;
   final VoidCallback onTracking;
   final ValueChanged<bool> onPopupChanged;
   final VoidCallback onBackup;
@@ -476,6 +482,8 @@ class _HubList extends StatelessWidget {
     required this.onBudgets,
     required this.onHistory,
     required this.onBills,
+    // SPIKE THROWAWAY NFC (revert).
+    required this.onNfcSpike,
     required this.onTracking,
     required this.onPopupChanged,
     required this.onBackup,
@@ -502,6 +510,7 @@ class _HubList extends StatelessWidget {
         onBudgets: onBudgets,
         onHistory: onHistory,
         onBills: onBills,
+        onNfcSpike: onNfcSpike,
       ),
       _TrackingSection(
         tracking: tracking,
@@ -609,6 +618,8 @@ class _DataSection extends StatelessWidget {
   final VoidCallback onBudgets;
   final VoidCallback onHistory;
   final VoidCallback onBills;
+  // SPIKE THROWAWAY NFC (revert).
+  final VoidCallback onNfcSpike;
 
   const _DataSection({
     required this.onWallets,
@@ -616,6 +627,8 @@ class _DataSection extends StatelessWidget {
     required this.onBudgets,
     required this.onHistory,
     required this.onBills,
+    // SPIKE THROWAWAY NFC (revert).
+    required this.onNfcSpike,
   });
 
   @override
@@ -653,6 +666,14 @@ class _DataSection extends StatelessWidget {
           icon: AppIcons.bills,
           title: tr('rb_title'),
           onTap: onBills,
+        ),
+        const Divider(height: 1),
+        // SPIKE THROWAWAY NFC (revert): tile uji baca saldo e-money.
+        NavTile(
+          icon: AppIcons.scan,
+          title: 'Uji NFC (spike)',
+          subtitle: 'Tempel kartu e-money, baca saldo',
+          onTap: onNfcSpike,
         ),
       ],
     );

@@ -1,7 +1,7 @@
 name: ssr_space
 description: SSR SPACE - Simple. Secure. Reliable. Your Finance Space. Pencatatan keuangan multi-dompet dengan workspace bersama dan auto-track notifikasi bank.
 publish_to: 'none'
-version: 2.4.10+38
+version: 2.4.10+39
 environment:
   sdk: '>=3.11.0 <4.0.0'
 dependencies:
@@ -24,6 +24,8 @@ dependencies:
   # Dipin exact: apk.yml mem-patch Java plugin ini (fallback EXTRA_BIG_TEXT).
   # Jangan longgarkan ke ^ tanpa cek ulang string yang di-patch.
   notification_listener_service: 1.0.0
+  # SPIKE THROWAWAY NFC (revert setelah spike): baca saldo e-money.
+  prepaid_lib_flutter_null_safety: ^1.0.1
   app_links: ^7.2.1
   flutter_foreground_task: ^11.0.3
   flutter_overlay_window: ^0.5.0

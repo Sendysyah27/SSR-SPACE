@@ -190,6 +190,29 @@ jobs:
           import pathlib
           m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
           s = m.read_text()
+          # SPIKE THROWAWAY NFC (revert bareng kode): izin + fitur hardware.
+          # required=false supaya HP non-NFC tetap bisa install;
+          # dukungan NFC dicek saat runtime di layar uji.
+          if 'android.permission.NFC' not in s:
+              s = s.replace(
+                  '</manifest>',
+                  '    <uses-permission android:name="android.permission.NFC"/>\n</manifest>',
+              )
+          if 'android.hardware.nfc' not in s:
+              s = s.replace(
+                  '</manifest>',
+                  '    <uses-feature android:name="android.hardware.nfc" android:required="false"/>\n</manifest>',
+              )
+          m.write_text(s)
+          assert 'android.permission.NFC' in m.read_text()
+          assert 'android.hardware.nfc' in m.read_text()
+          print('nfc spike permission ok')
+          EOF
+      - run: |
+          python3 - <<'EOF'
+          import pathlib
+          m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
+          s = m.read_text()
           # Deep link magic-link ganti PIN: com.ssr.space.ssrspace://login-callback
           # (lihat pin_link_verify.dart; redirect URL didaftarkan di Dashboard).
           if 'com.ssr.space.ssrspace' not in s:
