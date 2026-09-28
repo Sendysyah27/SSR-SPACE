@@ -62,10 +62,10 @@ class AutoSavedNotify {
         ),
       );
       await _plugin.show(
-        autoSavedId(txId),
-        title,
-        body,
-        details,
+        id: autoSavedId(txId),
+        title: title,
+        body: body,
+        notificationDetails: details,
         payload: payloadOpen,
       );
     } catch (err, st) {
