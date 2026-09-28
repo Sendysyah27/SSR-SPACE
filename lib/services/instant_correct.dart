@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/utils/mask.dart';
@@ -93,6 +94,10 @@ class InstantCorrect {
   }
 
   /// Tawarkan koreksi setelah insert sukses. Tak pernah melempar.
+  /// Overlay bubble prioritas; bila tak bisa tampil (popup mati, tanpa
+  /// izin, diblokir OEM) jatuh ke notifikasi head-up sistem supaya tiap
+  /// transaksi tersimpan tetap terlihat. Tak ada ganda: fallback hanya
+  /// bila overlay tak tampil.
   static Future<void> offer({
     required String txId,
     required String type,
@@ -114,24 +119,38 @@ class InstantCorrect {
         } catch (_) {}
       });
       if (!popupEnabled(prefs)) return;
-      if (!await FlutterOverlayWindow.isPermissionGranted()) return;
+      var shown = false;
       try {
-        await FlutterOverlayWindow.closeOverlay();
-      } catch (_) {}
-      await FlutterOverlayWindow.showOverlay(
-        overlayTitle: tr('ic_overlay_t'),
-        overlayContent: s,
-      );
-      final payload = jsonEncode({
-        'tx': txId,
-        'title': tr('ic_overlay_t'),
-        'body': s,
-        'ok': tr('ic_lengkapi'),
-        'no': tr('ic_tutup'),
-      });
-      await FlutterOverlayWindow.shareData(payload);
-      await Future.delayed(const Duration(milliseconds: 600));
-      await FlutterOverlayWindow.shareData(payload);
+        if (await FlutterOverlayWindow.isPermissionGranted()) {
+          try {
+            await FlutterOverlayWindow.closeOverlay();
+          } catch (_) {}
+          await FlutterOverlayWindow.showOverlay(
+            overlayTitle: tr('ic_overlay_t'),
+            overlayContent: s,
+          );
+          final payload = jsonEncode({
+            'tx': txId,
+            'title': tr('ic_overlay_t'),
+            'body': s,
+            'ok': tr('ic_lengkapi'),
+            'no': tr('ic_tutup'),
+          });
+          await FlutterOverlayWindow.shareData(payload);
+          await Future.delayed(const Duration(milliseconds: 600));
+          await FlutterOverlayWindow.shareData(payload);
+          shown = true;
+        }
+      } catch (err, st) {
+        ErrorReporter.capture(err, st, context: 'instant_correct_overlay');
+      }
+      if (!shown) {
+        await AutoSavedNotify.show(
+          txId: txId,
+          title: tr('ic_overlay_t'),
+          body: s,
+        );
+      }
     } catch (err, st) {
       ErrorReporter.capture(err, st, context: 'instant_correct');
     }

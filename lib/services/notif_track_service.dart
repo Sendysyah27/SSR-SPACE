@@ -469,7 +469,7 @@ class NotifTrack {
     final walletId = await resolveWalletId(orgId, label, prefs);
     final category = prefs.getString(catPrefKey(label))?.trim();
     try {
-      await TransactionService().add(
+      final txId = await TransactionService().add(
         orgId: orgId,
         type: type,
         amount: n.amount!,
@@ -482,6 +482,14 @@ class NotifTrack {
       );
       n.type = type;
       n.status = tr('st_saved');
+      if (txId != null) {
+        await InstantCorrect.offer(
+          txId: txId,
+          type: type,
+          amount: n.amount!,
+          app: label,
+        );
+      }
       return tr('st_saved');
     } on PostgrestException catch (err) {
       ErrorReporter.capture(err, StackTrace.current, context: 'notif_force');

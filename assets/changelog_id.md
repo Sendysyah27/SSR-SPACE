@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.4.5+28.
+Versi terpasang: 2.4.6+29.
+
+## Yang baru di 2.4.6
+
+1. Tiap transaksi tersimpan (otomatis maupun manual) memunculkan pemberitahuan berisi detailnya; bila overlay diblokir HP, tampil notifikasi sistem sebagai cadangan.
 
 ## Yang baru di 2.4.5
 
