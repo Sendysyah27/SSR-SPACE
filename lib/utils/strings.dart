@@ -1403,10 +1403,6 @@ const _t = <String, Map<String, String>>{
   'sp_badmode': {'id': 'Mode tidak dikenal.', 'en': 'Unknown mode.'},
   'sp_by_you': {'id': 'Kamu', 'en': 'You'},
   'sp_by_member': {'id': 'Anggota •{s}', 'en': 'Member •{s}'},
-  'sp_mode_need_pin': {
-    'id': 'Konfirmasi PIN untuk ganti mode.',
-    'en': 'Confirm PIN to change mode.',
-  },
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

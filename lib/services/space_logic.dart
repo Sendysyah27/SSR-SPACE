@@ -1,5 +1,4 @@
 /// Logika murni We Space (tanpa flutter/supabase) — bisa diuji `dart` lokal.
-library;
 
 /// Parse mode dari kolom `organizations.space_mode`. Fail-open: apapun yang
 /// bukan 'bendahara' persis → 'bebas' (perilaku lama, data tetap terlihat).

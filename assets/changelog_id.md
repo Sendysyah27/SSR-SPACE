@@ -1,6 +1,13 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.5.0+47.
+Versi terpasang: 2.6.0+48.
+
+## Yang baru di 2.6.0
+
+1. Mode Space per workspace: Bebas (semua anggota catat) atau Bendahara (hanya owner/admin yang catat, anggota lain melihat). Ganti mode di detail workspace dengan PIN.
+2. Layar Aktivitas Space: siapa catat/undang/ubah mode, dengan penanda baru yang hilang setelah dibuka.
+3. Tiap baris transaksi kini berlabel pencatat (Kamu/Anggota) tanpa membuka nama atau email siapa pun.
+4. Anggota di Space bendahara yang mencoba catat mendapat penolakan jelas, bukan error teknis.
 
 ## Yang baru di 2.5.0
 
