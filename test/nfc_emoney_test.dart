@@ -64,4 +64,14 @@ void main() {
     expect(capList([1, 2, 3], 20), [1, 2, 3]);
     expect(capList([for (var i = 0; i < 60; i++) i], 50).length, 50);
   });
+
+  test('histori toleran angka numerik + string', () {
+    final out = parseNfcHistory('[{"amount":9000,"balance":100,"counter":15,"date":"d","tid":"t","type":"2001"}]');
+    expect(out.length, 1);
+    expect(out.first.amount, 9000);
+    expect(
+      NfcCheck.tryParse({'uid': 'U', 'bank': 'B', 'balance': '250', 'at': '2026-09-28T00:00:00.000'})!.balance,
+      250,
+    );
+  });
 }

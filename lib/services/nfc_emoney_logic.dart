@@ -2,6 +2,12 @@
 // Tanpa import Flutter — cek lokal via dart --enable-asserts.
 import 'dart:convert';
 
+int? _toInt(dynamic v) {
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v.trim());
+  return null;
+}
+
 enum NfcEntryDir { credit, debit, unknown }
 
 NfcEntryDir nfcDirOf(String type) => switch (type) {
@@ -51,9 +57,9 @@ List<NfcCardEntry> parseNfcHistory(String raw) {
     final out = <NfcCardEntry>[];
     for (final e in decoded) {
       if (e is! Map) continue;
-      final amount = (e['amount'] as num?)?.toInt();
-      final balance = (e['balance'] as num?)?.toInt();
-      final counter = (e['counter'] as num?)?.toInt();
+      final amount = _toInt(e['amount']);
+      final balance = _toInt(e['balance']);
+      final counter = _toInt(e['counter']);
       final date = e['date']?.toString() ?? '';
       final tid = e['tid']?.toString() ?? '';
       final type = e['type']?.toString() ?? '';
@@ -137,7 +143,7 @@ class NfcCheck {
   static NfcCheck? tryParse(dynamic raw) {
     if (raw is! Map) return null;
     final uid = raw['uid']?.toString() ?? '';
-    final balance = (raw['balance'] as num?)?.toInt();
+    final balance = _toInt(raw['balance']);
     final at = raw['at']?.toString() ?? '';
     if (uid.isEmpty || balance == null || DateTime.tryParse(at) == null) {
       return null;
