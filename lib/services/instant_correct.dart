@@ -94,10 +94,10 @@ class InstantCorrect {
   }
 
   /// Tawarkan koreksi setelah insert sukses. Tak pernah melempar.
-  /// Overlay bubble prioritas; bila tak bisa tampil (popup mati, tanpa
-  /// izin, diblokir OEM) jatuh ke notifikasi head-up sistem supaya tiap
-  /// transaksi tersimpan tetap terlihat. Tak ada ganda: fallback hanya
-  /// bila overlay tak tampil.
+  /// Overlay bubble dicoba dulu (bila izin ada); notifikasi head-up
+  /// sistem SELALU ditembakkan karena kegagalan overlay tak terdeteksi
+  /// di sebagian HP (MIUI menelan diam-diam tanpa error). Ketuk
+  /// keduanya bermuara ke sheet koreksi yang sama via pending.
   static Future<void> offer({
     required String txId,
     required String type,
@@ -119,7 +119,6 @@ class InstantCorrect {
         } catch (_) {}
       });
       if (!popupEnabled(prefs)) return;
-      var shown = false;
       try {
         if (await FlutterOverlayWindow.isPermissionGranted()) {
           try {
@@ -139,18 +138,15 @@ class InstantCorrect {
           await FlutterOverlayWindow.shareData(payload);
           await Future.delayed(const Duration(milliseconds: 600));
           await FlutterOverlayWindow.shareData(payload);
-          shown = true;
         }
       } catch (err, st) {
         ErrorReporter.capture(err, st, context: 'instant_correct_overlay');
       }
-      if (!shown) {
-        await AutoSavedNotify.show(
-          txId: txId,
-          title: tr('ic_overlay_t'),
-          body: s,
-        );
-      }
+      await AutoSavedNotify.show(
+        txId: txId,
+        title: tr('ic_overlay_t'),
+        body: s,
+      );
     } catch (err, st) {
       ErrorReporter.capture(err, st, context: 'instant_correct');
     }
