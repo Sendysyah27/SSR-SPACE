@@ -1396,6 +1396,14 @@ const _t = <String, Map<String, String>>{
   },
   'w_opening': {'id': 'Saldo awal (opsional)', 'en': 'Opening balance (optional)'},
   'w_renamed': {'id': 'Dompet diperbarui', 'en': 'Wallet updated'},
+  // NFC: taut dompet
+  'nfc_make_wallet': {'id': 'Jadikan dompet', 'en': 'Make wallet'},
+  'nfc_wallet_made': {
+    'id': 'Dompet dibuat + saldo awal tercatat',
+    'en': 'Wallet created with opening balance',
+  },
+  'nfc_matched': {'id': 'Sudah cocok dengan buku', 'en': 'Matches the books'},
+  'nfc_diff': {'id': 'Selisih {m}', 'en': 'Difference {m}'},
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

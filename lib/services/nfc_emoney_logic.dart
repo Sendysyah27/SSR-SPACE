@@ -162,3 +162,16 @@ const maxNfcChecks = 50;
 
 List<T> capList<T>(List<T> all, int max) =>
     all.length <= max ? List<T>.of(all) : all.sublist(0, max);
+
+/// Selisih kartu vs buku: null bila cocok. card>book = in (top-up luar
+/// buku), card<book = out (belanja luar buku). Negatif = invalid → null.
+({String type, double amount})? nfcAdjustmentFor({
+  required double book,
+  required int card,
+}) {
+  if (book < 0 || card < 0) return null;
+  final diff = card - book;
+  if (diff == 0) return null;
+  if (diff > 0) return (type: 'in', amount: diff);
+  return (type: 'out', amount: -diff);
+}

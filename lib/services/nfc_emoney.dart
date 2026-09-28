@@ -7,6 +7,9 @@ import 'package:prepaid_lib_flutter_null_safety/unik_lib_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/nfc_emoney_logic.dart';
+import 'package:ssr_space/services/notif_parse.dart';
+import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/wallet_service.dart';
 
 bool _nfcInitDone = false;
 
@@ -169,4 +172,60 @@ Future<void> addNfcCheck(NfcCheck check) async {
     _kNfcChecks,
     jsonEncode([for (final c in capped) c.toJson()]),
   );
+}
+
+/// Kartu → dompet baru + saldo awal + taut. Gagal tengah = rollback
+/// (hapus wallet fresh + buang taut). Saldo 0 = dompet kosong.
+Future<String> linkCardAsWallet({
+  required String orgId,
+  required String bank,
+  required String last4,
+  required int balance,
+  required String uid,
+}) async {
+  final walletId =
+      await WalletService().create(orgId, '$bank •• $last4', 'ewallet');
+  try {
+    final all = await loadNfcCards();
+    all.removeWhere((c) => c.uid == uid);
+    all.insert(
+      0,
+      NfcCard(
+        uid: uid,
+        bank: bank,
+        last4: last4,
+        label: '$bank •• $last4',
+        walletId: walletId,
+        addedAt: DateTime.now().toIso8601String(),
+      ),
+    );
+    await saveNfcCards(all);
+    if (balance > 0) {
+      final now = DateTime.now();
+      await TransactionService().add(
+        orgId: orgId,
+        type: 'in',
+        amount: balance.toDouble(),
+        walletId: walletId,
+        category: 'Saldo awal',
+        note: 'Saldo awal $bank •• $last4 via NFC',
+        date: ymd(now),
+      );
+      await addNfcCheck(NfcCheck(
+        uid: uid,
+        bank: bank,
+        balance: balance,
+        at: now.toIso8601String(),
+      ));
+    }
+    return walletId;
+  } catch (e) {
+    try {
+      await WalletService().deleteWallet(walletId, orgId);
+    } catch (_) {}
+    final all = await loadNfcCards();
+    all.removeWhere((c) => c.uid == uid);
+    await saveNfcCards(all);
+    rethrow;
+  }
 }

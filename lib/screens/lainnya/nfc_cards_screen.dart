@@ -6,11 +6,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/services/nfc_emoney.dart';
 import 'package:ssr_space/services/nfc_emoney_logic.dart';
+import 'package:ssr_space/services/notif_parse.dart';
+import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/section_card.dart';
+
+String _last4(String n) {
+  final t = n.trim();
+  return t.length >= 4 ? t.substring(t.length - 4) : '';
+}
 
 class NfcCardsScreen extends StatefulWidget {
   const NfcCardsScreen({super.key});
@@ -79,13 +87,86 @@ class _NfcCardsScreenState extends State<NfcCardsScreen> {
       );
       return;
     }
+    final wid = _linkedId(read.uid);
+    if (wid == null) {
+      await _showResult(read, wid: null, matched: false);
+      return;
+    }
+    await _scanLinked(read, wid);
+  }
+
+  String? _linkedId(String uid) {
+    for (final c in cards) {
+      if (c.uid == uid) return c.walletId;
+    }
+    return null;
+  }
+
+  Future<void> _showResult(
+    NfcCardRead read, {
+    required String? wid,
+    required bool matched,
+  }) async {
+    if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => _ResultSheet(
         read: read,
         wallets: wallets,
+        linkedWalletId: wid,
+        matched: matched,
         onSave: _save,
+        onMade: () async {
+          await _load();
+        },
+      ),
+    );
+  }
+
+  Future<void> _scanLinked(NfcCardRead read, String wid) async {
+    final orgId = await activeOrgId();
+    double? book;
+    try {
+      final bs = await WalletService().balances(orgId);
+      for (final b in bs) {
+        if (b.walletId == wid) {
+          book = b.balance;
+          break;
+        }
+      }
+    } catch (e) {
+      debugPrint('nfc book: $e');
+    }
+    if (book == null) {
+      final all = await loadNfcCards();
+      all.removeWhere((c) => c.uid == read.uid);
+      await saveNfcCards(all);
+      await _load();
+      await _showResult(read, wid: null, matched: false);
+      return;
+    }
+    if (!mounted) return;
+    if (read.balance == null) {
+      await _showResult(read, wid: wid, matched: false);
+      return;
+    }
+    final adj = nfcAdjustmentFor(book: book, card: read.balance!);
+    if (!mounted) return;
+    if (adj == null) {
+      await _showResult(read, wid: wid, matched: true);
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _AdjustSheet(
+        read: read,
+        walletId: wid,
+        offer: adj,
+        last4: _last4(read.number),
+        orgId: orgId,
+        onDone: _load,
       ),
     );
   }
@@ -336,19 +417,67 @@ class _ResultSheet extends StatefulWidget {
   final NfcCardRead read;
   final List<Wallet> wallets;
   final Future<void> Function(NfcCardRead, String?) onSave;
+  final String? linkedWalletId;
+  final Future<void> Function() onMade;
+  final bool matched;
 
   const _ResultSheet({
     required this.read,
     required this.wallets,
     required this.onSave,
+    required this.linkedWalletId,
+    required this.onMade,
+    required this.matched,
   });
 
   @override
   State<_ResultSheet> createState() => _ResultSheetState();
 }
 
+class _BalanceHead extends StatelessWidget {
+  final NfcCardRead read;
+  final bool matched;
+
+  const _BalanceHead({required this.read, required this.matched});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(tr('nfc_balance')),
+        Text(
+          read.balance == null ? '-' : amt(read.balance!),
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        Text(read.bank),
+        if (matched) ...[
+          const SizedBox(height: SsrSpace.sm),
+          Text(tr('nfc_matched')),
+        ],
+      ],
+    );
+  }
+}
+
+class _MakeWalletBtn extends StatelessWidget {
+  final bool busy;
+  final VoidCallback onTap;
+
+  const _MakeWalletBtn({required this.busy, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+      onPressed: busy ? null : onTap,
+      child: Text(tr('nfc_make_wallet')),
+    );
+  }
+}
+
 class _ResultSheetState extends State<_ResultSheet> {
   String? _walletId;
+  bool busy = false;
 
   String _dirLabel(NfcEntryDir dir) {
     return switch (dir) {
@@ -381,6 +510,32 @@ class _ResultSheetState extends State<_ResultSheet> {
     Navigator.pop(context);
   }
 
+  Future<void> _make() async {
+    setState(() => busy = true);
+    try {
+      final orgId = await activeOrgId();
+      await linkCardAsWallet(
+        orgId: orgId,
+        bank: widget.read.bank,
+        last4: _last4(widget.read.number),
+        balance: widget.read.balance ?? 0,
+        uid: widget.read.uid,
+      );
+      await widget.onMade();
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('nfc_wallet_made'))),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('nfc_read_fail'))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -389,13 +544,12 @@ class _ResultSheetState extends State<_ResultSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(tr('nfc_balance')),
-            Text(
-              widget.read.balance == null ? '-' : amt(widget.read.balance!),
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            Text(widget.read.bank),
+            _BalanceHead(read: widget.read, matched: widget.matched),
             const SizedBox(height: SsrSpace.md),
+            if (widget.linkedWalletId == null) ...[
+              _MakeWalletBtn(busy: busy, onTap: _make),
+              const SizedBox(height: SsrSpace.md),
+            ],
             DropdownButtonFormField<String?>(
               initialValue: _walletId,
               hint: Text(tr('nfc_link')),
@@ -420,6 +574,90 @@ class _ResultSheetState extends State<_ResultSheet> {
             FilledButton(
               onPressed: _onSave,
               child: Text(tr('nfc_save')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Sheet tawar selisih: kartu tertaut tapi saldo beda vs buku.
+class _AdjustSheet extends StatefulWidget {
+  final NfcCardRead read;
+  final String walletId;
+  final ({String type, double amount}) offer;
+  final String last4;
+  final String orgId;
+  final Future<void> Function() onDone;
+
+  const _AdjustSheet({
+    required this.read,
+    required this.walletId,
+    required this.offer,
+    required this.last4,
+    required this.orgId,
+    required this.onDone,
+  });
+
+  @override
+  State<_AdjustSheet> createState() => _AdjustSheetState();
+}
+
+class _AdjustSheetState extends State<_AdjustSheet> {
+  bool busy = false;
+
+  Future<void> _record() async {
+    setState(() => busy = true);
+    try {
+      await TransactionService().add(
+        orgId: widget.orgId,
+        type: widget.offer.type,
+        amount: widget.offer.amount,
+        walletId: widget.walletId,
+        category: 'Penyesuaian',
+        note: 'Penyesuaian NFC ${widget.read.bank} •• ${widget.last4}',
+        date: ymd(DateTime.now()),
+      );
+      await widget.onDone();
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('tx_updated'))),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('nfc_read_fail'))),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(SsrSpace.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              tr('nfc_diff').replaceFirst('{m}', amt(widget.offer.amount)),
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            Text(
+              widget.offer.type == 'in' ? tr('nfc_in') : tr('nfc_out'),
+            ),
+            const SizedBox(height: SsrSpace.md),
+            FilledButton(
+              onPressed: busy ? null : _record,
+              child: Text(tr('rb_record')),
+            ),
+            const SizedBox(height: SsrSpace.sm),
+            OutlinedButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(tr('rb_skip')),
             ),
           ],
         ),

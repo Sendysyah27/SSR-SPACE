@@ -102,4 +102,13 @@ void main() {
     expect(checks.length, 1);
     expect(checks.first.balance, 100);
   });
+
+  test('selisih dua arah + cocok', () {
+    expect(nfcAdjustmentFor(book: 9100, card: 100)!.type, 'out');
+    expect(nfcAdjustmentFor(book: 9100, card: 100)!.amount, 9000);
+    expect(nfcAdjustmentFor(book: 100, card: 50000)!.type, 'in');
+    expect(nfcAdjustmentFor(book: 100, card: 50000)!.amount, 49900);
+    expect(nfcAdjustmentFor(book: 100, card: 100), isNull);
+    expect(nfcAdjustmentFor(book: -1, card: 100), isNull);
+  });
 }
