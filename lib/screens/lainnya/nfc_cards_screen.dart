@@ -154,7 +154,7 @@ class _NfcCardsScreenState extends State<NfcCardsScreen> {
               padding: const EdgeInsets.all(SsrSpace.lg),
               children: [
                 if (nfcAv == NFCAvailability.not_supported)
-                  _NoNfcCard()
+                  const _NoNfcCard()
                 else ...[
                   if (nfcAv == NFCAvailability.disabled)
                     _NfcOffBanner(onRetry: _load),
