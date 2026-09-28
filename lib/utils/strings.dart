@@ -1372,6 +1372,19 @@ const _t = <String, Map<String, String>>{
     'en': 'Card read failed. Tap again.',
   },
   'nfc_delete': {'id': 'Hapus kartu ini?', 'en': 'Delete this card?'},
+  // Dompet: kelola
+  'w_rename_t': {'id': 'Ubah dompet', 'en': 'Edit wallet'},
+  'w_has_tx': {
+    'id': 'Dompet berisi transaksi — hapus tidak bisa. Ubah nama bila perlu.',
+    'en': 'Wallet has transactions — cannot delete. Rename if needed.',
+  },
+  'w_deleted': {'id': 'Dompet dihapus', 'en': 'Wallet deleted'},
+  'w_del_confirm': {
+    'id': 'Hapus dompet ini? Tindakan tak bisa dibatalkan.',
+    'en': 'Delete this wallet? Cannot be undone.',
+  },
+  'w_opening': {'id': 'Saldo awal (opsional)', 'en': 'Opening balance (optional)'},
+  'w_renamed': {'id': 'Dompet diperbarui', 'en': 'Wallet updated'},
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

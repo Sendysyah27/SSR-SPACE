@@ -7,9 +7,12 @@ import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_day_group.dart';
 import 'package:ssr_space/services/saving.dart';
+import 'package:ssr_space/services/wallet_edit_logic.dart';
+import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/widgets/day_header.dart';
+import 'package:ssr_space/widgets/pin_dialog.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
@@ -74,10 +77,158 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
   }
 
+  String _typeLabel(String t) {
+    switch (t) {
+      case 'cash':
+        return tr('w_cash');
+      case 'ewallet':
+        return tr('w_ewallet');
+      case 'bank':
+        return tr('w_bank');
+      case 'savings':
+        return tr('w_savings');
+      case 'investment':
+        return tr('w_investment');
+      default:
+        return t;
+    }
+  }
+
+  Future<void> _edit() async {
+    final nameC = TextEditingController(text: widget.wallet.name);
+    var type = widget.wallet.type;
+    try {
+      final saved = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(tr('w_rename_t')),
+          content: StatefulBuilder(
+            builder: (ctx, setD) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameC,
+                  decoration: InputDecoration(labelText: tr('w_f_name')),
+                ),
+                const SizedBox(height: SsrSpace.md),
+                DropdownButtonFormField<String>(
+                  initialValue: type,
+                  decoration: InputDecoration(labelText: tr('w_f_type')),
+                  items: [
+                    for (final t in ['cash', 'ewallet', 'bank', 'savings', 'investment'])
+                      DropdownMenuItem(value: t, child: Text(_typeLabel(t))),
+                  ],
+                  onChanged: (v) => setD(() => type = v ?? type),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(tr('cancel')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(tr('save')),
+            ),
+          ],
+        ),
+      );
+      if (saved != true || !mounted) return;
+      final name = nameC.text.trim();
+      if (!isValidWalletName(nameC.text)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('w_err_name'))),
+        );
+        return;
+      }
+      final orgId = await activeOrgId();
+      final svc = WalletService();
+      if (name != widget.wallet.name) await svc.rename(widget.wallet.id, orgId, name);
+      if (isKnownWalletType(type) && type != widget.wallet.type) {
+        await svc.changeType(widget.wallet.id, orgId, type);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('w_renamed'))),
+      );
+      Navigator.pop(context, true);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('w_err_save'))),
+      );
+    } finally {
+      nameC.dispose();
+    }
+  }
+
+  Future<void> _remove() async {
+    final pinOk = await askPinDialog(context);
+    if (!pinOk || !mounted) return;
+    try {
+      final orgId = await activeOrgId();
+      final svc = WalletService();
+      if (await svc.hasTransactions(orgId, widget.wallet.id)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('w_has_tx'))),
+        );
+        return;
+      }
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(tr('w_del_confirm')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(tr('cancel')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(tr('tx_delete')),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+      try {
+        await svc.deleteWallet(widget.wallet.id, orgId);
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('w_has_tx'))),
+        );
+        return;
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('w_deleted'))),
+      );
+      Navigator.pop(context, true);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('w_err_save'))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.wallet.name)),
+      appBar: AppBar(
+        title: Text(widget.wallet.name),
+        actions: [
+          IconButton(
+            icon: const DuoIcon(AppIcons.settings),
+            tooltip: tr('w_rename_t'),
+            onPressed: _edit,
+          ),
+        ],
+      ),
       body: _body(),
     );
   }
@@ -129,7 +280,34 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           )
         else
           _HistoryCard(items: visible),
+        const SizedBox(height: SsrSpace.lg),
+        _DeleteSection(onPressed: _remove),
       ],
+    );
+  }
+}
+
+/// Zona bahaya: hapus dompet (kunci PIN, hanya bila kosong transaksi).
+class _DeleteSection extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _DeleteSection({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: onPressed,
+            child: Text(tr('tx_delete')),
+          ),
+        ],
+      ),
     );
   }
 }

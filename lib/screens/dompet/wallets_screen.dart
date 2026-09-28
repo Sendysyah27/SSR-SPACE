@@ -6,6 +6,8 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/wallet_composition.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/services/notif_parse.dart';
+import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/wallet.dart';
@@ -35,6 +37,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
   String? err;
   String? formErr;
   final nameC = TextEditingController();
+  final openC = TextEditingController();
   final nameFocus = FocusNode();
   String type = 'cash';
 
@@ -47,6 +50,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
   @override
   void dispose() {
     nameC.dispose();
+    openC.dispose();
     nameFocus.dispose();
     super.dispose();
   }
@@ -153,7 +157,31 @@ class _WalletsScreenState extends State<WalletsScreen> {
     });
     try {
       final orgId = await activeOrgId();
-      await WalletService().create(orgId, name, type);
+      final id = await WalletService().create(orgId, name, type);
+      final opening =
+          int.tryParse(openC.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+      if (opening > 0) {
+        try {
+          await TransactionService().add(
+            orgId: orgId,
+            type: 'in',
+            amount: opening.toDouble(),
+            walletId: id,
+            category: 'Saldo awal',
+            note: 'Saldo awal $name',
+            date: ymd(DateTime.now()),
+          );
+        } catch (_) {
+          try {
+            await WalletService().deleteWallet(id, orgId);
+          } catch (_) {}
+          await _load();
+          if (!mounted) return;
+          setState(() => formErr = tr('w_err_save'));
+          return;
+        }
+      }
+      openC.clear();
       nameC.clear();
       await _load();
       if (mounted) {
@@ -204,10 +232,12 @@ class _WalletsScreenState extends State<WalletsScreen> {
             typeLabelOf: _typeLabel,
             balanceTextOf: _balanceLabel,
             onFocusForm: _focusForm,
+            onChanged: _load,
           ),
           if (comp != null) _CompositionStrip(comp: comp),
           _NewWalletForm(
             nameC: nameC,
+            openC: openC,
             nameFocus: nameFocus,
             type: type,
             formErr: formErr,
@@ -242,6 +272,7 @@ class _WalletOverview extends StatelessWidget {
   final String Function(String type) typeLabelOf;
   final String Function(String walletId) balanceTextOf;
   final VoidCallback onFocusForm;
+  final Future<void> Function() onChanged;
 
   const _WalletOverview({
     required this.total,
@@ -249,6 +280,7 @@ class _WalletOverview extends StatelessWidget {
     required this.typeLabelOf,
     required this.balanceTextOf,
     required this.onFocusForm,
+    required this.onChanged,
   });
 
   @override
@@ -284,6 +316,7 @@ class _WalletOverview extends StatelessWidget {
             items: items,
             typeLabelOf: typeLabelOf,
             balanceTextOf: balanceTextOf,
+            onChanged: onChanged,
           ),
       ],
     );
@@ -293,6 +326,7 @@ class _WalletOverview extends StatelessWidget {
 /// Kartu form "Dompet baru": nama + jenis + tombol simpan.
 class _NewWalletForm extends StatelessWidget {
   final TextEditingController nameC;
+  final TextEditingController openC;
   final FocusNode nameFocus;
   final String type;
   final String? formErr;
@@ -302,6 +336,7 @@ class _NewWalletForm extends StatelessWidget {
 
   const _NewWalletForm({
     required this.nameC,
+    required this.openC,
     required this.nameFocus,
     required this.type,
     required this.formErr,
@@ -325,6 +360,12 @@ class _NewWalletForm extends StatelessWidget {
           ),
           const SizedBox(height: SsrSpace.md),
           _WalletTypeField(type: type, onChanged: onTypeChanged),
+          const SizedBox(height: SsrSpace.md),
+          TextField(
+            controller: openC,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(labelText: tr('w_opening')),
+          ),
           if (formErr != null) ...[
             const SizedBox(height: SsrSpace.sm),
             Text(
@@ -381,11 +422,13 @@ class _WalletListCard extends StatelessWidget {
   final List<Wallet> items;
   final String Function(String type) typeLabelOf;
   final String Function(String walletId) balanceTextOf;
+  final Future<void> Function() onChanged;
 
   const _WalletListCard({
     required this.items,
     required this.typeLabelOf,
     required this.balanceTextOf,
+    required this.onChanged,
   });
 
   @override
@@ -405,16 +448,19 @@ class _WalletListCard extends StatelessWidget {
               type: items[i].type,
               typeLabel: typeLabelOf(items[i].type),
               balanceText: balanceTextOf(items[i].id),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => WalletDetailScreen(
-                    wallet: items[i],
-                    balanceText: balanceTextOf(items[i].id),
-                    typeLabel: typeLabelOf(items[i].type),
+              onTap: () async {
+                final r = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => WalletDetailScreen(
+                      wallet: items[i],
+                      balanceText: balanceTextOf(items[i].id),
+                      typeLabel: typeLabelOf(items[i].type),
+                    ),
                   ),
-                ),
-              ),
+                );
+                if (r == true) await onChanged();
+              },
             ),
           ],
         ],
