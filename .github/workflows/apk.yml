@@ -79,7 +79,7 @@ jobs:
           # 1. jcenter() mati -> mavenCentral().
           # 2. namespace wajib AGP 8+ -> ambil dari package= di manifest
           #    plugin sendiri.
-          # 3. compileSdk minimal 34.
+          # 3. compileSdk minimal 35 (flutter_nfc_kit transitif butuh 35+).
           # Idempoten + assert keras. Ronde terakhir: bila masih merah
           # karena isi native-nya (embedding v1 dsb), pendekatan A divonis
           # mati dan spike di-revert.
@@ -103,11 +103,11 @@ jobs:
               s = s.replace('android {',
                             'android {\n    namespace "' + mm.group(1) + '"', 1)
           m2 = re.search(r'compileSdkVersion\s+(\d+)', s)
-          if m2 and int(m2.group(1)) < 34:
-              s = s.replace(m2.group(0), 'compileSdkVersion 34')
+          if m2 and int(m2.group(1)) < 35:
+              s = s.replace(m2.group(0), 'compileSdkVersion 35')
           m3 = re.search(r'compileSdk\s+(\d+)', s)
-          if m3 and int(m3.group(1)) < 34:
-              s = s.replace(m3.group(0), 'compileSdk 34')
+          if m3 and int(m3.group(1)) < 35:
+              s = s.replace(m3.group(0), 'compileSdk 35')
           # 4. JVM target tak konsisten (Java 1.8 vs Kotlin 17):
           #    selaraskan Kotlin ke 1.8 bila belum ada jvmTarget.
           if 'jvmTarget' not in s:
