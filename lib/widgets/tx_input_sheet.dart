@@ -9,6 +9,7 @@ import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/quick_input_parse.dart';
+import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/tx_validation.dart';
@@ -349,6 +350,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
   }
 
   String _txError(Object e) {
+    // Mode bendahara: pesan jujur dari service (bukan error teknis).
+    if (e is SpaceException) return e.message;
     if (e is PostgrestException) {
       switch (e.code) {
         case '42501':

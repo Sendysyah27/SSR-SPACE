@@ -1,6 +1,9 @@
 import 'package:ssr_space/services/month.dart';
+import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/models/transaction.dart';
+import 'package:ssr_space/utils/strings.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 String _ymd(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-'
@@ -170,27 +173,34 @@ class TransactionService {
     String? sourceHash,
   }) async {
     assert(amount > 0);
-    final row = await SupabaseConfig.client
-        .from('transactions')
-        .insert(
-          txInsertPayload(
-            orgId: orgId,
-            type: type,
-            amount: amount,
-            walletId: walletId,
-            toWalletId: toWalletId,
-            category: category,
-            note: note,
-            code: code,
-            date: date,
-            createdAt: createdAt,
-            sourcePackage: sourcePackage,
-            sourceHash: sourceHash,
-            createdBy: SupabaseConfig.client.auth.currentUser?.id,
-          ),
-        )
-        .select('id')
-        .single();
+    Map<String, dynamic> row;
+    try {
+      row = await SupabaseConfig.client
+          .from('transactions')
+          .insert(
+            txInsertPayload(
+              orgId: orgId,
+              type: type,
+              amount: amount,
+              walletId: walletId,
+              toWalletId: toWalletId,
+              category: category,
+              note: note,
+              code: code,
+              date: date,
+              createdAt: createdAt,
+              sourcePackage: sourcePackage,
+              sourceHash: sourceHash,
+              createdBy: SupabaseConfig.client.auth.currentUser?.id,
+            ),
+          )
+          .select('id')
+          .single();
+    } on PostgrestException catch (e) {
+      // Mode bendahara: member ditolak RLS (bukan error teknis).
+      if (e.code == '42501') throw SpaceException(tr('sp_only_treasurer'));
+      rethrow;
+    }
     final id = row['id'].toString();
     if (code != null) return id;
     try {
@@ -218,29 +228,39 @@ class TransactionService {
     String? createdAt,
   }) async {
     assert(amount > 0);
-    await SupabaseConfig.client
-        .from('transactions')
-        .update(
-          txUpdatePayload(
-            type: type,
-            amount: amount,
-            walletId: walletId,
-            toWalletId: toWalletId,
-            category: category,
-            note: note,
-            date: date,
-            createdAt: createdAt,
-          ),
-        )
-        .eq('id', id)
-        .eq('org_id', orgId);
+    try {
+      await SupabaseConfig.client
+          .from('transactions')
+          .update(
+            txUpdatePayload(
+              type: type,
+              amount: amount,
+              walletId: walletId,
+              toWalletId: toWalletId,
+              category: category,
+              note: note,
+              date: date,
+              createdAt: createdAt,
+            ),
+          )
+          .eq('id', id)
+          .eq('org_id', orgId);
+    } on PostgrestException catch (e) {
+      if (e.code == '42501') throw SpaceException(tr('sp_only_treasurer'));
+      rethrow;
+    }
   }
 
   Future<void> delete(String id, String orgId) async {
-    await SupabaseConfig.client
-        .from('transactions')
-        .delete()
-        .eq('id', id)
-        .eq('org_id', orgId);
+    try {
+      await SupabaseConfig.client
+          .from('transactions')
+          .delete()
+          .eq('id', id)
+          .eq('org_id', orgId);
+    } on PostgrestException catch (e) {
+      if (e.code == '42501') throw SpaceException(tr('sp_only_treasurer'));
+      rethrow;
+    }
   }
 }

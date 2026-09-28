@@ -66,6 +66,8 @@ String saveErrorStatus(PostgrestException err) {
   if (err.message.contains('RATE_LIMITED')) {
     return tr('svc_rate');
   }
+  // Mode bendahara: tulis member ditolak RLS — status jujur, tanpa retry.
+  if (err.code == '42501') return tr('sp_only_treasurer');
   if (err.code == '23505') return tr('svc_dup');
   return tr('svc_savefail').replaceFirst('{c}', err.code ?? 'error');
 }

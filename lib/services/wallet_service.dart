@@ -1,6 +1,19 @@
+import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
+import 'package:ssr_space/utils/strings.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// Bungkus tulis dompet: RLS bendahara → pesan jujur, bukan error teknis.
+Future<T> _guardSpace<T>(Future<T> Function() run) async {
+  try {
+    return await run();
+  } on PostgrestException catch (e) {
+    if (e.code == '42501') throw SpaceException(tr('sp_only_treasurer'));
+    rethrow;
+  }
+}
 
 class WalletService {
   Future<List<Wallet>> list(String orgId) async {
@@ -9,28 +22,34 @@ class WalletService {
   }
 
   Future<String> create(String orgId, String name, String type) async {
-    final row = await SupabaseConfig.client
-        .from('wallets')
-        .insert({'org_id': orgId, 'name': name, 'type': type})
-        .select('id')
-        .single();
-    return row['id'].toString();
+    return _guardSpace(() async {
+      final row = await SupabaseConfig.client
+          .from('wallets')
+          .insert({'org_id': orgId, 'name': name, 'type': type})
+          .select('id')
+          .single();
+      return row['id'].toString();
+    });
   }
 
   Future<void> rename(String id, String orgId, String name) async {
-    await SupabaseConfig.client
-        .from('wallets')
-        .update({'name': name})
-        .eq('id', id)
-        .eq('org_id', orgId);
+    return _guardSpace(() async {
+      await SupabaseConfig.client
+          .from('wallets')
+          .update({'name': name})
+          .eq('id', id)
+          .eq('org_id', orgId);
+    });
   }
 
   Future<void> changeType(String id, String orgId, String type) async {
-    await SupabaseConfig.client
-        .from('wallets')
-        .update({'type': type})
-        .eq('id', id)
-        .eq('org_id', orgId);
+    return _guardSpace(() async {
+      await SupabaseConfig.client
+          .from('wallets')
+          .update({'type': type})
+          .eq('id', id)
+          .eq('org_id', orgId);
+    });
   }
 
   Future<bool> hasTransactions(String orgId, String walletId) async {
@@ -44,11 +63,13 @@ class WalletService {
   }
 
   Future<void> deleteWallet(String id, String orgId) async {
-    await SupabaseConfig.client
-        .from('wallets')
-        .delete()
-        .eq('id', id)
-        .eq('org_id', orgId);
+    return _guardSpace(() async {
+      await SupabaseConfig.client
+          .from('wallets')
+          .delete()
+          .eq('id', id)
+          .eq('org_id', orgId);
+    });
   }
 
   Future<List<WalletBalance>> balances(String orgId) async {
