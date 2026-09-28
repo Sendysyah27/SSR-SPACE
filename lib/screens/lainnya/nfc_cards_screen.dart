@@ -336,7 +336,7 @@ class _ResultSheetState extends State<_ResultSheet> {
           children: [
             Text(tr('nfc_balance')),
             Text(
-              amt(widget.read.balance ?? 0),
+              widget.read.balance == null ? '-' : amt(widget.read.balance!),
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             Text(widget.read.bank),
