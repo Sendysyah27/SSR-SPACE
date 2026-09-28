@@ -75,22 +75,12 @@ class _LockScreenState extends State<LockScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: scheme.outline.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(SsrRadius.tile),
-                    border: Border.all(color: scheme.outline),
-                  ),
-                  child: DuoIcon(
-                    AppIcons.lock,
-                    size: 26,
-                    color: scheme.primary,
-                  ),
+                DuoIcon(
+                  AppIcons.lock,
+                  size: 28,
+                  color: scheme.primary,
                 ),
-                const SizedBox(height: SsrSpace.lg),
+                const SizedBox(height: SsrSpace.md),
                 Text(
                   tr('lk_title'),
                   style: Theme.of(context).textTheme.titleLarge,

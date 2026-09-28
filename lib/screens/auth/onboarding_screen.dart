@@ -94,7 +94,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-/// Isi layar onboarding: judul + dots langkah, field nama, dua field PIN,
+/// Isi layar onboarding: judul, field nama, dua field PIN,
 /// dan tombol Mulai.
 class _OnboardingBody extends StatelessWidget {
   final TextEditingController nameC;
@@ -121,43 +121,12 @@ class _OnboardingBody extends StatelessWidget {
     required this.onSubmit,
   });
 
-  Widget _stepDots(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final step = (pinC.text.isNotEmpty || pin2C.text.isNotEmpty) ? 1 : 0;
-    return Row(
-      children: [
-        for (var i = 0; i < 2; i++) ...[
-          if (i > 0)
-            Container(
-              width: 18,
-              height: 2,
-              margin: const EdgeInsets.symmetric(horizontal: SsrSpace.xs),
-              color: scheme.outline,
-            ),
-          AnimatedContainer(
-            duration: SsrMotion.fast,
-            curve: SsrMotion.curve,
-            width: i <= step ? 22 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: i <= step ? scheme.primary : scheme.outline,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(SsrSpace.xxl),
       children: [
-        Text(
-          tr('ob_welcome'),
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
+        Text(tr('ob_welcome'), style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: SsrSpace.xs),
         Text(
           tr('ob_sub'),
@@ -165,8 +134,6 @@ class _OnboardingBody extends StatelessWidget {
             color: Theme.of(context).textTheme.bodySmall?.color,
           ),
         ),
-        const SizedBox(height: SsrSpace.xl),
-        _stepDots(context),
         const SizedBox(height: SsrSpace.xl),
         Text(tr('ob_profile'), style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: SsrSpace.md),
@@ -178,10 +145,7 @@ class _OnboardingBody extends StatelessWidget {
           decoration: InputDecoration(labelText: tr('ob_name'), errorText: errName),
         ),
         const SizedBox(height: SsrSpace.xl),
-        Text(
-          tr('ob_pin'),
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text(tr('ob_pin'), style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: SsrSpace.md),
         PinField(controller: pinC, length: 6, error: errPin, autofocus: true),
         const SizedBox(height: SsrSpace.md),

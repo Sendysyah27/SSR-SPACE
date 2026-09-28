@@ -799,8 +799,9 @@ class _PinFeedback extends StatelessWidget {
         if (err != null) ...[
           Text(
             err!,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            style: TextStyle(
               color: Theme.of(context).colorScheme.error,
+              fontSize: 12,
             ),
           ),
           const SizedBox(height: SsrSpace.sm),
