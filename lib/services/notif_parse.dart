@@ -116,7 +116,18 @@ String? classifyNotif(String text) {
   final t = text.toLowerCase();
   final isIn = _inKeys.any((k) => _phraseHit(t, k));
   final isOut = _outKeys.any((k) => _phraseHit(t, k));
-  if (isIn && isOut) return null;
+  if (isIn && isOut) {
+    // 'diterima' mengalahkan kata generik 'pembayaran' saja: QRIS statis
+    // = uang pelanggan DITERIMA merchant = masuk. Sinyal keluar eksplisit
+    // (berhasil/dibayar/terkirim/...) tetap membuat ambigu (null).
+    final genericOnly =
+        _phraseHit(t, 'pembayaran') &&
+        !_outKeys
+            .where((k) => k != 'pembayaran')
+            .any((k) => _phraseHit(t, k));
+    if (genericOnly && _phraseHit(t, 'diterima')) return 'in';
+    return null;
+  }
   if (isIn) return 'in';
   if (isOut) return 'out';
   return null;

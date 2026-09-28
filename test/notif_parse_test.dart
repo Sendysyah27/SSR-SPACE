@@ -69,6 +69,27 @@ void main() {
     );
   });
 
+  test('classify QRIS statis diterima ISAKU: diterima kalahkan pembayaran', () {
+    expect(
+      classifyNotif(
+        'Pembayaran QRIS statis diterima Rp 100.000 di SENDY SYAH RAMADHAN',
+      ),
+      'in',
+    );
+    expect(parseNotifAmount('Rp 100.000 di SENDY SYAH RAMADHAN'), 100000);
+  });
+
+  test('diterima tak kalahkan sinyal keluar eksplisit', () {
+    expect(
+      classifyNotif('Dana masuk lalu berhasil ditransfer'),
+      isNull,
+    );
+    expect(
+      classifyNotif('Pembayaran berhasil diterima Rp50 di merchant'),
+      isNull,
+    );
+  });
+
   test('hash stable same day, differs across day', () {
     final d1 = DateTime(2026, 9, 24, 10, 0);
     final d2 = DateTime(2026, 9, 25, 10, 0);
