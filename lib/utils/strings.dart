@@ -1376,6 +1376,37 @@ const _t = <String, Map<String, String>>{
   },
   'nfc_matched': {'id': 'Sudah cocok dengan buku', 'en': 'Matches the books'},
   'nfc_diff': {'id': 'Selisih {m}', 'en': 'Difference {m}'},
+  // We Space: mode + aktivitas
+  'sp_mode': {'id': 'Mode Space', 'en': 'Space mode'},
+  'sp_mode_desc': {
+    'id':
+        'Bebas: semua anggota bisa catat. Bendahara: hanya owner/admin yang catat, anggota lain melihat.',
+    'en':
+        'Open: every member can record. Treasurer: only owners/admins record, others view.',
+  },
+  'sp_bebas': {'id': 'Bebas', 'en': 'Open'},
+  'sp_bendahara': {'id': 'Bendahara', 'en': 'Treasurer'},
+  'sp_bendahara_hint': {
+    'id': 'Anggota baru hanya bisa melihat.',
+    'en': 'New members can only view.',
+  },
+  'sp_activity': {'id': 'Aktivitas Space', 'en': 'Space activity'},
+  'sp_new': {'id': 'baru', 'en': 'new'},
+  'sp_only_treasurer': {
+    'id': 'Hanya bendahara yang bisa catat di Space ini.',
+    'en': 'Only treasurers can record in this Space.',
+  },
+  'sp_adminonly': {
+    'id': 'Hanya owner/admin yang bisa ganti mode.',
+    'en': 'Only owners/admins can change the mode.',
+  },
+  'sp_badmode': {'id': 'Mode tidak dikenal.', 'en': 'Unknown mode.'},
+  'sp_by_you': {'id': 'Kamu', 'en': 'You'},
+  'sp_by_member': {'id': 'Anggota •{s}', 'en': 'Member •{s}'},
+  'sp_mode_need_pin': {
+    'id': 'Konfirmasi PIN untuk ganti mode.',
+    'en': 'Confirm PIN to change mode.',
+  },
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;
