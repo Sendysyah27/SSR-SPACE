@@ -1372,6 +1372,17 @@ const _t = <String, Map<String, String>>{
     'en': 'Card read failed. Tap again.',
   },
   'nfc_delete': {'id': 'Hapus kartu ini?', 'en': 'Delete this card?'},
+  // NFC: gate ketersediaan
+  'nfc_no_hw': {
+    'id': 'HP ini tidak mendukung pembacaan NFC.',
+    'en': 'This phone cannot read NFC.',
+  },
+  'nfc_off': {'id': 'NFC mati', 'en': 'NFC is off'},
+  'nfc_off_steps': {
+    'id': 'Nyalakan NFC di Pengaturan → Koneksi, lalu Coba lagi.',
+    'en': 'Turn on NFC in Settings → Connections, then Retry.',
+  },
+  'nfc_retry': {'id': 'Coba lagi', 'en': 'Retry'},
   // Dompet: kelola
   'w_rename_t': {'id': 'Ubah dompet', 'en': 'Edit wallet'},
   'w_has_tx': {

@@ -1,6 +1,7 @@
 // E-Money NFC: daftar kartu tertaut + tempel-baca + histori cek lokal.
 // Read-only: tanpa top-up, tanpa transaksi otomatis, tanpa migration.
 import 'package:flutter/material.dart';
+import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/services/nfc_emoney.dart';
@@ -24,6 +25,7 @@ class _NfcCardsScreenState extends State<NfcCardsScreen> {
   List<NfcCard> cards = [];
   List<NfcCheck> checks = [];
   List<Wallet> wallets = [];
+  NFCAvailability? nfcAv;
 
   @override
   void initState() {
@@ -42,6 +44,12 @@ class _NfcCardsScreenState extends State<NfcCardsScreen> {
     }
     final cs = await loadNfcCards();
     final hs = await loadNfcChecks();
+    try {
+      nfcAv = await FlutterNfcKit.nfcAvailability;
+    } catch (e) {
+      debugPrint('nfc avail: $e');
+      nfcAv = null;
+    }
     if (!mounted) return;
     setState(() {
       wallets = ws;
@@ -145,7 +153,13 @@ class _NfcCardsScreenState extends State<NfcCardsScreen> {
           : ListView(
               padding: const EdgeInsets.all(SsrSpace.lg),
               children: [
-                _ScanCard(scanning: scanning, onTap: _scan, onStop: nfcStop),
+                if (nfcAv == NFCAvailability.not_supported)
+                  _NoNfcCard()
+                else ...[
+                  if (nfcAv == NFCAvailability.disabled)
+                    _NfcOffBanner(onRetry: _load),
+                  _ScanCard(scanning: scanning, onTap: _scan, onStop: nfcStop),
+                ],
                 _CardsCard(
                   cards: cards,
                   walletName: _walletName,
@@ -159,6 +173,46 @@ class _NfcCardsScreenState extends State<NfcCardsScreen> {
 }
 
 // Kartu pindai: status + tombol tempel/stop + indikator saat scanning.
+class _NoNfcCard extends StatelessWidget {
+  const _NoNfcCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      child: Text(tr('nfc_no_hw')),
+    );
+  }
+}
+
+class _NfcOffBanner extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _NfcOffBanner({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('nfc_off'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: SsrSpace.sm),
+          Text(tr('nfc_off_steps')),
+          const SizedBox(height: SsrSpace.sm),
+          OutlinedButton(
+            onPressed: onRetry,
+            child: Text(tr('nfc_retry')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ScanCard extends StatelessWidget {
   final bool scanning;
   final VoidCallback onTap;
