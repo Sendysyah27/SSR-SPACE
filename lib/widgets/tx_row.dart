@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/tx_wallet_check.dart';
+import 'package:ssr_space/services/space_logic.dart';
+import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -59,7 +61,13 @@ class TxRow extends StatelessWidget {
     return '$when · $code';
   }
 
-  List<Widget> _chips() {
+  List<Widget> _chips(String myId) {
+    final by = tx.createdBy;
+    final r =
+        (by == null || by.isEmpty) ? null : actorLabel(by, myId);
+    final byLabel = r == null
+        ? null
+        : (r.$2 ? tr('sp_by_you') : tr('sp_by_member').replaceFirst('{s}', r.$1));
     return [
       if (tx.sourcePackage != null)
         StatusChip(label: tr('tx_auto'), tone: StatusTone.accent, icon: AppIcons.autoBadge),
@@ -67,6 +75,11 @@ class TxRow extends StatelessWidget {
         StatusChip(label: tr('tx_nowallet'), tone: StatusTone.danger),
       if (tx.category != null && tx.category!.isNotEmpty)
         StatusChip(label: tx.category!, tone: StatusTone.neutral),
+      if (byLabel != null)
+        StatusChip(
+          label: byLabel,
+          tone: r!.$2 ? StatusTone.accent : StatusTone.neutral,
+        ),
     ];
   }
 
@@ -94,6 +107,7 @@ class TxRow extends StatelessWidget {
     final theme = Theme.of(context);
     final amountColor = _amountColor(context);
     final subtitle = _subtitle;
+    final myId = SupabaseConfig.client.auth.currentUser?.id ?? '';
     return Material(
       color: selected
           ? theme.colorScheme.primary.withValues(alpha: 0.12)
@@ -113,7 +127,7 @@ class TxRow extends StatelessWidget {
                   children: [
                     _title(theme, amountColor),
                     const SizedBox(height: 6),
-                    Wrap(spacing: 6, runSpacing: 4, children: _chips()),
+                    Wrap(spacing: 6, runSpacing: 4, children: _chips(myId)),
                     if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),

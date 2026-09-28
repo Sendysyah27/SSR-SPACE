@@ -12,6 +12,7 @@ class SaasTransaction {
   final String? createdAt;
   final String? sourcePackage;
   final String? sourceHash;
+  final String? createdBy;
   SaasTransaction({
     required this.id,
     required this.orgId,
@@ -26,6 +27,7 @@ class SaasTransaction {
     this.createdAt,
     this.sourcePackage,
     this.sourceHash,
+    this.createdBy,
   });
   factory SaasTransaction.fromMap(Map<String, dynamic> m) => SaasTransaction(
         id: m['id'].toString(),
@@ -41,5 +43,6 @@ class SaasTransaction {
         createdAt: m['created_at']?.toString(),
         sourcePackage: m['source_package']?.toString(),
         sourceHash: m['source_hash']?.toString(),
+        createdBy: m['created_by']?.toString(),
       );
 }
