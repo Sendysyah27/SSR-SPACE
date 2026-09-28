@@ -136,12 +136,10 @@ String? _matchCat(String t, List<String> cats) {
     for (final c in cats) c.trim().toLowerCase(): c,
   };
   canon.remove('');
-  var best;
   String? bestName;
   var bestLen = 0;
   canon.forEach((low, name) {
     if (t.contains(low) && low.length > bestLen) {
-      best = low;
       bestName = name;
       bestLen = low.length;
     }
