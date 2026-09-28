@@ -501,6 +501,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `6a3f01f` (run `36361554023` hijau, 220 test) | **Ikon WYSIWYG + Bantuan + avatar Profil + changelog jujur (2.4.5+28):** (A) `_CatRow` ikon outline → `SvgPicture` resolusi TxRow (SS user: layers-outline vs kartu-wallet); (B) `changelog_id.md` basi 2.3.9+22 → ditulis ulang + aturan §7 AGENTS (bump = entri changelog); (C) `HelpScreen` tutorial 6 + FAQ 6 (`hp_*`, `help_test.dart` 2 test ID/EN non-fallback), hub + search; (D) leading avatar inisial → `_select(4)`. APK `SSR-SPACE-2.4.5-28-bantuan-profil-arm64.apk` |
 | `1bb6720`+`1e7f0ec` (run `36365717961` hijau, 222 test) | **Notif tiap tersimpan (2.4.6+29):** `offer()` overlay-dulu-gagal→head-up + `forceSave` ikut offer; `AutoSavedNotify` + `auto_saved_notify_test.dart`; CI merah 1x (named args v22). APK `SSR-SPACE-2.4.6-29-notif-tersimpan-arm64.apk` |
 | `d1340a0` (run `36367696687` hijau) | **Head-up selalu tampil (2.4.6+30):** blokir overlay silent tak terdeteksi → fallback bersyarat mati; kini head-up unconditional tiap offer. APK `SSR-SPACE-2.4.6-30-notif-headup-arm64.apk` |
+| **T7/T8** | **Migrasi token tema → AppColors/AppTheme seragam**: hapus `SsrColors` + `SsrTheme` (30+ file), `SsrTheme.money`/`moneyLarge`/`moneyOnDark` → `AppTheme.money`/`moneyLarge`, `main.dart` pakai `AppTheme.light()`/`AppTheme.dark()` langsung (noir → `themeMode: ThemeMode.dark`). `SsrTheme.noir()` resmi dihapus. Bump `2.4.8+35`. |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 

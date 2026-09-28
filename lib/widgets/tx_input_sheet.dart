@@ -548,7 +548,7 @@ class _AmountDisplay extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: SsrSpace.md),
           child: Text(
             CurrencyService.format(idr),
-            style: SsrTheme.moneyLarge,
+            style: AppTheme.moneyLarge,
             textAlign: TextAlign.center,
           ),
         );

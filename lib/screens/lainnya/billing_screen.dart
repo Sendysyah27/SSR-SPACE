@@ -135,7 +135,7 @@ class _FreePlanCard extends StatelessWidget {
       statusChip: !isPro
           ? StatusChip(label: tr('bl_active_chip'), tone: StatusTone.accent)
           : null,
-      price: Text('Rp0', style: SsrTheme.money.copyWith(fontSize: 18)),
+      price: Text('Rp0', style: AppTheme.money.copyWith(fontSize: 18)),
       features: [
         tr('bl_f_free1'),
         tr('bl_f_free2').replaceFirst('{n}', '${PlanLimits.freeWorkspaces}'),
@@ -169,7 +169,7 @@ class _ProPlanCard extends StatelessWidget {
           : StatusChip(label: tr('bl_upgrade_chip'), tone: StatusTone.neutral),
       price: Text(
         '${rp(proPrice)}/bulan',
-        style: SsrTheme.money.copyWith(
+        style: AppTheme.money.copyWith(
           fontSize: 18,
           color: Theme.of(context).colorScheme.primary,
         ),

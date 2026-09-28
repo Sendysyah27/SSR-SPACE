@@ -650,7 +650,7 @@ class _DonutCenter extends StatelessWidget {
         children: [
           Text(
             '$pctIn%',
-            style: SsrTheme.money.copyWith(
+            style: AppTheme.money.copyWith(
               fontSize: 20,
               color: Theme.of(context).colorScheme.onSurface,
             ),

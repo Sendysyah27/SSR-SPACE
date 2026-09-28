@@ -174,7 +174,7 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: SsrSpace.xs),
           Text(
             balanceText,
-            style: SsrTheme.moneyLarge.copyWith(color: scheme.onSurface),
+            style: AppTheme.moneyLarge.copyWith(color: scheme.onSurface),
           ),
           const SizedBox(height: SsrSpace.xs),
           Text(

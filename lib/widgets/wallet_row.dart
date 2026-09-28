@@ -58,7 +58,7 @@ class WalletRow extends StatelessWidget {
               textAlign: TextAlign.end,
               style: balanceText == tr('w_notloaded')
                   ? Theme.of(context).textTheme.bodySmall
-                  : SsrTheme.money.copyWith(
+                  : AppTheme.money.copyWith(
                       fontSize: 14,
                       color: scheme.onSurface,
                     ),

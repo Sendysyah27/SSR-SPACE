@@ -1,13 +1,17 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.4.8+34.
+Versi terpasang: 2.4.8+35.
 
 ## Yang baru di 2.4.8
 
 1. Tombol + tinggal dua (AppBar dan tengah bawah); riwayat Transaksi muat ulang sendiri tiap dibuka dan tiap kembali ke app.
 2. Tombol Susun di Laporan kini jelas: ketuk panah naik/turun untuk menyusun seksi, lalu Selesai.
 
-## Yang baru di 2.4.7
+## Yang baru di 2.4.9
+
+1. Migrasi token tema: hapus `SsrColors` dan `SsrTheme`, seluruh UI pakai `AppColors`/`AppTheme` secara seragam (30+ file). `SsrTheme.money`/`moneyLarge` → `AppTheme.money`/`moneyLarge`. Tema Otomatis/Noir pakai `AppTheme.light()`/`AppTheme.dark()` tanpa wrapper legacy.
+
+## Yang baru di 2.4.8
 
 1. Ketik cepat di form catat: tulis "makan siang 35rb" lalu nominal, jenis, kategori, dompet, dan catatan terisi otomatis (tetap Simpan untuk konfirmasi).
 

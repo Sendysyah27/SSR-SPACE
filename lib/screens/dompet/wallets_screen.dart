@@ -264,7 +264,7 @@ class _WalletOverview extends StatelessWidget {
             children: [
               Text(
                 amt(t),
-                style: SsrTheme.moneyLarge.copyWith(
+                style: AppTheme.moneyLarge.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
