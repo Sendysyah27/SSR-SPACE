@@ -341,6 +341,8 @@ class _NoWalletBanner extends StatelessWidget {
 }
 
 /// Kerangka layar Transaksi: AppBar + aksi catat + body (state / daftar).
+/// Tanpa FAB sendiri: tombol + global milik MainShell (tengah bawah)
+/// + aksi AppBar sudah cukup (tiga + membingungkan).
 class _TxStateScaffold extends StatelessWidget {
   final Widget body;
   final VoidCallback onAdd;
@@ -349,7 +351,6 @@ class _TxStateScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text(tr('nav_transaksi')),
@@ -360,13 +361,6 @@ class _TxStateScaffold extends StatelessWidget {
             tooltip: tr('act_catat'),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: onAdd,
-        tooltip: tr('act_catat'),
-        backgroundColor: scheme.primary,
-        foregroundColor: scheme.onPrimary,
-        child: const DuoIcon(AppIcons.add),
       ),
       body: body,
     );

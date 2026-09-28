@@ -68,6 +68,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       NotifTrack.ensureListening(force: true);
       unawaited(ForegroundTrack.syncFromPrefs());
       unawaited(_checkPending());
+      _reloadTab(index);
     } else {
       _resumed = false;
     }
@@ -106,7 +107,14 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   void _select(int i) {
     setState(() => index = i);
+    _reloadTab(i);
+  }
+
+  /// Muat ulang tab yang dibuka supaya data baru (otomatis/manual)
+  /// langsung tampil tanpa keluar-masuk app.
+  void _reloadTab(int i) {
     if (i == 0) berandaKey.currentState?.reload();
+    if (i == 1) txKey.currentState?.reload();
     if (i == 2) budgetKey.currentState?.reload();
     if (i == 3) reportsKey.currentState?.reload();
   }

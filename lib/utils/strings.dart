@@ -347,6 +347,12 @@ const _t = <String, Map<String, String>>{
   'r_collapse': {'id': 'Sederhanakan', 'en': 'Show less'},
   'r_arrange': {'id': 'Susun', 'en': 'Arrange'},
   'r_arrange_done': {'id': 'Selesai', 'en': 'Done'},
+  'r_arrange_hint': {
+    'id': 'Ketuk panah untuk menyusun urutan seksi.',
+    'en': 'Tap the arrows to arrange section order.',
+  },
+  'r_arrange_up': {'id': 'Naikkan seksi', 'en': 'Move section up'},
+  'r_arrange_down': {'id': 'Turunkan seksi', 'en': 'Move section down'},
   // Tagihan rutin (P2 recurring-bills, saran bukan insert otomatis)
   'rb_title': {'id': 'Tagihan rutin', 'en': 'Recurring bills'},
   'rb_empty_t': {

@@ -11,7 +11,7 @@ Panduan kerja untuk agent / contributor di repo ini. Baca dulu sebelum ubah kode
 | Nama | **SSR SPACE** |
 | Path | `/data/data/com.termux/files/home/SSR SPACE` |
 | Remote | `https://github.com/Sendysyah27/SSR-SPACE.git` |
-| Versi | `2.4.6+32` (`pubspec.yaml`) |
+| Versi | `2.4.7+33` (`pubspec.yaml`) |
 | Stack | Flutter (stable) + Supabase (Auth + Postgres RLS) + Notification Listener |
 | Bahasa UI | Indonesia |
 | Build | GitHub Actions (`.github/workflows/apk.yml`), **bukan** lokal Termux |
@@ -424,4 +424,5 @@ Before starting, ask the user when antislop applies: during the work, or after i
 - **Fix head-up selalu tampil (2026-09-28, `d1340a0`, run `36367696687` hijau):** vonis SS + Tes overlay gagal di HP user: MIUI menelan `showOverlay` tanpa error → `shown=true` palsu → fallback tak jalan (hanya teks sematan servis). Revisi disetujui: head-up `AutoSavedNotify` SELALU ditembakkan tiap `offer()` (overlay tetap dicoba dulu). Bump `2.4.6+30`. APK `SSR-SPACE-2.4.6-30-notif-headup-arm64.apk`.
 - **Fix QRIS ISAKU (2026-09-28, `14de952`, run `36370503290` hijau):** vonis SS shade: "Pembayaran QRIS statis diterima Rp100.000" mengandung `pembayaran`+`diterima` → dua-arah → null → dilewati. Fix sempit di `classifyNotif`: `diterima` kalahkan `pembayaran`-generik saja (sinyal keluar eksplisit tetap ambigu); test teks asli + regresi. Bump `2.4.6+31`. APK `SSR-SPACE-2.4.6-31-qris-isaku-arm64.apk`. Sisa: notif "Transaksi Belanja" tanpa Rp terlihat tak bisa dicatat tanpa nominal.
 - **Pending QRIS-merchant GoPay (2026-09-28, `66dd759`, run `36373607447` hijau):** alur dua notif dari SS user — (1) sukses tertahan di saldo merchant, (2) susulan "Pencairan dana berhasil Rp100.000" = dana benar cair. `isMerchantQrisPending` (GoPay + qris + in, kecuali mengandung `cair`) → status `st_pending_settle`, tak insert + tak merge; kunci masuk baru `pencairan/dicairkan/dana cair` → notif cair tercatat Masuk dan boleh merge. TX-000041 lama (kaki "diterima") jadi tak valid menurut aturan baru — histori tak diubah. Bump `2.4.6+32`. APK `SSR-SPACE-2.4.6-32-qris-pending-arm64.apk`.
+- **Ketik cepat lokal (2026-09-28, `c11d279`+`23a0237`, run `36382853168` hijau):** user pilih mesin lokal (gratis/offline) atas AI-cloud; `quick_input_parse.dart` murni (nominal rb/jt/k, jenis in/transfer/out, alias kategori, dompet sumber = disebut duluan; lokal `dart --enable-asserts` 15/15) + kolom Ketik cepat di `TxInputSheet` prefill live (tambah-saja, Simpan tetap konfirmasi) + `test/quick_input_test.dart` (8 test). CI merah 1x (`unused var best` info). Bump `2.4.7+33`. APK `SSR-SPACE-2.4.7-33-ketik-cepat-arm64.apk`.
 - **Validasi device ISAKU→GoPay (2026-09-28):** bayar QRIS dari ISAKU, masuk ke GoPay — ISAKU-out + GoPay-in (telat, "bergantian") keduanya tercatat lalu **auto-merge jadi 1 baris transfer** (nominal sama, dompet beda, ≤10 mnt). Perilaku sesuai desain, tanpa ubah kode.

@@ -420,14 +420,56 @@ class _ReportSections extends StatelessWidget {
         if (!reordering) {
           return ListView(children: kids);
         }
-        return ReorderableListView(
-          onReorderItem: (oldI, newI) async {
-            final next = List<String>.of(order);
-            final moved = next.removeAt(oldI);
-            next.insert(newI, moved);
-            await setReportSectionOrder(next);
-          },
-          children: kids,
+
+        /// Pindah seksi lalu simpan urutan (tetap 3 seksi valid).
+        Future<void> move(int i, int dir) async {
+          final j = i + dir;
+          if (j < 0 || j >= order.length) return;
+          final next = List<String>.of(order);
+          final moved = next.removeAt(i);
+          next.insert(j, moved);
+          await setReportSectionOrder(next);
+        }
+
+        return ListView(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                SsrSpace.lg,
+                SsrSpace.sm,
+                SsrSpace.lg,
+                0,
+              ),
+              child: Text(
+                tr('r_arrange_hint'),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            for (var i = 0; i < kids.length; i++)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: kids[i]),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const DuoIcon(AppIcons.arrowUp, size: 20),
+                        tooltip: tr('r_arrange_up'),
+                        onPressed: i == 0 ? null : () => move(i, -1),
+                      ),
+                      IconButton(
+                        icon: const DuoIcon(AppIcons.arrowDown, size: 20),
+                        tooltip: tr('r_arrange_down'),
+                        onPressed: i == kids.length - 1
+                            ? null
+                            : () => move(i, 1),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+          ],
         );
       },
     );
