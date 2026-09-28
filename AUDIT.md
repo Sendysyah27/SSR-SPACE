@@ -502,6 +502,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `1bb6720`+`1e7f0ec` (run `36365717961` hijau, 222 test) | **Notif tiap tersimpan (2.4.6+29):** `offer()` overlay-dulu-gagal→head-up + `forceSave` ikut offer; `AutoSavedNotify` + `auto_saved_notify_test.dart`; CI merah 1x (named args v22). APK `SSR-SPACE-2.4.6-29-notif-tersimpan-arm64.apk` |
 | `d1340a0` (run `36367696687` hijau) | **Head-up selalu tampil (2.4.6+30):** blokir overlay silent tak terdeteksi → fallback bersyarat mati; kini head-up unconditional tiap offer. APK `SSR-SPACE-2.4.6-30-notif-headup-arm64.apk` |
 | **T7/T8** | **Migrasi token tema → AppColors/AppTheme seragam**: hapus `SsrColors` + `SsrTheme` (30+ file), `SsrTheme.money`/`moneyLarge`/`moneyOnDark` → `AppTheme.money`/`moneyLarge`, `main.dart` pakai `AppTheme.light()`/`AppTheme.dark()` langsung (noir → `themeMode: ThemeMode.dark`). `SsrTheme.noir()` resmi dihapus. Bump `2.4.8+35`. |
+| `01dd525` | **Fase 0 (2026-09-28):** (1) `session_service._set` tambah handler `double` + `List<String>` — font scale & list prefs tidak persist silent; (2) `completeOnboarding` reset `lastActiveAt` — auto-lock jalan langsung setelah onboarding; (3) `main.dart` wrap `CurrencyService.refresh()` dalam try/catch — crash silent kalau network error; (4) bump `2.4.8+35` → `2.4.9+36`. CI hijau (run `36388775858`). |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 

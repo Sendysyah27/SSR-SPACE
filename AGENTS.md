@@ -11,7 +11,7 @@ Panduan kerja untuk agent / contributor di repo ini. Baca dulu sebelum ubah kode
 | Nama | **SSR SPACE** |
 | Path | `/data/data/com.termux/files/home/SSR SPACE` |
 | Remote | `https://github.com/Sendysyah27/SSR-SPACE.git` |
-| Versi | `2.4.7+33` (`pubspec.yaml`) |
+| Versi | `2.4.9+36` (`pubspec.yaml`) |
 | Stack | Flutter (stable) + Supabase (Auth + Postgres RLS) + Notification Listener |
 | Bahasa UI | Indonesia |
 | Build | GitHub Actions (`.github/workflows/apk.yml`), **bukan** lokal Termux |
