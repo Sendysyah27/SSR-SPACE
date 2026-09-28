@@ -39,6 +39,17 @@ String numpadBackspace(String current) {
   return current.substring(0, current.length - 1);
 }
 
+/// Tambah satu digit ke buffer PIN. Beda dengan [numpadAppend]:
+/// nol di depan SAH untuk PIN ('0' lalu '5' → '05', bukan '5').
+/// Buffer dibatasi [maxLen] digit; kunci selain '0'..'9' diabaikan.
+String pinKeyInput(String current, String key, {int maxLen = 6}) {
+  if (key.length != 1) return current;
+  final c = key.codeUnitAt(0);
+  if (c < 48 || c > 57) return current;
+  if (current.length >= maxLen) return current;
+  return current + key;
+}
+
 /// Buffer digit → nominal mayor mata uang tampil.
 /// [dec] = jumlah desimal mata uang tampil (IDR/JPY = 0, USD = 2).
 /// Bila [dec] > 0, digit dianggap satuan minor (sen) supaya edit

@@ -1,17 +1,22 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.4.8+35.
+Versi terpasang: 2.4.10+38.
 
-## Yang baru di 2.4.8
+## Yang baru di 2.4.10
 
-1. Tombol + tinggal dua (AppBar dan tengah bawah); riwayat Transaksi muat ulang sendiri tiap dibuka dan tiap kembali ke app.
-2. Tombol Susun di Laporan kini jelas: ketuk panah naik/turun untuk menyusun seksi, lalu Selesai.
+1. Semua input PIN kini memakai pad angka di layar (tanpa keyboard sistem): layar kunci, buat PIN saat pertama kali, konfirmasi hapus, dan ganti PIN. Di layar kunci, enam digit langsung membuka; salah PIN, kotak dikosongkan otomatis.
+2. Perbaikan: bingkai hijau yang menempel di belakang kotak PIN (dari versi 2.4.9+37) dihilangkan, dan kotak PIN kini tegas sehingga mudah dilihat.
 
 ## Yang baru di 2.4.9
 
 1. Migrasi token tema: hapus `SsrColors` dan `SsrTheme`, seluruh UI pakai `AppColors`/`AppTheme` secara seragam (30+ file). `SsrTheme.money`/`moneyLarge` → `AppTheme.money`/`moneyLarge`. Tema Otomatis/Noir pakai `AppTheme.light()`/`AppTheme.dark()` tanpa wrapper legacy.
 
 ## Yang baru di 2.4.8
+
+1. Tombol + tinggal dua (AppBar dan tengah bawah); riwayat Transaksi muat ulang sendiri tiap dibuka dan tiap kembali ke app.
+2. Tombol Susun di Laporan kini jelas: ketuk panah naik/turun untuk menyusun seksi, lalu Selesai.
+
+## Yang baru di 2.4.7
 
 1. Ketik cepat di form catat: tulis "makan siang 35rb" lalu nominal, jenis, kategori, dompet, dan catatan terisi otomatis (tetap Simpan untuk konfirmasi).
 
@@ -21,15 +26,6 @@ Versi terpasang: 2.4.8+35.
 2. Perbaikan: notifikasi sistem selalu tampil tiap tersimpan karena blokir overlay di sebagian HP tak terdeteksi (koreksi instan tak lagi hilang diam-diam).
 3. Perbaikan: QRIS statis ISAKU ("Pembayaran ... diterima") kini tercatat sebagai Masuk, bukan dilewati.
 4. QRIS merchant GoPay yang dananya belum cair kini ditahan (Menunggu cair) dan tak ikut transfer; notif susulan "Pencairan dana berhasil" yang tercatat sebagai Masuk.
-
-## Yang baru di 2.4.6
-
-1. Tiap transaksi tersimpan (otomatis maupun manual) memunculkan pemberitahuan berisi detailnya; bila overlay diblokir HP, tampil notifikasi sistem sebagai cadangan.
-2. Perbaikan: notifikasi sistem selalu tampil tiap tersimpan karena blokir overlay di sebagian HP tak terdeteksi (koreksi instan tak lagi hilang diam-diam).
-
-## Yang baru di 2.4.6
-
-1. Tiap transaksi tersimpan (otomatis maupun manual) memunculkan pemberitahuan berisi detailnya; bila overlay diblokir HP, tampil notifikasi sistem sebagai cadangan.
 
 ## Yang baru di 2.4.5
 

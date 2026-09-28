@@ -3,6 +3,7 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
+import 'package:ssr_space/widgets/pin_pad.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/utils/strings.dart';
 
@@ -94,9 +95,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-/// Isi layar onboarding: judul, field nama, dua field PIN,
-/// dan tombol Mulai.
-class _OnboardingBody extends StatelessWidget {
+/// Isi layar onboarding: judul, field nama, dua field PIN + pad,
+/// dan tombol Mulai. Kolom PIN aktif ditandai border primer; pad
+/// menulis ke kolom aktif (ketuk kotak untuk pindah kolom).
+class _OnboardingBody extends StatefulWidget {
   final TextEditingController nameC;
   final FocusNode nameFocus;
   final TextEditingController pinC;
@@ -122,6 +124,33 @@ class _OnboardingBody extends StatelessWidget {
   });
 
   @override
+  State<_OnboardingBody> createState() => _OnboardingBodyState();
+}
+
+class _OnboardingBodyState extends State<_OnboardingBody> {
+  int _activePin = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.pinC.addListener(_onFirstChanged);
+  }
+
+  void _onFirstChanged() {
+    if (_activePin == 0 && widget.pinC.text.length >= 6) {
+      setState(() => _activePin = 1);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.pinC.removeListener(_onFirstChanged);
+    super.dispose();
+  }
+
+  void _select(int i) => setState(() => _activePin = i);
+
+  @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(SsrSpace.xxl),
@@ -130,28 +159,51 @@ class _OnboardingBody extends StatelessWidget {
         const SizedBox(height: SsrSpace.xs),
         Text(
           tr('ob_sub'),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).textTheme.bodySmall?.color,
-          ),
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: Theme.of(context).textTheme.bodySmall?.color),
         ),
         const SizedBox(height: SsrSpace.xl),
         Text(tr('ob_profile'), style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: SsrSpace.md),
         TextField(
-          controller: nameC,
-          focusNode: nameFocus,
+          controller: widget.nameC,
+          focusNode: widget.nameFocus,
           textInputAction: TextInputAction.next,
-          onChanged: onNameChanged,
-          decoration: InputDecoration(labelText: tr('ob_name'), errorText: errName),
+          onChanged: widget.onNameChanged,
+          decoration: InputDecoration(
+            labelText: tr('ob_name'),
+            errorText: widget.errName,
+          ),
         ),
         const SizedBox(height: SsrSpace.xl),
         Text(tr('ob_pin'), style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: SsrSpace.md),
-        PinField(controller: pinC, length: 6, error: errPin, autofocus: true),
+        PinField(
+          controller: widget.pinC,
+          length: 6,
+          error: widget.errPin,
+          selected: _activePin == 0,
+          onTap: () => _select(0),
+        ),
         const SizedBox(height: SsrSpace.md),
-        PinField(controller: pin2C, length: 6, error: errPin2),
+        PinField(
+          controller: widget.pin2C,
+          length: 6,
+          error: widget.errPin2,
+          selected: _activePin == 1,
+          onTap: () => _select(1),
+        ),
+        const SizedBox(height: SsrSpace.lg),
+        PinPad(
+          controller: _activePin == 0 ? widget.pinC : widget.pin2C,
+          length: 6,
+        ),
         const SizedBox(height: SsrSpace.xxl),
-        PrimaryButton(label: tr('ob_start'), loading: saving, onPressed: onSubmit),
+        PrimaryButton(
+          label: tr('ob_start'),
+          loading: widget.saving,
+          onPressed: widget.onSubmit,
+        ),
       ],
     );
   }

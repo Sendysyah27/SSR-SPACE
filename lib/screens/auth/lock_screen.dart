@@ -6,7 +6,7 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/shell/main_shell.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
-import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/widgets/pin_pad.dart';
 import 'package:ssr_space/utils/strings.dart';
 
 class LockScreen extends StatefulWidget {
@@ -20,6 +20,7 @@ class _LockScreenState extends State<LockScreen> {
   final pinC = TextEditingController();
   String? err;
   Timer? _ticker;
+  bool _verifying = false;
 
   @override
   void initState() {
@@ -49,7 +50,14 @@ class _LockScreenState extends State<LockScreen> {
   }
 
   Future<void> _verify() async {
-    final ok = await widget.session.verifyPin(pinC.text);
+    if (_verifying) return;
+    _verifying = true;
+    var ok = false;
+    try {
+      ok = await widget.session.verifyPin(pinC.text);
+    } catch (_) {
+      ok = false;
+    }
     if (!mounted) return;
     if (ok) {
       Navigator.pushReplacement(
@@ -60,7 +68,9 @@ class _LockScreenState extends State<LockScreen> {
     }
     setState(() {
       err = widget.session.isLockedOut ? tr('lk_lockout') : tr('lk_wrong');
+      pinC.clear();
     });
+    _verifying = false;
     if (widget.session.isLockedOut) _startTicker();
   }
 
@@ -75,15 +85,23 @@ class _LockScreenState extends State<LockScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DuoIcon(
-                  AppIcons.lock,
-                  size: 28,
-                  color: scheme.primary,
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: DuoIcon(
+                    AppIcons.lock,
+                    size: 26,
+                    color: scheme.primary,
+                  ),
                 ),
-                const SizedBox(height: SsrSpace.md),
+                const SizedBox(height: SsrSpace.lg),
                 Text(
                   tr('lk_title'),
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: SsrSpace.xs),
                 Text(
@@ -93,15 +111,15 @@ class _LockScreenState extends State<LockScreen> {
                     color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                 ),
-                const SizedBox(height: SsrSpace.lg),
+                const SizedBox(height: SsrSpace.xxl),
                 PinField(
                   controller: pinC,
                   length: 6,
                   error: err,
-                  autofocus: true,
+                  onCompleted: (_) => _verify(),
                 ),
-                const SizedBox(height: SsrSpace.lg),
-                PrimaryButton(label: tr('lk_open'), onPressed: _verify),
+                const SizedBox(height: SsrSpace.xxl),
+                PinPad(controller: pinC, length: 6),
               ],
             ),
           ),

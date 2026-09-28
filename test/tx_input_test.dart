@@ -47,6 +47,25 @@ void main() {
     expect(numpadBackspace(''), '');
   });
 
+  test('pinKeyInput nol di depan sah (beda dengan numpad nominal)', () {
+    expect(pinKeyInput('', '0'), '0');
+    expect(pinKeyInput('0', '5'), '05');
+    expect(pinKeyInput('12', '3'), '123');
+  });
+
+  test('pinKeyInput patuh maxLen', () {
+    expect(pinKeyInput('12345', '6'), '123456');
+    expect(pinKeyInput('123456', '7'), '123456');
+    expect(pinKeyInput('12345', '6', maxLen: 5), '12345');
+  });
+
+  test('pinKeyInput kunci asing diabaikan', () {
+    expect(pinKeyInput('12', 'a'), '12');
+    expect(pinKeyInput('12', ''), '12');
+    expect(pinKeyInput('12', '12'), '12');
+    expect(pinKeyInput('12', '00'), '12');
+  });
+
   test('majorFromDigits IDR langsung, kosong jadi 0', () {
     expect(majorFromDigits('25000'), 25000);
     expect(majorFromDigits(''), 0);

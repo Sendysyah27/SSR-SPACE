@@ -18,6 +18,7 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
+import 'package:ssr_space/widgets/pin_pad.dart';
 import 'package:ssr_space/widgets/category_chips.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
@@ -157,9 +158,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
               ),
               actions: [
                 TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: scheme.error,
-                  ),
+                  style: TextButton.styleFrom(foregroundColor: scheme.error),
                   onPressed: () => Navigator.pop(ctx, 'delete'),
                   child: Text(tr('b_delete')),
                 ),
@@ -254,21 +253,28 @@ class BudgetsScreenState extends State<BudgetsScreen> {
               return StatefulBuilder(
                 builder: (ctx, setD) => AlertDialog(
                   title: Text(tr('b_pin_title')),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(tr('b_pin_body')),
-                      const SizedBox(height: SsrSpace.md),
-                      PinField(
-                        controller: pinC,
-                        length: 6,
-                        autofocus: true,
-                        error: err,
-                        onCompleted: (_) =>
-                            _submitPin(ctx, setD, pinC, (String? e) => err = e),
-                      ),
-                    ],
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(tr('b_pin_body')),
+                        const SizedBox(height: SsrSpace.md),
+                        PinField(
+                          controller: pinC,
+                          length: 6,
+                          error: err,
+                          onCompleted: (_) => _submitPin(
+                            ctx,
+                            setD,
+                            pinC,
+                            (String? e) => err = e,
+                          ),
+                        ),
+                        const SizedBox(height: SsrSpace.md),
+                        PinPad(controller: pinC, length: 6),
+                      ],
+                    ),
                   ),
                   actions: [
                     TextButton(
@@ -417,9 +423,7 @@ class _OverAllocBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.error.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(SsrRadius.tile),
-        border: Border.all(
-          color: scheme.error.withValues(alpha: 0.45),
-        ),
+        border: Border.all(color: scheme.error.withValues(alpha: 0.45)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

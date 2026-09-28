@@ -14,6 +14,7 @@ import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
+import 'package:ssr_space/widgets/pin_pad.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
 
@@ -86,10 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             valueListenable: localeCode,
             builder: (context, loc, _) => Container(
               key: _langKey,
-              child: _LangCard(
-                value: loc,
-                onChanged: (v) => setLocaleCode(v),
-              ),
+              child: _LangCard(value: loc, onChanged: (v) => setLocaleCode(v)),
             ),
           ),
           const SizedBox(height: SsrSpace.md),
@@ -749,7 +747,9 @@ class _PinCardState extends State<_PinCard> {
         if (step == 'checkOld') ...[
           Text(tr('st_pin_old'), style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: SsrSpace.sm),
-          PinField(controller: oldC, length: 6, autofocus: true),
+          PinField(controller: oldC, length: 6),
+          const SizedBox(height: SsrSpace.md),
+          PinPad(controller: oldC, length: 6),
           const SizedBox(height: SsrSpace.md),
           PrimaryButton(
             label: tr('st_pin_next'),
@@ -834,8 +834,9 @@ class _WaitLink extends StatelessWidget {
   }
 }
 
-/// Form PIN baru 2x.
-class _NewPinForm extends StatelessWidget {
+/// Form PIN baru 2x: kolom aktif ditandai border primer; pad menulis
+/// ke kolom aktif (ketuk kotak untuk pindah kolom).
+class _NewPinForm extends StatefulWidget {
   final TextEditingController pinC;
   final TextEditingController pin2C;
   final bool busy;
@@ -849,18 +850,60 @@ class _NewPinForm extends StatelessWidget {
   });
 
   @override
+  State<_NewPinForm> createState() => _NewPinFormState();
+}
+
+class _NewPinFormState extends State<_NewPinForm> {
+  int _activePin = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.pinC.addListener(_onFirstChanged);
+  }
+
+  void _onFirstChanged() {
+    if (_activePin == 0 && widget.pinC.text.length >= 6) {
+      setState(() => _activePin = 1);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.pinC.removeListener(_onFirstChanged);
+    super.dispose();
+  }
+
+  void _select(int i) => setState(() => _activePin = i);
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        PinField(controller: pinC, length: 6, autofocus: true),
+        PinField(
+          controller: widget.pinC,
+          length: 6,
+          selected: _activePin == 0,
+          onTap: () => _select(0),
+        ),
         const SizedBox(height: SsrSpace.md),
-        PinField(controller: pin2C, length: 6),
+        PinField(
+          controller: widget.pin2C,
+          length: 6,
+          selected: _activePin == 1,
+          onTap: () => _select(1),
+        ),
+        const SizedBox(height: SsrSpace.lg),
+        PinPad(
+          controller: _activePin == 0 ? widget.pinC : widget.pin2C,
+          length: 6,
+        ),
         const SizedBox(height: SsrSpace.md),
         PrimaryButton(
           label: tr('st_pin_save'),
-          loading: busy,
-          onPressed: onSave,
+          loading: widget.busy,
+          onPressed: widget.onSave,
         ),
       ],
     );

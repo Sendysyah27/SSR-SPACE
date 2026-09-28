@@ -4,6 +4,7 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
+import 'package:ssr_space/widgets/pin_pad.dart';
 
 /// Dialog PIN bersama (dipakai danger zone workspace detail dkk).
 /// true bila PIN benar; false bila batal/salah.
@@ -17,21 +18,24 @@ Future<bool> askPinDialog(BuildContext context) async {
             return StatefulBuilder(
               builder: (ctx, setD) => AlertDialog(
                 title: Text(tr('b_pin_title')),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(tr('b_pin_body')),
-                    const SizedBox(height: SsrSpace.md),
-                    PinField(
-                      controller: pinC,
-                      length: 6,
-                      autofocus: true,
-                      error: err,
-                      onCompleted: (_) =>
-                          _submitPin(ctx, setD, pinC, (String? e) => err = e),
-                    ),
-                  ],
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(tr('b_pin_body')),
+                      const SizedBox(height: SsrSpace.md),
+                      PinField(
+                        controller: pinC,
+                        length: 6,
+                        error: err,
+                        onCompleted: (_) =>
+                            _submitPin(ctx, setD, pinC, (String? e) => err = e),
+                      ),
+                      const SizedBox(height: SsrSpace.md),
+                      PinPad(controller: pinC, length: 6),
+                    ],
+                  ),
                 ),
                 actions: [
                   TextButton(
