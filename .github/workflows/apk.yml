@@ -258,6 +258,29 @@ jobs:
           assert 'android.permission.NFC' in m.read_text()
           assert 'android.hardware.nfc' in m.read_text()
           print('nfc spike permission ok')
+          # SPIKE THROWAWAY NFC (revert bareng kode): plugin prepaid
+          # butuh minSdk 26, template app 24 -> naikkan ke 26.
+          # Konsekuensi produk (Android 8.0+) dibahas di fase desain.
+          gkts = pathlib.Path('android/app/build.gradle.kts')
+          ggroovy = pathlib.Path('android/app/build.gradle')
+          gtarget = gkts if gkts.exists() else ggroovy
+          assert gtarget.exists(), 'app build gradle tak ketemu'
+          g = gtarget.read_text()
+          if gtarget == gkts:
+              if 'minSdk = 26' not in g:
+                  assert 'flutter.minSdkVersion' in g, 'template minSdk tak ketemu'
+                  g = g.replace(
+                      'minSdk = flutter.minSdkVersion', 'minSdk = 26')
+                  gtarget.write_text(g)
+              assert 'minSdk = 26' in gtarget.read_text()
+          else:
+              if 'minSdk 26' not in g:
+                  assert 'flutter.minSdkVersion' in g, 'template minSdk tak ketemu'
+                  g = g.replace(
+                      'minSdk flutter.minSdkVersion', 'minSdk 26')
+                  gtarget.write_text(g)
+              assert 'minSdk 26' in gtarget.read_text()
+          print('spike minSdk26 ok:', gtarget)
           EOF
       - run: |
           python3 - <<'EOF'
