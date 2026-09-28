@@ -25,7 +25,7 @@ class AutoSavedNotify {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const settings = InitializationSettings(android: android);
     await _plugin.initialize(
-      settings,
+      settings: settings,
       onDidReceiveNotificationResponse: (resp) async {
         final p = resp.payload ?? '';
         if (p.startsWith('open_detail:')) {

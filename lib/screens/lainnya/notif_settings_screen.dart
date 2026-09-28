@@ -12,7 +12,6 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/widgets/bank_track_row.dart';
-import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/utils/strings.dart';
