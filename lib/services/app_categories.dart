@@ -17,7 +17,7 @@ const kDefaultCategories = <String>[
   'Lainnya',
 ];
 
-/// Daftar kategori aktif: dipakai popup koreksi, form catat, dan saran.
+/// Daftar kategori aktif: dipakai form catat dan saran.
 /// Diisi di main() sebelum runApp; layar kategori mengubah + simpan.
 final appCategories = ValueNotifier<List<String>>([...kDefaultCategories]);
 

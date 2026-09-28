@@ -58,12 +58,6 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     sectionKey: 'pf_tracking',
     route: 'tracking',
   ),
-  SettingsSearchEntry(
-    titleKey: 'ic_popup',
-    en: 'instant correction popup overlay',
-    sectionKey: 'pf_tracking',
-    route: 'tracking',
-  ),
   // Data dan cadangan.
   SettingsSearchEntry(
     titleKey: 'o_backup',
@@ -84,8 +78,8 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     route: 'import',
   ),
   SettingsSearchEntry(
-    titleKey: 'st_reset_correct',
-    en: 'reset instant correction cache',
+    titleKey: 'o_clearcache_t',
+    en: 'clear local cache',
     sectionKey: 'pf_backup',
     route: 'clearCache',
   ),
@@ -163,6 +157,12 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     titleKey: 'st_reminder_time',
     en: 'reminder time clock hour',
     sectionKey: 'st_title',
+    route: 'settings',
+  ),
+  SettingsSearchEntry(
+    titleKey: 'st_weekly_on',
+    en: 'weekly reminder notification recap',
+    sectionKey: 'pf_reminder',
     route: 'settings',
   ),
   SettingsSearchEntry(

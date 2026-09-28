@@ -224,13 +224,16 @@ class BerandaScreenState extends State<BerandaScreen> {
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: widget.onProfil,
-            child: CircleAvatar(
-              backgroundColor: scheme.primaryContainer,
-              child: Text(
-                initial,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: scheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w700,
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: CircleAvatar(
+                backgroundColor: scheme.primaryContainer,
+                child: Text(
+                  initial,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: scheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),

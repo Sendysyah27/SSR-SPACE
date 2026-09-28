@@ -9,7 +9,7 @@ import 'package:ssr_space/services/backup_export.dart';
 import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
-import 'package:ssr_space/services/instant_correct.dart';
+import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -44,12 +44,10 @@ class _OtherMeta {
   final String orgName;
   final String plan;
   final bool tracking;
-  final bool popup;
   const _OtherMeta({
     required this.orgName,
     required this.plan,
     required this.tracking,
-    required this.popup,
   });
 }
 
@@ -74,7 +72,6 @@ class _OtherScreenState extends State<OtherScreen> {
     final p = await SharedPreferences.getInstance();
     final orgName = p.getString('active_org_name') ?? '-';
     final tracking = p.getBool('track_master') ?? false;
-    final popup = p.getBool('correct_popup') ?? true;
     final orgId = p.getString('active_org_id') ?? '';
     var plan = '';
     if (orgId.isNotEmpty) {
@@ -88,7 +85,6 @@ class _OtherScreenState extends State<OtherScreen> {
       orgName: orgName,
       plan: plan,
       tracking: tracking,
-      popup: popup,
     );
   }
 
@@ -181,14 +177,14 @@ class _OtherScreenState extends State<OtherScreen> {
     );
   }
 
-  /// Hapus cache lokal saja (pending koreksi + pref popup overlay).
+  /// Hapus cache lokal saja (cache dompet sheet + sisa pref koreksi lama).
   /// Tak pernah menyentuh data Supabase.
   Future<void> _clearLocalCache() async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(tr('st_reset_correct')),
-        content: Text(tr('st_reset_correct')),
+        title: Text(tr('o_clearcache_t')),
+        content: Text(tr('o_clearcache_t')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -205,16 +201,16 @@ class _OtherScreenState extends State<OtherScreen> {
       ),
     );
     if (ok != true || !mounted) return;
-    await InstantCorrect.clearMemory();
-    _refreshMeta();
+    WalletCache.invalidate();
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.remove('correct_popup');
+      await p.remove('pending_correct_tx');
+      await p.remove('last_detail_tx');
+    } catch (_) {}
     if (!mounted) return;
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(tr('st_reset_correct_done'))));
-  }
-
-  Future<void> _setPopup(bool v) async {
-    await InstantCorrect.setPopupEnabled(v);
-    if (mounted) _refreshMeta();
+        .showSnackBar(SnackBar(content: Text(tr('o_clearcache_done'))));
   }
 
   /// Buka detail workspace aktif (baris Kelola di switcher, dibuka langsung).
@@ -327,7 +323,7 @@ class _OtherScreenState extends State<OtherScreen> {
   /// AppBar hub: judul + aksi cari pengaturan.
   AppBar _appBar() {
     return AppBar(
-      title: Text(tr('nav_lainnya')),
+      title: Text(tr('nav_profil')),
       actions: [
         IconButton(
           icon: const DuoIcon(AppIcons.search),
@@ -406,7 +402,6 @@ class _OtherScreenState extends State<OtherScreen> {
             planLabel: planLabel,
             isPro: meta?.plan == 'pro',
             tracking: meta?.tracking == true,
-            popup: meta?.popup != false,
             backupBusy: backingUp,
             onSwitch: () => _push(OrgSwitcherScreen(session: widget.session)),
             onInvite: () => _push(const InviteScreen()),
@@ -419,7 +414,6 @@ class _OtherScreenState extends State<OtherScreen> {
             onBills: () => _push(const RecurringBillsScreen()),
             onNfc: () => _push(const NfcCardsScreen()),
             onTracking: () => _push(const NotifSettingsScreen()),
-            onPopupChanged: _setPopup,
             onBackup: _backup,
             onExport: () => _push(const ReportsScreen()),
             onImportP2: () => _push(const ImportPreviewScreen()),
@@ -441,7 +435,6 @@ class _HubList extends StatelessWidget {
   final String planLabel;
   final bool isPro;
   final bool tracking;
-  final bool popup;
   final bool backupBusy;
   final VoidCallback onSwitch;
   final VoidCallback onInvite;
@@ -454,7 +447,6 @@ class _HubList extends StatelessWidget {
   final VoidCallback onBills;
   final VoidCallback onNfc;
   final VoidCallback onTracking;
-  final ValueChanged<bool> onPopupChanged;
   final VoidCallback onBackup;
   final VoidCallback onExport;
   final VoidCallback onImportP2;
@@ -469,7 +461,6 @@ class _HubList extends StatelessWidget {
     required this.planLabel,
     required this.isPro,
     required this.tracking,
-    required this.popup,
     required this.backupBusy,
     required this.onSwitch,
     required this.onInvite,
@@ -482,7 +473,6 @@ class _HubList extends StatelessWidget {
     required this.onBills,
     required this.onNfc,
     required this.onTracking,
-    required this.onPopupChanged,
     required this.onBackup,
     required this.onExport,
     required this.onImportP2,
@@ -511,9 +501,7 @@ class _HubList extends StatelessWidget {
       ),
       _TrackingSection(
         tracking: tracking,
-        popup: popup,
         onOpen: onTracking,
-        onPopupChanged: onPopupChanged,
       ),
       _BackupSection(
         backupBusy: backupBusy,
@@ -674,18 +662,14 @@ class _DataSection extends StatelessWidget {
   }
 }
 
-/// PELACAKAN: pintu pelacakan otomatis + toggle popup koreksi instan.
+/// PELACAKAN: pintu pelacakan otomatis.
 class _TrackingSection extends StatelessWidget {
   final bool tracking;
-  final bool popup;
   final VoidCallback onOpen;
-  final ValueChanged<bool> onPopupChanged;
 
   const _TrackingSection({
     required this.tracking,
-    required this.popup,
     required this.onOpen,
-    required this.onPopupChanged,
   });
 
   @override
@@ -703,14 +687,6 @@ class _TrackingSection extends StatelessWidget {
             tone: tracking ? StatusTone.accent : StatusTone.neutral,
           ),
           onTap: onOpen,
-        ),
-        const Divider(height: 1),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(tr('ic_popup')),
-          subtitle: Text(tr('ic_popup_s')),
-          value: popup,
-          onChanged: onPopupChanged,
         ),
       ],
     );
@@ -762,7 +738,7 @@ class _BackupSection extends StatelessWidget {
         const Divider(height: 1),
         NavTile(
           icon: AppIcons.revoke,
-          title: tr('st_reset_correct'),
+          title: tr('o_clearcache_t'),
           onTap: onClearCache,
         ),
       ],

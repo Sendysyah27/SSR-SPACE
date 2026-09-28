@@ -1,6 +1,13 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.4.12+46.
+Versi terpasang: 2.5.0+47.
+
+## Yang baru di 2.5.0
+
+1. Form catat terbuka lebih cepat (dompet dari cache) dan ketik cepat tak lagi lag.
+2. Navigasi bawah tinggal 4 tab; Profil dibuka lewat avatar kiri atas Beranda.
+3. Tiap transaksi tersimpan memunculkan notifikasi sistem biasa (tanpa popup koreksi); ketuk untuk lihat detail, koreksi tetap lewat ketuk baris Transaksi.
+4. Pengingat mingguan baru (default Minggu 20:00) di samping pengingat harian.
 
 ## Yang baru di 2.4.12
 

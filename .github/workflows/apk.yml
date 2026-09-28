@@ -174,29 +174,6 @@ jobs:
           import pathlib
           m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
           s = m.read_text()
-          if 'SYSTEM_ALERT_WINDOW' not in s:
-              s = s.replace(
-                  '</manifest>',
-                  '    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>\n</manifest>',
-              )
-          if 'flutter.overlay.window.flutter_overlay_window.OverlayService' not in s:
-              svc = '''    <service android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"
-            android:foregroundServiceType="specialUse"
-            android:exported="false">
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                      android:value="Ringkasan koreksi kategori transaksi 30 detik setelah auto-catat"/>
-          </service>
-          '''
-              s = s.replace('</application>', svc + '</application>')
-          m.write_text(s)
-          assert 'SYSTEM_ALERT_WINDOW' in m.read_text()
-          assert 'flutter.overlay.window.flutter_overlay_window.OverlayService' in m.read_text()
-          EOF
-      - run: |
-          python3 - <<'EOF'
-          import pathlib
-          m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
-          s = m.read_text()
           # Pengingat harian (flutter_local_notifications): POST_NOTIFICATIONS
           # untuk Android 13+ plus RECEIVE_BOOT_COMPLETED agar jadwal
           # harian bisa dijadwal ulang saat app start setelah reboot.

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
+import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/category_meta.dart';
@@ -39,21 +42,35 @@ Future<bool> openTxInputSheet(
 }) async {
   final orgId = await activeOrgId();
   if (orgId.isEmpty || !context.mounted) return false;
+  // Cache dulu: sheet tampil segera dari snapshot (stale ≤60 dtk wajar
+  // untuk label dropdown); penyegaran diam-diam mengisi buka berikutnya.
+  // Jalur dingin (cache kosong) mengambil list + saldo paralel.
+  final cached = WalletCache.peek(orgId);
   late final List<Wallet> wallets;
   Map<String, double> balances = {};
-  try {
-    wallets = await WalletService().list(orgId);
+  if (cached != null) {
+    wallets = cached.wallets;
+    balances = cached.balances;
+    unawaited(_refreshWalletCache(orgId));
+  } else {
     try {
-      final bals = await WalletService().balances(orgId);
-      balances = {for (final b in bals) b.walletId: b.balance};
+      final results = await Future.wait([
+        WalletService().list(orgId),
+        WalletService().balances(orgId).catchError(
+              (_) => <WalletBalance>[],
+            ),
+      ]);
+      wallets = results[0] as List<Wallet>;
+      balances = {
+        for (final b in (results[1] as List<WalletBalance>)) b.walletId: b.balance,
+      };
+      WalletCache.store(orgId, wallets, balances);
     } catch (_) {
-      balances = {};
+      if (!context.mounted) return false;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('conn_error'))));
+      return false;
     }
-  } catch (_) {
-    if (!context.mounted) return false;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(tr('conn_error'))));
-    return false;
   }
   if (!context.mounted) return false;
   final res = await showModalBottomSheet<String>(
@@ -86,6 +103,20 @@ Future<bool> openTxInputSheet(
     await showSuccessFlash(context);
   }
   return true;
+}
+
+/// Segarkan cache dompet diam-diam untuk pembukaan sheet berikutnya.
+/// Tak pernah melempar; sheet yang sedang terbuka pakai snapshot.
+Future<void> _refreshWalletCache(String orgId) async {
+  try {
+    final wallets = await WalletService().list(orgId);
+    Map<String, double> balances = {};
+    try {
+      final bals = await WalletService().balances(orgId);
+      balances = {for (final b in bals) b.walletId: b.balance};
+    } catch (_) {}
+    WalletCache.store(orgId, wallets, balances);
+  } catch (_) {}
 }
 
 /// Sheet input transaksi premium: display nominal + numpad custom,
@@ -129,6 +160,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
   late TimeOfDay time;
   String? walletId;
   String? toWalletId;
+  Timer? _quickDeb;
   final quickC = TextEditingController();
   final catC = TextEditingController();
   final subC = TextEditingController();
@@ -171,6 +203,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
 
   @override
   void dispose() {
+    _quickDeb?.cancel();
     digits.dispose();
     quickC.dispose();
     catC.dispose();
@@ -185,6 +218,14 @@ class _TxInputSheetState extends State<TxInputSheet> {
   /// Ketik cepat: urai teks bebas lalu prefill form (tambah saja).
   /// Tanpa nominal valid = abaikan; tak pernah menimpa saat mode edit.
   /// Simpan tetap lewat tombol (tak ada insert diam-diam).
+  /// Dipanggil debounce 300 ms agar tiap karakter tak rebuild sheet.
+  void _onQuickChanged(String v) {
+    _quickDeb?.cancel();
+    _quickDeb = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) _applyQuick(v);
+    });
+  }
+
   void _applyQuick(String v) {
     if (_isEdit || v.trim().isEmpty) return;
     final q = parseQuickInput(
@@ -374,7 +415,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
             ),
             if (!_isEdit) ...[
               const SizedBox(height: SsrSpace.sm),
-              _QuickSection(controller: quickC, onChanged: _applyQuick),
+              _QuickSection(controller: quickC, onChanged: _onQuickChanged),
             ],
             _AmountDisplay(digits: digits, dec: _dec),
             TxTypeSelector(

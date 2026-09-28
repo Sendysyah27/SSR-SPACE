@@ -61,3 +61,42 @@ class WalletService {
         .toList();
   }
 }
+
+/// Snapshot dompet + saldo per workspace di memori (TTL 60 detik).
+///
+/// Form catat dibuka dari cache agar sheet tampil segera; penyegaran
+/// diam-diam mengisi buka berikutnya. Stale ≤60 detik wajar untuk label
+/// dropdown (saldo otoritatif tetap di Supabase). Fail-open: miss = null.
+class CachedWallets {
+  final List<Wallet> wallets;
+  final Map<String, double> balances;
+  const CachedWallets(this.wallets, this.balances);
+}
+
+class WalletCache {
+  static CachedWallets? _cached;
+  static String? _orgId;
+  static DateTime? _at;
+  static const ttl = Duration(seconds: 60);
+
+  static CachedWallets? peek(String orgId) {
+    if (_orgId != orgId || _cached == null || _at == null) return null;
+    if (DateTime.now().difference(_at!) > ttl) return null;
+    return _cached;
+  }
+
+  static void store(
+    String orgId,
+    List<Wallet> wallets,
+    Map<String, double> balances,
+  ) {
+    _orgId = orgId;
+    _cached = CachedWallets(List.of(wallets), Map.of(balances));
+    _at = DateTime.now();
+  }
+
+  static void invalidate() {
+    _cached = null;
+    _at = null;
+  }
+}

@@ -63,7 +63,7 @@ IconData _metaIconData(String key) {
 }
 
 /// Atur daftar kategori global: tambah, hapus, simpan, kembalikan bawaan.
-/// Dipakai popup koreksi, form catat, dan saran kategori.
+/// Dipakai form catat dan saran kategori.
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
   @override

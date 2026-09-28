@@ -1,0 +1,129 @@
+import 'package:flutter/material.dart';
+import 'package:ssr_space/models/transaction.dart';
+import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/utils/datetime.dart';
+import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/utils/strings.dart';
+
+/// Detail transaksi read-only dari ketuk notif tersimpan.
+/// Kembalikan true bila user pilih Lihat di Transaksi.
+Future<bool?> showTxDetailSheet(
+  BuildContext context,
+  SaasTransaction tx,
+  String orgId,
+) {
+  return showModalBottomSheet<bool>(
+    context: context,
+    useSafeArea: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    ),
+    builder: (_) => _TxDetailSheet(tx: tx, orgId: orgId),
+  );
+}
+
+class _TxDetailSheet extends StatelessWidget {
+  final SaasTransaction tx;
+  final String orgId;
+
+  const _TxDetailSheet({required this.tx, required this.orgId});
+
+  Future<Map<String, String>> _names() async {
+    try {
+      final ws = await WalletService().list(orgId);
+      return {for (final w in ws) w.id: w.name};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dir = tx.type == 'in'
+        ? tr('tx_in')
+        : tx.type == 'transfer'
+            ? tr('tx_transfer')
+            : tr('tx_out');
+    return SafeArea(
+      child: FutureBuilder<Map<String, String>>(
+        future: _names(),
+        builder: (context, snap) {
+          final names = snap.data ?? {};
+          final wallet = names[tx.walletId] ?? '…';
+          final toWallet = tx.toWalletId == null
+              ? null
+              : (names[tx.toWalletId] ?? '…');
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              SsrSpace.lg,
+              SsrSpace.sm,
+              SsrSpace.lg,
+              SsrSpace.xl,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  tr('td_title'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: SsrSpace.sm),
+                Text('$dir ${amt(tx.amount)}', style: AppTheme.moneyLarge),
+                const SizedBox(height: SsrSpace.md),
+                _row(context, tr('td_wallet'), wallet),
+                if (toWallet != null)
+                  _row(context, tr('td_towallet'), toWallet),
+                _row(
+                  context,
+                  tr('tx_f_cat'),
+                  (tx.category?.isEmpty ?? true) ? '-' : tx.category!,
+                ),
+                _row(
+                  context,
+                  tr('tx_f_note'),
+                  (tx.note?.isEmpty ?? true) ? '-' : tx.note!,
+                ),
+                _row(
+                  context,
+                  tr('tx_f_date'),
+                  txWhenLabel(tx.date, tx.createdAt),
+                ),
+                if (tx.code != null && tx.code!.isNotEmpty)
+                  _row(context, 'TX', tx.code!),
+                const SizedBox(height: SsrSpace.md),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(tr('td_view')),
+                ),
+                const SizedBox(height: SsrSpace.sm),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(tr('td_close')),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _row(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(label, style: theme.textTheme.bodySmall),
+          ),
+          Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
+        ],
+      ),
+    );
+  }
+}

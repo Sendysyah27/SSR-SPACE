@@ -118,32 +118,4 @@ class ForegroundTrack {
     if (!Platform.isAndroid) return false;
     return FlutterForegroundTask.isRunningService;
   }
-
-  /// Sematkan ringkasan koreksi instan di notif service (ketuk → buka app).
-  static Future<void> pinNotice(String body) async {
-    if (!Platform.isAndroid) return;
-    try {
-      if (!await FlutterForegroundTask.isRunningService) return;
-      await FlutterForegroundTask.updateService(
-        notificationTitle: _title,
-        notificationText: tr('fg_correct').replaceFirst('{s}', body),
-      );
-    } catch (e) {
-      debugPrint('foreground pin gagal: $e');
-    }
-  }
-
-  /// Kembalikan teks notif service ke semula.
-  static Future<void> clearNotice() async {
-    if (!Platform.isAndroid) return;
-    try {
-      if (!await FlutterForegroundTask.isRunningService) return;
-      await FlutterForegroundTask.updateService(
-        notificationTitle: _title,
-        notificationText: _text,
-      );
-    } catch (e) {
-      debugPrint('foreground clear gagal: $e');
-    }
-  }
 }

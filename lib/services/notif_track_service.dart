@@ -8,8 +8,8 @@ import 'package:notification_listener_service/notification_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/billing_service.dart';
-import 'package:ssr_space/services/instant_correct.dart';
 import 'package:ssr_space/services/notif_parse.dart';
 import 'package:ssr_space/services/transfer_detect.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -431,18 +431,19 @@ class NotifTrack {
         if (txId != null) {
           final pair = await _tryAutoMerge(orgId, txId);
           if (pair != null) {
-            final label =
+            final outLabel =
                 matchWatchedApp(pair.outTx.sourcePackage ?? '') ??
                     n.appLabel ??
                     pkg;
-            await InstantCorrect.offer(
+            await AutoSavedNotify.showSaved(
               txId: pair.outTx.id,
               type: 'transfer',
               amount: pair.amount,
-              app: label,
+              app: outLabel,
+              appTo: matchWatchedApp(pair.inTx.sourcePackage ?? ''),
             );
           } else {
-            await InstantCorrect.offer(
+            await AutoSavedNotify.showSaved(
               txId: txId,
               type: n.type!,
               amount: n.amount!,
@@ -496,7 +497,7 @@ class NotifTrack {
       n.type = type;
       n.status = tr('st_saved');
       if (txId != null) {
-        await InstantCorrect.offer(
+        await AutoSavedNotify.showSaved(
           txId: txId,
           type: type,
           amount: n.amount!,

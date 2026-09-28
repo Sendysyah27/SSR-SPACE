@@ -19,7 +19,7 @@ const _t = <String, Map<String, String>>{
   'nav_transaksi': {'id': 'Transaksi', 'en': 'Transactions'},
   'nav_budget': {'id': 'Budget', 'en': 'Budget'},
   'nav_laporan': {'id': 'Laporan', 'en': 'Reports'},
-  'nav_lainnya': {'id': 'Lainnya', 'en': 'More'},
+  'nav_profil': {'id': 'Profil', 'en': 'Profile'},
   'nav_dompet': {'id': 'Dompet', 'en': 'Wallets'},
   'act_catat': {'id': 'Catat', 'en': 'Record'},
   // Beranda
@@ -430,6 +430,17 @@ const _t = <String, Map<String, String>>{
     'id': 'Ekspor seluruh workspace ke CSV',
     'en': 'Export the whole workspace to CSV',
   },
+  'o_clearcache_t': {'id': 'Hapus cache lokal', 'en': 'Clear local cache'},
+  'o_clearcache_done': {
+    'id': 'Cache lokal dibersihkan.',
+    'en': 'Local cache cleared.',
+  },
+  'nt_saved_title': {'id': 'Transaksi tercatat', 'en': 'Transaction saved'},
+  'td_title': {'id': 'Detail transaksi', 'en': 'Transaction details'},
+  'td_wallet': {'id': 'Dompet', 'en': 'Wallet'},
+  'td_towallet': {'id': 'Dompet tujuan', 'en': 'Destination wallet'},
+  'td_view': {'id': 'Lihat di Transaksi', 'en': 'View in Transactions'},
+  'td_close': {'id': 'Tutup', 'en': 'Close'},
   'o_cats': {'id': 'Kategori', 'en': 'Categories'},
   'o_cats_s': {
     'id': 'Atur daftar kategori transaksi',
@@ -1067,50 +1078,6 @@ const _t = <String, Map<String, String>>{
     'id': 'Laporan SSR SPACE (PDF)',
     'en': 'SSR SPACE report (PDF)',
   },
-  // Koreksi instan
-  'fg_correct': {
-    'id': '{s} • ketuk untuk lengkapi',
-    'en': '{s} • tap to complete',
-  },
-  'ic_title': {'id': 'Koreksi instan', 'en': 'Instant correction'},
-  'ic_popup': {'id': 'Popup koreksi instan', 'en': 'Instant correction popup'},
-  'ic_popup_s': {
-    'id': 'Ringkasan 30 detik setelah auto-catat',
-    'en': '30-second summary after auto-save',
-  },
-  'ic_perm': {
-    'id': 'Izin tampil di atas aplikasi',
-    'en': 'Display over apps permission',
-  },
-  'ic_perm_grant': {'id': 'Beri izin', 'en': 'Grant permission'},
-  'ic_perm_ok': {'id': 'Izin overlay aktif', 'en': 'Overlay permission active'},
-  'ic_overlay_t': {'id': 'Transaksi tercatat', 'en': 'Transaction saved'},
-  'ic_lengkapi': {'id': 'Lengkapi', 'en': 'Complete'},
-  'ic_tutup': {'id': 'Tutup', 'en': 'Close'},
-  'ic_sheet_t': {'id': 'Lengkapi catatan', 'en': 'Complete entry'},
-  'ic_test': {'id': 'Tes overlay', 'en': 'Test overlay'},
-  'ic_test_body': {
-    'id': 'Ini popup tes — bila terlihat, overlay di HP ini beres.',
-    'en': 'This is a test popup — if you can see it, overlays work here.',
-  },
-  'ic_test_ok': {
-    'id': 'Popup tes dikirim — lihat layar HP, ia tutup sendiri 30 detik.',
-    'en': 'Test popup sent — check your screen, it closes in 30 seconds.',
-  },
-  'ic_test_noperm': {
-    'id': 'Izin overlay belum aktif — ketuk Beri izin dulu.',
-    'en': 'Overlay permission is off — tap Grant permission first.',
-  },
-  'ic_test_fail': {
-    'id': 'Perintah popup gagal dikirim.',
-    'en': 'Could not send the popup command.',
-  },
-  'ic_note_hint': {
-    'id': 'Catatan singkat (opsional)',
-    'en': 'Short note (optional)',
-  },
-  'ic_skip': {'id': 'Lewati', 'en': 'Skip'},
-  'ic_saved': {'id': 'Koreksi tersimpan.', 'en': 'Correction saved.'},
   // Profil: judul seksi katalog
   'pf_data': {'id': 'Data', 'en': 'Data'},
   'pf_tracking': {'id': 'Pelacakan', 'en': 'Tracking'},
@@ -1121,7 +1088,7 @@ const _t = <String, Map<String, String>>{
   'pf_reminder': {'id': 'Pengingat', 'en': 'Reminders'},
   'pf_security': {'id': 'Keamanan', 'en': 'Security'},
   'pf_about': {'id': 'Tentang', 'en': 'About'},
-  // Pengaturan: katalog tampilan, pengingat, koreksi
+  // Pengaturan: katalog tampilan dan pengingat
   'st_def_currency': {'id': 'Mata uang bawaan', 'en': 'Default currency'},
   'st_topn': {
     'id': 'Top 8 + Lainnya di laporan',
@@ -1146,15 +1113,20 @@ const _t = <String, Map<String, String>>{
   },
   'st_reminder_time': {'id': 'Jam pengingat', 'en': 'Reminder time'},
   'st_reminder_on': {'id': 'Pengingat harian', 'en': 'Daily reminder'},
+  'st_weekly_on': {'id': 'Pengingat mingguan', 'en': 'Weekly reminder'},
+  'st_weekly_time': {
+    'id': 'Waktu pengingat mingguan',
+    'en': 'Weekly reminder time',
+  },
+  'st_weekly_day': {'id': 'Hari', 'en': 'Day'},
+  'wd_1': {'id': 'Senin', 'en': 'Monday'},
+  'wd_2': {'id': 'Selasa', 'en': 'Tuesday'},
+  'wd_3': {'id': 'Rabu', 'en': 'Wednesday'},
+  'wd_4': {'id': 'Kamis', 'en': 'Thursday'},
+  'wd_5': {'id': 'Jumat', 'en': 'Friday'},
+  'wd_6': {'id': 'Sabtu', 'en': 'Saturday'},
+  'wd_7': {'id': 'Minggu', 'en': 'Sunday'},
   'st_widget_today': {'id': 'Widget hari ini', 'en': 'Today widget'},
-  'st_reset_correct': {
-    'id': 'Atur ulang koreksi instan',
-    'en': 'Reset instant correction',
-  },
-  'st_reset_correct_done': {
-    'id': 'Setelan koreksi instan dikembalikan.',
-    'en': 'Instant correction settings reset.',
-  },
   // Impor CSV
   'imp_title': {'id': 'Impor CSV', 'en': 'Import CSV'},
   'imp_pick': {'id': 'Tempel CSV', 'en': 'Paste CSV'},

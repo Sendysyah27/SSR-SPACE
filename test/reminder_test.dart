@@ -29,4 +29,29 @@ void main() {
     expect(zoneForOffsetHours(9), 'Asia/Jayapura');
     expect(zoneForOffsetHours(0), 'UTC');
   });
+
+  test('mingguan: hari sama jam masih di depan = hari ini', () {
+    final now = DateTime(2026, 9, 28, 10, 0); // Senin
+    expect(nextWeekly(1, 12, 0, now), DateTime(2026, 9, 28, 12, 0));
+  });
+
+  test('mingguan: hari sama jam lewat = minggu depan', () {
+    final now = DateTime(2026, 9, 28, 10, 0); // Senin
+    expect(nextWeekly(1, 7, 0, now), DateTime(2026, 10, 5, 7, 0));
+  });
+
+  test('mingguan: beda hari = hari itu minggu ini', () {
+    final now = DateTime(2026, 9, 28, 10, 0); // Senin
+    expect(nextWeekly(7, 20, 0, now), DateTime(2026, 10, 4, 20, 0));
+  });
+
+  test('mingguan: tepat sama dengan sekarang = minggu depan', () {
+    final now = DateTime(2026, 9, 28, 20, 0);
+    expect(nextWeekly(1, 20, 0, now), DateTime(2026, 10, 5, 20, 0));
+  });
+
+  test('mingguan: di luar rentang dijepit, tidak throw', () {
+    final now = DateTime(2026, 9, 28, 10, 0); // Senin
+    expect(nextWeekly(0, 99, -5, now), DateTime(2026, 9, 28, 23, 0));
+  });
 }

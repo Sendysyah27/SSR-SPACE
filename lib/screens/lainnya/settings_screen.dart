@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
-import 'package:ssr_space/services/instant_correct.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/reminder_service.dart';
 import 'package:ssr_space/services/session_service.dart';
@@ -131,8 +130,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(key: _reminderKey, child: const _ReminderCard()),
           const SizedBox(height: SsrSpace.md),
           const _WidgetCard(),
-          const SizedBox(height: SsrSpace.md),
-          const _ResetCorrectCard(),
           const SizedBox(height: SsrSpace.md),
           Container(key: _pinKey, child: const _PinCard()),
         ],
@@ -535,7 +532,124 @@ class _ReminderCard extends StatelessWidget {
             ),
           ),
         ),
+        const _WeeklySection(),
       ],
+    );
+  }
+}
+
+/// Pengingat mingguan: toggle + hari + jam via TimePicker.
+/// Id notif 7002, terpisah dari harian agar tak saling menimpa.
+class _WeeklySection extends StatelessWidget {
+  const _WeeklySection();
+
+  Future<void> _toggle(bool v) async {
+    await setWeeklyEnabled(v);
+    try {
+      if (v) {
+        await ReminderService.scheduleWeekly(
+          weeklyWeekday.value,
+          weeklyHour.value,
+          weeklyMinute.value,
+        );
+      } else {
+        await ReminderService.cancelWeekly();
+      }
+    } catch (e) {
+      debugPrint('pengingat mingguan gagal: $e');
+    }
+  }
+
+  Future<void> _pick(BuildContext context, int h, int m) async {
+    final t = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: h, minute: m),
+    );
+    if (t == null) return;
+    await setWeeklyTime(t.hour, t.minute);
+    if (!weeklyEnabled.value) return;
+    try {
+      await ReminderService.scheduleWeekly(
+        weeklyWeekday.value,
+        t.hour,
+        t.minute,
+      );
+    } catch (e) {
+      debugPrint('pengingat mingguan gagal: $e');
+    }
+  }
+
+  Future<void> _pickDay(int? wd) async {
+    if (wd == null) return;
+    await setWeeklyDay(wd);
+    if (!weeklyEnabled.value) return;
+    try {
+      await ReminderService.scheduleWeekly(
+        wd,
+        weeklyHour.value,
+        weeklyMinute.value,
+      );
+    } catch (e) {
+      debugPrint('pengingat mingguan gagal: $e');
+    }
+  }
+
+  String _fmt(int h, int m) =>
+      '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: weeklyEnabled,
+      builder: (context, enabled, _) => ValueListenableBuilder<int>(
+        valueListenable: weeklyWeekday,
+        builder: (context, wd, _) => ValueListenableBuilder<int>(
+          valueListenable: weeklyHour,
+          builder: (context, h, _) => ValueListenableBuilder<int>(
+            valueListenable: weeklyMinute,
+            builder: (context, m, _) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Divider(height: 1),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(tr('st_weekly_on')),
+                  value: enabled,
+                  onChanged: _toggle,
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButton<int>(
+                        value: wd,
+                        isExpanded: true,
+                        items: [
+                          for (var d = 1; d <= 7; d++)
+                            DropdownMenuItem(
+                              value: d,
+                              child: Text(tr('wd_$d')),
+                            ),
+                        ],
+                        onChanged: _pickDay,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _fmt(h, m),
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    IconButton(
+                      icon: const DuoIcon(AppIcons.clock),
+                      tooltip: tr('st_weekly_time'),
+                      onPressed: () => _pick(context, h, m),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -570,31 +684,6 @@ class _WidgetCard extends StatelessWidget {
             value: value,
             onChanged: _toggle,
           ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Atur ulang memori koreksi instan (pending + popup), tanpa hapus data.
-class _ResetCorrectCard extends StatelessWidget {
-  const _ResetCorrectCard();
-
-  Future<void> _reset(BuildContext context) async {
-    await InstantCorrect.clearMemory();
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(tr('st_reset_correct_done'))));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LabeledSectionCard(
-      label: tr('st_reset_correct'),
-      children: [
-        OutlinedButton(
-          onPressed: () => _reset(context),
-          child: Text(tr('st_reset_correct')),
         ),
       ],
     );

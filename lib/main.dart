@@ -14,20 +14,7 @@ import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
-import 'package:ssr_space/widgets/correct_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-/// Entry-point isolate overlay koreksi instan (30 detik, tanpa izin tambahan
-/// selain SYSTEM_ALERT_WINDOW yang diminta saat master tracking dinyalakan).
-@pragma('vm:entry-point')
-void overlayMain() {
-  runApp(
-    const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: CorrectOverlay(),
-    ),
-  );
-}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,6 +39,13 @@ Future<void> main() async {
       final m = reminderMinute.value.clamp(0, 59);
       await ReminderService.init();
       await ReminderService.scheduleDaily(h, m);
+    }
+    if (weeklyEnabled.value) {
+      await ReminderService.scheduleWeekly(
+        weeklyWeekday.value.clamp(1, 7),
+        weeklyHour.value.clamp(0, 23),
+        weeklyMinute.value.clamp(0, 59),
+      );
     }
   } catch (e) {
     debugPrint('jadwal ulang pengingat gagal: $e');

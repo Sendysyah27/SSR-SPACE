@@ -1,18 +1,17 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/foreground_track.dart';
-import 'package:ssr_space/services/instant_correct.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
-import 'package:ssr_space/services/overlay_bus.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
-import 'package:ssr_space/widgets/correct_sheet.dart';
+import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
@@ -34,7 +33,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   final reportsKey = GlobalKey<ReportsScreenState>();
   final txKey = GlobalKey<TransactionsScreenState>();
   bool _resumed = true;
-  bool _sheetOpen = false;
+  bool _detailOpen = false;
 
   @override
   void initState() {
@@ -43,20 +42,12 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     // force: resubscribe bila stream sempat error / app resume dari background
     NotifTrack.ensureListening(force: true);
     unawaited(ForegroundTrack.syncFromPrefs());
-    // Via OverlayBus (bukan listen langsung): stream plugin sekali-dengar,
-    // MainShell baru lahir sebelum dispose lama saat pushReplacement.
-    if (Platform.isAndroid) {
-      OverlayBus.add('main', (event) {
-        if ('$event' == 'lengkapi' && _resumed) unawaited(_checkPending());
-      });
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkPending());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkDetail());
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    OverlayBus.remove('main');
     super.dispose();
   }
 
@@ -67,32 +58,33 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       _resumed = true;
       NotifTrack.ensureListening(force: true);
       unawaited(ForegroundTrack.syncFromPrefs());
-      unawaited(_checkPending());
+      unawaited(_checkDetail());
       _reloadTab(index);
     } else {
       _resumed = false;
     }
   }
 
-  /// Buka sheet koreksi bila ada pending (dari overlay / ketuk notif service).
-  Future<void> _checkPending() async {
-    if (_sheetOpen || !_resumed || !mounted) return;
+  /// Buka detail read-only bila ada ketuk notif tersimpan.
+  /// Prefs ditulis AutoSavedNotify saat notif tampil maupun diketuk.
+  Future<void> _checkDetail() async {
+    if (_detailOpen || !_resumed || !mounted) return;
     try {
-      final txId = await InstantCorrect.pendingTxId();
-      if (txId == null || !mounted) return;
+      final prefs = await SharedPreferences.getInstance();
+      final txId = prefs.getString(AutoSavedNotify.lastDetailKey);
+      if (txId == null || txId.isEmpty || !mounted) return;
       final orgId = await activeOrgId();
       if (orgId.isEmpty || !mounted) return;
       final tx = await TransactionService().getById(orgId, txId);
+      await prefs.remove(AutoSavedNotify.lastDetailKey);
       if (!mounted) return;
-      if (tx == null) {
-        await InstantCorrect.clearPending();
-        return;
-      }
-      _sheetOpen = true;
-      await showCorrectSheet(context, tx, orgId);
-      _sheetOpen = false;
+      if (tx == null) return;
+      _detailOpen = true;
+      final go = await showTxDetailSheet(context, tx, orgId);
+      _detailOpen = false;
+      if (go == true && mounted) _select(1);
     } catch (_) {
-      _sheetOpen = false;
+      _detailOpen = false;
     }
   }
 
@@ -103,6 +95,17 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       budgetKey.currentState?.reload();
       reportsKey.currentState?.reload();
     }
+  }
+
+  /// Profil dibuka sebagai route (bukan tab): avatar kiri-atas Beranda.
+  /// Kembali dari Profil = muat ulang tab aktif (pengaturan bisa berubah).
+  Future<void> _openProfil() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => OtherScreen(session: widget.session),
+      ),
+    );
+    if (mounted) _reloadTab(index);
   }
 
   void _select(int i) {
@@ -133,12 +136,11 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
               onCatat: () => _select(1),
               onBudget: () => _select(2),
               onLaporan: () => _select(3),
-              onProfil: () => _select(4),
+              onProfil: _openProfil,
             ),
             TransactionsScreen(key: txKey),
             BudgetsScreen(key: budgetKey),
             ReportsScreen(key: reportsKey),
-            OtherScreen(session: widget.session),
           ],
         ),
       ),
@@ -178,10 +180,6 @@ class _MainBottomBar extends StatelessWidget {
     NavigationDestination(
       icon: const DuoIcon(AppIcons.reports),
       label: tr('nav_laporan'),
-    ),
-    NavigationDestination(
-      icon: const DuoIcon(AppIcons.menu),
-      label: tr('nav_lainnya'),
     ),
   ];
 

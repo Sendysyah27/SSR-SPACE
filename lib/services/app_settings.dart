@@ -17,6 +17,10 @@ const _kReportsOrder = 'reports_section_order';
 const _kReminderEnabled = 'reminder_enabled';
 const _kReminderHour = 'reminder_hour';
 const _kReminderMinute = 'reminder_minute';
+const _kWeeklyEnabled = 'weekly_enabled';
+const _kWeeklyWeekday = 'weekly_weekday';
+const _kWeeklyHour = 'weekly_hour';
+const _kWeeklyMinute = 'weekly_minute';
 const _kWidgetToday = 'widget_today';
 const _kWalletUse = 'wallet_use_count';
 const _kThemeChoice = 'app_theme_choice';
@@ -41,6 +45,10 @@ final reportSectionOrder = ValueNotifier<List<String>>(const [
 final reminderEnabled = ValueNotifier<bool>(false);
 final reminderHour = ValueNotifier<int>(7);
 final reminderMinute = ValueNotifier<int>(0);
+final weeklyEnabled = ValueNotifier<bool>(false);
+final weeklyWeekday = ValueNotifier<int>(7);
+final weeklyHour = ValueNotifier<int>(20);
+final weeklyMinute = ValueNotifier<int>(0);
 final widgetToday = ValueNotifier<bool>(false);
 final themeChoice = ValueNotifier<String>('otomatis');
 
@@ -80,6 +88,10 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
   reminderEnabled.value = prefs.getBool(_kReminderEnabled) ?? false;
   reminderHour.value = (prefs.getInt(_kReminderHour) ?? 7).clamp(0, 23);
   reminderMinute.value = (prefs.getInt(_kReminderMinute) ?? 0).clamp(0, 59);
+  weeklyEnabled.value = prefs.getBool(_kWeeklyEnabled) ?? false;
+  weeklyWeekday.value = (prefs.getInt(_kWeeklyWeekday) ?? 7).clamp(1, 7);
+  weeklyHour.value = (prefs.getInt(_kWeeklyHour) ?? 20).clamp(0, 23);
+  weeklyMinute.value = (prefs.getInt(_kWeeklyMinute) ?? 0).clamp(0, 59);
   widgetToday.value = prefs.getBool(_kWidgetToday) ?? false;
   walletUseCounts.value = decodeUsage(prefs.getString(_kWalletUse));
   final tc = prefs.getString(_kThemeChoice);
@@ -172,6 +184,26 @@ Future<void> setReminderTime(int hour, int minute) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setInt(_kReminderHour, reminderHour.value);
   await prefs.setInt(_kReminderMinute, reminderMinute.value);
+}
+
+Future<void> setWeeklyEnabled(bool v) async {
+  weeklyEnabled.value = v;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool(_kWeeklyEnabled, v);
+}
+
+Future<void> setWeeklyDay(int weekday) async {
+  weeklyWeekday.value = weekday.clamp(1, 7);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt(_kWeeklyWeekday, weeklyWeekday.value);
+}
+
+Future<void> setWeeklyTime(int hour, int minute) async {
+  weeklyHour.value = hour.clamp(0, 23);
+  weeklyMinute.value = minute.clamp(0, 59);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt(_kWeeklyHour, weeklyHour.value);
+  await prefs.setInt(_kWeeklyMinute, weeklyMinute.value);
 }
 
 Future<void> setWidgetToday(bool v) async {
