@@ -343,7 +343,7 @@ class _ResultSheetState extends State<_ResultSheet> {
             Text(widget.read.bank),
             const SizedBox(height: SsrSpace.md),
             DropdownButtonFormField<String?>(
-              value: _walletId,
+              initialValue: _walletId,
               hint: Text(tr('nfc_link')),
               items: [
                 DropdownMenuItem(
