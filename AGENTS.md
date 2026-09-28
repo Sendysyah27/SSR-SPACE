@@ -11,7 +11,7 @@ Panduan kerja untuk agent / contributor di repo ini. Baca dulu sebelum ubah kode
 | Nama | **SSR SPACE** |
 | Path | `/data/data/com.termux/files/home/SSR SPACE` |
 | Remote | `https://github.com/Sendysyah27/SSR-SPACE.git` |
-| Versi | `2.4.6+31` (`pubspec.yaml`) |
+| Versi | `2.4.6+32` (`pubspec.yaml`) |
 | Stack | Flutter (stable) + Supabase (Auth + Postgres RLS) + Notification Listener |
 | Bahasa UI | Indonesia |
 | Build | GitHub Actions (`.github/workflows/apk.yml`), **bukan** lokal Termux |
@@ -423,4 +423,5 @@ Before starting, ask the user when antislop applies: during the work, or after i
 - **Notif tiap tersimpan (2026-09-28, `1bb6720`+fix `1e7f0ec`, run `36365717961` hijau, 222 test):** tiap auto-catat + Simpan manual (`forceSave` tangkap `txId` + `offer()`) munculkan overlay bubble; bila overlay tak tampil (popup OFF/tanpa izin/blokir OEM) → fallback head-up `AutoSavedNotify` (channel `ssr_auto_saved` HIGH, id stabil `autoSavedId`, ketuk → app → sheet koreksi via pending). Tanpa ganda, tanpa dep/migration baru. CI merah 1x (`show()` v22 named-only). Bump `2.4.6+29`. APK `SSR-SPACE-2.4.6-29-notif-tersimpan-arm64.apk`.
 - **Fix head-up selalu tampil (2026-09-28, `d1340a0`, run `36367696687` hijau):** vonis SS + Tes overlay gagal di HP user: MIUI menelan `showOverlay` tanpa error → `shown=true` palsu → fallback tak jalan (hanya teks sematan servis). Revisi disetujui: head-up `AutoSavedNotify` SELALU ditembakkan tiap `offer()` (overlay tetap dicoba dulu). Bump `2.4.6+30`. APK `SSR-SPACE-2.4.6-30-notif-headup-arm64.apk`.
 - **Fix QRIS ISAKU (2026-09-28, `14de952`, run `36370503290` hijau):** vonis SS shade: "Pembayaran QRIS statis diterima Rp100.000" mengandung `pembayaran`+`diterima` → dua-arah → null → dilewati. Fix sempit di `classifyNotif`: `diterima` kalahkan `pembayaran`-generik saja (sinyal keluar eksplisit tetap ambigu); test teks asli + regresi. Bump `2.4.6+31`. APK `SSR-SPACE-2.4.6-31-qris-isaku-arm64.apk`. Sisa: notif "Transaksi Belanja" tanpa Rp terlihat tak bisa dicatat tanpa nominal.
+- **Pending QRIS-merchant GoPay (2026-09-28, `66dd759`, run `36373607447` hijau):** alur dua notif dari SS user — (1) sukses tertahan di saldo merchant, (2) susulan "Pencairan dana berhasil Rp100.000" = dana benar cair. `isMerchantQrisPending` (GoPay + qris + in, kecuali mengandung `cair`) → status `st_pending_settle`, tak insert + tak merge; kunci masuk baru `pencairan/dicairkan/dana cair` → notif cair tercatat Masuk dan boleh merge. TX-000041 lama (kaki "diterima") jadi tak valid menurut aturan baru — histori tak diubah. Bump `2.4.6+32`. APK `SSR-SPACE-2.4.6-32-qris-pending-arm64.apk`.
 - **Validasi device ISAKU→GoPay (2026-09-28):** bayar QRIS dari ISAKU, masuk ke GoPay — ISAKU-out + GoPay-in (telat, "bergantian") keduanya tercatat lalu **auto-merge jadi 1 baris transfer** (nominal sama, dompet beda, ≤10 mnt). Perilaku sesuai desain, tanpa ubah kode.

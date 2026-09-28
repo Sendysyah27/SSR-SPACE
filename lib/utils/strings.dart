@@ -1188,6 +1188,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Data tersimpan aman di cloud dan hanya bisa diakses dalam workspace-mu.',
     'en': 'Data is stored securely in the cloud and only accessible within your workspace.',
   },
+  'tx_quick_hint': {
+    'id': 'Ketik cepat: "makan siang 35rb"',
+    'en': 'Quick type: "lunch 35k"',
+  },
   // Bantuan: tutorial + tanya jawab
   'hp_title': {'id': 'Bantuan', 'en': 'Help'},
   'hp_guide': {'id': 'Cara memakai', 'en': 'How to use'},

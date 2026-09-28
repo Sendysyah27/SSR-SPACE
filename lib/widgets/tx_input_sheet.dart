@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
+import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
+import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/tx_validation.dart';
@@ -127,6 +129,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
   late TimeOfDay time;
   String? walletId;
   String? toWalletId;
+  final quickC = TextEditingController();
   final catC = TextEditingController();
   final subC = TextEditingController();
   final noteC = TextEditingController();
@@ -169,6 +172,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
   @override
   void dispose() {
     digits.dispose();
+    quickC.dispose();
     catC.dispose();
     subC.dispose();
     noteC.dispose();
@@ -177,6 +181,37 @@ class _TxInputSheetState extends State<TxInputSheet> {
 
   double get _idr =>
       CurrencyService.toIdr(majorFromDigits(digits.value, dec: _dec));
+
+  /// Ketik cepat: urai teks bebas lalu prefill form (tambah saja).
+  /// Tanpa nominal valid = abaikan; tak pernah menimpa saat mode edit.
+  /// Simpan tetap lewat tombol (tak ada insert diam-diam).
+  void _applyQuick(String v) {
+    if (_isEdit || v.trim().isEmpty) return;
+    final q = parseQuickInput(
+      v,
+      categories: appCategories.value,
+      wallets: [for (final w in widget.wallets) w.name],
+    );
+    if (q == null) return;
+    setState(() {
+      type = q.type;
+      digits.value = digitsFromMajor(
+        CurrencyService.convert(q.amount),
+        dec: _dec,
+      );
+      if (q.category != null) catC.text = q.category!;
+      if (q.walletName != null) {
+        final low = q.walletName!.toLowerCase();
+        for (final w in widget.wallets) {
+          if (w.name.trim().toLowerCase() == low) {
+            walletId = w.id;
+            break;
+          }
+        }
+      }
+      noteC.text = q.note;
+    });
+  }
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -337,6 +372,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
               code: widget.editing?.code,
               onClose: () => Navigator.pop(context),
             ),
+            if (!_isEdit) ...[
+              const SizedBox(height: SsrSpace.sm),
+              _QuickSection(controller: quickC, onChanged: _applyQuick),
+            ],
             _AmountDisplay(digits: digits, dec: _dec),
             TxTypeSelector(
               value: type,
@@ -465,6 +504,28 @@ class _SheetHeader extends StatelessWidget {
           tooltip: tr('back'),
         ),
       ],
+    );
+  }
+}
+
+/// Ketik cepat: satu baris teks bebas yang diparse live menjadi prefill.
+/// Murni jalan pintas pengisi; validasi + simpan tetap lewat alur biasa.
+class _QuickSection extends StatelessWidget {
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  const _QuickSection({required this.controller, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      textInputAction: TextInputAction.done,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        hintText: tr('tx_quick_hint'),
+        prefixIcon: const DuoIcon(AppIcons.search, size: 20),
+      ),
     );
   }
 }

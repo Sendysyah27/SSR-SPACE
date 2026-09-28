@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.4.6+32.
+Versi terpasang: 2.4.7+33.
+
+## Yang baru di 2.4.7
+
+1. Ketik cepat di form catat: tulis "makan siang 35rb" lalu nominal, jenis, kategori, dompet, dan catatan terisi otomatis (tetap Simpan untuk konfirmasi).
 
 ## Yang baru di 2.4.6
 
