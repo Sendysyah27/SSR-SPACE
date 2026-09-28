@@ -1,3 +1,4 @@
+import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 
 class OrgMember {
@@ -40,4 +41,9 @@ class WorkspaceService {
       params: {'p_org_id': orgId},
     );
   }
+
+  /// Mode Space (delegasi, tanpa duplikat logika RPC).
+  Future<String> spaceMode(String orgId) => SpaceService().getMode(orgId);
+  Future<void> setSpaceMode(String orgId, String mode) =>
+      SpaceService().setMode(orgId, mode);
 }

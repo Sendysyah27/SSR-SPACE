@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/screens/workspace/invite_screen.dart';
 import 'package:ssr_space/screens/workspace/org_switcher_screen.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/workspace_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -12,6 +13,8 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/pin_dialog.dart';
 import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/widgets/labeled_section_card.dart';
+import 'package:ssr_space/widgets/tx_type_selector.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
@@ -54,6 +57,8 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
   String? loadErr;
   String? kicking;
   String? activeId;
+  String _mode = 'bebas';
+  bool _switching = false;
 
   String get _orgId => (widget.org['org_id'] ??
           widget.org['organizations']?['id'] ??
@@ -91,10 +96,12 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
     if (!mounted) return;
     try {
       final rows = await _service.members(_orgId);
+      final mode = await _service.spaceMode(_orgId);
       if (!mounted) return;
       setState(() {
         members = rows;
         activeId = active;
+        _mode = mode;
       });
     } catch (_) {
       if (!mounted) return;
@@ -195,6 +202,30 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
     return tr('wsm_err');
   }
 
+  /// Ganti mode Space: PIN dulu, RPC jalan, tampilan ikut hanya bila sukses.
+  Future<void> _switchMode(String next) async {
+    if (next == _mode || _switching) return;
+    final ok = await askPinDialog(context);
+    if (!ok || !mounted) return;
+    setState(() => _switching = true);
+    try {
+      await _service.setSpaceMode(_orgId, next);
+      if (!mounted) return;
+      setState(() => _mode = next);
+    } on SpaceException catch (e) {
+      if (!mounted) return;
+      _snack(e.message);
+    } on PostgrestException catch (e) {
+      if (!mounted) return;
+      _snack(e.code == '42883' ? tr('wsm_nomigration') : tr('wsm_err'));
+    } catch (_) {
+      if (!mounted) return;
+      _snack(tr('wsm_err'));
+    } finally {
+      if (mounted) setState(() => _switching = false);
+    }
+  }
+
   void _snack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
@@ -230,17 +261,20 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
       myId: _myId,
       canManage: _canManage,
       isActiveView: _isActiveView,
+      mode: _mode,
+      switching: _switching,
       kicking: kicking,
       delC: delC,
       deleting: deleting,
       onKick: _kick,
+      onMode: _switchMode,
       onDeleteChanged: (_) => setState(() {}),
       onDelete: _delete,
     );
   }
 }
 
-/// Kolom isi: hero + anggota + danger.
+/// Kolom isi: hero + mode Space + anggota + danger.
 class _DetailBody extends StatelessWidget {
   final String name;
   final String myRole;
@@ -248,10 +282,13 @@ class _DetailBody extends StatelessWidget {
   final String myId;
   final bool canManage;
   final bool isActiveView;
+  final String mode;
+  final bool switching;
   final String? kicking;
   final TextEditingController delC;
   final bool deleting;
   final Future<void> Function(OrgMember m) onKick;
+  final ValueChanged<String> onMode;
   final ValueChanged<String> onDeleteChanged;
   final VoidCallback onDelete;
 
@@ -262,10 +299,13 @@ class _DetailBody extends StatelessWidget {
     required this.myId,
     required this.canManage,
     required this.isActiveView,
+    required this.mode,
+    required this.switching,
     required this.kicking,
     required this.delC,
     required this.deleting,
     required this.onKick,
+    required this.onMode,
     required this.onDeleteChanged,
     required this.onDelete,
   });
@@ -281,6 +321,13 @@ class _DetailBody extends StatelessWidget {
           const _InviteNote(),
           const SizedBox(height: SsrSpace.lg),
         ],
+        _ModeCard(
+          mode: mode,
+          switching: switching,
+          canManage: canManage,
+          onMode: onMode,
+        ),
+        const SizedBox(height: SsrSpace.lg),
         _MembersCard(
           members: members,
           myId: myId,
@@ -297,6 +344,48 @@ class _DetailBody extends StatelessWidget {
             onChanged: onDeleteChanged,
             onDelete: onDelete,
           ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Mode Space: Bebas vs Bendahara. Ubah hanya owner/admin + PIN (di state).
+class _ModeCard extends StatelessWidget {
+  final String mode;
+  final bool switching;
+  final bool canManage;
+  final ValueChanged<String> onMode;
+
+  const _ModeCard({
+    required this.mode,
+    required this.switching,
+    required this.canManage,
+    required this.onMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return LabeledSectionCard(
+      label: tr('sp_mode'),
+      children: [
+        SegmentedButton<String>(
+          style: ssrSegmentedStyle(context),
+          segments: [
+            ButtonSegment(value: 'bebas', label: Text(tr('sp_bebas'))),
+            ButtonSegment(value: 'bendahara', label: Text(tr('sp_bendahara'))),
+          ],
+          selected: {mode},
+          showSelectedIcon: false,
+          onSelectionChanged:
+              canManage && !switching ? (s) => onMode(s.first) : null,
+        ),
+        const SizedBox(height: 8),
+        Text(tr('sp_mode_desc'), style: theme.textTheme.bodySmall),
+        if (mode == 'bendahara' && canManage) ...[
+          const SizedBox(height: 4),
+          Text(tr('sp_bendahara_hint'), style: theme.textTheme.bodySmall),
         ],
       ],
     );
