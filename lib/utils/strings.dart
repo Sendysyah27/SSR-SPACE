@@ -1339,6 +1339,39 @@ const _t = <String, Map<String, String>>{
     'id': 'Titik penuh = minggu dengan catatan.',
     'en': 'Filled dot = week with an entry.',
   },
+  // NFC e-money
+  'nfc_title': {'id': 'E-Money NFC', 'en': 'E-Money NFC'},
+  'nfc_sub': {'id': 'Tempel kartu, baca saldo', 'en': 'Tap card, read balance'},
+  'nfc_tap': {'id': 'Tempel kartu & baca', 'en': 'Tap card & read'},
+  'nfc_scanning': {
+    'id': 'Tempelkan kartu ke HP, jangan dilepas…',
+    'en': 'Hold the card to the phone…',
+  },
+  'nfc_stop': {'id': 'Stop', 'en': 'Stop'},
+  'nfc_lib_ready': {'id': 'Siap membaca kartu', 'en': 'Ready to read cards'},
+  'nfc_no_nfc': {
+    'id': 'HP ini tidak mendukung NFC.',
+    'en': 'This phone has no NFC support.',
+  },
+  'nfc_balance': {'id': 'Saldo', 'en': 'Balance'},
+  'nfc_card_history': {'id': 'Riwayat kartu', 'en': 'Card history'},
+  'nfc_link': {'id': 'Tautkan ke dompet', 'en': 'Link to wallet'},
+  'nfc_no_wallet': {'id': 'Tanpa dompet', 'en': 'No wallet'},
+  'nfc_save': {'id': 'Simpan kartu', 'en': 'Save card'},
+  'nfc_saved': {'id': 'Kartu tersimpan', 'en': 'Card saved'},
+  'nfc_checks': {'id': 'Cek terakhir', 'en': 'Recent checks'},
+  'nfc_empty': {
+    'id': 'Belum ada kartu. Tempel kartu untuk mulai.',
+    'en': 'No cards yet. Tap a card to start.',
+  },
+  'nfc_in': {'id': 'Masuk', 'en': 'In'},
+  'nfc_out': {'id': 'Keluar', 'en': 'Out'},
+  'nfc_other': {'id': 'Lainnya', 'en': 'Other'},
+  'nfc_read_fail': {
+    'id': 'Gagal baca kartu. Tempel ulang.',
+    'en': 'Card read failed. Tap again.',
+  },
+  'nfc_delete': {'id': 'Hapus kartu ini?', 'en': 'Delete this card?'},
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;
