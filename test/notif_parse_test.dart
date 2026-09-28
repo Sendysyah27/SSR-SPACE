@@ -90,6 +90,42 @@ void main() {
     );
   });
 
+  test('pencairan dana GoPay tercatat masuk (bukan pending)', () {
+    expect(
+      classifyNotif(
+        'Pencairan dana berhasil Proses pencairan dana sebesar Rp100.000',
+      ),
+      'in',
+    );
+    expect(parseNotifAmount('sebesar Rp100.000'), 100000);
+  });
+
+  test('predikat pending hanya QRIS-merchant GoPay arah masuk', () {
+    bool hold(String t, String c, String? ty) => isMerchantQrisPending(
+      appLabel: 'GoPay',
+      title: t,
+      content: c,
+      type: ty,
+    );
+    expect(hold('Pembayaran QRIS statis diterima', 'Rp100.000', 'in'), true);
+    expect(hold('Dana masuk', 'Top up Rp50.000 berhasil', 'in'), false);
+    expect(hold('QRIS keluar', 'Pembayaran Rp20.000 berhasil', 'out'), false);
+    expect(
+      isMerchantQrisPending(
+        appLabel: 'DANA',
+        title: 'QRIS diterima',
+        content: 'Rp10.000',
+        type: 'in',
+      ),
+      false,
+    );
+    expect(hold('QRIS diterima', 'Rp10.000', null), false);
+    expect(
+      hold('Pencairan dana QRIS berhasil', 'Sebesar Rp100.000', 'in'),
+      false,
+    );
+  });
+
   test('hash stable same day, differs across day', () {
     final d1 = DateTime(2026, 9, 24, 10, 0);
     final d2 = DateTime(2026, 9, 25, 10, 0);

@@ -75,6 +75,10 @@ const _inKeys = [
   'isi ulang',
   'cash in',
   'cashin',
+  'pencairan dana',
+  'pencairan berhasil',
+  'dicairkan',
+  'dana cair',
 ];
 
 const _outKeys = [
@@ -112,7 +116,26 @@ bool _phraseHit(String t, String phrase) {
   return true;
 }
 
+/// QRIS merchant yang dananya belum cair (kasus GoPay): label GoPay +
+/// kata 'qris' + arah masuk hasil classifier. Top-up / masuk biasa
+/// (tanpa kata 'qris') tidak kena dan tetap langsung tercatat.
+/// Murni, bisa di-test.
+bool isMerchantQrisPending({
+  required String appLabel,
+  required String title,
+  required String content,
+  required String? type,
+}) {
+  if (appLabel != 'GoPay' || type != 'in') return false;
+  final t = '$title $content'.toLowerCase();
+  // Sinyal cair (pencairan/dicairkan) BUKAN pending walau menyebut QRIS:
+  // itu justru kaki masuk yang boleh tercatat + merge.
+  if (t.contains('cair')) return false;
+  return t.contains('qris');
+}
+
 String? classifyNotif(String text) {
+
   final t = text.toLowerCase();
   final isIn = _inKeys.any((k) => _phraseHit(t, k));
   final isOut = _outKeys.any((k) => _phraseHit(t, k));

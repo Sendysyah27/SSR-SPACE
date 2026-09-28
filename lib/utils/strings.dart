@@ -1003,6 +1003,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Dompet belum dipetakan — atur di Pelacakan otomatis lalu Simpan manual',
     'en': 'Wallet not mapped — set it in Auto-tracking then Save manually',
   },
+  'st_pending_settle': {
+    'id': 'Menunggu cair — Simpan manual saat dana masuk',
+    'en': 'Pending settlement — save manually once funds arrive',
+  },
   'st_saved': {'id': 'Tersimpan', 'en': 'Saved'},
   'nt_auto_from': {'id': 'Otomatis dari {a}', 'en': 'Auto from {a}'},
   'nt_automerge': {

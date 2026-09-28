@@ -379,6 +379,19 @@ class NotifTrack {
         _remember(n);
         return;
       }
+      if (isMerchantQrisPending(
+        appLabel: n.appLabel!,
+        title: title,
+        content: content,
+        type: n.type,
+      )) {
+        // QRIS merchant (GoPay): dana belum cair ke saldo saat notif
+        // datang. Jangan insert (saldo jangan membengkak duluan);
+        // user ketuk Simpan manual di recent saat dana benar masuk.
+        n.status = tr('st_pending_settle');
+        _remember(n);
+        return;
+      }
       try {
         final plan = await currentPlan(orgId);
         final used = await autoUsedThisMonth(orgId, ymd(n.at).substring(0, 7));
