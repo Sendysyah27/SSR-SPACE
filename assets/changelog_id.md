@@ -1,8 +1,8 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.4.10+41.
+Versi terpasang: 2.4.10+42.
 
-## Yang baru di 2.4.10+41 (spike sementara, di-revert)
+## Yang baru di 2.4.10+42 (spike sementara, di-revert)
 
 1. Layar uji NFC throwaway di Profil → Data: tempel kartu e-money untuk baca UID/nomor/saldo/bank. Bukan fitur asli, dibuang habis spike.
 
