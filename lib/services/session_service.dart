@@ -31,6 +31,8 @@ class SessionService {
       if (v is bool) await _prefs!.setBool(k, v);
       if (v is String) await _prefs!.setString(k, v);
       if (v is int) await _prefs!.setInt(k, v);
+      if (v is double) await _prefs!.setDouble(k, v);
+      if (v is List<String>) await _prefs!.setStringList(k, v);
     }
   }
 
@@ -41,6 +43,7 @@ class SessionService {
     await _set('onboarding_done', true);
     await _set('profile_name', name);
     sessionId = const Uuid().v4();
+    lastActiveAt = DateTime.now();
   }
 
   Future<void> setPin(String pin) async {

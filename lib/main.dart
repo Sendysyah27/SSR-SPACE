@@ -41,7 +41,11 @@ Future<void> main() async {
   await loadAppCategories(prefs);
   await refreshCategoryMeta();
   await CurrencyService.loadCache(prefs);
-  unawaited(CurrencyService.refresh());
+  try {
+    unawaited(CurrencyService.refresh());
+  } catch (e) {
+    debugPrint('kurs refresh gagal: $e');
+  }
   try {
     if (reminderEnabled.value) {
       final h = reminderHour.value.clamp(0, 23);
