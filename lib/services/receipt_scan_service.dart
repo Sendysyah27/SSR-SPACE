@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:image/image.dart' as pkg_image;
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
@@ -31,31 +31,33 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
   if (shot == null) return null;
   final path = shot.path;
   try {
-    // Jalur bitmap (bukan fromFilePath): fromFilePath NPE di native
-    // untuk file picker tertentu (tak bisa buka/EXIF), hanya catch
-    // IOException. Decode di Dart terbukti bisa/tidak dengan pesan jelas.
+    // Decode murni Dart: byte RGBA dijamin ketat w*h*4 (toByteData Skia
+    // bisa ber-padding stride hingga native menolak). EXIF diputar otomatis.
     final bytes = await File(path).readAsBytes();
-    final ui.Codec codec = await ui.instantiateImageCodec(bytes);
-    final ui.FrameInfo frame = await codec.getNextFrame();
-    final ui.Image image = frame.image;
-    final byteData =
-        await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-    final w = image.width;
-    final h = image.height;
-    image.dispose();
-    if (byteData == null) {
-      throw const ReceiptScanException(
+    final decoded = pkg_image.decodeImage(bytes);
+    if (decoded == null) {
+      throw const ReceiptScanException('rcp_fail', 'decode null');
+    }
+    var img = decoded;
+    if (img.width > 1600 || img.height > 1600) {
+      img = pkg_image.copyResize(
+        img,
+        width: img.width >= img.height ? 1600 : null,
+        height: img.width >= img.height ? null : 1600,
+      );
+    }
+    final rgba = img.getBytes(order: pkg_image.ChannelOrder.rgba);
+    final want = img.width * img.height * 4;
+    if (rgba.length != want) {
+      throw ReceiptScanException(
         'rcp_fail',
-        'decode kosong',
+        'stride ${rgba.length} vs $want',
       );
     }
     final input = InputImage.fromBitmap(
-      bitmap: byteData.buffer.asUint8List(
-        byteData.offsetInBytes,
-        byteData.lengthInBytes,
-      ),
-      width: w,
-      height: h,
+      bitmap: rgba,
+      width: img.width,
+      height: img.height,
     );
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
     try {
