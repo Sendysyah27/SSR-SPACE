@@ -26,7 +26,7 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
   if (shot == null) return null;
   final path = shot.path;
   try {
-    final recognizer = TextRecognizer(script: RecognisedScript.latin);
+    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
     try {
       final out = await recognizer.processImage(
         InputImage.fromFilePath(path),

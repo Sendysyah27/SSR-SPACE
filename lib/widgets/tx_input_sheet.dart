@@ -586,6 +586,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
                 ),
               ),
             ],
+            ],
           ],
         ),
       ),
