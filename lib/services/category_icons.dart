@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/cool_icons.dart';
 
 IconData iconForCategory(String? category) {
   final c = (category ?? '').toLowerCase();
@@ -38,6 +39,10 @@ IconData iconForCategory(String? category) {
 /// dan tabungan/saving; income dan topup ke wallet; transfer ke transfer.
 /// [iconForCategory] lama dipertahankan untuk layar lain hingga migrasi T6.
 String svgForCategory(String? category) {
+  // Kategori baru (investasi, donasi, keluarga, olahraga, hewan, darurat)
+  // dicek dulu; cabang lama di bawah tak berubah perilaku.
+  final cool = coolForNewCategory(category);
+  if (cool != null) return cool;
   final c = (category ?? '').toLowerCase();
   if (c.contains('makan') || c.contains('minum') || c.contains('jajan') || c.contains('kuliner')) {
     return 'assets/illustrations/cat_food.svg';

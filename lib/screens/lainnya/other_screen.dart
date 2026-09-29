@@ -986,7 +986,7 @@ class _AboutSection extends StatelessWidget {
           onTap: () => _info(
             context,
             'ab_about',
-            '${tr('sp_tagline')}\n${AppInfo.version}',
+            '${tr('sp_tagline')}\n${AppInfo.version}\n${tr('ab_credits')}',
           ),
         ),
         const Divider(height: 1),

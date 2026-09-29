@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:ssr_space/theme/cool_icons.dart';
 
 /// Keluarga font Phosphor Duotone yang dibundel (lihat pubspec).
 const String kPhosphorDuotoneFamily = 'PhosphorDuotone';
@@ -217,7 +219,9 @@ class AppIcons {
   }
 }
 
-/// Ikon duotone: lapisan sekunder di bawah pada opacity 20%.
+/// Ikon aplikasi: Coolicons (line, 24px) bila terpetakan, fallback duotone
+/// Phosphor bila belum. Peta di [CoolSvg.pathForCodePoint]; warna dan ukuran
+/// ikut [IconTheme] seperti [Icon] biasa sehingga semua call-site tak berubah.
 class DuoIcon extends StatelessWidget {
   final IconData icon;
   final double? size;
@@ -234,6 +238,20 @@ class DuoIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = CoolSvg.pathForCodePoint(icon.codePoint);
+    if (path != null) {
+      final theme = IconTheme.of(context);
+      final c = color ?? theme.color;
+      final s = size ?? theme.size;
+      return SvgPicture.asset(
+        path,
+        width: s,
+        height: s,
+        colorFilter: c == null
+            ? null
+            : ColorFilter.mode(c, BlendMode.srcIn),
+      );
+    }
     final c = color ?? IconTheme.of(context).color;
     return Stack(
       alignment: Alignment.center,

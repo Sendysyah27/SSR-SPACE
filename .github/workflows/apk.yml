@@ -262,6 +262,39 @@ jobs:
           import pathlib
           m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
           s = m.read_text()
+          # Ekspor Laporan: simpan ke Documents/ssr-space milik user.
+          # API 30+ butuh MANAGE_EXTERNAL_STORAGE (minta saat runtime,
+          # user menyetujui di halaman akses khusus; APK sideload jadi
+          # layak, bukan Play policy). API 29 ke bawah: WRITE klasik +
+          # legacy flag agar tulis langsung bisa.
+          if 'android.permission.WRITE_EXTERNAL_STORAGE' not in s:
+              s = s.replace(
+                  '</manifest>',
+                  '    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>\n</manifest>',
+              )
+          if 'android.permission.MANAGE_EXTERNAL_STORAGE' not in s:
+              s = s.replace(
+                  '</manifest>',
+                  '    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>\n</manifest>',
+              )
+          if 'requestLegacyExternalStorage' not in s:
+              if '<application' in s:
+                  s = s.replace(
+                      '<application',
+                      '<application android:requestLegacyExternalStorage="true"',
+                      1,
+                  )
+          m.write_text(s)
+          t = m.read_text()
+          assert 'android.permission.WRITE_EXTERNAL_STORAGE' in t
+          assert 'android.permission.MANAGE_EXTERNAL_STORAGE' in t
+          print('storage permissions ok')
+          EOF
+      - run: |
+          python3 - <<'EOF'
+          import pathlib
+          m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
+          s = m.read_text()
           # Deep link magic-link ganti PIN: com.ssr.space.ssrspace://login-callback
           # (lihat pin_link_verify.dart; redirect URL didaftarkan di Dashboard).
           if 'com.ssr.space.ssrspace' not in s:

@@ -1078,6 +1078,26 @@ const _t = <String, Map<String, String>>{
     'id': 'Laporan SSR SPACE (PDF)',
     'en': 'SSR SPACE report (PDF)',
   },
+  'pdf_filter': {
+    'id': 'Dompet: {w} • Jenis: {t}',
+    'en': 'Wallet: {w} • Type: {t}',
+  },
+  'pdf_h_wallet': {'id': 'Dompet', 'en': 'Wallet'},
+  'pdf_all': {'id': 'Semua', 'en': 'All'},
+  'exp_saved_title': {'id': 'File tersimpan', 'en': 'File saved'},
+  'exp_saved_body': {
+    'id': '{f} tersimpan di Dokumen/ssr-space.',
+    'en': '{f} saved to Documents/ssr-space.',
+  },
+  'exp_share': {'id': 'Bagikan', 'en': 'Share'},
+  'exp_noperm': {
+    'id': 'Izin penyimpanan ditolak, file dibagikan saja.',
+    'en': 'Storage permission denied, sharing file instead.',
+  },
+  'ab_credits': {
+    'id': 'Ikon: Coolicons oleh Kryston Schwarze (CC BY 4.0).',
+    'en': 'Icons: Coolicons by Kryston Schwarze (CC BY 4.0).',
+  },
   // Profil: judul seksi katalog
   'pf_data': {'id': 'Data', 'en': 'Data'},
   'pf_tracking': {'id': 'Pelacakan', 'en': 'Tracking'},

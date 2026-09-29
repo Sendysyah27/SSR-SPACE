@@ -7,7 +7,9 @@ import 'package:ssr_space/utils/strings.dart';
 
 const _ink = PdfColor.fromInt(0xFF1C1B1A);
 const _accent = PdfColor.fromInt(0xFF0E4B44);
+const _emeraldDeep = PdfColor.fromInt(0xFF0A332E);
 const _accentSoft = PdfColor.fromInt(0xFFE6F3F1);
+const _goldSoft = PdfColor.fromInt(0xFFEDE2C1);
 const _danger = PdfColor.fromInt(0xFFB3261E);
 const _dangerSoft = PdfColor.fromInt(0xFFF9E8E6);
 const _paper = PdfColor.fromInt(0xFFF3F2EE);
@@ -37,10 +39,16 @@ PdfColor _typeColor(String type) {
 }
 
 /// Laporan bulanan terstruktur: kop + ringkasan + tabel + rekap kategori.
+///
+/// [walletLabel]/[typeLabel] null = semua (tampil "Semua" di baris filter).
+/// [walletNames] peta id dompet ke nama untuk kolom Dompet tabel.
 Future<Uint8List> buildReportPdf({
   required String orgName,
   required String monthLabel,
   required List<SaasTransaction> items,
+  String? walletLabel,
+  String? typeLabel,
+  Map<String, String> walletNames = const {},
 }) async {
   final base = await _bundledFont();
   final theme = base == null
@@ -97,6 +105,12 @@ Future<Uint8List> buildReportPdf({
             '$monthLabel  •  $orgName',
             style: const pw.TextStyle(fontSize: 11, color: _muted),
           ),
+          pw.Text(
+            tr('pdf_filter')
+                .replaceFirst('{w}', walletLabel ?? tr('pdf_all'))
+                .replaceFirst('{t}', typeLabel ?? tr('pdf_all')),
+            style: const pw.TextStyle(fontSize: 10, color: _muted),
+          ),
           pw.SizedBox(height: 12),
         ],
       ),
@@ -133,7 +147,7 @@ Future<Uint8List> buildReportPdf({
             style: const pw.TextStyle(fontSize: 11, color: _muted),
           )
         else
-          _table(items),
+          _table(items, walletNames),
         if (topCats.isNotEmpty) ...[
           pw.SizedBox(height: 16),
           pw.Text(
@@ -145,7 +159,9 @@ Future<Uint8List> buildReportPdf({
             ),
           ),
           pw.SizedBox(height: 6),
-          ...topCats.take(8).map((e) => _catRow(e.key, e.value)),
+          ...topCats
+              .take(8)
+              .map((e) => _catRow(e.key, e.value, topCats.first.value)),
         ],
       ],
     ),
@@ -185,18 +201,21 @@ pw.Widget _summary(double totalIn, double totalOut) {
   }
 
   final net = totalIn - totalOut;
+  final surplus = net >= 0;
   return pw.Row(
     children: [
       box(tr('tx_in'), rp(totalIn), _accentSoft, _accent),
       pw.SizedBox(width: 8),
       box(tr('tx_out'), rp(totalOut), _dangerSoft, _danger),
       pw.SizedBox(width: 8),
-      box(tr('pdf_diff'), rp(net), _paper, net >= 0 ? _accent : _danger),
+      // Aksen gold hanya untuk selisih surplus (aturan DESIGN.md).
+      box(tr('pdf_diff'), rp(net), surplus ? _goldSoft : _dangerSoft,
+          surplus ? _accent : _danger),
     ],
   );
 }
 
-pw.Widget _table(List<SaasTransaction> items) {
+pw.Widget _table(List<SaasTransaction> items, Map<String, String> names) {
   pw.Widget cell(
     String text, {
     PdfColor color = _ink,
@@ -217,13 +236,23 @@ pw.Widget _table(List<SaasTransaction> items) {
     );
   }
 
-  // Kepala + baris zebra.
+  String walletOf(SaasTransaction t) {
+    final from = names[t.walletId] ?? '';
+    final to = names[t.toWalletId] ?? '';
+    if (t.type == 'transfer' && to.isNotEmpty && to != from) {
+      return from.isEmpty ? to : '$from → $to';
+    }
+    return from.isEmpty ? '-' : from;
+  }
+
+  // Kepala emeraldDeep + baris zebra + garis hairline ledger.
   final rows = <pw.TableRow>[
     pw.TableRow(
-      decoration: const pw.BoxDecoration(color: _ink),
+      decoration: const pw.BoxDecoration(color: _emeraldDeep),
       children: [
         cell(tr('pdf_h_date'), color: PdfColors.white, bold: true),
         cell(tr('pdf_h_type'), color: PdfColors.white, bold: true),
+        cell(tr('pdf_h_wallet'), color: PdfColors.white, bold: true),
         cell(tr('bt_cat'), color: PdfColors.white, bold: true),
         cell(
           tr('pdf_h_amount'),
@@ -246,10 +275,12 @@ pw.Widget _table(List<SaasTransaction> items) {
             color: _typeColor(items[i].type),
             bold: true,
           ),
+          cell(walletOf(items[i])),
           cell(items[i].category ?? tr('cat_other')),
           cell(
             rp(items[i].amount),
             color: _typeColor(items[i].type),
+            bold: true,
             align: pw.TextAlign.right,
           ),
           cell(items[i].note ?? '-'),
@@ -258,11 +289,12 @@ pw.Widget _table(List<SaasTransaction> items) {
   ];
   return pw.Table(
     columnWidths: {
-      0: const pw.FixedColumnWidth(56),
-      1: const pw.FixedColumnWidth(52),
+      0: const pw.FixedColumnWidth(52),
+      1: const pw.FixedColumnWidth(48),
       2: const pw.FlexColumnWidth(2),
-      3: const pw.FixedColumnWidth(78),
-      4: const pw.FlexColumnWidth(3),
+      3: const pw.FlexColumnWidth(2),
+      4: const pw.FixedColumnWidth(74),
+      5: const pw.FlexColumnWidth(2),
     },
     // ignore: prefer_const_constructors (TableBorder.all bukan const ctor)
     border: pw.TableBorder.all(color: PdfColor.fromInt(0xFFE0DED8), width: 0.5),
@@ -270,29 +302,52 @@ pw.Widget _table(List<SaasTransaction> items) {
   );
 }
 
-pw.Widget _catRow(String name, double amount) {
+pw.Widget _catRow(String name, double amount, double maxAmount) {
+  final frac = maxAmount <= 0 ? 0.0 : (amount / maxAmount).clamp(0.0, 1.0);
+  // Flex minimal 1 agar tak ada segmen nol di Row pdf.
+  final a = (frac * 1000).round().clamp(1, 1000);
+  final b = 1001 - a;
   return pw.Padding(
     padding: const pw.EdgeInsets.symmetric(vertical: 3),
-    child: pw.Row(
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Container(
-          width: 8,
-          height: 8,
-          decoration: const pw.BoxDecoration(
-            color: _accent,
-            shape: pw.BoxShape.circle,
-          ),
+        pw.Row(
+          children: [
+            pw.Container(
+              width: 8,
+              height: 8,
+              decoration: const pw.BoxDecoration(
+                color: _accent,
+                shape: pw.BoxShape.circle,
+              ),
+            ),
+            pw.SizedBox(width: 8),
+            pw.Expanded(
+              child: pw.Text(name, style: const pw.TextStyle(fontSize: 11)),
+            ),
+            pw.Text(
+              rp(amount),
+              style: const pw.TextStyle(
+                fontSize: 11,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+          ],
         ),
-        pw.SizedBox(width: 8),
-        pw.Expanded(
-          child: pw.Text(name, style: const pw.TextStyle(fontSize: 11)),
-        ),
-        pw.Text(
-          rp(amount),
-          style: const pw.TextStyle(
-            fontSize: 11,
-            fontWeight: pw.FontWeight.bold,
-          ),
+        pw.SizedBox(height: 3),
+        pw.Row(
+          children: [
+            pw.SizedBox(width: 16),
+            pw.Expanded(
+              flex: a,
+              child: pw.Container(height: 3, color: _accent),
+            ),
+            pw.Expanded(
+              flex: b,
+              child: pw.Container(height: 3, color: _paper),
+            ),
+          ],
         ),
       ],
     ),

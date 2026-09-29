@@ -14,8 +14,11 @@ import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
+import 'package:ssr_space/services/export_files.dart';
+import 'package:ssr_space/services/export_saved_notify.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/plan_limits.dart';
+import 'package:ssr_space/services/report_export.dart';
 import 'package:ssr_space/services/report_pdf.dart';
 import 'package:ssr_space/services/reports_topn.dart';
 import 'package:ssr_space/services/saving.dart';
@@ -93,16 +96,31 @@ class ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  /// CSV sebulan penuh (abaikan filter dompet sesi): header sama dengan
-  /// alias impor (tanggal,jenis,nominal,dompet,ke_dompet,...) sehingga
-  /// hasilnya bisa ditempel balik di Impor CSV. Nominal bulat ditulis
-  /// tanpa desimal supaya tak terbaca 10x lipat.
+  /// Item ekspor = yang tampil di layar (filter dompet + jenis sesi).
+  /// CSV dan PDF memakai daftar yang sama.
+  List<SaasTransaction> _exportItems() =>
+      applyReportFilters(items, filterWallet, flowFilter);
+
+  String? _exportWalletLabel() => filterWallet == null
+      ? null
+      : (walletNames[filterWallet] ?? tr('tx_f_wallet'));
+
+  String? _exportTypeLabel() {
+    if (flowFilter == 'in') return tr('tx_in');
+    if (flowFilter == 'out') return tr('tx_out');
+    if (flowFilter == 'transfer') return tr('tx_transfer');
+    return null;
+  }
+
+  /// CSV terfilter (header alias impor dipertahankan; nominal bulat tanpa
+  /// desimal supaya tak terbaca 10x lipat saat ditempel balik).
   Future<void> _exportCsv() async {
     String num(double v) =>
         v % 1 == 0 ? v.toInt().toString() : v.toString();
+    final data = _exportItems();
     final rows = <List<dynamic>>[
       ['tanggal', 'jenis', 'nominal', 'dompet', 'ke_dompet', 'kategori', 'catatan'],
-      for (final t in items)
+      for (final t in data)
         [
           t.date ?? '',
           t.type,
@@ -113,33 +131,76 @@ class ReportsScreenState extends State<ReportsScreen> {
           t.note ?? '',
         ],
     ];
-    final dir = await getTemporaryDirectory();
-    final f = File('${dir.path}/laporan-ssr-space.csv');
-    await f.writeAsString(const ListToCsvConverter().convert(rows));
-    await Share.shareXFiles([XFile(f.path)], text: tr('r_share_csv'));
+    final base = exportBaseName(
+      month,
+      walletLabel: _exportWalletLabel(),
+      flow: flowFilter,
+    );
+    final csv = const ListToCsvConverter().convert(rows);
+    await _saveAndNotify(
+      base: base,
+      ext: 'csv',
+      shareText: tr('r_share_csv'),
+      write: (p) => File(p).writeAsString(csv),
+    );
   }
 
   Future<void> _exportPdf() async {
+    final data = _exportItems();
     final bytes = await buildReportPdf(
       orgName: await activeOrgName(),
       monthLabel: monthLabel(month),
-      items: items,
+      items: data,
+      walletLabel: _exportWalletLabel(),
+      typeLabel: _exportTypeLabel(),
+      walletNames: walletNames,
     );
-    final dir = await getTemporaryDirectory();
-    final f = File('${dir.path}/laporan-ssr-space.pdf');
-    await f.writeAsBytes(bytes);
-    await Share.shareXFiles([XFile(f.path)], text: tr('r_share_pdf'));
+    final base = exportBaseName(
+      month,
+      walletLabel: _exportWalletLabel(),
+      flow: flowFilter,
+    );
+    await _saveAndNotify(
+      base: base,
+      ext: 'pdf',
+      shareText: tr('r_share_pdf'),
+      write: (p) => File(p).writeAsBytes(bytes),
+    );
   }
 
-  Future<void> _runExport(Future<void> Function() run, String label) async {
+  /// Simpan ke Documents/ssr-space + notif Bagikan. Izin ditolak =
+  /// fallback temp + share langsung + pesan jujur (bukan gagal).
+  Future<void> _saveAndNotify({
+    required String base,
+    required String ext,
+    required String shareText,
+    required Future<void> Function(String path) write,
+  }) async {
+    final fileName = '$base.$ext';
+    try {
+      final path = await saveToDocuments(fileName: fileName, write: write);
+      await ExportSavedNotify.showExportSaved(
+        filePath: path,
+        fileName: fileName,
+      );
+    } on ExportNoPermission {
+      final dir = await getTemporaryDirectory();
+      final f = File('${dir.path}/$fileName');
+      await write(f.path);
+      if (!mounted) return;
+      await Share.shareXFiles([XFile(f.path)], text: shareText);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('exp_noperm'))));
+    }
+  }
+
+  Future<void> _runExport(Future<void> Function() run) async {
     if (exporting) return;
     setState(() => exporting = true);
     try {
+      // Sukses dikonfirmasi notif sistem (tombol Bagikan), bukan snackbar.
       await run();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(tr('r_export_ok').replaceFirst('{l}', label))),
-      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -211,7 +272,7 @@ class ReportsScreenState extends State<ReportsScreen> {
           net: f.net,
           exporting: exporting,
           hasItems: hasItems,
-          onExportCsv: () => _runExport(_exportCsv, 'CSV'),
+          onExportCsv: () => _runExport(_exportCsv),
           onExportPdf: () => _guardPdf(),
         ),
       ],
@@ -226,7 +287,7 @@ class ReportsScreenState extends State<ReportsScreen> {
       await requirePro(context, tr('q_pdf'));
       return;
     }
-    _runExport(_exportPdf, 'PDF');
+    _runExport(_exportPdf);
   }
 
   @override

@@ -1,6 +1,13 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.6.0+48.
+Versi terpasang: 2.7.0+49.
+
+## Yang baru di 2.7.0
+
+1. Ekspor Laporan mengikuti filter layar: pilih dompet dan jenis (semua/masuk/keluar/transfer), hasil PDF dan CSV sama dengan yang tampil.
+2. Tabel PDF lebih premium: kolom dompet, baris filter, rekap kategori berbar progres.
+3. File otomatis tersimpan di Dokumen/ssr-space (minta izin dulu); notifikasi selesai ada tombol Bagikan. Izin ditolak: file dibagikan langsung, bukan gagal.
+4. Seluruh ikon aplikasi kini Coolicons (kredit di Tentang); 6 kategori baru: investasi, donasi, keluarga, olahraga, hewan, darurat.
 
 ## Yang baru di 2.6.0
 
