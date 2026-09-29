@@ -35,7 +35,7 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
     // untuk file picker tertentu (tak bisa buka/EXIF), hanya catch
     // IOException. Decode di Dart terbukti bisa/tidak dengan pesan jelas.
     final bytes = await File(path).readAsBytes();
-    final ui.Codec codec = await ui.decodeImageFromList(bytes);
+    final ui.Codec codec = await ui.instantiateImageCodec(bytes);
     final ui.FrameInfo frame = await codec.getNextFrame();
     final ui.Image image = frame.image;
     final byteData =
