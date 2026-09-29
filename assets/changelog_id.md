@@ -1,6 +1,6 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+51.
+Versi terpasang: 2.8.0+52.
 
 ## Yang baru di 2.8.0
 
@@ -8,6 +8,7 @@ Versi terpasang: 2.8.0+51.
 2. Scan struk belanja (kamera atau galeri): total, tanggal, dan rincian otomatis mengisi form, kamu tetap tekan Simpan. Tanpa internet, foto dihapus setelah dibaca.
 3. Struk yang sebagian tak terbaca diberi peringatan jujur, bukan angka karangan.
 4. Perbaikan diagnosis: bila scan gagal, aplikasi menampilkan pesan error aslinya agar mudah dilaporkan.
+5. Perbaikan scan galeri: foto di-decode di aplikasi sebelum dibaca (jalan pintas error sistem di HP tertentu).
 
 ## Yang baru di 2.7.0
 
