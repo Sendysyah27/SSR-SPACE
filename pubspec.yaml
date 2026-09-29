@@ -31,6 +31,8 @@ dependencies:
   app_links: ^7.2.1
   flutter_foreground_task: ^11.0.3
   flutter_local_notifications: ^22.3.1
+  google_mlkit_text_recognition: ^0.15.0
+  image_picker: ^1.1.2
   # Dipin exact: 13.x menarik permission_handler_android 14 (butuh
   # compileSdk 37, app 36) → build merah checkReleaseAarMetadata.
   # 12.0.3 = android 13.0.1 (compileSdk 35), API Dart yang dipakai stabil.

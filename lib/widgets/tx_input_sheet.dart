@@ -1,14 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/app_settings.dart';
+import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/quick_input_parse.dart';
+import 'package:ssr_space/services/receipt_parse.dart';
+import 'package:ssr_space/services/receipt_scan_service.dart';
 import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
@@ -168,6 +173,11 @@ class _TxInputSheetState extends State<TxInputSheet> {
   final noteC = TextEditingController();
   bool saving = false;
   String? formErr;
+  // Wizard: 0 = jenis+kategori, 1 = form. Mode edit langsung ke form.
+  int _step = 0;
+  String? _selCat;
+  bool _scanning = false;
+  String? _scanErr;
 
   int get _dec => kCurrencyDecimals(currencyCode.value);
   bool get _isEdit => widget.editing != null;
@@ -200,6 +210,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
         ? (parseCategory(e!.category!).sub ?? '')
         : '';
     noteC.text = e?.note ?? widget.initialNote ?? '';
+    _selCat = catC.text.trim().isEmpty ? null : catC.text.trim();
+    _step = _isEdit ? 1 : 0;
   }
 
   @override
@@ -253,6 +265,74 @@ class _TxInputSheetState extends State<TxInputSheet> {
       }
       noteC.text = q.note;
     });
+  }
+
+  /// Langkah 1 -> 2: kunci kategori pilihan ke field form.
+  void _goStep2() {
+    final c = _selCat?.trim();
+    if (c == null || c.isEmpty) return;
+    setState(() {
+      catC.text = c;
+      _step = 1;
+    });
+  }
+
+  /// Dialog sumber foto lalu OCR; hasil prefill form (preview, tanpa simpan).
+  Future<void> _pickScanSource() async {
+    final src = await showDialog<ImageSource>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('rcp_scan')),
+        content: Text(tr('rcp_scan_hint')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ImageSource.camera),
+            child: Text(tr('rcp_camera')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
+            child: Text(tr('rcp_gallery')),
+          ),
+        ],
+      ),
+    );
+    if (src == null || !mounted) return;
+    setState(() {
+      _scanning = true;
+      _scanErr = null;
+    });
+    try {
+      final r = await scanReceipt(src);
+      if (!mounted) return;
+      setState(() {
+        _scanning = false;
+        if (r == null) return;
+        if (r.amount != null && r.amount! > 0) {
+          type = 'out';
+          digits.value = digitsFromMajor(
+            CurrencyService.convert(r.amount!),
+            dec: _dec,
+          );
+        }
+        if (r.date != null) day = r.date!;
+        noteC.text = receiptNote(r);
+        if (_selCat == null || _selCat!.trim().isEmpty) {
+          final cats = appCategories.value;
+          _selCat = cats.contains('Belanja')
+              ? 'Belanja'
+              : (cats.isEmpty ? 'Belanja' : cats.first);
+        }
+        catC.text = _selCat!.trim();
+        if (!r.confident) formErr = tr('rcp_partial');
+        _step = 1;
+      });
+    } on ReceiptScanException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _scanning = false;
+        _scanErr = tr(e.trKey);
+      });
+    }
   }
 
   Future<void> _pickDate() async {
@@ -413,19 +493,46 @@ class _TxInputSheetState extends State<TxInputSheet> {
             const _DragHandle(),
             _SheetHeader(
               isEdit: _isEdit,
+              title: !_isEdit && _step == 0 ? tr('wiz_type_cat') : null,
               code: widget.editing?.code,
               onClose: () => Navigator.pop(context),
             ),
-            if (!_isEdit) ...[
+            if (_step == 0 && !_isEdit) ...[
               const SizedBox(height: SsrSpace.sm),
-              _QuickSection(controller: quickC, onChanged: _onQuickChanged),
-            ],
-            _AmountDisplay(digits: digits, dec: _dec),
-            TxTypeSelector(
-              value: type,
-              onChanged: (v) => setState(() => type = v),
-            ),
-            const SizedBox(height: SsrSpace.sm),
+              TxTypeSelector(
+                value: type,
+                onChanged: (v) => setState(() => type = v),
+              ),
+              const SizedBox(height: SsrSpace.md),
+              _CategoryGrid(
+                selected: _selCat,
+                onPick: (c) => setState(() => _selCat = c),
+              ),
+              const SizedBox(height: SsrSpace.md),
+              _ScanRow(
+                scanning: _scanning,
+                error: _scanErr,
+                onScan: _scanning ? null : _pickScanSource,
+              ),
+              const SizedBox(height: SsrSpace.md),
+              PrimaryButton(
+                label: tr('wiz_next'),
+                onPressed: _selCat == null ? null : _goStep2,
+              ),
+            ] else ...[
+              _TypeCatRow(
+                type: type,
+                category: catC.text,
+                onChange: _isEdit
+                    ? null
+                    : () => setState(() => _step = 0),
+              ),
+              if (!_isEdit) ...[
+                const SizedBox(height: SsrSpace.sm),
+                _QuickSection(controller: quickC, onChanged: _onQuickChanged),
+              ],
+              _AmountDisplay(digits: digits, dec: _dec),
+              const SizedBox(height: SsrSpace.sm),
             TxNumpad(digits: digits),
             const SizedBox(height: SsrSpace.sm),
             _DateTimeSection(
@@ -508,13 +615,16 @@ class _DragHandle extends StatelessWidget {
 }
 
 /// Judul sheet + tombol tutup. Mode edit menampilkan kode TX.
+/// [title] menimpa judul bawaan (dipakai langkah 1 wizard).
 class _SheetHeader extends StatelessWidget {
   final bool isEdit;
+  final String? title;
   final String? code;
   final VoidCallback onClose;
 
   const _SheetHeader({
     required this.isEdit,
+    this.title,
     required this.code,
     required this.onClose,
   });
@@ -529,7 +639,7 @@ class _SheetHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                isEdit ? tr('tx_form_edit') : tr('tx_form_add'),
+                title ?? (isEdit ? tr('tx_form_edit') : tr('tx_form_add')),
                 style: theme.textTheme.titleMedium,
               ),
               if (isEdit && code != null)
@@ -547,6 +657,196 @@ class _SheetHeader extends StatelessWidget {
           icon: const DuoIcon(AppIcons.close),
           tooltip: tr('back'),
         ),
+      ],
+    );
+  }
+}
+
+/// Langkah 1 wizard: grid kategori 2 kolom dengan ikon ledger.
+/// Sel seragam karena pilihan setara (bukan hierarki).
+class _CategoryGrid extends StatelessWidget {
+  final String? selected;
+  final ValueChanged<String> onPick;
+
+  const _CategoryGrid({required this.selected, required this.onPick});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<List<String>>(
+      valueListenable: appCategories,
+      builder: (_, cats, __) {
+        if (cats.isEmpty) return const SizedBox.shrink();
+        return GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: SsrSpace.sm,
+          crossAxisSpacing: SsrSpace.sm,
+          childAspectRatio: 3.4,
+          children: [
+            for (final c in cats)
+              _CatCell(
+                label: c,
+                selected: c == selected,
+                onTap: () => onPick(c),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Satu sel kategori: ikon ledger + label, min 44px ikut grid.
+class _CatCell extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _CatCell({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final fg = selected
+        ? scheme.primary
+        : theme.textTheme.bodyMedium?.color ?? scheme.onSurface;
+    return InkWell(
+      borderRadius: BorderRadius.circular(SsrRadius.tile),
+      onTap: onTap,
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: SsrSpace.md),
+        decoration: BoxDecoration(
+          color: selected
+              ? scheme.primary.withValues(alpha: 0.08)
+              : scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(SsrRadius.tile),
+          border: Border.all(
+            color: selected ? scheme.primary : scheme.outlineVariant,
+          ),
+        ),
+        child: Row(
+          children: [
+            SvgPicture.asset(
+              svgForCategory(label),
+              width: 20,
+              colorFilter: ColorFilter.mode(fg, BlendMode.srcIn),
+            ),
+            const SizedBox(width: SsrSpace.sm),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: fg,
+                  fontWeight:
+                      selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Baris scan struk: tombol + hint + state scanning/gagal (R-27).
+class _ScanRow extends StatelessWidget {
+  final bool scanning;
+  final String? error;
+  final VoidCallback? onScan;
+
+  const _ScanRow({
+    required this.scanning,
+    required this.error,
+    required this.onScan,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        OutlinedButton.icon(
+          onPressed: onScan,
+          icon: const DuoIcon(AppIcons.scan, size: 20),
+          label: Text(tr('rcp_scan')),
+        ),
+        Text(
+          tr('rcp_scan_hint'),
+          style: theme.textTheme.bodySmall,
+          textAlign: TextAlign.center,
+        ),
+        if (scanning) ...[
+          const SizedBox(height: SsrSpace.sm),
+          const LinearProgressIndicator(),
+          const SizedBox(height: SsrSpace.xs),
+          Text(
+            tr('rcp_scanning'),
+            style: theme.textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
+        if (error != null) ...[
+          const SizedBox(height: SsrSpace.xs),
+          Text(
+            error!,
+            style: TextStyle(
+              color: theme.colorScheme.error,
+              fontSize: 13,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Ringkasan pilihan langkah 1 di atas form (+ Ubah kembali).
+class _TypeCatRow extends StatelessWidget {
+  final String type;
+  final String category;
+  final VoidCallback? onChange;
+
+  const _TypeCatRow({
+    required this.type,
+    required this.category,
+    required this.onChange,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final typeLabel = type == 'in'
+        ? tr('tx_in')
+        : (type == 'transfer' ? tr('tx_transfer') : tr('tx_out'));
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            category.trim().isEmpty
+                ? typeLabel
+                : '$typeLabel · ${category.trim()}',
+            style: theme.textTheme.bodyMedium,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (onChange != null)
+          TextButton(
+            onPressed: onChange,
+            child: Text(tr('wiz_change')),
+          ),
       ],
     );
   }

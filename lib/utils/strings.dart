@@ -122,6 +122,32 @@ const _t = <String, Map<String, String>>{
   'tx_f_towallet': {'id': 'Dompet tujuan', 'en': 'Destination wallet'},
   'tx_save_edit': {'id': 'Simpan perubahan', 'en': 'Save changes'},
   'tx_save_add': {'id': 'Simpan transaksi', 'en': 'Save transaction'},
+  // Wizard catat 2 langkah + scan struk
+  'wiz_type_cat': {'id': 'Jenis dan kategori', 'en': 'Type and category'},
+  'wiz_need_cat': {'id': 'Pilih kategori dulu', 'en': 'Choose a category first'},
+  'wiz_next': {'id': 'Lanjut', 'en': 'Continue'},
+  'wiz_back': {'id': 'Kembali', 'en': 'Back'},
+  'wiz_change': {'id': 'Ubah', 'en': 'Change'},
+  'rcp_scan': {'id': 'Scan struk', 'en': 'Scan receipt'},
+  'rcp_scan_hint': {
+    'id': 'Foto struk belanja, hasilnya mengisi form.',
+    'en': 'Photograph a shopping receipt, the result fills the form.',
+  },
+  'rcp_camera': {'id': 'Kamera', 'en': 'Camera'},
+  'rcp_gallery': {'id': 'Galeri', 'en': 'Gallery'},
+  'rcp_scanning': {'id': 'Membaca struk...', 'en': 'Reading receipt...'},
+  'rcp_fail': {
+    'id': 'Struk tak terbaca. Isi manual atau foto ulang.',
+    'en': 'Receipt unreadable. Fill manually or retake the photo.',
+  },
+  'rcp_partial': {
+    'id': 'Sebagian tak terbaca, periksa lagi sebelum simpan.',
+    'en': 'Partially unreadable, check again before saving.',
+  },
+  'rcp_empty': {
+    'id': 'Tak ada teks di foto ini.',
+    'en': 'No text found in this photo.',
+  },
   'txv_amount': {
     'id': 'Nominal harus lebih dari 0',
     'en': 'Amount must be greater than 0',
