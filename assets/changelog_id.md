@@ -1,6 +1,6 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+52.
+Versi terpasang: 2.8.0+53.
 
 ## Yang baru di 2.8.0
 

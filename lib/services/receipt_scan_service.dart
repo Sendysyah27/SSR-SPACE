@@ -50,7 +50,10 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
       );
     }
     final input = InputImage.fromBitmap(
-      bitmap: byteData.buffer.asUint8List(),
+      bitmap: byteData.buffer.asUint8List(
+        byteData.offsetInBytes,
+        byteData.lengthInBytes,
+      ),
       width: w,
       height: h,
     );
