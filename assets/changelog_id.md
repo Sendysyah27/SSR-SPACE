@@ -1,6 +1,6 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+54.
+Versi terpasang: 2.8.0+55.
 
 ## Yang baru di 2.8.0
 
@@ -10,6 +10,7 @@ Versi terpasang: 2.8.0+54.
 4. Perbaikan diagnosis: bila scan gagal, aplikasi menampilkan pesan error aslinya agar mudah dilaporkan.
 5. Perbaikan scan galeri: foto di-decode di aplikasi sebelum dibaca (jalan pintas error sistem di HP tertentu).
 6. Perbaikan lanjutan: byte gambar dijamin rapat agar selalu terbaca.
+7. Perbaikan jalur baca gambar (format NV21) untuk HP yang menolak cara lama.
 
 ## Yang baru di 2.7.0
 
