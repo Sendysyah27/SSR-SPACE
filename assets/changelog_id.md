@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.7.0+49.
+Versi terpasang: 2.8.0+50.
+
+## Yang baru di 2.8.0
+
+1. Catat transaksi kini 2 langkah: pilih jenis dan kategori dulu, tekan Lanjut, baru isi nominal.
+2. Scan struk belanja (kamera atau galeri): total, tanggal, dan rincian otomatis mengisi form, kamu tetap tekan Simpan. Tanpa internet, foto dihapus setelah dibaca.
+3. Struk yang sebagian tak terbaca diberi peringatan jujur, bukan angka karangan.
 
 ## Yang baru di 2.7.0
 
