@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
-import 'package:flutter/painting.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/services/error_reporter.dart';
@@ -35,11 +35,11 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
     // untuk file picker tertentu (tak bisa buka/EXIF), hanya catch
     // IOException. Decode di Dart terbukti bisa/tidak dengan pesan jelas.
     final bytes = await File(path).readAsBytes();
-    final codec = await decodeImageFromList(bytes);
-    final frame = await codec.getNextFrame();
-    final image = frame.image;
+    final ui.Codec codec = await ui.decodeImageFromList(bytes);
+    final ui.FrameInfo frame = await codec.getNextFrame();
+    final ui.Image image = frame.image;
     final byteData =
-        await image.toByteData(format: ImageByteFormat.rawRgba);
+        await image.toByteData(format: ui.ImageByteFormat.rawRgba);
     final w = image.width;
     final h = image.height;
     image.dispose();
