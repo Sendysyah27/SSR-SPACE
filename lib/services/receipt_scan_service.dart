@@ -1,13 +1,17 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 
 /// Gagal scan struk; [trKey] kunci strings (`rcp_fail` / `rcp_empty`).
+/// [detail] pesan error asli (diagnostik, ditampilkan apa adanya).
 class ReceiptScanException implements Exception {
   final String trKey;
-  const ReceiptScanException(this.trKey);
+  final String? detail;
+  const ReceiptScanException(this.trKey, [this.detail]);
 }
 
 /// Foto struk (kamera/galeri) -> OCR on-device -> [ReceiptData].
@@ -38,9 +42,14 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
     } finally {
       await recognizer.close();
     }
-  } catch (e) {
+  } catch (e, st) {
     if (e is ReceiptScanException) rethrow;
-    throw const ReceiptScanException('rcp_fail');
+    // Diagnostik Fase 1: kirim pesan asli ke client_errors + teruskan
+    // ringkasnya ke UI agar akar terlihat di device.
+    unawaited(ErrorReporter.capture(e, st, context: 'receipt_scan'));
+    var detail = e.toString();
+    if (detail.length > 220) detail = detail.substring(0, 220);
+    throw ReceiptScanException('rcp_fail', detail);
   } finally {
     try {
       await File(path).delete();

@@ -330,7 +330,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
       if (!mounted) return;
       setState(() {
         _scanning = false;
-        _scanErr = tr(e.trKey);
+        _scanErr = e.detail == null
+            ? tr(e.trKey)
+            : '${tr(e.trKey)}\n${e.detail}';
       });
     }
   }
