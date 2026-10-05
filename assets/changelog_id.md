@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+55.
+Versi terpasang: 2.8.0+56.
+
+## Yang baru di 2.8.0+56
+
+1. Aksesibilitas TalkBack: semua tombol ikon (hapus, tutup, kembali) kini bernama; tombol hapus di numpad nominal dan PIN terbaca "Hapus".
+2. Rapian token: warna teks emas TxRow kini dari `AppColors.chipSurplusText`, tanpa hardcode.
 
 ## Yang baru di 2.8.0
 

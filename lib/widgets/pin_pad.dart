@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/theme/app_icons.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/numpad_key.dart';
 
 /// Numpad PIN on-screen: 1-9, slot kosong, 0, hapus.
@@ -49,7 +50,10 @@ class PinPad extends StatelessWidget {
                         ? NumpadKey(
                             onTap: _backspace,
                             onLongPress: _clear,
-                            child: const DuoIcon(AppIcons.backspace),
+                            child: Semantics(
+                              label: tr('tx_delete'),
+                              child: const DuoIcon(AppIcons.backspace),
+                            ),
                           )
                         : NumpadKey(
                             onTap: () => _press(key),

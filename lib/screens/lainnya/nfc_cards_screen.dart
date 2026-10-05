@@ -365,6 +365,7 @@ class _CardsCard extends StatelessWidget {
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline),
+                      tooltip: tr('tx_delete'),
                       onPressed: () => onRemove(card),
                     ),
                   ),

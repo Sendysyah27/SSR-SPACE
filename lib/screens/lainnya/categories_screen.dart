@@ -362,6 +362,7 @@ class _CatRow extends StatelessWidget {
         ),
         IconButton(
           icon: const DuoIcon(AppIcons.trash),
+          tooltip: tr('tx_delete'),
           onPressed: onDelete,
         ),
       ],

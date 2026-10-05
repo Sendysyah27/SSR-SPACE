@@ -189,6 +189,7 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
           Switch(value: bill.active, onChanged: (v) => _toggle(bill, v)),
           IconButton(
             icon: const DuoIcon(AppIcons.trash),
+            tooltip: tr('tx_delete'),
             onPressed: () => _delete(bill),
           ),
         ],

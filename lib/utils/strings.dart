@@ -9,6 +9,7 @@ const _t = <String, Map<String, String>>{
   'cancel': {'id': 'Batal', 'en': 'Cancel'},
   'save': {'id': 'Simpan', 'en': 'Save'},
   'back': {'id': 'Kembali', 'en': 'Back'},
+  'clear': {'id': 'Bersihkan', 'en': 'Clear'},
   'conn_error': {'id': 'Periksa koneksi.', 'en': 'Check your connection.'},
   // Jenis transaksi
   'tx_in': {'id': 'Masuk', 'en': 'Income'},

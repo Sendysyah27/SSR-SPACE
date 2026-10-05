@@ -175,7 +175,7 @@ class _TxBadge extends StatelessWidget {
                 svgForCategory(category),
                 width: 19,
                 colorFilter: ColorFilter.mode(
-                  isOut ? scheme.error : const Color(0xFF7A5E14),
+                  isOut ? scheme.error : AppColors.chipSurplusText,
                   BlendMode.srcIn,
                 ),
               ),

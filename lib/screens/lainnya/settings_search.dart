@@ -345,6 +345,7 @@ class SettingsSearchDelegate extends SearchDelegate<String?> {
     return [
       IconButton(
         icon: const DuoIcon(AppIcons.close),
+        tooltip: tr('clear'),
         onPressed: () => query = '',
       ),
     ];
@@ -354,6 +355,7 @@ class SettingsSearchDelegate extends SearchDelegate<String?> {
   Widget? buildLeading(BuildContext context) {
     return IconButton(
       icon: const DuoIcon(AppIcons.back),
+      tooltip: tr('back'),
       onPressed: () => close(context, null),
     );
   }
