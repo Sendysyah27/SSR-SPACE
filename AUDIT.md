@@ -405,6 +405,13 @@ Setelah install APK v2.3.3+ & migration 07+08:
 - [ ] Pengingat harian: set jam → notifikasi muncul esok hari di jam itu; reboot HP → jadwal tetap jalan
 - [ ] Auto-track + overlay koreksi tetap jalan seperti sebelumnya (regresi iris3/iris4)
 - [ ] Tentang → versi `2.3.9+22`; Catatan perubahan → isi changelog tampil
+- [ ] Loop audit impeccable 2.8.0+56 s/d +58 (device, APK yang bisa diunduh): font app 1.3 + font HP Besar → Transaksi/Laporan/Dompet/Budget/Beranda/sheet input tanpa overflow atau terpotong
+- [ ] Mode gelap HP → semua layar terbaca; teks di atas rust hanya di surface terang
+- [ ] Putar landscape tiap layar utama → scroll jalan, nol clip; PIN + sheet catat tetap bisa dipakai
+- [ ] Split-screen (bila HP dukung) → setengah layar tanpa overflow horizontal
+- [ ] TalkBack ON → tombol ikon bernama (Hapus/Tutup/Kembali), tombol hapus numpad terbaca "Hapus", baris Tx terbaca jenis + nominal
+- [ ] Bulan dengan >50 transaksi → scroll mulus, header hari + divider tampil benar (slivers 2.8.0+57)
+- [ ] Badge kategori tampil Coolicons seragam; olahraga/hewan/darurat tetap ledger (distill 2.8.0+58)
 
 ---
 
@@ -526,3 +533,4 @@ APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 | (a11y-polish, lokal belum push/CI) | **Polish a11y impeccable 2.8.0+56** (audit native 10/20): 5 IconButton ikon-saja → `tooltip` (`categories`/`recurring`/`nfc` = `tx_delete`, search clear = kunci baru `clear`, search back = `back`) + label `Semantics(tx_delete)` di tombol hapus `TxNumpad`/`PinPad` (impor `strings.dart`) + hardcode `Color(0xFF7A5E14)` di `tx_row.dart:178` → `AppColors.chipSurplusText`. Visual/behavior nol berubah. Diverifikasi: TxRow InkWell sudah ekspos role button; chart fl_chart tanpa teks = dilewati TalkBack, datanya ada di legenda/rekap teks sekitar. Tanpa migration/dep baru; bump +56 + changelog. |
 | (optimize-list, lokal belum push/CI) | **Virtualisasi riwayat 2.8.0+57** (temuan P1 audit): helper baru `tx_day_slivers.dart` (flatten day-bucket → 1 `SliverList.builder`, divider pixel-identik per layar) + `sectionCardDecoration()` di `section_card.dart` (kartu digambar via `DecoratedSliver` di dompet/laporan) + `CustomScrollView` di transaksi/dompet/laporan mode baca. Path susun-ulang laporan tetap eager (UI transien). Pixel/behavior nol berubah; `groupDayBuckets` tak tersentuh. Tanpa migration/dep baru; bump +57 + changelog. |
 | (distill-ikon, lokal belum push/CI) | **Distill ikon 2.8.0+58** (temuan P1 audit, revisi jujur: full 100% tak feasible — Coolicons set UI tanpa sport/pet/sos): 15 badge kategori ledger → Coolicons subset + invest/donasi/keluarga → Trending_Up/Gift/House_01; sport/pet/sos tetap ledger; Material murni terakhir (`delete_outline` NFC) → `DuoIcon(trash)`; font Phosphor-Duotone 568KB dihapus (fallback mati: 55/55 ikon terpakai resolve ke Coolicons, verifikasi script); `category_meta_test` disesuaikan. Tanpa migration/dep baru; bump +58 + changelog. |
+| (ci-infra, 2.8.0+59) | **APK via rilis rolling `ci-apk`**: kuota artifact GitHub mentok (4.5GB, refresh 6–12 jam) → 4 step `upload-artifact` di `apk.yml` diganti `gh release upload ci-apk --clobber` (nama `SSR-SPACE-<ver>-<abi>.apk`) + `permissions: contents: write`; tanpa action baru (supply chain utuh). Unduh: `gh release download ci-apk -D /sdcard/Download/SSR-SPACE/`. Trade-off: arsip per-run hilang, tersisa 1 set terakhir. Tanpa migration/dep baru; bump +59 + changelog. |

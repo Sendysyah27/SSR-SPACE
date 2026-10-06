@@ -375,8 +375,8 @@ git status && git log --oneline -15
 git add -A && git commit -m "feat: …" && git push origin main
 gh run watch $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
 
-# unduh APK terbaru
-gh run download <run-id> -n ssr-space-apk -D /sdcard/Download/SSR-SPACE/
+# unduh APK terbaru (rilis rolling ci-apk, bebas kuota artifact)
+gh release download ci-apk -D /sdcard/Download/SSR-SPACE/ --clobber
 
 # cek SS (screenshot) terbaru dari user — bukti bug / package app / UI device
 ls -t /sdcard/DCIM/Screenshots | head -5
@@ -436,3 +436,4 @@ Before starting, ask the user when antislop applies: during the work, or after i
 - **Polish a11y (2026-10-05, lokal, belum push/CI):** tindak lanjut audit impeccable native 10/20 — 5 IconButton ikon-saja → tooltip + label Semantics tombol hapus numpad/PIN + tokenize 1 hardcode emas + bump `2.8.0+56` + changelog. Visual/behavior nol berubah. Detail: AUDIT §7.
 - **Virtualisasi riwayat (2026-10-05, lokal, belum push/CI):** tindak lanjut P1 audit — `tx_day_slivers.dart` + `CustomScrollView` di transaksi/dompet/laporan (mode baca) + kartu via `DecoratedSliver`; path reorder laporan tetap eager. Pixel/behavior nol berubah + bump `2.8.0+57` + changelog. Detail: AUDIT §7.
 - **Distill ikon (2026-10-05, lokal, belum push/CI):** tindak lanjut P1 audit — 15 badge ledger → Coolicons (sport/pet/sos tetap, tak ada padanan) + Material terakhir → DuoIcon + hapus font Phosphor-Duotone mati (568KB, 55/55 ikon resolve Coolicons) + bump `2.8.0+58` + changelog. Detail: AUDIT §7.
+- **CI infra (2026-10-06):** kuota artifact penuh → APK pindah ke rilis rolling `ci-apk` via `gh release upload --clobber` di `apk.yml` (+`permissions: contents: write`, tanpa action baru) + bump `2.8.0+59` + changelog. Unduh: `gh release download ci-apk -D /sdcard/Download/SSR-SPACE/`.

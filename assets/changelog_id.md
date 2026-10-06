@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+58.
+Versi terpasang: 2.8.0+59.
+
+## Yang baru di 2.8.0+59
+
+1. Teknis: APK unduhan pindah ke rilis rolling `ci-apk` (bebas kuota artifact GitHub). Tanpa perubahan aplikasi.
 
 ## Yang baru di 2.8.0+58
 
