@@ -80,7 +80,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       var a = <Map<String, dynamic>>[];
       var s = 0;
       try {
-        a = await fetchBudgetAlerts(orgId, currentMonth());
+        a = await fetchAlerts(orgId, currentMonth());
         s = await budgetAlertsSeen(orgId, currentMonth());
       } catch (_) {
         a = [];
@@ -478,8 +478,9 @@ class _OverAllocBanner extends StatelessWidget {
 }
 
 /// Banner: alert budget bulan ini (warn/breach dari trigger server).
-/// Sembunyi sendiri bila tak ada yang belum dilihat (pola _NoWalletBanner).
-/// Ketuk banner = tandai seen (prefs saja).
+/// Hanya baris unseen yang tampil (indeks >= seen, konsisten dengan
+/// badge = count minus seen). Sembunyi sendiri bila tak ada yang belum
+/// dilihat (pola _NoWalletBanner). Ketuk banner = tandai seen (prefs saja).
 class _BudgetAlertBanner extends StatelessWidget {
   final List<Map<String, dynamic>> alerts;
   final int seen;
@@ -493,7 +494,9 @@ class _BudgetAlertBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (unseenAlerts(alerts.length, seen) <= 0) {
+    final start = seen.clamp(0, alerts.length).toInt();
+    final unseen = alerts.sublist(start);
+    if (unseen.isEmpty) {
       return const SizedBox.shrink();
     }
     final scheme = Theme.of(context).colorScheme;
@@ -516,27 +519,12 @@ class _BudgetAlertBanner extends StatelessWidget {
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: SsrSpace.xs),
-            for (final a in alerts)
+            for (final a in unseen)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Row(
-                  children: [
-                    StatusChip(
-                      label: tr(
-                        a['level'] == 'breach' ? 'ba_breach' : 'ba_warn',
-                      ),
-                      tone: a['level'] == 'breach'
-                          ? StatusTone.danger
-                          : StatusTone.accent,
-                    ),
-                    const SizedBox(width: SsrSpace.sm),
-                    Expanded(
-                      child: Text(
-                        alertLabel(a),
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  alertLabel(a),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
           ],

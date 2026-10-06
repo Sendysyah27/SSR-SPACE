@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/backup_export.dart';
 import 'package:ssr_space/services/budget_alerts.dart';
-import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
@@ -68,6 +67,9 @@ class OtherScreen extends StatefulWidget {
 
 class _OtherScreenState extends State<OtherScreen> {
   late Future<_OtherMeta> _metaFuture;
+
+  /// Naik tiap _openBudgets selesai: picu _DataSection ambil ulang badge.
+  int _budgetNonce = 0;
 
   @override
   void initState() {
@@ -148,12 +150,12 @@ class _OtherScreenState extends State<OtherScreen> {
       final orgId = await activeOrgId();
       if (orgId.isEmpty) return;
       final m = currentMonth();
-      final alerts = await fetchBudgetAlerts(orgId, m);
+      final alerts = await fetchAlerts(orgId, m);
       await markBudgetAlertsSeen(orgId, m, alerts.length);
     } catch (_) {
       // Fail-open: badge dihitung ulang saat build berikut.
     }
-    if (mounted) setState(() {});
+    if (mounted) setState(() => _budgetNonce++);
   }
 
   /// Dialog P2 generik: semua baris yang layarnya baru ada di Task 6/8
@@ -428,6 +430,7 @@ class _OtherScreenState extends State<OtherScreen> {
             isPro: meta?.plan == 'pro',
             tracking: meta?.tracking == true,
             backupBusy: backingUp,
+            budgetNonce: _budgetNonce,
             onSwitch: () => _push(OrgSwitcherScreen(session: widget.session)),
             onInvite: () => _push(const InviteScreen()),
             onDetail: _openWorkspaceDetail,
@@ -462,6 +465,7 @@ class _HubList extends StatelessWidget {
   final bool isPro;
   final bool tracking;
   final bool backupBusy;
+  final int budgetNonce;
   final VoidCallback onSwitch;
   final VoidCallback onInvite;
   final VoidCallback onDetail;
@@ -489,6 +493,7 @@ class _HubList extends StatelessWidget {
     required this.isPro,
     required this.tracking,
     required this.backupBusy,
+    required this.budgetNonce,
     required this.onSwitch,
     required this.onInvite,
     required this.onDetail,
@@ -526,6 +531,7 @@ class _HubList extends StatelessWidget {
         onHistory: onHistory,
         onBills: onBills,
         onNfc: onNfc,
+        budgetNonce: budgetNonce,
       ),
       _TrackingSection(
         tracking: tracking,
@@ -626,13 +632,14 @@ class _HeaderCard extends StatelessWidget {
 }
 
 /// DATA: dompet, kategori, budget, riwayat transaksi.
-class _DataSection extends StatelessWidget {
+class _DataSection extends StatefulWidget {
   final VoidCallback onWallets;
   final VoidCallback onCategories;
   final VoidCallback onBudgets;
   final VoidCallback onHistory;
   final VoidCallback onBills;
   final VoidCallback onNfc;
+  final int budgetNonce;
 
   const _DataSection({
     required this.onWallets,
@@ -641,7 +648,31 @@ class _DataSection extends StatelessWidget {
     required this.onHistory,
     required this.onBills,
     required this.onNfc,
+    required this.budgetNonce,
   });
+
+  @override
+  State<_DataSection> createState() => _DataSectionState();
+}
+
+class _DataSectionState extends State<_DataSection> {
+  /// Future badge di-cache di State (bukan inline di build) supaya fetch
+  /// tak berulang tiap rebuild. Diambil ulang bila nonce berubah.
+  late Future<int> _budgetCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _budgetCount = _budgetNewCount();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DataSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.budgetNonce != widget.budgetNonce) {
+      _budgetCount = _budgetNewCount();
+    }
+  }
 
   /// Badge tile Budget: count alerts bulan ini minus seen. Fail-open 0.
   Future<int> _budgetNewCount() async {
@@ -649,7 +680,7 @@ class _DataSection extends StatelessWidget {
       final orgId = await activeOrgId();
       if (orgId.isEmpty) return 0;
       final m = currentMonth();
-      final alerts = await fetchBudgetAlerts(orgId, m);
+      final alerts = await fetchAlerts(orgId, m);
       final seen = await budgetAlertsSeen(orgId, m);
       return unseenAlerts(alerts.length, seen);
     } catch (_) {
@@ -666,25 +697,25 @@ class _DataSection extends StatelessWidget {
         NavTile(
           icon: AppIcons.wallet,
           title: tr('o_wallets'),
-          onTap: onWallets,
+          onTap: widget.onWallets,
         ),
         const Divider(height: 1),
         NavTile(
           icon: AppIcons.categoryFallback,
           title: tr('o_cats'),
           subtitle: tr('o_cats_s'),
-          onTap: onCategories,
+          onTap: widget.onCategories,
         ),
         const Divider(height: 1),
         FutureBuilder<int>(
-          future: _budgetNewCount(),
+          future: _budgetCount,
           builder: (context, snap) {
             final n = snap.data ?? 0;
             return NavTile(
               icon: AppIcons.budget,
               title: tr('nav_budget'),
               subtitle: n > 0 ? '$n ${tr('sp_new')}' : null,
-              onTap: onBudgets,
+              onTap: widget.onBudgets,
             );
           },
         ),
@@ -692,20 +723,20 @@ class _DataSection extends StatelessWidget {
         NavTile(
           icon: AppIcons.transactions,
           title: tr('nav_transaksi'),
-          onTap: onHistory,
+          onTap: widget.onHistory,
         ),
         const Divider(height: 1),
         NavTile(
           icon: AppIcons.bills,
           title: tr('rb_title'),
-          onTap: onBills,
+          onTap: widget.onBills,
         ),
         const Divider(height: 1),
         NavTile(
           icon: AppIcons.scan,
           title: tr('nfc_title'),
           subtitle: tr('nfc_sub'),
-          onTap: onNfc,
+          onTap: widget.onNfc,
         ),
       ],
     );
