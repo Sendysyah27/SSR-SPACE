@@ -15,7 +15,25 @@ class Budget {
   final String category;
   final double limit;
   final double spent;
-  Budget({required this.category, required this.limit, required this.spent});
+  final int warnPct;
+  Budget({
+    required this.category,
+    required this.limit,
+    required this.spent,
+    this.warnPct = 80,
+  });
+}
+
+/// Ambang peringatan budget (persen, 1–100). String kosong = default 80.
+/// Di luar 1–100 atau bukan angka = null (caller tampilkan `b_err_warn`).
+/// Validasi client ini cerminan CHECK server (`budgets_warn_pct_check`);
+/// server tetap otoritas.
+int? parseWarnPct(String raw, {int fallback = 80}) {
+  final t = raw.trim();
+  if (t.isEmpty) return fallback;
+  final v = int.tryParse(t);
+  if (v == null || v < 1 || v > 100) return null;
+  return v;
 }
 
 /// Hasil budget sebulan: daftar + total pemasukan bulan itu.
@@ -55,15 +73,27 @@ Future<BudgetMonth> fetchBudgets(String orgId) async {
           category: (r['category'] ?? '').toString(),
           limit: (r['limit_amount'] as num).toDouble(),
           spent: spent[(r['category'] ?? '').toString()] ?? 0,
+          warnPct: (r['warn_pct'] as num?)?.toInt() ?? 80,
         ),
     ],
     totalIn: inOfMonth(txs, currentMonth()),
   );
 }
 
-Future<void> setBudget(String orgId, String category, double limit) async {
+Future<void> setBudget(
+  String orgId,
+  String category,
+  double limit, {
+  int warnPct = 80,
+}) async {
   await SupabaseConfig.client.from('budgets').upsert(
-    {'org_id': orgId, 'category': category, 'month': currentMonth(), 'limit_amount': limit},
+    {
+      'org_id': orgId,
+      'category': category,
+      'month': currentMonth(),
+      'limit_amount': limit,
+      'warn_pct': warnPct,
+    },
     onConflict: 'org_id,category,month',
   );
 }

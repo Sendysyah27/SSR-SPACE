@@ -278,6 +278,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Batas harus angka lebih dari 0.',
     'en': 'Limit must be greater than 0.',
   },
+  'b_err_warn': {
+    'id': 'Peringatan harus angka 1–100.',
+    'en': 'Warning must be a number 1–100.',
+  },
   'b_saved': {'id': 'Budget disimpan.', 'en': 'Budget saved.'},
   'b_updated': {'id': 'Budget diperbarui.', 'en': 'Budget updated.'},
   'b_err_save': {
@@ -286,6 +290,7 @@ const _t = <String, Map<String, String>>{
   },
   'b_edit_title': {'id': 'Ubah budget {c}', 'en': 'Edit {c} budget'},
   'b_f_limit': {'id': 'Batas (Rp)', 'en': 'Limit'},
+  'b_f_warn': {'id': 'Peringatan (%)', 'en': 'Warning (%)'},
   'b_pin_title': {'id': 'Konfirmasi PIN', 'en': 'Confirm PIN'},
   'b_pin_body': {
     'id': 'Masukkan PIN keamanan untuk menyimpan perubahan.',

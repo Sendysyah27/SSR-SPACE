@@ -44,6 +44,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
   int alertsSeen = 0;
   final catC = TextEditingController();
   final limitC = TextEditingController();
+  final warnC = TextEditingController();
   final catFocus = FocusNode();
 
   @override
@@ -56,6 +57,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
   void dispose() {
     catC.dispose();
     limitC.dispose();
+    warnC.dispose();
     catFocus.dispose();
     super.dispose();
   }
@@ -119,14 +121,20 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       setState(() => formErr = tr('b_err_limit'));
       return;
     }
+    final warn = parseWarnPct(warnC.text);
+    if (warn == null) {
+      setState(() => formErr = tr('b_err_warn'));
+      return;
+    }
     setState(() {
       formErr = null;
       saving = true;
     });
     try {
-      await setBudget(await activeOrgId(), cat, limit);
+      await setBudget(await activeOrgId(), cat, limit, warnPct: warn);
       catC.clear();
       limitC.clear();
+      warnC.clear();
       await _load();
       if (mounted) {
         unawaited(showSuccessFlash(context));
@@ -167,23 +175,40 @@ class BudgetsScreenState extends State<BudgetsScreen> {
     final limitC = TextEditingController(
       text: b.limit.toStringAsFixed(whole ? 0 : 2),
     );
+    final warnC = TextEditingController(text: b.warnPct.toString());
     try {
       final value = await showDialog<dynamic>(
         context: context,
         builder: (ctx) {
-          String? err;
+          String? errLimit;
+          String? errWarn;
           return StatefulBuilder(
             builder: (ctx, setD) => AlertDialog(
               title: Text(tr('b_edit_title').replaceFirst('{c}', b.category)),
-              content: TextField(
-                controller: limitC,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: tr('b_f_limit'),
-                  prefixText:
-                      '${kCurrencySymbols[currencyCode.value] ?? 'Rp'} ',
-                  errorText: err,
-                ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: limitC,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: tr('b_f_limit'),
+                      prefixText:
+                          '${kCurrencySymbols[currencyCode.value] ?? 'Rp'} ',
+                      errorText: errLimit,
+                    ),
+                  ),
+                  const SizedBox(height: SsrSpace.sm),
+                  TextField(
+                    controller: warnC,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: tr('b_f_warn'),
+                      suffixText: '%',
+                      errorText: errWarn,
+                    ),
+                  ),
+                ],
               ),
               actions: [
                 TextButton(
@@ -198,11 +223,16 @@ class BudgetsScreenState extends State<BudgetsScreen> {
                 TextButton(
                   onPressed: () {
                     final v = double.tryParse(limitC.text);
-                    if (v == null || v <= 0) {
-                      setD(() => err = tr('b_err_limit'));
+                    final w = parseWarnPct(warnC.text);
+                    if (v == null || v <= 0 || w == null) {
+                      setD(() {
+                        errLimit =
+                            (v == null || v <= 0) ? tr('b_err_limit') : null;
+                        errWarn = w == null ? tr('b_err_warn') : null;
+                      });
                       return;
                     }
-                    Navigator.pop(ctx, v);
+                    Navigator.pop(ctx, (v, w));
                   },
                   child: Text(tr('save')),
                 ),
@@ -216,11 +246,13 @@ class BudgetsScreenState extends State<BudgetsScreen> {
         await _deleteBudget(b);
         return;
       }
-      if (value is! double) return;
+      if (value is! (double, int)) return;
+      final (newLimit, newWarn) = value;
       final ok = await _confirmPin();
       if (!ok || !mounted) return;
       try {
-        await setBudget(await activeOrgId(), b.category, value);
+        await setBudget(await activeOrgId(), b.category, newLimit,
+            warnPct: newWarn);
         await _load();
         if (!mounted) return;
         unawaited(showSuccessFlash(context));
@@ -233,6 +265,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       }
     } finally {
       limitC.dispose();
+      warnC.dispose();
     }
   }
 
@@ -384,6 +417,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
           _BudgetForm(
             catC: catC,
             limitC: limitC,
+            warnC: warnC,
             catFocus: catFocus,
             formErr: formErr,
             saving: saving,
@@ -839,6 +873,7 @@ PieChartData _gaugeData(double used, Color main, Color rest) {
 class _BudgetForm extends StatelessWidget {
   final TextEditingController catC;
   final TextEditingController limitC;
+  final TextEditingController warnC;
   final FocusNode catFocus;
   final String? formErr;
   final bool saving;
@@ -847,6 +882,7 @@ class _BudgetForm extends StatelessWidget {
   const _BudgetForm({
     required this.catC,
     required this.limitC,
+    required this.warnC,
     required this.catFocus,
     required this.formErr,
     required this.saving,
@@ -879,6 +915,15 @@ class _BudgetForm extends StatelessWidget {
             decoration: InputDecoration(
               labelText: tr('b_f_limit'),
               prefixText: '${kCurrencySymbols[currencyCode.value] ?? 'Rp'} ',
+            ),
+          ),
+          const SizedBox(height: SsrSpace.md),
+          TextField(
+            controller: warnC,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: tr('b_f_warn'),
+              suffixText: '%',
             ),
           ),
           if (formErr != null) ...[

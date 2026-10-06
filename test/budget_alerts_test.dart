@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/budget_alerts.dart';
+import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -81,5 +82,15 @@ void main() {
   test('unseenAlerts = count minus seen, min nol', () {
     expect(unseenAlerts(3, 1), 2);
     expect(unseenAlerts(2, 5), 0);
+  });
+
+  test('parseWarnPct validasi 1–100, kosong = default 80', () {
+    expect(parseWarnPct('0'), isNull);
+    expect(parseWarnPct('101'), isNull);
+    expect(parseWarnPct('80'), 80);
+    expect(parseWarnPct(''), 80);
+    expect(parseWarnPct('1'), 1);
+    expect(parseWarnPct('100'), 100);
+    expect(parseWarnPct('abc'), isNull);
   });
 }
