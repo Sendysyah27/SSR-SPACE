@@ -41,7 +41,9 @@ int unseenAlerts(int total, int seen) =>
     total - seen < 0 ? 0 : total - seen;
 
 // Alert bulan berjalan (kolom `limit_amount`, bukan `limit`).
-// Urut kategori supaya irisan seen berbasis count stabil.
+// Urut created_at (+ id tiebreak): tabel append-only sehingga irisan
+// seen berbasis count (sublist dari indeks seen) stabil; order category
+// menggeser indeks saat sisipan alfabetis-awal dan menyembunyikan alert baru.
 Future<List<Map<String, dynamic>>> fetchAlerts(
   String orgId,
   String month,
@@ -51,7 +53,8 @@ Future<List<Map<String, dynamic>>> fetchAlerts(
       .select()
       .eq('org_id', orgId)
       .eq('month', month)
-      .order('category');
+      .order('created_at')
+      .order('id');
   return List<Map<String, dynamic>>.from(rows);
 }
 

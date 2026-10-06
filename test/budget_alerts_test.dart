@@ -84,6 +84,15 @@ void main() {
     expect(unseenAlerts(2, 5), 0);
   });
 
+  test('sisipan alfabetis-awal tetap tampil (append-only created_at, I5)', () {
+    // Order created_at = append-only: baru selalu di akhir.
+    final alerts = ['Makan', 'Minum', 'Aqua'];
+    const seen = 2;
+    expect(unseenAlerts(alerts.length, seen), 1);
+    final unseen = alerts.sublist(seen.clamp(0, alerts.length).toInt());
+    expect(unseen, ['Aqua']);
+  });
+
   test('parseWarnPct validasi 1–100, kosong = default 80', () {
     expect(parseWarnPct('0'), isNull);
     expect(parseWarnPct('101'), isNull);
