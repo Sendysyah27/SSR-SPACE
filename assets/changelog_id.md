@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+59.
+Versi terpasang: 2.8.0+60.
+
+## Yang baru di 2.8.0+60
+
+1. Peringatan budget real-time: tiap belanja tercatat, aplikasi mengecek ambang (default 80%, bisa diubah per budget 1–100) dan menandai Melewati batas bila limit jebol. Banner di layar Budget + badge di hub Profil, ketuk untuk tandai sudah dibaca.
+2. Wajib jalankan `supabase/migration_16_budget_alerts.sql` di Dashboard → SQL Editor (setelah migration_15), kalau tidak banner tak pernah muncul.
 
 ## Yang baru di 2.8.0+59
 
