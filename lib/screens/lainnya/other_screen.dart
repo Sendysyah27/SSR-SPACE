@@ -6,6 +6,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/backup_export.dart';
+import 'package:ssr_space/services/budget_alerts.dart';
+import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
@@ -14,6 +16,7 @@ import 'package:ssr_space/services/space_logic.dart';
 import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/app_info.dart';
@@ -135,6 +138,22 @@ class _OtherScreenState extends State<OtherScreen> {
   Future<void> _push(Widget screen) async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
     if (mounted) _refreshMeta();
+  }
+
+  /// Buka Budget lalu tandai seen (prefs saja, tanpa write server).
+  /// Badge tile = count alerts bulan ini minus seen.
+  Future<void> _openBudgets() async {
+    await _push(const BudgetsScreen());
+    try {
+      final orgId = await activeOrgId();
+      if (orgId.isEmpty) return;
+      final m = currentMonth();
+      final alerts = await fetchBudgetAlerts(orgId, m);
+      await markBudgetAlertsSeen(orgId, m, alerts.length);
+    } catch (_) {
+      // Fail-open: badge dihitung ulang saat build berikut.
+    }
+    if (mounted) setState(() {});
   }
 
   /// Dialog P2 generik: semua baris yang layarnya baru ada di Task 6/8
@@ -288,7 +307,7 @@ class _OtherScreenState extends State<OtherScreen> {
       case 'categories':
         await _push(const CategoriesScreen());
       case 'budgets':
-        await _push(const BudgetsScreen());
+        await _openBudgets();
       case 'history':
         await _push(const TransactionsScreen());
       case 'tracking':
@@ -416,7 +435,7 @@ class _OtherScreenState extends State<OtherScreen> {
             onBilling: () => _push(const BillingScreen()),
             onWallets: () => _push(const WalletsScreen()),
             onCategories: () => _push(const CategoriesScreen()),
-            onBudgets: () => _push(const BudgetsScreen()),
+            onBudgets: _openBudgets,
             onHistory: () => _push(const TransactionsScreen()),
             onBills: () => _push(const RecurringBillsScreen()),
             onNfc: () => _push(const NfcCardsScreen()),
@@ -624,6 +643,20 @@ class _DataSection extends StatelessWidget {
     required this.onNfc,
   });
 
+  /// Badge tile Budget: count alerts bulan ini minus seen. Fail-open 0.
+  Future<int> _budgetNewCount() async {
+    try {
+      final orgId = await activeOrgId();
+      if (orgId.isEmpty) return 0;
+      final m = currentMonth();
+      final alerts = await fetchBudgetAlerts(orgId, m);
+      final seen = await budgetAlertsSeen(orgId, m);
+      return unseenAlerts(alerts.length, seen);
+    } catch (_) {
+      return 0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
@@ -643,10 +676,17 @@ class _DataSection extends StatelessWidget {
           onTap: onCategories,
         ),
         const Divider(height: 1),
-        NavTile(
-          icon: AppIcons.budget,
-          title: tr('nav_budget'),
-          onTap: onBudgets,
+        FutureBuilder<int>(
+          future: _budgetNewCount(),
+          builder: (context, snap) {
+            final n = snap.data ?? 0;
+            return NavTile(
+              icon: AppIcons.budget,
+              title: tr('nav_budget'),
+              subtitle: n > 0 ? '$n ${tr('sp_new')}' : null,
+              onTap: onBudgets,
+            );
+          },
         ),
         const Divider(height: 1),
         NavTile(

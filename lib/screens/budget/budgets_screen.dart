@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/budget_alerts.dart';
 import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/saving.dart';
@@ -39,6 +40,8 @@ class BudgetsScreenState extends State<BudgetsScreen> {
   bool saving = false;
   String? err;
   String? formErr;
+  List<Map<String, dynamic>> alerts = [];
+  int alertsSeen = 0;
   final catC = TextEditingController();
   final limitC = TextEditingController();
   final catFocus = FocusNode();
@@ -73,9 +76,21 @@ class BudgetsScreenState extends State<BudgetsScreen> {
         return;
       }
       final b = await fetchBudgets(orgId);
+      // Alert fail-open: banner sembunyi bila query gagal.
+      var a = <Map<String, dynamic>>[];
+      var s = 0;
+      try {
+        a = await fetchBudgetAlerts(orgId, currentMonth());
+        s = await budgetAlertsSeen(orgId, currentMonth());
+      } catch (_) {
+        a = [];
+        s = 0;
+      }
       if (!mounted) return;
       setState(() {
         data = b;
+        alerts = a;
+        alertsSeen = s;
         loading = false;
       });
     } catch (_) {
@@ -130,6 +145,20 @@ class BudgetsScreenState extends State<BudgetsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       catFocus.requestFocus();
     });
+  }
+
+  /// Ketuk banner = tandai semua alert bulan ini sudah dilihat.
+  /// Prefs saja, tanpa write server.
+  Future<void> _markAlertsSeen() async {
+    try {
+      final orgId = await activeOrgId();
+      if (orgId.isEmpty || !mounted) return;
+      await markBudgetAlertsSeen(orgId, currentMonth(), alerts.length);
+      if (!mounted) return;
+      setState(() => alertsSeen = alerts.length);
+    } catch (_) {
+      // Fail-open: banner tetap tampil.
+    }
   }
 
   Future<void> _openEdit(Budget b) async {
@@ -330,6 +359,11 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
+          _BudgetAlertBanner(
+            alerts: alerts,
+            seen: alertsSeen,
+            onTap: _markAlertsSeen,
+          ),
           _OverAllocBanner(data: data),
           if (items.isEmpty)
             EmptyView(
@@ -438,6 +472,75 @@ class _OverAllocBanner extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Banner: alert budget bulan ini (warn/breach dari trigger server).
+/// Sembunyi sendiri bila tak ada yang belum dilihat (pola _NoWalletBanner).
+/// Ketuk banner = tandai seen (prefs saja).
+class _BudgetAlertBanner extends StatelessWidget {
+  final List<Map<String, dynamic>> alerts;
+  final int seen;
+  final VoidCallback onTap;
+
+  const _BudgetAlertBanner({
+    required this.alerts,
+    required this.seen,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (unseenAlerts(alerts.length, seen) <= 0) {
+      return const SizedBox.shrink();
+    }
+    final scheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: SsrSpace.sm),
+        padding: const EdgeInsets.all(SsrSpace.md),
+        decoration: BoxDecoration(
+          color: scheme.error.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(SsrRadius.tile),
+          border: Border.all(color: scheme.error.withValues(alpha: 0.45)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              tr('ba_title'),
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: SsrSpace.xs),
+            for (final a in alerts)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Row(
+                  children: [
+                    StatusChip(
+                      label: tr(
+                        a['level'] == 'breach' ? 'ba_breach' : 'ba_warn',
+                      ),
+                      tone: a['level'] == 'breach'
+                          ? StatusTone.danger
+                          : StatusTone.accent,
+                    ),
+                    const SizedBox(width: SsrSpace.sm),
+                    Expanded(
+                      child: Text(
+                        alertLabel(a),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

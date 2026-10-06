@@ -59,6 +59,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       NotifTrack.ensureListening(force: true);
       unawaited(ForegroundTrack.syncFromPrefs());
       unawaited(_checkDetail());
+      // Poll budget alerts tiap resume supaya banner/badge segar
+      // walau tab Budget sedang tidak aktif.
+      budgetKey.currentState?.reload();
       _reloadTab(index);
     } else {
       _resumed = false;

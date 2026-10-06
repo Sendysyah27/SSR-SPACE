@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/services/budget_alerts.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/saving.dart';
@@ -76,4 +78,36 @@ Future<void> deleteBudget(String orgId, String category) async {
       .eq('org_id', orgId)
       .eq('category', category)
       .eq('month', currentMonth());
+}
+
+/// Alert bulan berjalan dari tabel `budget_alerts` Task 1
+/// (kolom `limit_amount`, bukan `limit`). Urut kategori.
+Future<List<Map<String, dynamic>>> fetchBudgetAlerts(
+  String orgId,
+  String month,
+) async {
+  final rows = await SupabaseConfig.client
+      .from('budget_alerts')
+      .select()
+      .eq('org_id', orgId)
+      .eq('month', month)
+      .order('category');
+  return List<Map<String, dynamic>>.from(rows);
+}
+
+/// Jumlah alert saat terakhir ditandai seen (prefs saja, tanpa write
+/// server). Key `ba_seen_<org>_<month>` (lihat [baSeenKey]).
+Future<int> budgetAlertsSeen(String orgId, String month) async {
+  final p = await SharedPreferences.getInstance();
+  return p.getInt(baSeenKey(orgId, month)) ?? 0;
+}
+
+/// Tandai semua alert bulan ini sudah dilihat.
+Future<void> markBudgetAlertsSeen(
+  String orgId,
+  String month,
+  int count,
+) async {
+  final p = await SharedPreferences.getInstance();
+  await p.setInt(baSeenKey(orgId, month), count);
 }

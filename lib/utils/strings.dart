@@ -316,6 +316,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Total limit melebihi pemasukan bulan ini.',
     'en': "Total limits exceed this month's income.",
   },
+  // Budget alerts: banner + badge (trigger server Task 1)
+  'ba_title': {'id': 'Peringatan budget', 'en': 'Budget alerts'},
+  'ba_warn': {'id': 'Mendekati batas', 'en': 'Nearing the limit'},
+  'ba_breach': {'id': 'Melewati batas', 'en': 'Over the limit'},
   // Tabungan (konvensi kategori, tanpa tabel baru)
   'sv_label': {'id': 'Tabungan', 'en': 'Savings'},
   'sv_of': {'id': 'dari', 'en': 'of'},
