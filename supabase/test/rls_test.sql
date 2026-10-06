@@ -526,6 +526,116 @@ select public.set_space_mode('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'bebas');
 select t_assert((select space_mode from organizations where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1') = 'bebas',
   'T20 mode kembali bebas');
 
+-- ===== T21: warn muncul saat capai 85% =====
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+insert into budgets (org_id, category, month, limit_amount)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'Makan', to_char(current_date, 'YYYY-MM'), 100000)
+on conflict (org_id, category, month) do update set limit_amount = excluded.limit_amount;
+insert into transactions (org_id, type, amount, category)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 85000, 'Makan');
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and month = to_char(current_date, 'YYYY-MM')
+    and category = 'Makan' and level = 'warn') = 1,
+  'T21 warn muncul di 85%');
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and month = to_char(current_date, 'YYYY-MM')
+    and category = 'Makan' and level = 'breach') = 0,
+  'T21 belum breach di 85%');
+
+-- ===== T22: dedup warn tetap 1 =====
+insert into transactions (org_id, type, amount, category)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 5000, 'Makan');
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and month = to_char(current_date, 'YYYY-MM')
+    and category = 'Makan' and level = 'warn') = 1,
+  'T22 dedup warn tetap 1');
+
+-- ===== T23: breach muncul saat total >= 100% =====
+insert into transactions (org_id, type, amount, category)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 20000, 'Makan');
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and month = to_char(current_date, 'YYYY-MM')
+    and category = 'Makan' and level = 'breach') = 1,
+  'T23 breach muncul di >=100%');
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and month = to_char(current_date, 'YYYY-MM')
+    and category = 'Makan' and level = 'warn') = 1,
+  'T23 warn tetap 1 setelah breach');
+
+-- ===== T24: subkategori masuk grup lapis-atas =====
+insert into budgets (org_id, category, month, limit_amount)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'Minum', to_char(current_date, 'YYYY-MM'), 100000)
+on conflict (org_id, category, month) do update set limit_amount = excluded.limit_amount;
+insert into transactions (org_id, type, amount, category)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 90000, 'Minum > Kopi');
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and month = to_char(current_date, 'YYYY-MM')
+    and category = 'Minum' and level = 'warn') = 1,
+  'T24 warn grup Minum dari subkategori');
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and month = to_char(current_date, 'YYYY-MM')
+    and category = 'Minum > Kopi') = 0,
+  'T24 tanpa grup sendiri untuk subkategori');
+
+-- ===== T25: negatif (in/transfer tak picu, tulis langsung ditolak, lintas-org kosong) =====
+insert into transactions (org_id, type, amount, category)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'in', 90000, 'Makan');
+insert into transactions (org_id, type, amount, category)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'transfer', 90000, 'Makan');
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and month = to_char(current_date, 'YYYY-MM')
+    and category = 'Makan') = 2,
+  'T25 in/transfer tak tambah baris');
+do $$
+begin
+  insert into budget_alerts (org_id, month, category, level, spent, limit_amount)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', to_char(current_date, 'YYYY-MM'), 'Makan', 'warn', 1, 1);
+  raise exception 'ASSERT GAGAL: T25 client insert budget_alerts lolos';
+exception when sqlstate '42501' then null;
+end $$;
+set test.user_id = '22222222-2222-4222-8222-222222222222';
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1') = 0,
+  'T25 alerts org A tak terbaca org B');
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+
+-- ===== T26: fail-open (kategori tanpa budget) =====
+insert into transactions (org_id, type, amount, category)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 50000, 'NoBudgetT26');
+select t_assert(exists (select 1 from transactions
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1' and category = 'NoBudgetT26' and amount = 50000),
+  'T26 insert tanpa budget tetap lolos');
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and month = to_char(current_date, 'YYYY-MM')
+    and category = 'NoBudgetT26') = 0,
+  'T26 tanpa baris alert untuk kategori tanpa budget');
+
+-- ===== T27: warn_pct custom dihormati =====
+insert into budgets (org_id, category, month, limit_amount, warn_pct)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'Jajan', to_char(current_date, 'YYYY-MM'), 100000, 50)
+on conflict (org_id, category, month) do update set limit_amount = excluded.limit_amount, warn_pct = excluded.warn_pct;
+insert into transactions (org_id, type, amount, category)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 55000, 'Jajan');
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and month = to_char(current_date, 'YYYY-MM')
+    and category = 'Jajan' and level = 'warn') = 1,
+  'T27 warn custom 50% muncul di 55%');
+select t_assert((select count(*) from budget_alerts
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and month = to_char(current_date, 'YYYY-MM')
+    and category = 'Jajan' and level = 'breach') = 0,
+  'T27 belum breach di 55%');
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');
