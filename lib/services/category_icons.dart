@@ -34,9 +34,10 @@ IconData iconForCategory(String? category) {
   return AppIcons.categoryFallback;
 }
 
-/// Path SVG kategori Ledger Premium (12 file di assets/illustrations).
+/// Path SVG badge kategori: Coolicons subset (satu keluarga dengan DuoIcon)
+/// kecuali sport/pet/sos yang tak punya padanan (tetap ledger).
 /// Cabang SAMA PERSIS dengan [iconForCategory] plus wifi (sebelum tagihan)
-/// dan tabungan/saving; income dan topup ke wallet; transfer ke transfer.
+/// dan tabungan/saving; income → Download, topup → Add, transfer → transfer.
 /// [iconForCategory] lama dipertahankan untuk layar lain hingga migrasi T6.
 String svgForCategory(String? category) {
   // Kategori baru (investasi, donasi, keluarga, olahraga, hewan, darurat)
@@ -45,66 +46,68 @@ String svgForCategory(String? category) {
   if (cool != null) return cool;
   final c = (category ?? '').toLowerCase();
   if (c.contains('makan') || c.contains('minum') || c.contains('jajan') || c.contains('kuliner')) {
-    return 'assets/illustrations/cat_food.svg';
+    return 'assets/icons/coolicons/Coffee.svg';
   }
   if (c.contains('transport') || c.contains('bensin') || c.contains('parkir') || c.contains('ojek') || c.contains('tol')) {
-    return 'assets/illustrations/cat_transport.svg';
+    return 'assets/icons/coolicons/Car_Auto.svg';
   }
-  if (c.contains('belanja')) return 'assets/illustrations/cat_shop.svg';
+  if (c.contains('belanja')) return 'assets/icons/coolicons/Shopping_Cart_01.svg';
   if (c.contains('pulsa') || c.contains('internet') || c.contains('wifi')) {
-    return 'assets/illustrations/cat_wifi.svg';
+    return 'assets/icons/coolicons/Wifi_High.svg';
   }
   if (c.contains('tagihan') || c.contains('listrik') || c.contains('air') || c.contains('internet') || c.contains('pulsa') || c.contains('kuota')) {
-    return 'assets/illustrations/cat_bill.svg';
+    return 'assets/icons/coolicons/File_Document.svg';
   }
   if (c.contains('sehat') || c.contains('obat') || c.contains('dokter')) {
-    return 'assets/illustrations/cat_health.svg';
+    return 'assets/icons/coolicons/Heart_01.svg';
   }
   if (c.contains('sekolah') || c.contains('kuliah') || c.contains('kursus') || c.contains('buku')) {
-    return 'assets/illustrations/cat_edu.svg';
+    return 'assets/icons/coolicons/Book_Open.svg';
   }
   if (c.contains('hiburan') || c.contains('film') || c.contains('game') || c.contains('musik')) {
-    return 'assets/illustrations/cat_fun.svg';
+    return 'assets/icons/coolicons/Headphones.svg';
   }
   if (c.contains('tabungan') || c.contains('saving')) {
-    return 'assets/illustrations/cat_save.svg';
+    return 'assets/icons/coolicons/Save.svg';
   }
   if (c.contains('gaji') || c.contains('upah') || c.contains('bonus')) {
-    return 'assets/illustrations/cat_wallet.svg';
+    return 'assets/icons/coolicons/Download.svg';
   }
   if (c.contains('topup') || c.contains('top up') || c.contains('isi saldo')) {
-    return 'assets/illustrations/cat_wallet.svg';
+    return 'assets/icons/coolicons/Add_Plus_Circle.svg';
   }
-  if (c.contains('transfer')) return 'assets/illustrations/cat_transfer.svg';
-  return 'assets/illustrations/cat_other.svg';
+  if (c.contains('transfer')) return 'assets/icons/coolicons/Arrow_Left_Right.svg';
+  return 'assets/icons/coolicons/Tag.svg';
 }
 
 /// SVG untuk kunci ikon hasil kustomisasi user (picker kategori).
-/// Kunci di luar daftar dikenal jatuh ke cat_other (tak pernah throw).
+/// Kunci di luar daftar dikenal jatuh ke Tag (tak pernah throw).
 String svgForMetaIcon(String key) {
   switch (key) {
     case 'food':
-      return 'assets/illustrations/cat_food.svg';
+      return 'assets/icons/coolicons/Coffee.svg';
     case 'transport':
-      return 'assets/illustrations/cat_transport.svg';
+      return 'assets/icons/coolicons/Car_Auto.svg';
     case 'shopping':
-      return 'assets/illustrations/cat_shop.svg';
+      return 'assets/icons/coolicons/Shopping_Cart_01.svg';
     case 'bills':
-      return 'assets/illustrations/cat_bill.svg';
+      return 'assets/icons/coolicons/File_Document.svg';
     case 'health':
-      return 'assets/illustrations/cat_health.svg';
+      return 'assets/icons/coolicons/Heart_01.svg';
     case 'education':
-      return 'assets/illustrations/cat_edu.svg';
+      return 'assets/icons/coolicons/Book_Open.svg';
     case 'entertainment':
-      return 'assets/illustrations/cat_fun.svg';
+      return 'assets/icons/coolicons/Headphones.svg';
     case 'topup':
+      return 'assets/icons/coolicons/Add_Plus_Circle.svg';
     case 'income':
+      return 'assets/icons/coolicons/Download.svg';
     case 'wallet':
-      return 'assets/illustrations/cat_wallet.svg';
+      return 'assets/icons/coolicons/Credit_Card_01.svg';
     case 'transfer':
-      return 'assets/illustrations/cat_transfer.svg';
+      return 'assets/icons/coolicons/Arrow_Left_Right.svg';
     default:
-      return 'assets/illustrations/cat_other.svg';
+      return 'assets/icons/coolicons/Tag.svg';
   }
 }
 

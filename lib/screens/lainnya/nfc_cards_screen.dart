@@ -9,6 +9,7 @@ import 'package:ssr_space/services/nfc_emoney_logic.dart';
 import 'package:ssr_space/services/notif_parse.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
@@ -364,7 +365,7 @@ class _CardsCard extends StatelessWidget {
                       '${walletName(card.walletId)}',
                     ),
                     trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
+                      icon: const DuoIcon(AppIcons.trash),
                       tooltip: tr('tx_delete'),
                       onPressed: () => onRemove(card),
                     ),

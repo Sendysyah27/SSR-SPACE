@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+57.
+Versi terpasang: 2.8.0+58.
+
+## Yang baru di 2.8.0+58
+
+1. Ikon kategori kini satu keluarga (Coolicons): badge transaksi dan pratinjau kategori tampil seragam. Olahraga, hewan, dan darurat tetap memakai ikon ledger karena tak ada padanannya.
+2. Diet aset: 15 SVG ledger + font Phosphor Duotone yang tak terpakai dihapus (fallback-nya mati: seluruh 55 ikon sudah resolve ke Coolicons).
 
 ## Yang baru di 2.8.0+57
 

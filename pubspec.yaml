@@ -1,7 +1,7 @@
 name: ssr_space
 description: SSR SPACE - Simple. Secure. Reliable. Your Finance Space. Pencatatan keuangan multi-dompet dengan workspace bersama dan auto-track notifikasi bank.
 publish_to: 'none'
-version: 2.8.0+57
+version: 2.8.0+58
 environment:
   sdk: '>=3.11.0 <4.0.0'
 dependencies:
@@ -72,9 +72,6 @@ flutter:
     - family: PhosphorFill
       fonts:
         - asset: assets/fonts/Phosphor-Fill.ttf
-    - family: PhosphorDuotone
-      fonts:
-        - asset: assets/fonts/Phosphor-Duotone.ttf
   assets:
     - assets/illustrations/
     - assets/icons/coolicons/

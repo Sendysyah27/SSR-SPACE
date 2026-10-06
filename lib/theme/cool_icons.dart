@@ -75,9 +75,9 @@ class CoolSvg {
   static const String option = '$base/Option.svg';
 
   // Ledger baru (6, gaya cat_*.svg)
-  static const String invest = 'assets/illustrations/cat_invest.svg';
-  static const String donate = 'assets/illustrations/cat_donate.svg';
-  static const String family = 'assets/illustrations/cat_family.svg';
+  static const String invest = 'assets/icons/coolicons/Trending_Up.svg';
+  static const String donate = 'assets/icons/coolicons/Gift.svg';
+  static const String family = 'assets/icons/coolicons/House_01.svg';
   static const String sport = 'assets/illustrations/cat_sport.svg';
   static const String pet = 'assets/illustrations/cat_pet.svg';
   static const String sos = 'assets/illustrations/cat_sos.svg';

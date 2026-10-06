@@ -35,12 +35,12 @@ void main() {
   });
 
   test('svg kustomisasi: kunci dikenal + asing fallback', () {
-    expect(svgForMetaIcon('food'), 'assets/illustrations/cat_food.svg');
-    expect(svgForMetaIcon('transfer'), 'assets/illustrations/cat_transfer.svg');
-    expect(svgForMetaIcon('wallet'), 'assets/illustrations/cat_wallet.svg');
+    expect(svgForMetaIcon('food'), 'assets/icons/coolicons/Coffee.svg');
+    expect(svgForMetaIcon('transfer'), 'assets/icons/coolicons/Arrow_Left_Right.svg');
+    expect(svgForMetaIcon('wallet'), 'assets/icons/coolicons/Credit_Card_01.svg');
     expect(
       svgForMetaIcon('kunci_asing'),
-      'assets/illustrations/cat_other.svg',
+      'assets/icons/coolicons/Tag.svg',
     );
   });
 
