@@ -36,6 +36,7 @@ import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
+import 'package:ssr_space/widgets/tx_day_slivers.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
 
@@ -318,6 +319,7 @@ class ReportsScreenState extends State<ReportsScreen> {
               summary: _summarySection(figs, items.isNotEmpty),
               recapTotals: figs.catTotals,
               list: _listSection(figs.items),
+              listSlivers: _listSlivers(figs.items),
             ),
           ),
         ],
@@ -327,11 +329,94 @@ class ReportsScreenState extends State<ReportsScreen> {
 
   String _walletName(String? id) => walletNames[id] ?? tr('tx_f_wallet');
 
-  Widget _listSection(List<SaasTransaction> filtered) {
+  /// Bagian filter + daftar untuk path lazy (mode baca).
+  /// Path susun-ulang (reorder) tetap pakai [_listSection] eager.
+  List<Widget> _listSlivers(List<SaasTransaction> filtered) {
+    final parts = _flowParts(filtered);
+    final head = SliverPadding(
+      padding: const EdgeInsets.fromLTRB(
+        SsrSpace.lg,
+        0,
+        SsrSpace.lg,
+        0,
+      ),
+      sliver: SliverToBoxAdapter(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _FlowFilter(
+              value: flowFilter,
+              onChanged: (v) => setState(() => flowFilter = v),
+            ),
+            const SizedBox(height: SsrSpace.md),
+            if (parts.pairs.isNotEmpty) ...[
+              _TransferHints(pairs: parts.pairs, nameOf: _walletName),
+              const SizedBox(height: SsrSpace.md),
+            ],
+          ],
+        ),
+      ),
+    );
+    if (filtered.isEmpty) {
+      return [
+        head,
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            SsrSpace.lg,
+            0,
+            SsrSpace.lg,
+            SsrSpace.lg,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: EmptyView(
+              icon: AppIcons.reports,
+              illustration: 'assets/illustrations/empty_laporan.svg',
+              title: tr('r_empty_t'),
+              subtitle: tr('r_empty_s'),
+              actionLabel: tr('reload'),
+              onAction: _load,
+            ),
+          ),
+        ),
+      ];
+    }
+    if (parts.visible.isEmpty) {
+      return [
+        head,
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            SsrSpace.lg,
+            0,
+            SsrSpace.lg,
+            SsrSpace.lg,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: SsrSpace.xl),
+              child: Text(tr('r_noflow'), textAlign: TextAlign.center),
+            ),
+          ),
+        ),
+      ];
+    }
+    return [head, ..._TxListCard(items: parts.visible).slivers(context)];
+  }
+
+  /// Saring alur + deteksi pasangan transfer (dipakai list widget & slivers).
+  ({List<SaasTransaction> visible, List<TransferPair> pairs}) _flowParts(
+    List<SaasTransaction> filtered,
+  ) {
     final visible = filtered
         .where((t) => flowFilter == 'all' || t.type == flowFilter)
         .toList();
-    final pairs = detectTransferPairs(filtered);
+    return (visible: visible, pairs: detectTransferPairs(filtered));
+  }
+
+  Widget _listSection(List<SaasTransaction> filtered) {
+    final parts = _flowParts(filtered);
+    final visible = parts.visible;
+    final pairs = parts.pairs;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -454,12 +539,16 @@ class _ReportSections extends StatelessWidget {
   final Map<String, double> recapTotals;
   final Widget list;
 
+  /// Varian lazy seksi daftar untuk mode baca (dibangun di parent).
+  final List<Widget> listSlivers;
+
   const _ReportSections({
     required this.month,
     required this.reordering,
     required this.summary,
     required this.recapTotals,
     required this.list,
+    required this.listSlivers,
   });
 
   @override
@@ -479,7 +568,28 @@ class _ReportSections extends StatelessWidget {
         };
         final kids = _sectionKids(order, sections, recapTotals.isEmpty);
         if (!reordering) {
-          return ListView(children: kids);
+          return CustomScrollView(
+            slivers: [
+              for (final id in order)
+                if (id == 'recap' && recapTotals.isEmpty)
+                  const SliverToBoxAdapter(
+                    key: ValueKey('recap-empty'),
+                    child: SizedBox.shrink(),
+                  )
+                else if (id == 'list')
+                  ...listSlivers
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      SsrSpace.lg,
+                      0,
+                      SsrSpace.lg,
+                      SsrSpace.lg,
+                    ),
+                    sliver: SliverToBoxAdapter(child: sections[id]!),
+                  ),
+            ],
+          );
         }
 
         /// Pindah seksi lalu simpan urutan (tetap 3 seksi valid).
@@ -1097,6 +1207,59 @@ class _TxListCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// Varian lazy untuk mode baca: judul + kartu (DecoratedSliver) + baris.
+  /// Path susun-ulang tetap pakai [build] eager (UI transien).
+  List<Widget> slivers(BuildContext context) {
+    final head = SliverPadding(
+      padding: const EdgeInsets.fromLTRB(
+        SsrSpace.lg,
+        0,
+        SsrSpace.lg,
+        0,
+      ),
+      sliver: SliverToBoxAdapter(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              tr('r_tx_title'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: SsrSpace.xs),
+          ],
+        ),
+      ),
+    );
+    if (items.isEmpty) {
+      return [head];
+    }
+    return [
+      head,
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(
+          SsrSpace.lg,
+          0,
+          SsrSpace.lg,
+          SsrSpace.lg,
+        ),
+        sliver: DecoratedSliver(
+          decoration: sectionCardDecoration(context),
+          sliver: SliverPadding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: SsrSpace.sm,
+              vertical: SsrSpace.xs,
+            ),
+            sliver: txDaySliverList(
+              items: items,
+              buildRow: (t) => TxRow(tx: t),
+            ),
+          ),
+        ),
+      ),
+    ];
   }
 }
 

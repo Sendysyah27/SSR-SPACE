@@ -4,17 +4,16 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/transaction_service.dart';
-import 'package:ssr_space/services/tx_day_group.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/tx_wallet_check.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/transaction.dart';
-import 'package:ssr_space/widgets/day_header.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
+import 'package:ssr_space/widgets/tx_day_slivers.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
 
@@ -220,7 +219,7 @@ class _SummaryCell extends StatelessWidget {
 
 /// Blok riwayat: judul bulan + banner tanpa-dompet + daftar TxRow
 /// (atau EmptyView bila kosong). Ketuk baris = ubah via sheet.
-class _TxHistorySection extends StatelessWidget {
+class _TxHistorySection {
   final String month;
   final List<SaasTransaction> items;
   final ValueChanged<SaasTransaction> onTap;
@@ -242,40 +241,58 @@ class _TxHistorySection extends StatelessWidget {
   List<SaasTransaction> get _shown =>
       onlyNoWallet ? _noWallet : items;
 
-  @override
-  Widget build(BuildContext context) {
+  /// Judul + banner sebagai adapter, daftar sebagai SliverList lazy.
+  List<Widget> slivers(BuildContext context) {
     final shown = _shown;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          txHistoryTitle(month),
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: SsrSpace.sm),
-        _noWalletBanner(),
-        if (shown.isEmpty)
-          SizedBox(
-            height: 260,
-            child: EmptyView(
-              icon: AppIcons.transactions,
-              illustration: 'assets/illustrations/empty_riwayat.svg',
-              title: tr('tx_empty_t'),
-              subtitle: tr('tx_empty_s'),
-              actionLabel: tr('tx_empty_a'),
-              onAction: onEmptyAction,
+    final head = SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: SsrSpace.lg),
+      sliver: SliverToBoxAdapter(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              txHistoryTitle(month),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          )
-        else
-          for (final b in groupDayBuckets(shown)) ...[
-            DayHeader(dateKey: b.key, count: b.items.length),
-            for (final t in b.items) ...[
-              TxRow(tx: t, onTap: () => onTap(t)),
-              const Divider(height: 1),
-            ],
+            const SizedBox(height: SsrSpace.sm),
+            _noWalletBanner(),
           ],
-      ],
+        ),
+      ),
     );
+    if (shown.isEmpty) {
+      return [
+        head,
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: SsrSpace.lg),
+          sliver: SliverToBoxAdapter(
+            child: SizedBox(
+              height: 260,
+              child: EmptyView(
+                icon: AppIcons.transactions,
+                illustration: 'assets/illustrations/empty_riwayat.svg',
+                title: tr('tx_empty_t'),
+                subtitle: tr('tx_empty_s'),
+                actionLabel: tr('tx_empty_a'),
+                onAction: onEmptyAction,
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+    return [
+      head,
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: SsrSpace.lg),
+        sliver: txDaySliverList(
+          items: shown,
+          buildRow: (t) => TxRow(tx: t, onTap: () => onTap(t)),
+          dividersBetween: false,
+        ),
+      ),
+    ];
   }
 
   Widget _noWalletBanner() {
@@ -389,26 +406,36 @@ class _TxListBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        SsrSpace.lg,
-        SsrSpace.lg,
-        SsrSpace.lg,
-        120,
-      ),
-      children: [
-        MonthPicker(month: month, onChanged: onMonthChanged),
-        const SizedBox(height: SsrSpace.md),
-        _TxSummaryStrip(items: items),
-        const SizedBox(height: SsrSpace.xl),
-        _TxHistorySection(
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.only(
+            left: SsrSpace.lg,
+            top: SsrSpace.lg,
+            right: SsrSpace.lg,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                MonthPicker(month: month, onChanged: onMonthChanged),
+                const SizedBox(height: SsrSpace.md),
+                _TxSummaryStrip(items: items),
+                const SizedBox(height: SsrSpace.xl),
+              ],
+            ),
+          ),
+        ),
+        ..._TxHistorySection(
           month: month,
           items: items,
           onTap: onTap,
           onEmptyAction: onEmptyAction,
           onlyNoWallet: onlyNoWallet,
           onToggleNoWallet: onToggleNoWallet,
-        ),
+        ).slivers(context),
+        const SliverToBoxAdapter(child: SizedBox(height: 120)),
       ],
     );
   }

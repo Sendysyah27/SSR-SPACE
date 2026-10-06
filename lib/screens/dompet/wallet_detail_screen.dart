@@ -5,17 +5,16 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/services/transaction_service.dart';
-import 'package:ssr_space/services/tx_day_group.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/wallet_edit_logic.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
-import 'package:ssr_space/widgets/day_header.dart';
 import 'package:ssr_space/widgets/pin_dialog.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
+import 'package:ssr_space/widgets/tx_day_slivers.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
 import 'package:ssr_space/widgets/wallet_art.dart';
 
@@ -251,40 +250,105 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               .where((t) => t.type == 'out' && isSavingCategory(t.category))
               .toList()
         : items;
-    return ListView(
-      padding: const EdgeInsets.all(SsrSpace.lg),
-      children: [
-        _SummaryCard(
-          type: widget.wallet.type,
-          typeLabel: widget.typeLabel,
-          balanceText: widget.balanceText,
-          count: items.length,
-        ),
-        if (svCount > 0) ...[
-          const SizedBox(height: SsrSpace.md),
-          _SavingStrip(
-            total: svTotal,
-            count: svCount,
-            only: savingOnly,
-            onToggle: () => setState(() => savingOnly = !savingOnly),
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            SsrSpace.lg,
+            SsrSpace.lg,
+            SsrSpace.lg,
+            0,
           ),
-        ],
-        const SizedBox(height: SsrSpace.md),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _SummaryCard(
+                  type: widget.wallet.type,
+                  typeLabel: widget.typeLabel,
+                  balanceText: widget.balanceText,
+                  count: items.length,
+                ),
+                if (svCount > 0) ...[
+                  const SizedBox(height: SsrSpace.md),
+                  _SavingStrip(
+                    total: svTotal,
+                    count: svCount,
+                    only: savingOnly,
+                    onToggle: () => setState(() => savingOnly = !savingOnly),
+                  ),
+                ],
+                const SizedBox(height: SsrSpace.md),
+              ],
+            ),
+          ),
+        ),
         if (items.isEmpty)
-          EmptyView(
-            icon: AppIcons.wallet,
-            illustration: 'assets/illustrations/empty_riwayat.svg',
-            title: tr('wd_empty_t'),
-            subtitle: tr('wd_empty_s'),
-            actionLabel: tr('back'),
-            onAction: () => Navigator.pop(context),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: SsrSpace.lg),
+            sliver: SliverToBoxAdapter(
+              child: EmptyView(
+                icon: AppIcons.wallet,
+                illustration: 'assets/illustrations/empty_riwayat.svg',
+                title: tr('wd_empty_t'),
+                subtitle: tr('wd_empty_s'),
+                actionLabel: tr('back'),
+                onAction: () => Navigator.pop(context),
+              ),
+            ),
           )
         else
-          _HistoryCard(items: visible),
-        const SizedBox(height: SsrSpace.lg),
-        _DeleteSection(onPressed: _remove),
+          ..._historySlivers(visible),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            SsrSpace.lg,
+            SsrSpace.lg,
+            SsrSpace.lg,
+            SsrSpace.lg,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: _DeleteSection(onPressed: _remove),
+          ),
+        ),
       ],
     );
+  }
+
+  /// Riwayat lazy: kartu SectionCard digambar di belakang SliverList
+  /// (isi tak diketahui tingginya, jadi tak bisa dibungkus Container).
+  List<Widget> _historySlivers(List<SaasTransaction> items) {
+    if (items.isEmpty) {
+      return [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: SsrSpace.lg),
+          sliver: DecoratedSliver(
+            decoration: sectionCardDecoration(context),
+            sliver: const SliverToBoxAdapter(
+              child: SizedBox(height: SsrSpace.xs * 2),
+            ),
+          ),
+        ),
+      ];
+    }
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: SsrSpace.lg),
+        sliver: DecoratedSliver(
+          decoration: sectionCardDecoration(context),
+          sliver: SliverPadding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: SsrSpace.sm,
+              vertical: SsrSpace.xs,
+            ),
+            sliver: txDaySliverList(
+              items: items,
+              buildRow: (t) => TxRow(tx: t),
+            ),
+          ),
+        ),
+      ),
+    ];
   }
 }
 
@@ -415,31 +479,4 @@ class _SavingStrip extends StatelessWidget {
   }
 }
 
-/// Daftar transaksi + divider ala ledger.
-class _HistoryCard extends StatelessWidget {
-  final List<SaasTransaction> items;
 
-  const _HistoryCard({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    final buckets = groupDayBuckets(items);
-    return SectionCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: SsrSpace.sm,
-        vertical: SsrSpace.xs,
-      ),
-      child: Column(
-        children: [
-          for (final b in buckets) ...[
-            DayHeader(dateKey: b.key, count: b.items.length),
-            for (var i = 0; i < b.items.length; i++) ...[
-              if (i > 0) const Divider(height: 1),
-              TxRow(tx: b.items[i]),
-            ],
-          ],
-        ],
-      ),
-    );
-  }
-}

@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+56.
+Versi terpasang: 2.8.0+57.
+
+## Yang baru di 2.8.0+57
+
+1. Riwayat transaksi, laporan, dan dompet kini dimuat lazy per baris — bulan padat tidak lagi membangun semua baris sekaligus. Tampilan sama persis.
 
 ## Yang baru di 2.8.0+56
 
