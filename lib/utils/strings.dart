@@ -121,6 +121,14 @@ const _t = <String, Map<String, String>>{
   'tx_f_note': {'id': 'Catatan', 'en': 'Note'},
   'tx_f_wallet': {'id': 'Dompet', 'en': 'Wallet'},
   'tx_f_towallet': {'id': 'Dompet tujuan', 'en': 'Destination wallet'},
+  'tx_towallet_help': {
+    'id': 'Penerima, harus beda dari dompet asal',
+    'en': 'Recipient, must differ from the source wallet',
+  },
+  'tx_date_hint': {
+    'id': 'Default hari ini, ketuk tanggal untuk ubah',
+    'en': 'Defaults to today, tap the date to change',
+  },
   'tx_save_edit': {'id': 'Simpan perubahan', 'en': 'Save changes'},
   'tx_save_add': {'id': 'Simpan transaksi', 'en': 'Save transaction'},
   // Wizard catat 2 langkah + scan struk
@@ -129,6 +137,14 @@ const _t = <String, Map<String, String>>{
   'wiz_next': {'id': 'Lanjut', 'en': 'Continue'},
   'wiz_back': {'id': 'Kembali', 'en': 'Back'},
   'wiz_change': {'id': 'Ubah', 'en': 'Change'},
+  'wiz_step1': {
+    'id': 'Langkah 1 · Jenis dan kategori',
+    'en': 'Step 1 · Type and category',
+  },
+  'wiz_step2': {
+    'id': 'Langkah 2 · Isi detail',
+    'en': 'Step 2 · Fill in the details',
+  },
   'rcp_scan': {'id': 'Scan struk', 'en': 'Scan receipt'},
   'rcp_scan_hint': {
     'id': 'Foto struk belanja, hasilnya mengisi form.',
@@ -435,6 +451,10 @@ const _t = <String, Map<String, String>>{
   },
   // Subkategori + meta (P2 subcategory-picker)
   'sub_hint': {'id': 'Subkategori (opsional)', 'en': 'Subcategory (optional)'},
+  'sub_add': {'id': 'Tambah subkategori', 'en': 'Add subcategory'},
+  'rcp_origin_from': {'id': 'Dari struk', 'en': 'From receipt'},
+  'rcp_kind_mini': {'id': 'Minimarket', 'en': 'Minimarket'},
+  'rcp_kind_food': {'id': 'Kuliner', 'en': 'Dining'},
   'sub_color': {'id': 'Warna', 'en': 'Color'},
   'sub_icon': {'id': 'Ikon', 'en': 'Icon'},
   'sub_sep_err': {
@@ -1234,6 +1254,10 @@ const _t = <String, Map<String, String>>{
   'tx_quick_hint': {
     'id': 'Ketik cepat: "makan siang 35rb"',
     'en': 'Quick type: "lunch 35k"',
+  },
+  'tx_quick_no': {
+    'id': 'Tak dikenali, isi manual saja',
+    'en': 'Not recognized, fill in manually',
   },
   // Bantuan: tutorial + tanya jawab
   'hp_title': {'id': 'Bantuan', 'en': 'Help'},

@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+64.
+Versi terpasang: 2.8.0+65.
+
+## Yang baru di 2.8.0+65
+
+1. Form catat lebih jelas: ada label Nominal, judul Langkah 1/2 dengan tombol Kembali, saran kategori yang menyala saat dipilih, keterangan hasil ketik-cepat, dan pesan salah yang menempel di field-nya (nominal, dompet, dompet tujuan).
+2. Scan struk kini juga menyarankan kategori (mis. struk kopi jadi Makanan, Indomaret jadi Belanja) dan menampilkan asal prefill di atas nominal. Hanya bila kategorinya ada di daftarmu.
 
 ## Yang baru di 2.8.0+64
 

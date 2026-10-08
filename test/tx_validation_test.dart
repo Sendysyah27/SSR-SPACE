@@ -44,4 +44,37 @@ void main() {
       isNull,
     );
   });
+
+  test('field-keyed: kode per field', () {
+    expect(
+      validateTxField(amount: 0, walletId: 'w1', type: 'out'),
+      TxInvalid.amount,
+    );
+    expect(
+      validateTxField(amount: 1000, walletId: null, type: 'out'),
+      TxInvalid.wallet,
+    );
+    expect(
+      validateTxField(
+        amount: 1000,
+        walletId: 'w1',
+        type: 'transfer',
+        toWalletId: null,
+      ),
+      TxInvalid.toWallet,
+    );
+    expect(
+      validateTxField(
+        amount: 1000,
+        walletId: 'w1',
+        type: 'transfer',
+        toWalletId: 'w1',
+      ),
+      TxInvalid.sameWallet,
+    );
+    expect(
+      validateTxField(amount: 1000, walletId: 'w1', type: 'out'),
+      isNull,
+    );
+  });
 }

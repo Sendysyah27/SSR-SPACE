@@ -12,6 +12,7 @@ import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/quick_input_parse.dart';
+import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
 import 'package:ssr_space/services/space_service.dart';
@@ -173,6 +174,12 @@ class _TxInputSheetState extends State<TxInputSheet> {
   final noteC = TextEditingController();
   bool saving = false;
   String? formErr;
+  String? amountErr;
+  String? walletErr;
+  String? toWalletErr;
+  String? _quickStatus;
+  bool _showSub = false;
+  String? _scanOrigin;
   // Wizard: 0 = jenis+kategori, 1 = form. Mode edit langsung ke form.
   int _step = 0;
   String? _selCat;
@@ -246,7 +253,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
       categories: appCategories.value,
       wallets: [for (final w in widget.wallets) w.name],
     );
-    if (q == null) return;
+    if (q == null) {
+      setState(() => _quickStatus = tr('tx_quick_no'));
+      return;
+    }
     setState(() {
       type = q.type;
       digits.value = digitsFromMajor(
@@ -264,6 +274,15 @@ class _TxInputSheetState extends State<TxInputSheet> {
         }
       }
       noteC.text = q.note;
+      final typeLabel = q.type == 'in'
+          ? tr('tx_in')
+          : (q.type == 'transfer' ? tr('tx_transfer') : tr('tx_out'));
+      final what =
+          q.category == null || q.category!.isEmpty ? q.note : q.category!;
+      final idr = CurrencyService.toIdr(
+        majorFromDigits(digits.value, dec: _dec),
+      );
+      _quickStatus = '$typeLabel · $what · ${amt(idr)}';
     });
   }
 
@@ -324,6 +343,17 @@ class _TxInputSheetState extends State<TxInputSheet> {
               : (cats.isEmpty ? 'Belanja' : cats.first);
         }
         catC.text = _selCat!.trim();
+        final sug = suggestReceiptCategory(
+          merchant: r.merchant,
+          items: r.items,
+          raw: lastRawOcrText,
+          categories: appCategories.value,
+        );
+        if (sug != null) {
+          _selCat = sug;
+          catC.text = sug;
+        }
+        _scanOrigin = _scanOriginText(r);
         if (!r.confident) formErr = tr('rcp_partial');
         _step = 1;
       });
@@ -338,6 +368,33 @@ class _TxInputSheetState extends State<TxInputSheet> {
             : '${tr(e.trKey)}\n${e.detail}';
       });
       if (raw != null) await _showRawOcrDialog(raw);
+    }
+  }
+
+  /// Ringkasan asal prefill struk: nominal + tanggal + kategori.
+  String _scanOriginText(ReceiptData r) {
+    final parts = <String>[tr('rcp_origin_from')];
+    if (r.amount != null && r.amount! > 0) {
+      parts.add(
+        amt(CurrencyService.toIdr(CurrencyService.convert(r.amount!))),
+      );
+    }
+    if (r.date != null) parts.add(dayLabel(txYmd(r.date!)));
+    final cat = catC.text.trim();
+    parts.add(cat.isEmpty ? _kindOrMerchant(r) : cat);
+    return parts.join(' · ');
+  }
+
+  /// Merchant bila ada, kalau tidak label jenis struk.
+  String _kindOrMerchant(ReceiptData r) {
+    if ((r.merchant ?? '').trim().isNotEmpty) return r.merchant!.trim();
+    switch (detectReceiptKind(lastRawOcrText ?? '')) {
+      case ReceiptDocKind.minimarket:
+        return tr('rcp_kind_mini');
+      case ReceiptDocKind.dining:
+        return tr('rcp_kind_food');
+      case ReceiptDocKind.generic:
+        return tr('rcp_scan');
     }
   }
 
@@ -381,19 +438,30 @@ class _TxInputSheetState extends State<TxInputSheet> {
   }
 
   Future<void> _save() async {
-    final v = validateTxInput(
+    final invalid = validateTxField(
       amount: _idr,
       walletId: walletId,
       type: type,
       toWalletId: toWalletId,
     );
-    if (v != null) {
-      setState(() => formErr = v);
+    if (invalid != null) {
+      setState(() {
+        amountErr = invalid == TxInvalid.amount ? tr('txv_amount') : null;
+        walletErr = invalid == TxInvalid.wallet ? tr('txv_wallet') : null;
+        toWalletErr = switch (invalid) {
+          TxInvalid.toWallet => tr('txv_towallet'),
+          TxInvalid.sameWallet => tr('txv_same'),
+          _ => null,
+        };
+      });
       return;
     }
     setState(() {
       saving = true;
       formErr = null;
+      amountErr = null;
+      walletErr = null;
+      toWalletErr = null;
     });
     try {
       final when = txWhen(
@@ -523,7 +591,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
             const _DragHandle(),
             _SheetHeader(
               isEdit: _isEdit,
-              title: !_isEdit && _step == 0 ? tr('wiz_type_cat') : null,
+              title: _isEdit
+                  ? null
+                  : (_step == 0 ? tr('wiz_step1') : tr('wiz_step2')),
               code: widget.editing?.code,
               onClose: () => Navigator.pop(context),
             ),
@@ -553,15 +623,32 @@ class _TxInputSheetState extends State<TxInputSheet> {
               _TypeCatRow(
                 type: type,
                 category: catC.text,
-                onChange: _isEdit
-                    ? null
-                    : () => setState(() => _step = 0),
               ),
+              if (!_isEdit)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () => setState(() => _step = 0),
+                    child: Text('‹ ${tr('wiz_back')}'),
+                  ),
+                ),
               if (!_isEdit) ...[
                 const SizedBox(height: SsrSpace.sm),
-                _QuickSection(controller: quickC, onChanged: _onQuickChanged),
+                _QuickSection(
+                  controller: quickC,
+                  onChanged: _onQuickChanged,
+                  status: _quickStatus,
+                ),
               ],
-              _AmountDisplay(digits: digits, dec: _dec),
+              if (_scanOrigin != null) ...[
+                const SizedBox(height: SsrSpace.sm),
+                _ScanOriginBanner(text: _scanOrigin!),
+              ],
+              _AmountDisplay(
+                digits: digits,
+                dec: _dec,
+                error: amountErr,
+              ),
               const SizedBox(height: SsrSpace.sm),
             TxNumpad(digits: digits),
             const SizedBox(height: SsrSpace.sm),
@@ -579,10 +666,29 @@ class _TxInputSheetState extends State<TxInputSheet> {
               toWalletId: toWalletId,
               wallets: widget.wallets,
               balances: widget.balances,
-              onWalletChanged: (v) => setState(() => walletId = v),
-              onToWalletChanged: (v) => setState(() => toWalletId = v),
+              walletErr: walletErr,
+              toWalletErr: toWalletErr,
+              onWalletChanged: (v) => setState(() {
+                walletId = v;
+                walletErr = null;
+              }),
+              onToWalletChanged: (v) => setState(() {
+                toWalletId = v;
+                toWalletErr = null;
+              }),
             ),
-            _MetaSection(catC: catC, subC: subC, noteC: noteC),
+            _MetaSection(
+              catC: catC,
+              subC: subC,
+              noteC: noteC,
+              selected: catC.text,
+              onPick: (c) => setState(() {
+                catC.text = c;
+                _selCat = c;
+              }),
+              showSub: _showSub,
+              onShowSub: () => setState(() => _showSub = true),
+            ),
             if (formErr != null) ...[
               const SizedBox(height: SsrSpace.sm),
               Text(
@@ -843,16 +949,14 @@ class _ScanRow extends StatelessWidget {
   }
 }
 
-/// Ringkasan pilihan langkah 1 di atas form (+ Ubah kembali).
+/// Ringkasan pilihan langkah 1 di atas form.
 class _TypeCatRow extends StatelessWidget {
   final String type;
   final String category;
-  final VoidCallback? onChange;
 
   const _TypeCatRow({
     required this.type,
     required this.category,
-    required this.onChange,
   });
 
   @override
@@ -873,11 +977,6 @@ class _TypeCatRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (onChange != null)
-          TextButton(
-            onPressed: onChange,
-            child: Text(tr('wiz_change')),
-          ),
       ],
     );
   }
@@ -888,18 +987,68 @@ class _TypeCatRow extends StatelessWidget {
 class _QuickSection extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final String? status;
 
-  const _QuickSection({required this.controller, required this.onChanged});
+  const _QuickSection({
+    required this.controller,
+    required this.onChanged,
+    this.status,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      textInputAction: TextInputAction.done,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        hintText: tr('tx_quick_hint'),
-        prefixIcon: const DuoIcon(AppIcons.search, size: 20),
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: controller,
+          textInputAction: TextInputAction.done,
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            hintText: tr('tx_quick_hint'),
+            prefixIcon: const DuoIcon(AppIcons.search, size: 20),
+          ),
+        ),
+        if (status != null) ...[
+          const SizedBox(height: SsrSpace.xs),
+          Text(
+            status!,
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Asal prefill struk: nominal + tanggal + kategori yang terisi.
+class _ScanOriginBanner extends StatelessWidget {
+  final String text;
+
+  const _ScanOriginBanner({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: SsrSpace.md,
+        vertical: SsrSpace.sm,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(SsrRadius.tile),
+      ),
+      child: Row(
+        children: [
+          DuoIcon(AppIcons.scan, size: 16, color: scheme.primary),
+          const SizedBox(width: SsrSpace.sm),
+          Expanded(
+            child: Text(text, style: theme.textTheme.bodySmall),
+          ),
+        ],
       ),
     );
   }
@@ -909,25 +1058,47 @@ class _QuickSection extends StatelessWidget {
 class _AmountDisplay extends StatelessWidget {
   final ValueNotifier<String> digits;
   final int dec;
+  final String? error;
 
-  const _AmountDisplay({required this.digits, required this.dec});
+  const _AmountDisplay({
+    required this.digits,
+    required this.dec,
+    this.error,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<String>(
-      valueListenable: digits,
-      builder: (_, d, __) {
-        final idr =
-            CurrencyService.toIdr(majorFromDigits(d, dec: dec));
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: SsrSpace.md),
-          child: Text(
-            CurrencyService.format(idr),
-            style: AppTheme.moneyLarge,
-            textAlign: TextAlign.center,
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: SsrSpace.md),
+      child: Column(
+        children: [
+          Text(
+            tr('tx_f_nominal'),
+            style: theme.textTheme.bodySmall,
           ),
-        );
-      },
+          ValueListenableBuilder<String>(
+            valueListenable: digits,
+            builder: (_, d, __) {
+              final idr =
+                  CurrencyService.toIdr(majorFromDigits(d, dec: dec));
+              return Text(
+                CurrencyService.format(idr),
+                style: AppTheme.moneyLarge,
+                textAlign: TextAlign.center,
+              );
+            },
+          ),
+          if (error != null)
+            Text(
+              error!,
+              style: TextStyle(
+                color: theme.colorScheme.error,
+                fontSize: 13,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -993,6 +1164,11 @@ class _DateTimeSection extends StatelessWidget {
               ),
           ],
         ),
+        Text(
+          tr('tx_date_hint'),
+          style: theme.textTheme.bodySmall,
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
@@ -1005,6 +1181,8 @@ class _WalletSection extends StatelessWidget {
   final String? toWalletId;
   final List<Wallet> wallets;
   final Map<String, double> balances;
+  final String? walletErr;
+  final String? toWalletErr;
   final ValueChanged<String?> onWalletChanged;
   final ValueChanged<String?> onToWalletChanged;
 
@@ -1014,6 +1192,8 @@ class _WalletSection extends StatelessWidget {
     required this.toWalletId,
     required this.wallets,
     required this.balances,
+    this.walletErr,
+    this.toWalletErr,
     required this.onWalletChanged,
     required this.onToWalletChanged,
   });
@@ -1054,7 +1234,10 @@ class _WalletSection extends StatelessWidget {
             const SizedBox(height: SsrSpace.sm),
             DropdownButtonFormField<String>(
               initialValue: walletId,
-              decoration: InputDecoration(labelText: tr('tx_f_wallet')),
+              decoration: InputDecoration(
+                labelText: tr('tx_f_wallet'),
+                errorText: walletErr,
+              ),
               items: [for (final w in ordered) _item(w, theme)],
               onChanged: onWalletChanged,
             ),
@@ -1062,7 +1245,11 @@ class _WalletSection extends StatelessWidget {
               const SizedBox(height: SsrSpace.md),
               DropdownButtonFormField<String>(
                 initialValue: toWalletId,
-                decoration: InputDecoration(labelText: tr('tx_f_towallet')),
+                decoration: InputDecoration(
+                  labelText: tr('tx_f_towallet'),
+                  helperText: tr('tx_towallet_help'),
+                  errorText: toWalletErr,
+                ),
                 items: [for (final w in ordered) _item(w, theme)],
                 onChanged: onToWalletChanged,
               ),
@@ -1079,11 +1266,19 @@ class _MetaSection extends StatelessWidget {
   final TextEditingController catC;
   final TextEditingController subC;
   final TextEditingController noteC;
+  final String selected;
+  final ValueChanged<String> onPick;
+  final bool showSub;
+  final VoidCallback onShowSub;
 
   const _MetaSection({
     required this.catC,
     required this.subC,
     required this.noteC,
+    required this.selected,
+    required this.onPick,
+    required this.showSub,
+    required this.onShowSub,
   });
 
   @override
@@ -1097,12 +1292,25 @@ class _MetaSection extends StatelessWidget {
           decoration: InputDecoration(labelText: tr('tx_f_cat')),
         ),
         const SizedBox(height: SsrSpace.sm),
-        CategoryChips(controller: catC),
-        const SizedBox(height: SsrSpace.sm),
-        TextField(
-          controller: subC,
-          decoration: InputDecoration(labelText: tr('sub_hint')),
+        CategoryChips(
+          controller: catC,
+          selected: selected,
+          onPick: onPick,
         ),
+        const SizedBox(height: SsrSpace.sm),
+        if (showSub)
+          TextField(
+            controller: subC,
+            decoration: InputDecoration(labelText: tr('sub_hint')),
+          )
+        else
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: onShowSub,
+              child: Text(tr('sub_add')),
+            ),
+          ),
         const SizedBox(height: SsrSpace.md),
         TextField(
           controller: noteC,
