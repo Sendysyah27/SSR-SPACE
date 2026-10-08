@@ -76,6 +76,25 @@ ID POINKU: XXXX6761
 Isi Pulsa Gratis Admin!
 ''';
 
+const _t5 = '''
+BANGOR KAFE
+Subtotal Rp73.636
+Total Rp73.636
+Pajak Rp7.364
+Grand Total: .0
+Gopay: Rp81.000
+''';
+
+const _t6 = '''
+KOPI KENANGAN
+KOPI SUSU 1 38000
+KOPI HITAM 1 40000
+TOTAL ITEM : 2
+TOTAL : 78.000
+06/02/35
+12.10.26
+''';
+
 void main() {
   test('total koma-ribuan dari TOTAL BELANJA', () {
     final r = parseReceipt(_t1);
@@ -198,5 +217,42 @@ void main() {
     final r = parseReceipt(raw);
     expect(r.amount, isNull);
     expect(r.confident, isFalse);
+  });
+
+  test('grand mangled -> nominal pembayaran', () {
+    final r = parseReceipt(_t5);
+    expect(r.amount, 81000);
+    expect(r.confident, isTrue);
+  });
+
+  test('grand valid menang atas total', () {
+    const raw = 'TOTAL : 73.636\nGRAND TOTAL : 81.000';
+    expect(parseReceipt(raw).amount, 81000);
+  });
+
+  test('tunai lebih + kembali bukan belanja', () {
+    const raw = 'TOTAL : 41.250\nGRAND TOTAL :\nTUNAI : 50.000\nKEMBALI : 8.750';
+    expect(parseReceipt(raw).amount, 41250);
+  });
+
+  test('kopi: cacah dan tanggal masa depan ditolak', () {
+    final r = parseReceipt(_t6);
+    expect(r.amount, 78000);
+    expect(r.date?.day, 12);
+    expect(r.date?.month, 10);
+  });
+
+  test('angka 1 digit tak jadi amount', () {
+    final r = parseReceipt('TOTAL : 1');
+    expect(r.amount, isNull);
+    expect(r.confident, isFalse);
+  });
+
+  test('baris cacah item bukan total', () {
+    expect(parseReceipt('TOTAL ITEM : 2').amount, isNull);
+  });
+
+  test('tanggal masa depan ditolak', () {
+    expect(parseReceipt('STRUK\n06/02/35').date, isNull);
   });
 }

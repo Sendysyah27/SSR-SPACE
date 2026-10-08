@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+65.
+Versi terpasang: 2.8.0+66.
+
+## Yang baru di 2.8.0+66
+
+1. Scan struk: Grand Total kini menang atas subtotal (nominal akhir yang dibayar); bila tulisannya rusak, aplikasi memakai nominal pembayaran e-money. Angka kecil (jumlah barang) dan tanggal masa depan tak akan kepilih lagi.
 
 ## Yang baru di 2.8.0+65
 

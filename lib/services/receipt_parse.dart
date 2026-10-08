@@ -26,7 +26,19 @@ final _totalKey =
     RegExp(r'total|tot\s|jumlah|bayar|grand', caseSensitive: false);
 final _tenderKey =
     RegExp(r'tunai|kembali', caseSensitive: false);
+final _grandKey = RegExp(r'grand', caseSensitive: false);
+final _countKey = RegExp(r'item|qty|pax', caseSensitive: false);
+final _payKey = RegExp(
+  r'gopay|ovo|dana|qris|shopeepay|linkaja|debit|non tunai|e-money|emoney',
+  caseSensitive: false,
+);
+final _cashKey = RegExp(r'tunai|cash', caseSensitive: false);
+final _changeKey = RegExp(r'kembali', caseSensitive: false);
 final _pureAmount = RegExp(r'^[Rp\s.:]*\(?[\d.,]+\)?\s*$');
+
+/// Nominal struk realistis: di bawah Rp100 pasti cacah (qty/jumlah
+/// item), bukan uang.
+bool _okAmount(double? v) => v != null && v >= 100;
 
 /// Baris total toleran OCR: spasi nyasar ("TOTA L") + 0/O ("T0TAL").
 bool _isTotalLine(String l) {
@@ -109,7 +121,9 @@ ReceiptData parseReceipt(String raw) {
   if (lines.isEmpty) return const ReceiptData();
 
   double? amount;
+  double? grand;
   var seenTotal = false;
+  var seenGrandMangled = false;
   // Suara angka nyasar (baris murni angka, bukan pengecoh, bukan "1 25000").
   final votes = <double, int>{};
   for (final l in lines) {
@@ -123,15 +137,19 @@ ReceiptData parseReceipt(String raw) {
     final l = lines[i];
     final isTotal = _isTotalLine(l);
     if (isTotal) seenTotal = true;
+    // "TOTAL ITEM: 2" = cacah barang, bukan uang.
+    if (isTotal && _countKey.hasMatch(l)) continue;
     if (!isTotal || _rejectKey.hasMatch(l)) {
       // Baris gabung ("TOTAL 41.250 TUNAI 50.000"): ambil angka sebelum
       // ekor tunai/kembali, jangan buang barisnya.
       if (isTotal && _tenderKey.hasMatch(l)) {
         final cut = _tenderKey.firstMatch(l)!.start;
         final v = _lastAmount(l.substring(0, cut));
-        if (v != null && v > 0 && (amount == null || v > amount)) {
+        if (_okAmount(v) && (amount == null || v! > amount!)) {
           amount = v;
         }
+      } else if (isTotal && _grandKey.hasMatch(l)) {
+        seenGrandMangled = true;
       }
       continue;
     }
@@ -148,8 +166,18 @@ ReceiptData parseReceipt(String raw) {
         v = _lastAmount(nx);
       }
     }
-    if (v != null && v > 0 && (amount == null || v > amount)) amount = v;
+    if (!_okAmount(v)) {
+      if (isTotal && _grandKey.hasMatch(l)) seenGrandMangled = true;
+    } else {
+      if (isTotal && _grandKey.hasMatch(l)) {
+        if (grand == null || v! > grand!) grand = v;
+      } else if (amount == null || v! > amount!) {
+        amount = v;
+      }
+    }
   }
+  // Grand total menang atas subtotal/total (nominal akhir yang dibayar).
+  if (grand != null) amount = grand;
   // Struk QRIS: jumlah dibayar = total.
   if (amount == null) {
     for (final l in lines) {
@@ -157,10 +185,24 @@ ReceiptData parseReceipt(String raw) {
         continue;
       }
       final v = _lastAmount(l);
-      if (v != null && v > 0) {
+      if (_okAmount(v)) {
         amount = v;
         break;
       }
+    }
+  }
+  // Grand cacat ("Grand Total: .0"): uang yang benar dibayar = kandidat
+  // terkuat. E-money/QRIS selalu pas; tunai hanya bila tanpa kembalian
+  // (tunai lebih = ada baris KEMBALI, bukan belanja).
+  if (seenGrandMangled) {
+    final hasChange = lines.any((l) => _changeKey.hasMatch(l));
+    for (final l in lines) {
+      if (_isTotalLine(l) || _changeKey.hasMatch(l)) continue;
+      final emoney = _payKey.hasMatch(l);
+      final cash = !emoney && _cashKey.hasMatch(l) && !hasChange;
+      if (!emoney && !cash) continue;
+      final v = _lastAmount(l);
+      if (_okAmount(v) && v! > (amount ?? 0)) amount = v;
     }
   }
   // Total kecopot (ada baris total, angka nyasar): modus suara ≥2,
@@ -178,7 +220,9 @@ ReceiptData parseReceipt(String raw) {
         tied = true;
       }
     });
-    if (best != null && bestN >= 2 && !tied) amount = best;
+    if (best != null && bestN >= 2 && !tied && _okAmount(best)) {
+      amount = best;
+    }
   }
   // Fallback `Rp xxx` tunggal bila tak ada baris TOTAL (tetap tak confident
   // bila kandidat lebih dari satu).
@@ -189,10 +233,14 @@ ReceiptData parseReceipt(String raw) {
             !_rejectKey.hasMatch(l))
           l,
     ];
-    if (rpLines.length == 1) amount = _lastAmount(rpLines.first);
+    if (rpLines.length == 1) {
+      final v = _lastAmount(rpLines.first);
+      if (_okAmount(v)) amount = v;
+    }
   }
 
   DateTime? date;
+  final nowYear = DateTime.now().year;
   for (final l in lines) {
     for (final m in _dateRe.allMatches(l)) {
       final d = int.tryParse(m.group(1)!);
@@ -200,7 +248,9 @@ ReceiptData parseReceipt(String raw) {
       var y = int.tryParse(m.group(3)!);
       if (d == null || mo == null || y == null) continue;
       if (y < 100) y += 2000;
-      if (d < 1 || d > 31 || mo < 1 || mo > 12 || y < 2000 || y > 2100) {
+      // Struk tak bertanggal masa depan: potongan OCR ("06/02/29")
+      // bukan tanggal belanja.
+      if (d < 1 || d > 31 || mo < 1 || mo > 12 || y < 2000 || y > nowYear + 1) {
         continue;
       }
       date = DateTime(y, mo, d);
