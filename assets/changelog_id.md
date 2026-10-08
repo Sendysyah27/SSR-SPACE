@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+66.
+Versi terpasang: 2.8.0+67.
+
+## Yang baru di 2.8.0+67
+
+1. Perbaikan teknis lanjutan scan struk (tanpa perubahan perilaku).
 
 ## Yang baru di 2.8.0+66
 

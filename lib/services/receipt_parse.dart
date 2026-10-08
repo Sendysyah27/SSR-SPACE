@@ -145,7 +145,7 @@ ReceiptData parseReceipt(String raw) {
       if (isTotal && _tenderKey.hasMatch(l)) {
         final cut = _tenderKey.firstMatch(l)!.start;
         final v = _lastAmount(l.substring(0, cut));
-        if (_okAmount(v) && (amount == null || v! > amount!)) {
+        if (_okAmount(v) && (amount == null || v > amount!)) {
           amount = v;
         }
       } else if (isTotal && _grandKey.hasMatch(l)) {
@@ -170,8 +170,8 @@ ReceiptData parseReceipt(String raw) {
       if (isTotal && _grandKey.hasMatch(l)) seenGrandMangled = true;
     } else {
       if (isTotal && _grandKey.hasMatch(l)) {
-        if (grand == null || v! > grand!) grand = v;
-      } else if (amount == null || v! > amount!) {
+        if (grand == null || v > grand!) grand = v;
+      } else if (amount == null || v > amount!) {
         amount = v;
       }
     }
