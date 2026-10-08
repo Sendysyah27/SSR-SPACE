@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+60.
+Versi terpasang: 2.8.0+61.
+
+## Yang baru di 2.8.0+61
+
+1. Perbaikan scan struk: model teks ML Kit kini dilindungi dari pemangkas build rilis (aturan keep di CI) dan jalur baca gambar kembali ke cara resmi, jadi foto struk kamera/galeri terbaca lagi. Bila masih gagal di HP tertentu, pesan error aslinya tetap ditampilkan agar mudah dilaporkan.
 
 ## Yang baru di 2.8.0+60
 
