@@ -41,6 +41,41 @@ HARGA JUAL : 22,727
 NO:***AAAG,PURCHASE:25,000
 ''';
 
+const _t4 = '''
+1:11 S.
+Struk Transaksi
+PT.INDOMARCO PRISMATAMA
+GEDUNG MENARA INDOMARET
+BOULEVARD PANTAI INDAH KAPUK
+JAKARTA UTARA
+Struk Transaksi
+NPWP:901.337.994.6-092.000
+BATANGSARI
+JALAN BATANGSARI, KEL BATANGSARI
+KEC SUKASARI KAB SUBANG, 41250
+P/C ICED PALM S LATT
+kal. U9llol 69
+12.09.26-13:58/4.4.2/T5U9-35335/NIA R/03
+NO. ORDER POINT COFFEE : CO5
+Indomaret
+HARGA JUAL : 22,727
+- (NORMAL)
+1 25000
+TOTAL BELANJA :
+PJK RST.: DPP= 22,727 PJK= 2,273
+NON TUNAI :
+CEK POIN/STAMP/LUCKY DI APPS POINKU
+P/C ICED FALM S LATT
+QR SHOPEEPAY-TRXID :T5U92609121358220103
+LAYANAN KONSUMEN
+25,000
+NO: ***AAAG, PURCHASE:25,000
+ID POINKU: XXXX6761
+25,000
+25,000
+Isi Pulsa Gratis Admin!
+''';
+
 void main() {
   test('total koma-ribuan dari TOTAL BELANJA', () {
     final r = parseReceipt(_t1);
@@ -135,6 +170,31 @@ void main() {
 
   test('postcode alamat bukan total', () {
     const raw = 'INDOMARET\nKEC SUKASARI KAB SUBANG 41250';
+    final r = parseReceipt(raw);
+    expect(r.amount, isNull);
+    expect(r.confident, isFalse);
+  });
+
+  test('OCR acak: total kecopot, PURCHASE + angka nyasar', () {
+    final r = parseReceipt(_t4);
+    expect(r.amount, 25000);
+    expect(r.confident, isTrue);
+    expect(r.merchant, 'INDOMARET');
+    expect(r.date?.day, 12);
+  });
+
+  test('PURCHASE jadi total bila baris total kosong', () {
+    const raw = 'TOKO X\nNO:AA,PURCHASE:25,000';
+    expect(parseReceipt(raw).amount, 25000);
+  });
+
+  test('modus angka nyasar butuh suara 2+', () {
+    const raw = 'INDOMARET\nTOTAL :\nLAYANAN KONSUMEN\n25,000\n25,000';
+    expect(parseReceipt(raw).amount, 25000);
+  });
+
+  test('angka nyasar seri = tolak, bukan comot', () {
+    const raw = 'INDOMARET\nTOTAL :\n50.000\n8.750';
     final r = parseReceipt(raw);
     expect(r.amount, isNull);
     expect(r.confident, isFalse);

@@ -109,9 +109,20 @@ ReceiptData parseReceipt(String raw) {
   if (lines.isEmpty) return const ReceiptData();
 
   double? amount;
+  var seenTotal = false;
+  // Suara angka nyasar (baris murni angka, bukan pengecoh, bukan "1 25000").
+  final votes = <double, int>{};
+  for (final l in lines) {
+    if (_rejectKey.hasMatch(l) || !_pureAmount.hasMatch(l)) continue;
+    if (RegExp(r'^\d+\s+\d').hasMatch(l)) continue;
+    final v = _lastAmount(l);
+    if (v != null) votes[v] = (votes[v] ?? 0) + 1;
+  }
+  final singleDetached = votes.length == 1 && votes.values.first == 1;
   for (var i = 0; i < lines.length; i++) {
     final l = lines[i];
     final isTotal = _isTotalLine(l);
+    if (isTotal) seenTotal = true;
     if (!isTotal || _rejectKey.hasMatch(l)) {
       // Baris gabung ("TOTAL 41.250 TUNAI 50.000"): ambil angka sebelum
       // ekor tunai/kembali, jangan buang barisnya.
@@ -126,14 +137,48 @@ ReceiptData parseReceipt(String raw) {
     }
     var v = _lastAmount(l);
     // Total & angka di baris terpisah ("TOTAL :" / "41.250"): intip baris
-    // berikut bila murni angka (bukan item, bukan tunai/kembali).
-    if (v == null && _numRe.allMatches(l).isEmpty && i + 1 < lines.length) {
+    // berikut hanya bila cuma satu angka nyasar di struk (kalau banyak,
+    // intip bisa comot TUNAI/KEMBALI — biar modus yang putuskan).
+    if (v == null &&
+        singleDetached &&
+        _numRe.allMatches(l).isEmpty &&
+        i + 1 < lines.length) {
       final nx = lines[i + 1];
       if (!_rejectKey.hasMatch(nx) && _pureAmount.hasMatch(nx)) {
         v = _lastAmount(nx);
       }
     }
     if (v != null && v > 0 && (amount == null || v > amount)) amount = v;
+  }
+  // Struk QRIS: jumlah dibayar = total.
+  if (amount == null) {
+    for (final l in lines) {
+      if (!RegExp(r'purchase\s*:', caseSensitive: false).hasMatch(l)) {
+        continue;
+      }
+      final v = _lastAmount(l);
+      if (v != null && v > 0) {
+        amount = v;
+        break;
+      }
+    }
+  }
+  // Total kecopot (ada baris total, angka nyasar): modus suara ≥2,
+  // pemenang tunggal. Seri = tolak (lebih baik null daripada salah).
+  if (amount == null && seenTotal) {
+    double? best;
+    var bestN = 0;
+    var tied = false;
+    votes.forEach((v, n) {
+      if (n > bestN) {
+        best = v;
+        bestN = n;
+        tied = false;
+      } else if (n == bestN) {
+        tied = true;
+      }
+    });
+    if (best != null && bestN >= 2 && !tied) amount = best;
   }
   // Fallback `Rp xxx` tunggal bila tak ada baris TOTAL (tetap tak confident
   // bila kandidat lebih dari satu).

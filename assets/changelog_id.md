@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+63.
+Versi terpasang: 2.8.0+64.
+
+## Yang baru di 2.8.0+64
+
+1. Scan struk makin tahan teks acak: bila baris TOTAL kehilangan angkanya, aplikasi memakai jumlah `PURCHASE` (struk QRIS) atau angka yang muncul berulang; bila kandidat seri (mis. tunai vs kembali), aplikasi menolak menebak — isi manual seperti biasa.
 
 ## Yang baru di 2.8.0+63
 
