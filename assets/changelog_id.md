@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+62.
+Versi terpasang: 2.8.0+63.
+
+## Yang baru di 2.8.0+63
+
+1. Diagnosis scan struk: setiap selesai memotret, aplikasi menampilkan teks mentah hasil baca kamera dalam dialog — screenshot dan kirimkan bila total masih tak terbaca, agar perbaikan berikutnya tepat sasaran.
 
 ## Yang baru di 2.8.0+62
 

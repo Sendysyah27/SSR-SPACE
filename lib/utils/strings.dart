@@ -149,6 +149,15 @@ const _t = <String, Map<String, String>>{
     'id': 'Tak ada teks di foto ini.',
     'en': 'No text found in this photo.',
   },
+  'rcp_raw_title': {
+    'id': 'Teks OCR mentah (diagnosis)',
+    'en': 'Raw OCR text (diagnostics)',
+  },
+  'rcp_raw_empty': {
+    'id': '(kosong — kamera tak membaca teks apa pun)',
+    'en': '(empty — no text was read)',
+  },
+  'rcp_raw_close': {'id': 'Tutup', 'en': 'Close'},
   'txv_amount': {
     'id': 'Nominal harus lebih dari 0',
     'en': 'Amount must be greater than 0',

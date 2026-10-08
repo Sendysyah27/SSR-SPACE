@@ -304,6 +304,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
     try {
       final r = await scanReceipt(src);
       if (!mounted) return;
+      final raw = lastRawOcrText;
       setState(() {
         _scanning = false;
         if (r == null) return;
@@ -326,15 +327,42 @@ class _TxInputSheetState extends State<TxInputSheet> {
         if (!r.confident) formErr = tr('rcp_partial');
         _step = 1;
       });
+      if (raw != null) await _showRawOcrDialog(raw);
     } on ReceiptScanException catch (e) {
       if (!mounted) return;
+      final raw = lastRawOcrText;
       setState(() {
         _scanning = false;
         _scanErr = e.detail == null
             ? tr(e.trKey)
             : '${tr(e.trKey)}\n${e.detail}';
       });
+      if (raw != null) await _showRawOcrDialog(raw);
     }
+  }
+
+  /// Diagnosis scan: tampilkan teks OCR mentah agar bisa di-screenshot
+  /// dan dilapor. Hanya di layar, tak diupload ke mana pun.
+  Future<void> _showRawOcrDialog(String raw) async {
+    final body = raw.trim().isEmpty ? tr('rcp_raw_empty') : raw;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('rcp_raw_title')),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: SelectableText(body),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(tr('rcp_raw_close')),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickDate() async {

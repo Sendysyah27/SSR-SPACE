@@ -14,6 +14,10 @@ class ReceiptScanException implements Exception {
   const ReceiptScanException(this.trKey, [this.detail]);
 }
 
+/// Teks OCR mentah dari scan terakhir (diagnosis di device saja).
+/// Null bila scan gagal sebelum OCR. Hanya di memori, tak diupload.
+String? lastRawOcrText;
+
 /// Foto struk (kamera/galeri) -> OCR on-device -> [ReceiptData].
 /// Null bila user batal memilih. File foto dihapus setelah dibaca.
 /// Tanpa upload ke mana pun; butuh Android/iOS (ML Kit tak ada di desktop).
@@ -21,6 +25,7 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
   if (!Platform.isAndroid && !Platform.isIOS) {
     throw const ReceiptScanException('rcp_fail');
   }
+  lastRawOcrText = null;
   final picker = ImagePicker();
   final shot = await picker.pickImage(
     source: source,
@@ -36,6 +41,7 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
     try {
       final out = await recognizer.processImage(input);
+      lastRawOcrText = out.text;
       if (out.text.trim().isEmpty) {
         throw const ReceiptScanException('rcp_empty');
       }
