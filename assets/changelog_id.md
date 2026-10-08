@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+61.
+Versi terpasang: 2.8.0+62.
+
+## Yang baru di 2.8.0+62
+
+1. Perbaikan baca total struk: kata TOTAL yang cacat terbaca kamera (mis. “T0TAL”, “TOTA L”), angka di baris terpisah, dan baris gabungan total+tunai kini tetap terbaca. Nominal pengecoh (kode pos, tunai, kembali, DPP/PPN, harga jual) tidak akan kepilih.
 
 ## Yang baru di 2.8.0+61
 

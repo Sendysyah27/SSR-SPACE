@@ -24,6 +24,16 @@ class ReceiptData {
 
 final _totalKey =
     RegExp(r'total|tot\s|jumlah|bayar|grand', caseSensitive: false);
+final _tenderKey =
+    RegExp(r'tunai|kembali', caseSensitive: false);
+final _pureAmount = RegExp(r'^[Rp\s.:]*\(?[\d.,]+\)?\s*$');
+
+/// Baris total toleran OCR: spasi nyasar ("TOTA L") + 0/O ("T0TAL").
+bool _isTotalLine(String l) {
+  if (_totalKey.hasMatch(l)) return true;
+  final n = l.toLowerCase().replaceAll(' ', '').replaceAll('0', 'o');
+  return n.contains('total');
+}
 final _rejectKey = RegExp(
   r'kembali|tunai|dpp|ppn|harga jual|purchase|hemat|trxid',
   caseSensitive: false,
@@ -99,9 +109,30 @@ ReceiptData parseReceipt(String raw) {
   if (lines.isEmpty) return const ReceiptData();
 
   double? amount;
-  for (final l in lines) {
-    if (!_totalKey.hasMatch(l) || _rejectKey.hasMatch(l)) continue;
-    final v = _lastAmount(l);
+  for (var i = 0; i < lines.length; i++) {
+    final l = lines[i];
+    final isTotal = _isTotalLine(l);
+    if (!isTotal || _rejectKey.hasMatch(l)) {
+      // Baris gabung ("TOTAL 41.250 TUNAI 50.000"): ambil angka sebelum
+      // ekor tunai/kembali, jangan buang barisnya.
+      if (isTotal && _tenderKey.hasMatch(l)) {
+        final cut = _tenderKey.firstMatch(l)!.start;
+        final v = _lastAmount(l.substring(0, cut));
+        if (v != null && v > 0 && (amount == null || v > amount)) {
+          amount = v;
+        }
+      }
+      continue;
+    }
+    var v = _lastAmount(l);
+    // Total & angka di baris terpisah ("TOTAL :" / "41.250"): intip baris
+    // berikut bila murni angka (bukan item, bukan tunai/kembali).
+    if (v == null && _numRe.allMatches(l).isEmpty && i + 1 < lines.length) {
+      final nx = lines[i + 1];
+      if (!_rejectKey.hasMatch(nx) && _pureAmount.hasMatch(nx)) {
+        v = _lastAmount(nx);
+      }
+    }
     if (v != null && v > 0 && (amount == null || v > amount)) amount = v;
   }
   // Fallback `Rp xxx` tunggal bila tak ada baris TOTAL (tetap tak confident
