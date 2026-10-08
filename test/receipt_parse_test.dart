@@ -134,6 +134,26 @@ NPWP:901.337.994.6-092.000
 12.10.26
 ''';
 
+const _t9 = '''
+KOPI KENANGAN
+TOTAL
+TUNAI
+KEMBALI
+19,900
+Kopi Kenangan Mantan 1 25000
+Matcha Latte 1 34000
+Friend Chip Cookie 1 19900
+ihatsApp + 7818
+WhatsApp 081234567890
+Order Date: 48
+25.000
+34,000
+78,000
+100,000
+22,000
+12.10.26
+''';
+
 void main() {
   test('total koma-ribuan dari TOTAL BELANJA', () {
     final r = parseReceipt(_t1);
@@ -348,5 +368,46 @@ void main() {
     expect(r.items.any((i) => i.contains('NPWP')), isFalse);
     expect(r.items.any((i) => i.contains('POINKU')), isFalse);
     expect(r.items, ['SABUN 5000']);
+  });
+
+  test('catatan hanya produk, tanpa nomor/kontak', () {
+    final r = parseReceipt(_t9);
+    expect(r.merchant, 'KOPI KENANGAN');
+    expect(
+      r.items,
+      [
+        'Kopi Kenangan Mantan 25000',
+        'Matcha Latte 34000',
+        'Friend Chip Cookie 19900',
+      ],
+    );
+    expect(
+      receiptNote(r),
+      'KOPI KENANGAN · Kopi Kenangan Mantan 25000, '
+      'Matcha Latte 34000, Friend Chip Cookie 19900',
+    );
+    expect(r.amount, 78000);
+  });
+
+  test('merchant menolak baris angka murni', () {
+    expect(parseReceipt('19,900\nTOKO KOPI').merchant, 'TOKO KOPI');
+  });
+
+  test('baris kontak + dibuang', () {
+    const raw = 'ihatsApp + 7818\nTOTAL : 25,000';
+    expect(parseReceipt(raw).items, isEmpty);
+  });
+
+  test('baris terfragmentasi digabung', () {
+    const raw = 'Kopi Kenangan Mantan\n1 25000\nTOTAL : 25,000';
+    expect(
+      parseReceipt(raw).items,
+      ['Kopi Kenangan Mantan 25000'],
+    );
+  });
+
+  test('caps-rusak ciri OCR dibuang', () {
+    const raw = 'ihatsApp 7818\nTOTAL : 25,000';
+    expect(parseReceipt(raw).items, isEmpty);
   });
 }

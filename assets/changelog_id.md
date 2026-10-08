@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+69.
+Versi terpasang: 2.8.0+70.
+
+## Yang baru di 2.8.0+70
+
+1. Catatan hasil scan tak lagi menampung nomor HP atau potongan kode — hanya nama produk. Bila tak ada produk yang jelas, catatan dikosongkan (nama merchant tetap ada).
 
 ## Yang baru di 2.8.0+69
 

@@ -38,11 +38,37 @@ final _codeKey = RegExp(
   r'npwp|trxid|id poinku|no order',
   caseSensitive: false,
 );
-/// Fragmen non-produk: server/wifi, order, alamat, member, dsb.
+/// Fragmen non-produk: server/wifi, order, alamat, member, kontak, dsb.
 final _fragKey = RegExp(
-  r'server|wifi|password|order|jalan|\bjl\b|kec\b|kab\b|kel\b|npwp|trxid|member|terima|kasih|layanan|stamp|poin|struk|transaksi',
+  r'server|wifi|password|username|user\s?name|login|order|jalan|\bjl\b|kec\b|kab\b|kel\b|npwp|trxid|member|terima|kasih|layanan|stamp|poin|struk|transaksi|whatsapp|whats|tlp|telp|telepon|hubungi|\bhp\b|http|www|@',
   caseSensitive: false,
 );
+
+/// Baris kontak/telepon: awalan + cared, atau digit polos ≥8 (harga
+/// pakai pemisah; digit polos panjang = HP/kode).
+bool _phoneLine(String l) {
+  if (RegExp(r'\+\s*\d').hasMatch(l)) return true;
+  return RegExp(r'\d{8,}').hasMatch(l);
+}
+
+/// Calon fragmen nama produk: tanpa angka, berhuruf, bukan baris khusus.
+bool _isFragment(String l) {
+  final t = l.trim();
+  if (t.length < 3 || t.length > 40) return false;
+  if (RegExp(r'[A-Za-z]').allMatches(t).length < 3) return false;
+  return !_isTotalLine(t) &&
+      !_rejectKey.hasMatch(t) &&
+      !_fragKey.hasMatch(t) &&
+      !_knownMerchant.hasMatch(t);
+}
+
+/// Kepala pendek: ada angka tapi teks depannya nyaris kosong (qty).
+bool _shortHead(String l) {
+  final m = _numRe.firstMatch(l);
+  if (m == null) return false;
+  final head = l.substring(0, m.start);
+  return RegExp(r'[A-Za-z]').allMatches(head).length < 3;
+}
 final _pureAmount = RegExp(r'^[Rp\s.:]*\(?[\d.,]+\)?\s*$');
 
 /// Nominal struk realistis: di bawah Rp100 pasti cacah (qty/jumlah
@@ -346,7 +372,9 @@ ReceiptData parseReceipt(String raw) {
   }
   merchant ??= () {
     for (final l in lines) {
-      if (_merchantLine.hasMatch(l) && _numRe.allMatches(l).length <= 1) {
+      if (_merchantLine.hasMatch(l) &&
+          _numRe.allMatches(l).length <= 1 &&
+          RegExp(r'[A-Za-z]').allMatches(l).length >= 3) {
         return l;
       }
     }
@@ -355,24 +383,36 @@ ReceiptData parseReceipt(String raw) {
 
   final items = <String>[];
   double? voucher;
-  for (final l in lines) {
+  for (var i = 0; i < lines.length; i++) {
+    var l = lines[i];
     // Voucher/diskon: catat nominalnya, jangan jadi item.
     if (_voucherKey.hasMatch(l) && !_totalKey.hasMatch(l)) {
       final v = _lastAmount(l);
       if (v != null) voucher = (voucher ?? 0) + v.abs();
       continue;
     }
+    // Gabung baris terfragmentasi ("Kopi Kenangan Mantan" / "1 25000").
+    if (i + 1 < lines.length &&
+        !_numRe.hasMatch(l) &&
+        _isFragment(l) &&
+        _shortHead(lines[i + 1])) {
+      l = '$l ${lines[i + 1]}';
+      i++;
+    }
     if (_isTotalLine(l) ||
         _rejectKey.hasMatch(l) ||
         _fragKey.hasMatch(l) ||
+        _phoneLine(l) ||
         _dateRe.hasMatch(l)) {
       continue;
     }
     final nums = _numRe.allMatches(l).toList();
     if (nums.isEmpty) continue;
     final name = l.substring(0, nums.first.start).trim();
-    // Nama produk betulan: minimal 3 huruf (kode "KK1"/"F1" gugur).
+    // Nama produk betulan: minimal 3 huruf (kode "KK1"/"F1" gugur),
+    // tanpa huruf-besar di tengah kata (ciri fragmen OCR rusak).
     if (RegExp(r'[A-Za-z]').allMatches(name).length < 3) continue;
+    if (RegExp(r'[a-z][A-Z]').hasMatch(name)) continue;
     final total = _toIdr(nums.last.group(0)!);
     // Harga di bawah Rp100 = cacah/potongan kode, bukan harga barang.
     if (!_okAmount(total)) continue;
