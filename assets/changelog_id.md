@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+68.
+Versi terpasang: 2.8.0+69.
+
+## Yang baru di 2.8.0+69
+
+1. Catatan hasil scan struk kini hanya berisi nama produk. Potongan kode (server, wifi, nomor order), alamat, dan NPWP tak ikut masuk.
 
 ## Yang baru di 2.8.0+68
 

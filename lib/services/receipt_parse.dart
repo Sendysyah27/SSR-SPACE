@@ -38,6 +38,11 @@ final _codeKey = RegExp(
   r'npwp|trxid|id poinku|no order',
   caseSensitive: false,
 );
+/// Fragmen non-produk: server/wifi, order, alamat, member, dsb.
+final _fragKey = RegExp(
+  r'server|wifi|password|order|jalan|\bjl\b|kec\b|kab\b|kel\b|npwp|trxid|member|terima|kasih|layanan|stamp|poin|struk|transaksi',
+  caseSensitive: false,
+);
 final _pureAmount = RegExp(r'^[Rp\s.:]*\(?[\d.,]+\)?\s*$');
 
 /// Nominal struk realistis: di bawah Rp100 pasti cacah (qty/jumlah
@@ -357,19 +362,22 @@ ReceiptData parseReceipt(String raw) {
       if (v != null) voucher = (voucher ?? 0) + v.abs();
       continue;
     }
-    if (_totalKey.hasMatch(l) ||
+    if (_isTotalLine(l) ||
         _rejectKey.hasMatch(l) ||
+        _fragKey.hasMatch(l) ||
         _dateRe.hasMatch(l)) {
       continue;
     }
     final nums = _numRe.allMatches(l).toList();
     if (nums.isEmpty) continue;
     final name = l.substring(0, nums.first.start).trim();
-    if (name.length < 3) continue;
+    // Nama produk betulan: minimal 3 huruf (kode "KK1"/"F1" gugur).
+    if (RegExp(r'[A-Za-z]').allMatches(name).length < 3) continue;
     final total = _toIdr(nums.last.group(0)!);
-    if (total == null || total <= 0) continue;
+    // Harga di bawah Rp100 = cacah/potongan kode, bukan harga barang.
+    if (!_okAmount(total)) continue;
     if (items.length >= 8) break;
-    items.add('$name ${total.toInt()}');
+    items.add('$name ${total!.toInt()}');
   }
 
   return ReceiptData(

@@ -111,6 +111,29 @@ ID POINKU: XXXX6761
 12.10.26
 ''';
 
+const _t8 = '''
+KOPI KENANGAN
+TOTAL
+TUNAI
+KEMBALI
+19,900
+Kopi Kenangan Mantan 1 25000
+Matcha Latte 1 34000
+Friend Chip Cookie 1 19900
+Server KK1
+ML-F1
+Order Date: 48
+ORDER #A 2
+KEC SUKASARI KAB SUBANG, 41250
+NPWP:901.337.994.6-092.000
+25.000
+34,000
+78,000
+100,000
+22,000
+12.10.26
+''';
+
 void main() {
   test('total koma-ribuan dari TOTAL BELANJA', () {
     final r = parseReceipt(_t1);
@@ -296,5 +319,34 @@ void main() {
   test('jumlah item = total nyasar', () {
     const raw = 'WARUNG\nA 1 38000\nB 1 40000\nTOTAL\n78.000\n15.000';
     expect(parseReceipt(raw).amount, 78000);
+  });
+
+  test('item hanya nama produk, sampah dibuang', () {
+    final r = parseReceipt(_t8);
+    expect(
+      r.items,
+      [
+        'Kopi Kenangan Mantan 25000',
+        'Matcha Latte 34000',
+        'Friend Chip Cookie 19900',
+      ],
+    );
+    expect(r.amount, 78000);
+  });
+
+  test('catatan tanpa fragmen server/order/alamat', () {
+    final n = receiptNote(parseReceipt(_t8));
+    expect(n.contains('Mantan'), isTrue);
+    expect(n.contains('Server'), isFalse);
+    expect(n.contains('Order'), isFalse);
+    expect(n.contains('41250'), isFalse);
+  });
+
+  test('kode NPWP/poinku bukan barang', () {
+    const raw = 'TOKO X\nNPWP: 12345678\nID POINKU: XXXX6761\nSABUN 1 5000 5,000';
+    final r = parseReceipt(raw);
+    expect(r.items.any((i) => i.contains('NPWP')), isFalse);
+    expect(r.items.any((i) => i.contains('POINKU')), isFalse);
+    expect(r.items, ['SABUN 5000']);
   });
 }
