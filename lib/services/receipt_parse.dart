@@ -34,6 +34,10 @@ final _payKey = RegExp(
 );
 final _cashKey = RegExp(r'tunai|cash', caseSensitive: false);
 final _changeKey = RegExp(r'kembali', caseSensitive: false);
+final _codeKey = RegExp(
+  r'npwp|trxid|id poinku|no order',
+  caseSensitive: false,
+);
 final _pureAmount = RegExp(r'^[Rp\s.:]*\(?[\d.,]+\)?\s*$');
 
 /// Nominal struk realistis: di bawah Rp100 pasti cacah (qty/jumlah
@@ -203,6 +207,77 @@ ReceiptData parseReceipt(String raw) {
       if (!emoney && !cash) continue;
       final v = _lastAmount(l);
       if (_okAmount(v) && v! > (amount ?? 0)) amount = v;
+    }
+  }
+  // Relasi tunai - kembali == total (label tanpa angka + angka nyasar).
+  // Satu triple {a<b<c} terbaca dua arah, jadi butuh label tunai/kembali
+  // + aturan tengah: kembalian selalu terkecil, tunai terbesar.
+  if (amount == null && seenTotal) {
+    var bareCash = false;
+    var bareChange = false;
+    for (final l in lines) {
+      if (_numRe.hasMatch(l)) continue;
+      if (_cashKey.hasMatch(l)) bareCash = true;
+      if (_changeKey.hasMatch(l)) bareChange = true;
+    }
+    if (bareCash || bareChange) {
+      final pool = <double>[
+        for (final v in votes.keys)
+          if (_okAmount(v)) v,
+      ];
+      final triples = <String, List<double>>{};
+      for (final x in pool) {
+        for (final y in pool) {
+          if (x <= y) continue;
+          final z = x - y;
+          for (final c in pool) {
+            if (c == x || c == y || (c - z).abs() >= 0.005) continue;
+            final t = [x, y, c]..sort();
+            triples[t.join('|')] = t;
+          }
+        }
+      }
+      if (triples.length == 1) amount = triples.values.first[1];
+    }
+  }
+  // Jumlah harga barang == total nyasar (kode/NPWP/TRXID bukan barang).
+  if (amount == null && seenTotal) {
+    final items = <double>[];
+    for (final l in lines) {
+      if (_isTotalLine(l) ||
+          _rejectKey.hasMatch(l) ||
+          _voucherKey.hasMatch(l) ||
+          _codeKey.hasMatch(l) ||
+          _dateRe.hasMatch(l) ||
+          !_numRe.hasMatch(l) ||
+          _pureAmount.hasMatch(l)) {
+        continue;
+      }
+      final v = _lastAmount(l);
+      if (_okAmount(v)) items.add(v!);
+    }
+    if (items.length >= 2 && items.length <= 12) {
+      final targets = <double>{
+        for (final v in votes.keys)
+          if (_okAmount(v)) v,
+      };
+      final matched = <double>{};
+      final combos = 1 << items.length;
+      for (var mask = 0; mask < combos; mask++) {
+        var count = 0;
+        var sum = 0.0;
+        for (var b = 0; b < items.length; b++) {
+          if (mask & (1 << b) != 0) {
+            count++;
+            sum += items[b];
+          }
+        }
+        if (count < 2) continue;
+        for (final t in targets) {
+          if ((t - sum).abs() < 0.005) matched.add(t);
+        }
+      }
+      if (matched.length == 1) amount = matched.first;
     }
   }
   // Total kecopot (ada baris total, angka nyasar): modus suara ≥2,

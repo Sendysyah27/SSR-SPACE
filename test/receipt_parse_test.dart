@@ -95,6 +95,22 @@ TOTAL : 78.000
 12.10.26
 ''';
 
+const _t7 = '''
+KOPI KENANGAN
+TOTAL
+TUNAI
+KEMBALI
+19,900
+25.000
+34,000
+78,000
+100,000
+22,000
+QR SHOPEEPAY-TRXID :T5U92609121358220103
+ID POINKU: XXXX6761
+12.10.26
+''';
+
 void main() {
   test('total koma-ribuan dari TOTAL BELANJA', () {
     final r = parseReceipt(_t1);
@@ -254,5 +270,31 @@ void main() {
 
   test('tanggal masa depan ditolak', () {
     expect(parseReceipt('STRUK\n06/02/35').date, isNull);
+  });
+
+  test('relasi tunai-kembali: tengahnya total', () {
+    final r = parseReceipt(_t7);
+    expect(r.amount, 78000);
+    expect(r.confident, isTrue);
+    expect(r.date?.day, 12);
+    expect(r.date?.month, 10);
+  });
+
+  test('triple dasar 100-22=78', () {
+    const raw = 'TOTAL\nTUNAI\nKEMBALI\n100.000\n22.000\n78.000';
+    expect(parseReceipt(raw).amount, 78000);
+  });
+
+  test('multi-triple = tolak', () {
+    const raw = 'TOTAL\nTUNAI\nKEMBALI\n'
+        '100.000\n60.000\n40.000\n50.000\n30.000\n20.000';
+    final r = parseReceipt(raw);
+    expect(r.amount, isNull);
+    expect(r.confident, isFalse);
+  });
+
+  test('jumlah item = total nyasar', () {
+    const raw = 'WARUNG\nA 1 38000\nB 1 40000\nTOTAL\n78.000\n15.000';
+    expect(parseReceipt(raw).amount, 78000);
   });
 }

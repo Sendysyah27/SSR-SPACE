@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+67.
+Versi terpasang: 2.8.0+68.
+
+## Yang baru di 2.8.0+68
+
+1. Scan struk: bila label Total/Tunai/Kembali kehilangan angkanya, aplikasi merangkai ulang dari angka yang nyasar (tunai dikurangi kembali, atau jumlah harga barang). Bila ada dua jawaban, aplikasi menolak menebak.
 
 ## Yang baru di 2.8.0+67
 
