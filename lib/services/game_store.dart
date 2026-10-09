@@ -42,7 +42,7 @@ class StoredChallenge {
     final t = raw['template']?.toString() ?? '';
     final w = raw['week']?.toString() ?? '';
     final s = (raw['status'] as num?)?.toInt();
-    if (t.isEmpty || w.isEmpty || (s != 0 && s != 1 && s != 2)) {
+    if (t.isEmpty || w.isEmpty || s == null || (s != 0 && s != 1 && s != 2)) {
       return null;
     }
     return StoredChallenge(template: t, week: w, status: s);
