@@ -79,7 +79,9 @@ class SavingsGoal {
     String? dl;
     final rawDl = raw['deadline']?.toString();
     if (rawDl != null && rawDl.isNotEmpty) {
-      if (DateTime.tryParse(rawDl) == null) return null;
+      if (rawDl.length < 10 || DateTime.tryParse(rawDl) == null) {
+        return null;
+      }
       dl = rawDl.substring(0, 10);
     }
     final icon = (raw['icon']?.toString() ?? '').trim();

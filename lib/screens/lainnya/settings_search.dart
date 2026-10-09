@@ -2,25 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/utils/strings.dart';
 
-/// Kunci rute hasil pencarian.
-/// 'p2' berarti baris tahap P2, caller menampilkan dialog msg_p2.
-/// 'hub' berarti toggle sudah terlihat di hub, cukup tutup pencarian.
-const kSearchP2 = 'p2';
-const kSearchHub = 'hub';
-
 /// Satu baris hub atau pengaturan yang bisa dicari.
 /// titleKey dan sectionKey adalah kunci tr(), en kata kunci Inggris.
+/// focus = kartu SettingsScreen yang di-scroll saat rute 'settings'.
 class SettingsSearchEntry {
   final String titleKey;
   final String en;
   final String sectionKey;
   final String route;
+  final String? focus;
 
   const SettingsSearchEntry({
     required this.titleKey,
     required this.en,
     required this.sectionKey,
     required this.route,
+    this.focus,
   });
 }
 
@@ -126,6 +123,7 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     en: 'font size text',
     sectionKey: 'pf_appearance',
     route: 'settings',
+    focus: 'font',
   ),
   // Bahasa dan mata uang.
   SettingsSearchEntry(
@@ -133,24 +131,28 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     en: 'language bahasa indonesia english',
     sectionKey: 'pf_langmoney',
     route: 'settings',
+    focus: 'lang',
   ),
   SettingsSearchEntry(
     titleKey: 'st_currency',
     en: 'display currency exchange rates',
     sectionKey: 'st_title',
     route: 'settings',
+    focus: 'currency',
   ),
   SettingsSearchEntry(
     titleKey: 'st_def_currency',
     en: 'default currency input form',
     sectionKey: 'st_title',
     route: 'settings',
+    focus: 'currency',
   ),
   SettingsSearchEntry(
     titleKey: 'st_fx_refresh',
     en: 'refresh rates update kurs',
     sectionKey: 'st_title',
     route: 'settings',
+    focus: 'currency',
   ),
   // Pengingat.
   SettingsSearchEntry(
@@ -158,24 +160,28 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     en: 'daily reminder notification',
     sectionKey: 'pf_reminder',
     route: 'settings',
+    focus: 'reminder',
   ),
   SettingsSearchEntry(
     titleKey: 'st_reminder_time',
     en: 'reminder time clock hour',
     sectionKey: 'st_title',
     route: 'settings',
+    focus: 'reminder',
   ),
   SettingsSearchEntry(
     titleKey: 'st_weekly_on',
     en: 'weekly reminder notification recap',
     sectionKey: 'pf_reminder',
     route: 'settings',
+    focus: 'reminder',
   ),
   SettingsSearchEntry(
     titleKey: 'st_widget_today',
     en: 'today widget home',
     sectionKey: 'st_title',
     route: 'settings',
+    focus: 'widget',
   ),
   // Tampilan dan laporan di pengaturan.
   SettingsSearchEntry(
@@ -183,30 +189,35 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     en: 'top categories other reports',
     sectionKey: 'st_title',
     route: 'settings',
+    focus: 'topn',
   ),
   SettingsSearchEntry(
     titleKey: 'st_anims',
     en: 'animations',
     sectionKey: 'st_title',
     route: 'settings',
+    focus: 'anims',
   ),
   SettingsSearchEntry(
     titleKey: 'st_list_style',
     en: 'list style compact comfortable',
     sectionKey: 'st_title',
     route: 'settings',
+    focus: 'list',
   ),
   SettingsSearchEntry(
     titleKey: 'st_date_style',
     en: 'date style format',
     sectionKey: 'st_title',
     route: 'settings',
+    focus: 'date',
   ),
   SettingsSearchEntry(
     titleKey: 'st_hero_style',
     en: 'summary style hero',
     sectionKey: 'st_title',
     route: 'settings',
+    focus: 'hero',
   ),
   // Keamanan.
   SettingsSearchEntry(
@@ -214,6 +225,7 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     en: 'security pin change',
     sectionKey: 'pf_security',
     route: 'settings',
+    focus: 'pin',
   ),
   SettingsSearchEntry(
     titleKey: 'o_logout',
@@ -364,7 +376,10 @@ class SettingsSearchDelegate extends SearchDelegate<String?> {
   Widget buildResults(BuildContext context) {
     return _ResultList(
       entries: _match(query),
-      onTap: (route) => close(context, route),
+      onTap: (e) => close(
+        context,
+        e.focus == null ? e.route : '${e.route}:${e.focus}',
+      ),
     );
   }
 
@@ -372,15 +387,19 @@ class SettingsSearchDelegate extends SearchDelegate<String?> {
   Widget buildSuggestions(BuildContext context) {
     return _ResultList(
       entries: _match(query),
-      onTap: (route) => close(context, route),
+      onTap: (e) => close(
+        context,
+        e.focus == null ? e.route : '${e.route}:${e.focus}',
+      ),
     );
   }
 }
 
-/// Daftar hasil: ketuk menutup delegate dengan kunci rute entri.
+/// Daftar hasil: ketuk menutup delegate dengan kunci rute entri
+/// (+ fokus kartu bila ada, format `route:focus`).
 class _ResultList extends StatelessWidget {
   final List<SettingsSearchEntry> entries;
-  final ValueChanged<String> onTap;
+  final ValueChanged<SettingsSearchEntry> onTap;
 
   const _ResultList({required this.entries, required this.onTap});
 
@@ -396,7 +415,7 @@ class _ResultList extends StatelessWidget {
         return ListTile(
           title: Text(tr(e.titleKey)),
           subtitle: Text(tr(e.sectionKey)),
-          onTap: () => onTap(e.route),
+          onTap: () => onTap(e),
         );
       },
     );

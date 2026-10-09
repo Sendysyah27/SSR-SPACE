@@ -7,10 +7,19 @@ String currentMonth() {
   return _fmt(n.year, n.month);
 }
 
-List<int> _parts(String m) => [
-  int.parse(m.substring(0, 4)),
-  int.parse(m.substring(5, 7)),
-];
+/// Urai 'YYYY-MM' dengan toleran: format rusak (pendek, non-angka,
+/// bulan di luar 1-12) jatuh ke bulan berjalan, bukan throw di build.
+List<int> _parts(String m) {
+  final y = m.length >= 4 ? int.tryParse(m.substring(0, 4)) : null;
+  final mo = m.length >= 7 && m[4] == '-'
+      ? int.tryParse(m.substring(5, 7))
+      : null;
+  if (y == null || mo == null || mo < 1 || mo > 12) {
+    final n = DateTime.now();
+    return [n.year, n.month];
+  }
+  return [y, mo];
+}
 
 String prevMonth(String m) {
   final p = _parts(m);

@@ -64,6 +64,7 @@ class RecurringBill {
         anchor == null ||
         anchor < 1 ||
         anchor > 31 ||
+        nextDue.length < 10 ||
         DateTime.tryParse(nextDue) == null) {
       return null;
     }
@@ -180,6 +181,7 @@ class PaymentEntry {
     final amount = (raw['amount'] as num?)?.toDouble();
     final paidAt = raw['paidAt']?.toString() ?? '';
     if (billId.isEmpty ||
+        date.length < 10 ||
         DateTime.tryParse(date) == null ||
         amount == null ||
         amount <= 0 ||

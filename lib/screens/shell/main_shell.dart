@@ -160,7 +160,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 }
 
-/// Navigasi bawah 5 tab: bar surface, aktif primer, nonaktif sekunder.
+/// Navigasi bawah 4 tab: bar surface, aktif primer, nonaktif sekunder.
 class _MainBottomBar extends StatelessWidget {
   final int index;
   final ValueChanged<int> onSelect;

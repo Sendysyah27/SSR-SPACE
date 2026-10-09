@@ -62,6 +62,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
     });
     try {
       final orgId = await activeOrgId();
+      if (!mounted) return;
       if (orgId.isEmpty) {
         setState(() {
           noOrg = true;

@@ -12,6 +12,16 @@ void main() {
     expect(monthEnd('2026-09'), '2026-10-01');
   });
 
+  test('bulan rusak jatuh ke bulan berjalan, bukan throw', () {
+    final now = DateTime.now();
+    final cur =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    expect(prevMonth('xx'), prevMonth(cur));
+    expect(nextMonth('2026-13'), nextMonth(cur));
+    expect(nextMonth('2026'), nextMonth(cur));
+    expect(monthLabel(''), monthLabel(cur));
+  });
+
   test('category icons fall back honestly', () {
     expect(iconForCategory('jajan makan'), AppIcons.food);
     expect(iconForCategory('bensin motor'), AppIcons.transport);

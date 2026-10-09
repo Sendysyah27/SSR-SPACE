@@ -58,6 +58,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     });
     try {
       final orgId = await activeOrgId();
+      if (!mounted) return;
       if (orgId.isEmpty) {
         setState(() {
           noOrg = true;

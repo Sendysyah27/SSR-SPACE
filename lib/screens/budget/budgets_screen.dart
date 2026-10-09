@@ -75,6 +75,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
     });
     try {
       final orgId = await activeOrgId();
+      if (!mounted) return;
       if (orgId.isEmpty) {
         setState(() => loading = false);
         return;

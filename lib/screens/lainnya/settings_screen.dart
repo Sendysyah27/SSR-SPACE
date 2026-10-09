@@ -37,6 +37,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _fontKey = GlobalKey();
   final _reminderKey = GlobalKey();
   final _pinKey = GlobalKey();
+  final _currencyKey = GlobalKey();
+  final _topnKey = GlobalKey();
+  final _animsKey = GlobalKey();
+  final _listKey = GlobalKey();
+  final _dateKey = GlobalKey();
+  final _heroKey = GlobalKey();
+  final _widgetKey = GlobalKey();
 
   @override
   void initState() {
@@ -49,6 +56,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'font' => _fontKey,
         'reminder' => _reminderKey,
         'pin' => _pinKey,
+        'currency' => _currencyKey,
+        'topn' => _topnKey,
+        'anims' => _animsKey,
+        'list' => _listKey,
+        'date' => _dateKey,
+        'hero' => _heroKey,
+        'widget' => _widgetKey,
         _ => null,
       };
       if (key?.currentContext != null) {
@@ -92,12 +106,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           ValueListenableBuilder<String>(
             valueListenable: currencyCode,
-            builder: (context, cur, _) => _CurrencyCard(
-              value: cur,
-              fxBusy: fxBusy,
-              fxMsg: fxMsg,
-              onChanged: (v) => setCurrencyCode(v),
-              onRefresh: _refreshFx,
+            builder: (context, cur, _) => Container(
+              key: _currencyKey,
+              child: _CurrencyCard(
+                value: cur,
+                fxBusy: fxBusy,
+                fxMsg: fxMsg,
+                onChanged: (v) => setCurrencyCode(v),
+                onRefresh: _refreshFx,
+              ),
             ),
           ),
           const SizedBox(height: SsrSpace.md),
@@ -111,15 +128,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           const _DefaultCurrencyCard(),
           const SizedBox(height: SsrSpace.md),
-          const _TopNCard(),
+          Container(key: _topnKey, child: const _TopNCard()),
           const SizedBox(height: SsrSpace.md),
-          const _AnimsCard(),
+          Container(key: _animsKey, child: const _AnimsCard()),
           const SizedBox(height: SsrSpace.md),
-          const _ListStyleCard(),
+          Container(key: _listKey, child: const _ListStyleCard()),
           const SizedBox(height: SsrSpace.md),
-          const _DateStyleCard(),
+          Container(key: _dateKey, child: const _DateStyleCard()),
           const SizedBox(height: SsrSpace.md),
-          const _HeroStyleCard(),
+          Container(key: _heroKey, child: const _HeroStyleCard()),
           const SizedBox(height: SsrSpace.md),
           ValueListenableBuilder<String>(
             valueListenable: themeChoice,
@@ -129,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           Container(key: _reminderKey, child: const _ReminderCard()),
           const SizedBox(height: SsrSpace.md),
-          const _WidgetCard(),
+          Container(key: _widgetKey, child: const _WidgetCard()),
           const SizedBox(height: SsrSpace.md),
           Container(key: _pinKey, child: const _PinCard()),
         ],

@@ -19,6 +19,7 @@ import 'package:ssr_space/services/game_level.dart';
 import 'package:ssr_space/services/game_store.dart';
 import 'package:ssr_space/screens/lainnya/arcade_screen.dart';
 import 'package:ssr_space/screens/lainnya/goals_screen.dart';
+import 'package:ssr_space/screens/lainnya/settings_screen.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -103,6 +104,15 @@ class BerandaScreenState extends State<BerandaScreen> {
     );
   }
 
+  /// Pintu pengaturan langsung (gear AppBar): settings terkubur di hub,
+  /// satu ketuk dari layar utama tanpa lewat avatar dulu.
+  void _openSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+    );
+  }
+
   /// Tutup kartu insight minggu ini (prefs saja, tanpa server).
   Future<void> _dismissInsight() async {
     final key = insightDismissKey;
@@ -128,6 +138,7 @@ class BerandaScreenState extends State<BerandaScreen> {
     });
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
       final orgId = prefs.getString('active_org_id') ?? '';
       if (orgId.isEmpty) {
         setState(() {
@@ -526,7 +537,14 @@ class BerandaScreenState extends State<BerandaScreen> {
           ),
         ),
         title: Text(tr('nav_beranda')),
-        actions: const [MaskToggle()],
+        actions: [
+          IconButton(
+            icon: const DuoIcon(AppIcons.settings, size: 22),
+            tooltip: tr('st_title'),
+            onPressed: _openSettings,
+          ),
+          const MaskToggle(),
+        ],
       ),
       body: AnimatedSwitcher(
         duration: SsrMotion.base,
@@ -1397,7 +1415,7 @@ class _LevelRow extends StatelessWidget {
             Icon(
               Icons.chevron_right,
               size: 20,
-              color: scheme.outline,
+              color: scheme.onSurfaceVariant,
             ),
           ],
         ),

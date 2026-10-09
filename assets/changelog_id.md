@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.12.0+74.
+Versi terpasang: 2.12.1+75.
+
+## Yang baru di 2.12.1+75
+
+1. Tombol pengaturan kini ada di Beranda (ikon gear di atas), tak perlu masuk profil dulu.
+2. Cari pengaturan kini mendarat di kartu yang tepat, bukan di atas.
+3. Perbaikan kecil: ekspor PDF jujur saat offline, bulan rusak tak lagi bikin error, dan layar lebih aman saat pindah cepat.
 
 ## Yang baru di 2.12.0+74
 

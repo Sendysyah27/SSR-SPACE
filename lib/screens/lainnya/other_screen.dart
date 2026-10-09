@@ -304,7 +304,11 @@ class _OtherScreenState extends State<OtherScreen> {
       Share.share('${tr('ab_feedback')} ${tr('au_title')} ${AppInfo.version}');
       return;
     }
-    if (key == kSearchHub) return;
+    if (key == 'settings' || key.startsWith('settings:')) {
+      final focus = key.contains(':') ? key.split(':').last : null;
+      await _push(SettingsScreen(focus: focus));
+      return;
+    }
     switch (key) {
       case 'wallets':
         await _push(const WalletsScreen());
@@ -330,8 +334,6 @@ class _OtherScreenState extends State<OtherScreen> {
         await _push(const SpaceActivityScreen());
       case 'billing':
         await _push(const BillingScreen());
-      case 'settings':
-        await _push(const SettingsScreen());
       case 'changelog':
         await _push(const UpdateLogScreen());
       case 'help':

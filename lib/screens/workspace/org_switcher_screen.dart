@@ -60,12 +60,14 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
           .from('org_members')
           .select('org_id, role, organizations(id, name, plan)')
           .eq('user_id', uid);
+      if (!mounted) return;
       setState(() => orgs = List<Map<String, dynamic>>.from(rows));
     } catch (_) {
+      if (!mounted) return;
       setState(() => orgs = []);
       loadErr = tr('org_err_load');
     } finally {
-      setState(() => loading = false);
+      if (mounted) setState(() => loading = false);
     }
   }
 

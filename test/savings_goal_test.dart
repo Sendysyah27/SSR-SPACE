@@ -55,6 +55,13 @@ void main() {
       ),
       null,
     );
+    // Tanggal kompak (8 char, tryParse lolos) ditolak sebelum substring.
+    expect(
+      SavingsGoal.tryParse(
+        {'id': 'x', 'name': 'Ok', 'target': 5000, 'deadline': '20260928'},
+      ),
+      null,
+    );
     final ok = SavingsGoal.tryParse({'id': 'x', 'name': 'Ok', 'target': 5000})!;
     expect(ok.auto, true);
     expect(ok.icon, 'Tabungan');

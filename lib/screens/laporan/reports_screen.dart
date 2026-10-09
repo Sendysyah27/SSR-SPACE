@@ -75,6 +75,7 @@ class ReportsScreenState extends State<ReportsScreen> {
     });
     try {
       final orgId = await activeOrgId();
+      if (!mounted) return;
       if (orgId.isEmpty) {
         setState(() => loading = false);
         return;
@@ -314,8 +315,17 @@ class ReportsScreenState extends State<ReportsScreen> {
   }
 
   Future<void> _guardPdf() async {
-    final orgId = await activeOrgId();
-    final plan = orgId.isEmpty ? 'free' : await currentPlan(orgId);
+    String plan = 'free';
+    try {
+      final orgId = await activeOrgId();
+      plan = orgId.isEmpty ? 'free' : await currentPlan(orgId);
+    } catch (_) {
+      // Offline / org hilang: gagal jujur via snackbar, bukan diam.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('r_export_fail'))));
+      return;
+    }
     if (!mounted) return;
     if (!canExportPdf(plan: plan)) {
       await requirePro(context, tr('q_pdf'));
