@@ -1,0 +1,70 @@
+name: debug-apk
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: |
+          if [ ! -d android ]; then
+            flutter create . --project-name ssr_space --org com.ssr.space
+          fi
+          rm -f test/widget_test.dart
+      - run: |
+          python3 - <<'EOF'
+          import pathlib
+          # Suffix .debug supaya bisa install berdampingan dgn rilis
+          # (data prefs terpisah; user wajib login + pasang PIN ulang).
+          kts = pathlib.Path('android/app/build.gradle.kts')
+          groovy = pathlib.Path('android/app/build.gradle')
+          target = kts if kts.exists() else groovy
+          assert target.exists(), 'app build gradle tak ketemu'
+          g = target.read_text()
+          if 'applicationIdSuffix' not in g:
+              if target == kts:
+                  anchor = 'buildTypes {'
+                  assert anchor in g, 'anchor buildTypes tak ketemu'
+                  g = g.replace(
+                      anchor,
+                      anchor + '\n        debug {\n'
+                      '            applicationIdSuffix = ".debug"\n'
+                      '        }',
+                      1,
+                  )
+              else:
+                  anchor = 'buildTypes {'
+                  assert anchor in g, 'anchor buildTypes tak ketemu'
+                  g = g.replace(
+                      anchor,
+                      anchor + "\n        debug {\n"
+                      "            applicationIdSuffix '.debug'\n"
+                      "        }",
+                      1,
+                  )
+              target.write_text(g)
+          assert 'applicationIdSuffix' in target.read_text()
+          print('debug suffix ok:', target)
+          EOF
+      - run: flutter analyze
+      - run: flutter build apk --debug --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - name: Upload DEBUG APK (tanpa sentuh aset rilis)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          VER=$(grep '^version:' pubspec.yaml | awk '{print $2}' | tr '+' '-')
+          D=build/app/outputs/flutter-apk
+          cp "$D/app-debug.apk" "$D/SSR-SPACE-$VER-debug.apk"
+          gh release upload ci-apk "$D/SSR-SPACE-$VER-debug.apk" --clobber

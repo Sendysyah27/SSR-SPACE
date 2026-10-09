@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/services/pin_debug_log.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -43,6 +44,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _boot() async {
     setState(() => failed = false);
     try {
+      await pinLog('splash boot');
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
       if (SupabaseConfig.isConfigured) {
@@ -69,15 +71,24 @@ class _SplashScreenState extends State<SplashScreen> {
         }
       }
       if (!mounted) return;
+      await pinLog(
+        'splash decide firstRun=${widget.session.isFirstRun} '
+        'hasPin=${widget.session.hasPin}',
+      );
       if (widget.session.isFirstRun) {
+        await pinLog('splash -> onboarding');
         await _go(OnboardingScreen(session: widget.session));
         return;
       } else if (widget.session.hasPin) {
+        await pinLog('splash -> lock');
         await _go(LockScreen(session: widget.session));
+        await pinLog('splash lock returned');
         return;
       }
+      await pinLog('splash -> shell');
       await _go(MainShell(session: widget.session));
-    } catch (_) {
+    } catch (e, st) {
+      await pinLogError('splash boot', e, st);
       if (mounted) setState(() => failed = true);
     }
   }

@@ -42,9 +42,31 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // force: resubscribe bila stream sempat error / app resume dari background
-    NotifTrack.ensureListening(force: true);
-    unawaited(ForegroundTrack.syncFromPrefs());
+    unawaited(_initServices());
+  }
+
+  /// Init service DEBUG-build: tiap langkah dicatat, gagal dicatat + stack.
+  Future<void> _initServices() async {
+    try {
+      await pinLog('shell init start');
+      // force: resubscribe bila stream sempat error / app resume dari background
+      try {
+        await NotifTrack.ensureListening(force: true);
+        await pinLog('shell track ok');
+      } catch (e, st) {
+        await pinLogError('shell track', e, st);
+      }
+      try {
+        await ForegroundTrack.syncFromPrefs();
+        await pinLog('shell foreground ok');
+      } catch (e, st) {
+        await pinLogError('shell foreground', e, st);
+      }
+      await pinLog('shell init done');
+    } catch (e, st) {
+      await pinLogError('shell init', e, st);
+    }
+  }
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkDetail());
   }
 

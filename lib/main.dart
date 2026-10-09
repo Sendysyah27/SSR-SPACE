@@ -7,6 +7,7 @@ import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/pin_debug_log.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/reminder_service.dart';
@@ -22,9 +23,13 @@ Future<void> main() async {
   await SupabaseConfig.init();
   ForegroundTrack.initOnce();
   PinLinkVerify.initOnce();
+  await clearPinLog();
+  await pinLog('main start');
   final prefs = await SharedPreferences.getInstance();
+  await pinLog('main prefs ok');
   await loadMaskAmounts(prefs);
   await loadAppSettings(prefs);
+  await pinLog('main settings ok');
   await loadAppCategories(prefs);
   await refreshCategoryMeta();
   await CurrencyService.loadCache(prefs);
@@ -50,6 +55,7 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('jadwal ulang pengingat gagal: $e');
   }
+  await pinLog('main pre-runApp');
   final app = SsrSpaceApp(session: SessionService(prefs));
   runZonedGuarded(
     () => runApp(app),
