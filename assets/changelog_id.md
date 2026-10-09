@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.10.0+72.
+Versi terpasang: 2.11.0+73.
+
+## Yang baru di 2.11.0+73
+
+1. Target nabung: bikin goal (nama, nominal, deadline opsional) yang ikut kategori Tabungan atau setor manual. Ada progress bar, persen, sisa hari, dan proyeksi kecapai kapan.
+2. Simulasi jujur: bila meleset dari deadline, aplikasi nyebut kurangnya berapa per bulan. Bila belum ada riwayat, aplikasi bilang belum bisa diproyeksi.
+3. Dana darurat: target otomatis 3 sampai 6 kali belanja bulananmu, status Belum aman, Progres, atau Aman. Muncul di Beranda bareng goal terdekatmu.
 
 ## Yang baru di 2.10.0+72
 

@@ -1573,6 +1573,80 @@ const _t = <String, Map<String, String>>{
     'id': 'Belum ada data bulan lalu buat dibandingin.',
     'en': 'No last-month data to compare yet.',
   },
+  // LOOP 3: Goals (casual, tidak menghakimi)
+  'goal_title': {'id': 'Target nabung', 'en': 'Saving goals'},
+  'goal_sub': {
+    'id': 'Nabung biar ada tujuannya',
+    'en': 'Save with a purpose',
+  },
+  'goal_empty_t': {'id': 'Belum ada target', 'en': 'No goals yet'},
+  'goal_empty_s': {
+    'id': 'Bikin satu biar nabung ada tujuannya.',
+    'en': 'Create one to give saving a purpose.',
+  },
+  'goal_empty_a': {'id': 'Bikin target', 'en': 'Create goal'},
+  'goal_add': {'id': 'Target baru', 'en': 'New goal'},
+  'goal_name': {'id': 'Buat apa nabungnya', 'en': 'What are you saving for'},
+  'goal_target': {'id': 'Target nominal', 'en': 'Target amount'},
+  'goal_deadline': {'id': 'Deadline (opsional)', 'en': 'Deadline (optional)'},
+  'goal_deadline_hint': {
+    'id': 'cth 2026-12-31, kosongkan bila santai',
+    'en': 'e.g. 2026-12-31, leave empty if relaxed',
+  },
+  'goal_mode_auto': {
+    'id': 'Ikut kategori Tabungan',
+    'en': 'Follow Savings category',
+  },
+  'goal_mode_manual': {
+    'id': 'Setor manual saja',
+    'en': 'Manual deposits only',
+  },
+  'goal_deposit': {'id': 'Setor', 'en': 'Deposit'},
+  'goal_deposit_hint': {
+    'id': 'Catat progres saja, bukan transaksi.',
+    'en': 'Progress note only, not a transaction.',
+  },
+  'goal_of': {'id': '{s} dari {t}', 'en': '{s} of {t}'},
+  'goal_days_left': {'id': '{n} hari lagi', 'en': '{n} days left'},
+  'goal_overdue': {'id': 'Lewat {n} hari', 'en': '{n} days overdue'},
+  'goal_done': {'id': 'Kecapai. Keren.', 'en': 'Reached. Nice.'},
+  'goal_proj': {
+    'id': 'Kecapai sekitar {m}',
+    'en': 'On track around {m}',
+  },
+  'goal_noproj': {
+    'id': 'Belum bisa diproyeksi, nabung dulu yuk.',
+    'en': 'Cannot project yet, save a bit first.',
+  },
+  'goal_need': {
+    'id': 'Butuh {m} per bulan biar pas deadline.',
+    'en': 'Needs {m} a month to hit the deadline.',
+  },
+  'goal_extra': {
+    'id': 'Tambah {m} per bulan biar pas deadline.',
+    'en': 'Add {m} a month to hit the deadline.',
+  },
+  'goal_delete': {'id': 'Hapus target ini?', 'en': 'Delete this goal?'},
+  'goal_del_yes': {'id': 'Ya, hapus', 'en': 'Yes, delete'},
+  'goal_icon': {
+    'id': 'Ikon (nama kategori)',
+    'en': 'Icon (category name)',
+  },
+  'goal_deleted': {'id': 'Target dihapus', 'en': 'Goal deleted'},
+  'goal_saved': {'id': 'Target tersimpan', 'en': 'Goal saved'},
+  'goal_deposited': {'id': 'Setoran tercatat', 'en': 'Deposit recorded'},
+  'goal_err': {
+    'id': 'Belum bisa simpan. Cek lagi isianmu.',
+    'en': 'Cannot save yet. Check your inputs.',
+  },
+  'em_title': {'id': 'Dana darurat', 'en': 'Emergency fund'},
+  'em_unsafe': {'id': 'Belum aman', 'en': 'Not safe yet'},
+  'em_progress': {'id': 'Progres', 'en': 'In progress'},
+  'em_safe': {'id': 'Aman', 'en': 'Safe'},
+  'em_range': {
+    'id': 'Target {a} sampai {b} (3-6x belanja).',
+    'en': 'Target {a} to {b} (3-6x spending).',
+  },
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

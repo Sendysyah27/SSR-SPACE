@@ -12,6 +12,10 @@ import 'package:ssr_space/services/health_score.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/weekly_insight.dart';
+import 'package:ssr_space/services/savings_goal.dart';
+import 'package:ssr_space/services/goal_forecast.dart';
+import 'package:ssr_space/services/goal_store.dart';
+import 'package:ssr_space/screens/lainnya/goals_screen.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -69,6 +73,9 @@ class BerandaScreenState extends State<BerandaScreen> {
   List<MapEntry<String, BudgetPace>> paceNotes = [];
   WeeklyInsight? insight;
   String? insightDismissKey;
+  EmergencyStatus? emergency;
+  SavingsGoal? nearGoal;
+  double nearAuto = 0;
 
   @override
   void initState() {
@@ -77,6 +84,13 @@ class BerandaScreenState extends State<BerandaScreen> {
   }
 
   Future<void> reload() => _load();
+
+  void _openGoals() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const GoalsScreen()),
+    );
+  }
 
   /// Tutup kartu insight minggu ini (prefs saja, tanpa server).
   Future<void> _dismissInsight() async {
@@ -201,7 +215,22 @@ class BerandaScreenState extends State<BerandaScreen> {
           notes = <MapEntry<String, BudgetPace>>[];
         }
       }
-      // Insight mingguan: 5 minggu terakhir, tak tergantung bulan tampil.
+      // Riwayat 12 bulan (1 query, dipakai insight + darurat + goal).
+      // Tak tergantung bulan tampil. Fail-open: kartu sembunyi.
+      final histStart = DateTime(now.year, now.month - 11, 1);
+      final histEnd = now.add(const Duration(days: 1));
+      var hist = <SaasTransaction>[];
+      try {
+        hist = await TransactionService().listRange(
+          orgId,
+          _ymd(histStart),
+          _ymd(histEnd),
+          limit: 500,
+        );
+      } catch (_) {
+        hist = <SaasTransaction>[];
+      }
+      // Insight mingguan dari potongan 5 minggu terakhir.
       WeeklyInsight? wi;
       String? wiKey;
       try {
@@ -210,12 +239,7 @@ class BerandaScreenState extends State<BerandaScreen> {
         final dismissKey =
             'insight_seen_${weekKey(lastMon)}_$orgId';
         if (prefs.getBool(dismissKey) != true) {
-          final start = lastMon.subtract(const Duration(days: 28));
-          final range = await TransactionService().listRange(
-            orgId,
-            _ymd(start),
-            _ymd(thisMon),
-          );
+          final range = hist;
           final wtxs = <WeeklyTx>[];
           for (final t in range) {
             if (t.type != 'out') continue;
@@ -238,6 +262,71 @@ class BerandaScreenState extends State<BerandaScreen> {
         wi = null;
         wiKey = null;
       }
+      // Dana darurat + goal terdekat dari riwayat yang sama.
+      EmergencyStatus? em;
+      SavingsGoal? near;
+      var nearSum = 0.0;
+      try {
+        final cur = currentMonth();
+        var mk = prevMonth(cur);
+        final outs = <String, double>{};
+        for (var i = 0; i < 3; i++) {
+          outs[mk] = 0;
+          mk = prevMonth(mk);
+        }
+        var saved = 0.0;
+        for (final t in hist) {
+          if (t.type != 'out') continue;
+          if (isSavingCategory(t.category)) {
+            saved += t.amount;
+            continue;
+          }
+          final rawDate = t.date ?? '';
+          final key = rawDate.length >= 7 ? rawDate.substring(0, 7) : '';
+          if (outs.containsKey(key)) outs[key] = outs[key]! + t.amount;
+        }
+        final active =
+            outs.values.where((v) => v > 0).toList();
+        if (active.isNotEmpty) {
+          final avg =
+              active.fold<double>(0, (s, v) => s + v) / active.length;
+          em = emergencyFund(monthlyExpense: avg, saved: saved);
+        }
+        final gs = await loadGoals();
+        final open = <SavingsGoal>[];
+        final sums = <String, double>{};
+        for (final g in gs) {
+          var sum = 0.0;
+          if (g.auto) {
+            for (final t in hist) {
+              if (t.type != 'out') continue;
+              if (topOf(t.category) != g.linkCategory) continue;
+              final dd = DateTime.tryParse(t.date ?? '');
+              if (dd == null) continue;
+              if (g.since.isNotEmpty) {
+                final s = DateTime.tryParse(g.since);
+                if (s != null && dd.isBefore(s)) continue;
+              }
+              sum += t.amount;
+            }
+          }
+          sums[g.id] = sum;
+          if (g.remaining(sum) > 0) open.add(g);
+        }
+        open.sort((a, b) {
+          if (a.deadline == null && b.deadline == null) return 0;
+          if (a.deadline == null) return 1;
+          if (b.deadline == null) return -1;
+          return a.deadline!.compareTo(b.deadline!);
+        });
+        if (open.isNotEmpty) {
+          near = open.first;
+          nearSum = sums[near.id] ?? 0;
+        }
+      } catch (_) {
+        em = null;
+        near = null;
+      }
       if (!mounted) return;
       setState(() {
         orgName = prefs.getString('active_org_name') ?? '-';
@@ -251,6 +340,9 @@ class BerandaScreenState extends State<BerandaScreen> {
         paceNotes = notes;
         insight = wi;
         insightDismissKey = wiKey;
+        emergency = em;
+        nearGoal = near;
+        nearAuto = nearSum;
         loading = false;
       });
       _pushTodaySnapshot(txs);
@@ -513,6 +605,15 @@ class BerandaScreenState extends State<BerandaScreen> {
         if (insight != null) ...[
           const SizedBox(height: SsrSpace.md),
           _InsightCard(insight: insight!, onDismiss: _dismissInsight),
+        ],
+        if (emergency != null || nearGoal != null) ...[
+          const SizedBox(height: SsrSpace.md),
+          _DreamCard(
+            emergency: emergency,
+            goal: nearGoal,
+            goalAuto: nearAuto,
+            onTap: _openGoals,
+          ),
         ],
         if (calm.any((b) => b)) ...[
           const SizedBox(height: SsrSpace.md),
@@ -1114,6 +1215,95 @@ class _InsightCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Kartu mimpi: status dana darurat + goal terdekat. Ketuk = buka Goals.
+class _DreamCard extends StatelessWidget {
+  final EmergencyStatus? emergency;
+  final SavingsGoal? goal;
+  final double goalAuto;
+  final VoidCallback onTap;
+
+  const _DreamCard({
+    required this.emergency,
+    required this.goal,
+    required this.goalAuto,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final em = emergency;
+    final g = goal;
+    final String emLabel;
+    final StatusTone emTone;
+    if (em == null) {
+      emLabel = '';
+      emTone = StatusTone.accent;
+    } else if (em.level >= 2) {
+      emLabel = tr('em_safe');
+      emTone = StatusTone.accent;
+    } else if (em.level == 1) {
+      emLabel = tr('em_progress');
+      emTone = StatusTone.accent;
+    } else {
+      emLabel = tr('em_unsafe');
+      emTone = StatusTone.danger;
+    }
+    return GestureDetector(
+      onTap: onTap,
+      child: SectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    tr('goal_title'),
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+                if (em != null) StatusChip(label: emLabel, tone: emTone),
+              ],
+            ),
+            if (em != null) ...[
+              const SizedBox(height: SsrSpace.xs),
+              Text(
+                tr('em_range')
+                    .replaceFirst('{a}', amt(em.target3))
+                    .replaceFirst('{b}', amt(em.target6)),
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+            if (g != null) ...[
+              const SizedBox(height: SsrSpace.xs),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      g.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                  Text(
+                    '${(g.progress(goalAuto) * 100).round()}%',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontFeatures: const [
+                        FontFeature.tabularFigures(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
