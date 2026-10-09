@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.13.0+76.
+Versi terpasang: 2.13.1+77.
+
+## Yang baru di 2.13.1+77
+
+1. Pengingat kini tampil heads-up, dan bila izin notif HP ditolak, aplikasi bilang jujur saat toggle dinyalakan.
+2. Widget hari ini ikut diperbarui tiap Beranda dimuat (syarat: widget sudah dipasang di layar utama).
 
 ## Yang baru di 2.13.0+76
 
