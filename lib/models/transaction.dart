@@ -29,11 +29,26 @@ class SaasTransaction {
     this.sourceHash,
     this.createdBy,
   });
+  /// Parse toleran data real: amount null/string/rusak → 0 (baris tetap
+  /// tampil, bukan seluruh list gagal). Satu baris aneh tak boleh
+  /// membunuh Beranda.
+  static double _safeAmount(dynamic v) {
+    if (v is num) {
+      final d = v.toDouble();
+      return d.isFinite ? d : 0;
+    }
+    if (v is String) {
+      final d = double.tryParse(v.trim().replaceAll(',', ''));
+      if (d != null && d.isFinite) return d;
+    }
+    return 0;
+  }
+
   factory SaasTransaction.fromMap(Map<String, dynamic> m) => SaasTransaction(
-        id: m['id'].toString(),
-        orgId: m['org_id'].toString(),
+        id: (m['id'] ?? '').toString(),
+        orgId: (m['org_id'] ?? '').toString(),
         type: (m['type'] ?? '').toString(),
-        amount: (m['amount'] as num).toDouble(),
+        amount: _safeAmount(m['amount']),
         walletId: m['wallet_id']?.toString(),
         toWalletId: m['to_wallet_id']?.toString(),
         category: m['category']?.toString(),

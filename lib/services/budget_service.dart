@@ -67,11 +67,25 @@ Future<List<Budget>> fetchBudgetLimits(String orgId) async {
     for (final r in List<Map<String, dynamic>>.from(rows))
       Budget(
         category: (r['category'] ?? '').toString(),
-        limit: (r['limit_amount'] as num).toDouble(),
+        // Toleran data real: limit null/string → 0 (disaring pemanggil).
+        limit: _safeLimit(r['limit_amount']),
         spent: 0,
         warnPct: (r['warn_pct'] as num?)?.toInt() ?? 80,
       ),
   ];
+}
+
+/// Parse limit toleran: tak pernah throw, non-finite → 0.
+double _safeLimit(dynamic v) {
+  if (v is num) {
+    final d = v.toDouble();
+    return d.isFinite ? d : 0;
+  }
+  if (v is String) {
+    final d = double.tryParse(v.trim().replaceAll(',', ''));
+    if (d != null && d.isFinite) return d;
+  }
+  return 0;
 }
 
 Future<BudgetMonth> fetchBudgets(String orgId) async {

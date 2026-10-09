@@ -75,7 +75,9 @@ class SavingsGoal {
     if (id.isEmpty || name.isEmpty || target == null || target <= 0) {
       return null;
     }
-    final saved = (raw['savedManual'] as num?)?.toDouble() ?? 0;
+    final savedRaw = (raw['savedManual'] as num?)?.toDouble() ?? 0;
+    // Non-finite (prefs korup tulis manual) → 0, bukan throw/nular.
+    final double saved = savedRaw.isFinite ? savedRaw.toDouble() : 0;
     String? dl;
     final rawDl = raw['deadline']?.toString();
     if (rawDl != null && rawDl.isNotEmpty) {
@@ -86,6 +88,8 @@ class SavingsGoal {
     }
     final icon = (raw['icon']?.toString() ?? '').trim();
     final since = (raw['since']?.toString() ?? '').trim();
+    // toString() dulu: prefs korup bisa simpan non-String (int/dll).
+    final linkRaw = (raw['linkCategory']?.toString() ?? '').trim();
     return SavingsGoal(
       id: id,
       name: name.length > 40 ? name.substring(0, 40) : name,
@@ -94,10 +98,7 @@ class SavingsGoal {
       deadline: dl,
       icon: icon.isEmpty ? 'Tabungan' : icon,
       auto: raw['auto'] != false,
-      linkCategory:
-          (raw['linkCategory']?.toString() ?? '').trim().isEmpty
-              ? 'Tabungan'
-              : (raw['linkCategory'] as String).trim(),
+      linkCategory: linkRaw.isEmpty ? 'Tabungan' : linkRaw,
       since: since.length >= 10 ? since.substring(0, 10) : '',
     );
   }

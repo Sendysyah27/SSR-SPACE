@@ -24,7 +24,12 @@ class HealthBreakdown {
   });
 }
 
-int _clamp100(num v) => v.round().clamp(0, 100).toInt();
+/// Bulatkan ke 0-100. NaN/Infinity (data real aneh) → 0, tak pernah throw.
+/// (NaN.round() melempar UnsupportedError — itu yang membunuh Beranda.)
+int _clamp100(num v) {
+  if (v is double && !v.isFinite) return 0;
+  return v.round().clamp(0, 100).toInt();
+}
 
 /// Skor budget: 100 bila tak ada yang jebol, turun sebanding total
 /// jebol vs total limit. Tanpa budget apa pun = 70 (netral, bukan

@@ -10,7 +10,10 @@ int calcXp({
 }) {
   final tx = txCount < 0 ? 0 : (txCount > 200 ? 200 : txCount);
   final st = streakDays < 0 ? 0 : streakDays;
-  return tx * 10 + st * 5 + challengesDone * 50 + goalsReached * 100;
+  // Prefs korup bisa negatif: jepit ke 0, XP tak pernah negatif.
+  final ch = challengesDone < 0 ? 0 : challengesDone;
+  final gl = goalsReached < 0 ? 0 : goalsReached;
+  return tx * 10 + st * 5 + ch * 50 + gl * 100;
 }
 
 /// Ambang bawah tiap level (indeks 0 = Lv 1). 7 level, mentok 5500+.

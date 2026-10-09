@@ -117,6 +117,8 @@ EmergencyStatus? emergencyFund({
   required double monthlyExpense,
   required double saved,
 }) {
+  // Data real aneh (NaN/Infinity) → null (kartu sembunyi), bukan throw.
+  if (!monthlyExpense.isFinite || !saved.isFinite) return null;
   if (monthlyExpense <= 0) return null;
   final t3 = monthlyExpense * 3;
   final t6 = monthlyExpense * 6;

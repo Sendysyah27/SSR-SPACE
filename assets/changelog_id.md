@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.13.3+79.
+Versi terpasang: 2.13.4+80.
+
+## Yang baru di 2.13.4+80
+
+1. Perbaikan crash Beranda (masih mode BYPASS PIN): hitungan Loop 1-4 kini tahan data aneh (nominal kosong, bagi-nol, tanggal rusak) dan satu kartu yang error tak lagi mematikan seluruh layar.
 
 ## Yang baru di 2.13.3+79
 

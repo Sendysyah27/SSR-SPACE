@@ -24,6 +24,9 @@ BudgetPace budgetPace({
   required double limit,
   required DateTime today,
 }) {
+  // Data real aneh (NaN/Infinity) → aman, bukan throw di build Beranda.
+  if (!spent.isFinite) spent = 0;
+  if (!limit.isFinite) limit = 0;
   final dim = DateTime(today.year, today.month + 1, 0).day;
   final elapsed = today.day.clamp(1, dim);
   if (limit <= 0) {

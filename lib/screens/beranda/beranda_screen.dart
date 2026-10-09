@@ -581,21 +581,47 @@ class BerandaScreenState extends State<BerandaScreen> {
   Widget _content({Key? key}) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final totalIn = items
+    // Sanitasi build: semua agregat dipaksa finite. Satu nilai aneh
+    // (data real korup) tak boleh melempar di build → seluruh konten mati.
+    double fin(double v) => v.isFinite ? v : 0;
+    final totalIn = fin(items
         .where((t) => t.type == 'in')
-        .fold<double>(0, (s, t) => s + t.amount);
-    final totalOut = items
+        .fold<double>(0, (s, t) => s + t.amount));
+    final totalOut = fin(items
         .where((t) => t.type == 'out')
-        .fold<double>(0, (s, t) => s + t.amount);
+        .fold<double>(0, (s, t) => s + t.amount));
     final surplus = totalIn - totalOut;
     final denom = totalIn + totalOut;
-    final inShare = denom <= 0 ? 0.0 : totalIn / denom;
-    final pctOut = totalOut <= 0 ? null : (surplus / totalOut * 100).round();
-    final buckets = groupDayBuckets(items);
-    final calmDates = [
-      for (final t in items) DateTime.tryParse(t.date ?? ''),
-    ].whereType<DateTime>().toList();
-    final calm = calmWeeks(calmDates, DateTime.now());
+    final inShare =
+        (denom <= 0 || !denom.isFinite) ? 0.0 : (totalIn / denom).clamp(0.0, 1.0);
+    int? pctOut;
+    if (totalOut > 0) {
+      final p = surplus / totalOut * 100;
+      if (p.isFinite) {
+        try {
+          pctOut = p.round();
+        } catch (_) {
+          pctOut = null;
+        }
+      }
+    }
+    var buckets = <DayBucket>[];
+    try {
+      buckets = groupDayBuckets(items);
+    } catch (_) {
+      buckets = <DayBucket>[];
+    }
+    var calm = List<bool>.filled(8, false);
+    try {
+      calm = calmWeeks(
+        [
+          for (final t in items) DateTime.tryParse(t.date ?? ''),
+        ].whereType<DateTime>().toList(),
+        DateTime.now(),
+      );
+    } catch (_) {
+      calm = List<bool>.filled(8, false);
+    }
     return ListView(
       key: key,
       padding: const EdgeInsets.fromLTRB(
@@ -1165,7 +1191,10 @@ class _NudgeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bad = pace.state == PaceState.danger;
-    final dd = pace.depletedDate!;
+    // Guard data real: depletedDate null (tak seharusnya, tapi jangan
+    // bunuh Beranda) → kartu sembunyi, bukan throw '!' di build.
+    final dd = pace.depletedDate;
+    if (dd == null) return const SizedBox.shrink();
     final ymd =
         '${dd.year.toString().padLeft(4, '0')}-'
         '${dd.month.toString().padLeft(2, '0')}-'
