@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -55,15 +56,23 @@ class _LockScreenState extends State<LockScreen> {
     var ok = false;
     try {
       ok = await widget.session.verifyPin(pinC.text);
-    } catch (_) {
+    } catch (e, st) {
+      await ErrorReporter.capture(e, st, context: 'lock_verify');
       ok = false;
     }
     if (!mounted) return;
     if (ok) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => MainShell(session: widget.session)),
-      );
+      try {
+        await Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MainShell(session: widget.session),
+          ),
+        );
+      } catch (err, st) {
+        await ErrorReporter.capture(err, st, context: 'lock_nav');
+      }
+      if (mounted) setState(() => _verifying = false);
       return;
     }
     setState(() {

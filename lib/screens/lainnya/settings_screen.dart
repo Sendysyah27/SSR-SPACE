@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
+import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/reminder_service.dart';
 import 'package:ssr_space/services/session_service.dart';
@@ -990,6 +991,9 @@ class _PinCardState extends State<_PinCard> {
           () => err = svc.isLockedOut ? tr('lk_lockout') : tr('b_pin_wrong'),
         );
       }
+    } catch (e, st) {
+      await ErrorReporter.capture(e, st, context: 'pin_check');
+      if (mounted) setState(() => err = tr('w_err_save'));
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -1018,7 +1022,8 @@ class _PinCardState extends State<_PinCard> {
         step = 'sent';
         msg = tr('st_pin_sent_link').replaceFirst('{e}', mail);
       });
-    } catch (_) {
+    } catch (e, st) {
+      await ErrorReporter.capture(e, st, context: 'pin_link_send');
       if (!mounted) return;
       setState(() => err = tr('w_err_save'));
     } finally {
@@ -1050,7 +1055,8 @@ class _PinCardState extends State<_PinCard> {
       });
       pinC.clear();
       pin2C.clear();
-    } catch (_) {
+    } catch (e, st) {
+      await ErrorReporter.capture(e, st, context: 'pin_save');
       if (!mounted) return;
       setState(() => err = tr('w_err_save'));
     } finally {

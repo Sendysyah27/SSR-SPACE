@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.13.1+77.
+Versi terpasang: 2.13.2+78.
+
+## Yang baru di 2.13.2+78
+
+1. Perbaikan crash layar kunci: baca data tersimpan kini anti-rusak, navigasi usai PIN dijaga, dan kunci otomatis tak lagi menumpuk.
 
 ## Yang baru di 2.13.1+77
 
