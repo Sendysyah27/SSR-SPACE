@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/async_guard.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/pin_debug_log.dart';
 import 'package:ssr_space/services/foreground_track.dart';
@@ -79,9 +80,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _resumed = true;
       unawaited(_checkRelock());
-      NotifTrack.ensureListening(force: true);
-      unawaited(ForegroundTrack.syncFromPrefs());
-      unawaited(_checkDetail());
+      // Guard: panggilan resume tak boleh lempar async tak tertangani
+      // (itu yang jadi "has stopped" tanpa jejak di build).
+      unawaited(runGuarded(
+        () => NotifTrack.ensureListening(force: true),
+      ));
+      unawaited(runGuarded(() => ForegroundTrack.syncFromPrefs()));
+      unawaited(runGuarded(() => _checkDetail()));
       // Poll budget alerts tiap resume supaya banner/badge segar
       // walau tab Budget sedang tidak aktif.
       budgetKey.currentState?.reload();

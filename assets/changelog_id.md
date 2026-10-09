@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.13.4+80.
+Versi terpasang: 2.13.5+81.
+
+## Yang baru di 2.13.5+81
+
+1. Perbaikan crash saat Beranda dimuat (masih mode BYPASS PIN): tiap pengambilan data kini punya cadangan bila gagal, dan semua error hanya dicatat tanpa mematikan aplikasi.
 
 ## Yang baru di 2.13.4+80
 

@@ -17,16 +17,25 @@ class ErrorReporter {
   static DateTime _hourStart = DateTime.now();
 
   /// Pasang global handler. Dipanggil sekali di main().
+  /// Kontrak: log saja, JANGAN PERNAH rethrow — handler yang melempar
+  /// = "has stopped" tanpa jejak. capture() sendiri tak pernah throw
+  /// (try/catch internal + drop senyap), jadi aman dipanggil sync.
   static void init() {
     FlutterError.onError = (details) {
-      capture(
-        details.exception,
-        details.stack ?? StackTrace.empty,
-        context: 'flutter_framework',
-      );
+      try {
+        capture(
+          details.exception,
+          details.stack ?? StackTrace.empty,
+          context: 'flutter_framework',
+        );
+      } catch (_) {
+        // Handler tak boleh throw, titik.
+      }
     };
     PlatformDispatcher.instance.onError = (error, stack) {
-      capture(error, stack, context: 'uncaught');
+      try {
+        capture(error, stack, context: 'uncaught');
+      } catch (_) {}
       return true; // sudah ditangani, jangan rethrow ke platform
     };
   }

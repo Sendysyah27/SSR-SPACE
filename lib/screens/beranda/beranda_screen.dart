@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/async_guard.dart';
 import 'package:ssr_space/services/pin_debug_log.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/services/budget_pace.dart';
@@ -150,8 +151,13 @@ class BerandaScreenState extends State<BerandaScreen> {
         });
         return;
       }
-      final txs = await TransactionService().listMonth(orgId, month);
-      final allBills = await loadBills();
+      // Tiap Future individual ber-fallback: gagal = data kosong untuk
+      // seksi itu, bukan throw yang membunuh _load / layar.
+      final txs = await guardAsync(
+        () => TransactionService().listMonth(orgId, month),
+        <SaasTransaction>[],
+      );
+      final allBills = await guardAsync(loadBills, <RecurringBill>[]);
       final now = DateTime.now();
       // Streak: tanggal ringan lintas bulan, fail-open (kartu sembunyi).
       DailyStreak? st;
@@ -370,10 +376,24 @@ class BerandaScreenState extends State<BerandaScreen> {
         gameXp = 0;
       }
       if (!mounted) return;
+      // Hitung di luar setState dengan guard: tak ada throw yang lolos
+      // dari closure setState (itu yang selama ini jadi "konten tak load").
+      List<RecurringBill> due;
+      try {
+        due = dueBills(allBills, now);
+      } catch (_) {
+        due = <RecurringBill>[];
+      }
+      String name;
+      try {
+        name = prefs.getString('active_org_name') ?? '-';
+      } catch (_) {
+        name = '-';
+      }
       setState(() {
-        orgName = prefs.getString('active_org_name') ?? '-';
+        orgName = name;
         items = txs;
-        billsDue = dueBills(allBills, now);
+        billsDue = due;
         streak = st;
         health = hb;
         healthDelta = delta;
@@ -447,7 +467,9 @@ class BerandaScreenState extends State<BerandaScreen> {
   /// Snapshot widget hari ini: surplus tanggal berjalan saja (bukan
   /// sebulan), ditulis fire-and-forget agar UI tak menunggu IO prefs.
   void _pushTodaySnapshot(List<SaasTransaction> txs) {
-    final now = DateTime.now();
+    // Guard sync: widget snapshot tak boleh ikut membunuh _load.
+    try {
+      final now = DateTime.now();
     final today =
         '${now.year.toString().padLeft(4, '0')}-'
         '${now.month.toString().padLeft(2, '0')}-'
@@ -462,49 +484,64 @@ class BerandaScreenState extends State<BerandaScreen> {
         tOut += t.amount;
       }
     }
-    unawaited(refreshTodayWidget(date: today, surplus: tIn - tOut));
+    unawaited(runGuarded(
+      () => refreshTodayWidget(date: today, surplus: tIn - tOut),
+    ));
+    } catch (_) {}
   }
 
   /// Lewati: majukan nextDue satu periode tanpa insert.
+  /// Guard penuh: handler tombol tak boleh lempar async tak tertangani.
   Future<void> _skipBill(RecurringBill bill) async {
-    final all = await loadBills();
-    final from =
-        DateTime.tryParse(bill.nextDue) ?? DateTime.now();
-    final next = [
-      for (final b in all)
-        if (b.id == bill.id)
-          b.copyWith(
-            nextDue: _ymd(advanceBill(b, from)),
-          )
-        else
-          b,
-    ];
-    await saveBills(next);
-    await _load();
+    try {
+      final all = await guardAsync(loadBills, <RecurringBill>[]);
+      final from =
+          DateTime.tryParse(bill.nextDue) ?? DateTime.now();
+      final next = [
+        for (final b in all)
+          if (b.id == bill.id)
+            b.copyWith(
+              nextDue: _ymd(advanceBill(b, from)),
+            )
+          else
+            b,
+      ];
+      await runGuarded(() => saveBills(next));
+      await _load();
+    } catch (_) {}
   }
 
   /// Catat: buka sheet prefill, bila tersimpan rekam riwayat bayar
   /// (nominal master tagihan; nominal asli ada di baris transaksi)
   /// lalu majukan periode.
   Future<void> _recordBill(RecurringBill bill) async {
-    final ok = await openTxInputSheet(
-      context,
-      initialType: 'out',
-      initialAmountIdr: bill.amount,
-      initialCategory: bill.category.isEmpty ? null : bill.category,
-      initialWalletId: bill.walletId,
-      initialNote: bill.label,
-    );
+    // Guard penuh: semua IO ber-fallback, tak ada throw ke framework.
+    bool ok = false;
+    try {
+      ok = await openTxInputSheet(
+        context,
+        initialType: 'out',
+        initialAmountIdr: bill.amount,
+        initialCategory: bill.category.isEmpty ? null : bill.category,
+        initialWalletId: bill.walletId,
+        initialNote: bill.label,
+      );
+    } catch (_) {
+      return;
+    }
     if (!ok) return;
-    final all = await loadBills();
-    final idx = all.indexWhere((b) => b.id == bill.id);
-    if (idx < 0) return;
-    final rec = recordPayment(all[idx], all[idx].nextDue, bill.amount, DateTime.now());
-    all[idx] = rec.bill;
-    await saveBills(all);
-    final pays = await loadPayments();
-    await savePayments([rec.entry, ...pays]);
-    await _load();
+    try {
+      final all = await guardAsync(loadBills, <RecurringBill>[]);
+      final idx = all.indexWhere((b) => b.id == bill.id);
+      if (idx < 0) return;
+      final rec =
+          recordPayment(all[idx], all[idx].nextDue, bill.amount, DateTime.now());
+      all[idx] = rec.bill;
+      await runGuarded(() => saveBills(all));
+      final pays = await guardAsync(loadPayments, <PaymentEntry>[]);
+      await runGuarded(() => savePayments([rec.entry, ...pays]));
+      await _load();
+    } catch (_) {}
   }
 
   static String _ymd(DateTime d) =>

@@ -82,22 +82,29 @@ class ForegroundTrack {
   }
 
   static Future<void> start() async {
-    if (!Platform.isAndroid) return;
-    initOnce();
-    if (await FlutterForegroundTask.isRunningService) return;
-    final perm = await FlutterForegroundTask.checkNotificationPermission();
-    if (perm != NotificationPermission.granted) {
-      await FlutterForegroundTask.requestNotificationPermission();
-    }
-    final res = await FlutterForegroundTask.startService(
-      serviceId: _serviceId,
-      serviceTypes: const [ForegroundServiceTypes.specialUse],
-      notificationTitle: _title,
-      notificationText: _text,
-      callback: foregroundStartCallback,
-    );
-    if (res is ServiceRequestFailure) {
-      debugPrint('foreground start gagal: ${res.error}');
+    // Guard penuh (dulu tanpa try/catch, tidak seperti stop()):
+    // startService native di OEM tertentu melempar — itu tak boleh
+    // membunuh app saat MainShell init/resume.
+    try {
+      if (!Platform.isAndroid) return;
+      initOnce();
+      if (await FlutterForegroundTask.isRunningService) return;
+      final perm = await FlutterForegroundTask.checkNotificationPermission();
+      if (perm != NotificationPermission.granted) {
+        await FlutterForegroundTask.requestNotificationPermission();
+      }
+      final res = await FlutterForegroundTask.startService(
+        serviceId: _serviceId,
+        serviceTypes: const [ForegroundServiceTypes.specialUse],
+        notificationTitle: _title,
+        notificationText: _text,
+        callback: foregroundStartCallback,
+      );
+      if (res is ServiceRequestFailure) {
+        debugPrint('foreground start gagal: ${res.error}');
+      }
+    } catch (e) {
+      debugPrint('foreground start throw: $e');
     }
   }
 

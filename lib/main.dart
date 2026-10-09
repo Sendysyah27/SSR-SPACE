@@ -73,7 +73,13 @@ Future<void> main() async {
   final app = SsrSpaceApp(session: SessionService(prefs));
   runZonedGuarded(
     () => runApp(app),
-    (err, stack) => ErrorReporter.capture(err, stack, context: 'zone'),
+    // Handler zona tak boleh throw: bungkus ganda (capture sendiri
+    // sudah anti-throw, tapi kontrak ini dijaga eksplisit).
+    (err, stack) {
+      try {
+        ErrorReporter.capture(err, stack, context: 'zone');
+      } catch (_) {}
+    },
   );
 }
 
