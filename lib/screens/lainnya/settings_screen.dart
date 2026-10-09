@@ -7,6 +7,9 @@ import 'package:ssr_space/services/reminder_service.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/today_widget.dart';
+import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/models/wallet.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
@@ -44,6 +47,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _dateKey = GlobalKey();
   final _heroKey = GlobalKey();
   final _widgetKey = GlobalKey();
+  final _numKey = GlobalKey();
+  final _defWalletKey = GlobalKey();
+  final _weekStartKey = GlobalKey();
+  final _lockKey = GlobalKey();
 
   @override
   void initState() {
@@ -63,6 +70,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'date' => _dateKey,
         'hero' => _heroKey,
         'widget' => _widgetKey,
+        'numformat' => _numKey,
+        'defwallet' => _defWalletKey,
+        'weekstart' => _weekStartKey,
+        'lock' => _lockKey,
         _ => null,
       };
       if (key?.currentContext != null) {
@@ -127,6 +138,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: SsrSpace.md),
           const _DefaultCurrencyCard(),
+          const SizedBox(height: SsrSpace.md),
+          Container(key: _numKey, child: const _NumberFormatCard()),
+          const SizedBox(height: SsrSpace.md),
+          Container(
+            key: _defWalletKey,
+            child: const _DefaultWalletCard(),
+          ),
+          const SizedBox(height: SsrSpace.md),
+          Container(
+            key: _weekStartKey,
+            child: const _WeekStartCard(),
+          ),
+          const SizedBox(height: SsrSpace.md),
+          Container(key: _lockKey, child: const _LockTimeoutCard()),
           const SizedBox(height: SsrSpace.md),
           Container(key: _topnKey, child: const _TopNCard()),
           const SizedBox(height: SsrSpace.md),
@@ -291,6 +316,179 @@ class _DefaultCurrencyCard extends StatelessWidget {
             onChanged: (v) {
               if (v != null) setInputDefaultCurrency(v);
             },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Format angka: ID (1.000.000) atau US (1,000,000).
+class _NumberFormatCard extends StatelessWidget {
+  const _NumberFormatCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_numformat'),
+      children: [
+        ValueListenableBuilder<String>(
+          valueListenable: numberFormat,
+          builder: (context, value, _) => SegmentedButton<String>(
+            style: ssrSegmentedStyle(context),
+            segments: const [
+              ButtonSegment(value: 'id', label: Text('1.000.000')),
+              ButtonSegment(value: 'us', label: Text('1,000,000')),
+            ],
+            selected: {value == 'us' ? 'us' : 'id'},
+            showSelectedIcon: false,
+            onSelectionChanged: (s) => setNumberFormat(s.first),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Dompet default form catat (id hilang = fallback Most-used).
+class _DefaultWalletCard extends StatefulWidget {
+  const _DefaultWalletCard();
+
+  @override
+  State<_DefaultWalletCard> createState() => _DefaultWalletCardState();
+}
+
+class _DefaultWalletCardState extends State<_DefaultWalletCard> {
+  late Future<List<Wallet>> _wallets;
+
+  @override
+  void initState() {
+    super.initState();
+    _wallets = _load();
+  }
+
+  Future<List<Wallet>> _load() async {
+    try {
+      final orgId = await activeOrgId();
+      if (orgId.isEmpty) return [];
+      return WalletService().list(orgId);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_def_wallet'),
+      children: [
+        FutureBuilder<List<Wallet>>(
+          future: _wallets,
+          builder: (context, snap) {
+            final ws = snap.data ?? [];
+            return ValueListenableBuilder<String>(
+              valueListenable: defaultWalletId,
+              builder: (context, value, _) {
+                final valid =
+                    ws.any((w) => w.id == value) ? value : '';
+                return DropdownButtonFormField<String>(
+                  initialValue: valid,
+                  decoration: const InputDecoration(),
+                  items: [
+                    DropdownMenuItem(
+                      value: '',
+                      child: Text(tr('st_def_wallet_none')),
+                    ),
+                    for (final w in ws)
+                      DropdownMenuItem(value: w.id, child: Text(w.name)),
+                  ],
+                  onChanged: (v) => setDefaultWalletId(v ?? ''),
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// Hari awal minggu: Senin atau Minggu.
+class _WeekStartCard extends StatelessWidget {
+  const _WeekStartCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_weekstart'),
+      children: [
+        ValueListenableBuilder<int>(
+          valueListenable: weekStart,
+          builder: (context, value, _) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SegmentedButton<int>(
+                style: ssrSegmentedStyle(context),
+                segments: [
+                  ButtonSegment(value: 1, label: Text(tr('wd_1'))),
+                  ButtonSegment(value: 7, label: Text(tr('wd_7'))),
+                ],
+                selected: {value == 7 ? 7 : 1},
+                showSelectedIcon: false,
+                onSelectionChanged: (s) => setWeekStart(s.first),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                tr('st_weekstart_sub'),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Timeout kunci otomatis setelah background (PIN harus terpasang).
+class _LockTimeoutCard extends StatelessWidget {
+  const _LockTimeoutCard();
+
+  static const _options = [1, 5, 15, 30];
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_lock_timeout'),
+      children: [
+        ValueListenableBuilder<int>(
+          valueListenable: lockTimeoutMinutes,
+          builder: (context, value, _) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SegmentedButton<int>(
+                style: ssrSegmentedStyle(context),
+                segments: [
+                  for (final m in _options)
+                    ButtonSegment(
+                      value: m,
+                      label: Text(
+                        tr('st_lock_min').replaceFirst('{n}', '$m'),
+                      ),
+                    ),
+                ],
+                selected: {
+                  _options.contains(value) ? value : 5,
+                },
+                showSelectedIcon: false,
+                onSelectionChanged: (s) => setLockTimeoutMinutes(s.first),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                tr('st_lock_sub'),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
           ),
         ),
       ],

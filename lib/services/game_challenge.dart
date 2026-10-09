@@ -35,10 +35,13 @@ class ChallengeState {
 bool _sameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
-/// Awal minggu (Senin) dari [now].
-DateTime challengeWeekStart(DateTime now) {
+/// Awal minggu dari [now]. [startWeekday] 1 = Senin (default),
+/// 7 = Minggu (ikut pengaturan hari awal minggu).
+DateTime challengeWeekStart(DateTime now, [int startWeekday = 1]) {
   final day = DateTime(now.year, now.month, now.day);
-  return day.subtract(Duration(days: (day.weekday - 1) % 7));
+  final start = (startWeekday == 7) ? 7 : 1;
+  final offset = (day.weekday - start + 7) % 7;
+  return day.subtract(Duration(days: offset));
 }
 
 ChallengeState evalChallenge({

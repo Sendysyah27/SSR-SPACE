@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
@@ -13,6 +14,7 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
+import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/other_screen.dart';
@@ -56,6 +58,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       _resumed = true;
+      unawaited(_checkRelock());
       NotifTrack.ensureListening(force: true);
       unawaited(ForegroundTrack.syncFromPrefs());
       unawaited(_checkDetail());
@@ -65,7 +68,28 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       _reloadTab(index);
     } else {
       _resumed = false;
+      widget.session.touch();
     }
+  }
+
+  /// Kunci ulang saat kembali dari background melewati timeout
+  /// (hanya bila PIN terpasang). Sebelumnya shouldRelock tak dipanggil
+  /// siapa pun — timeout 5 menit cuma tulisan.
+  Future<void> _checkRelock() async {
+    if (!mounted) return;
+    final session = widget.session;
+    if (!session.hasPin) return;
+    if (!session.shouldRelock(
+      timeout: Duration(minutes: lockTimeoutMinutes.value),
+    )) {
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LockScreen(session: session),
+      ),
+    );
+    session.touch();
   }
 
   /// Buka detail read-only bila ada ketuk notif tersimpan.

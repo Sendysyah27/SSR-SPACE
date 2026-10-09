@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.12.1+75.
+Versi terpasang: 2.13.0+76.
+
+## Yang baru di 2.13.0+76
+
+1. Empat pengaturan baru: format angka Indonesia/Asing, dompet default buat form catat, awal minggu Senin/Minggu, dan kunci otomatis 1 sampai 30 menit.
+2. Kunci otomatis kini beneran jalan: app yang lama di background minta PIN lagi saat dibuka.
 
 ## Yang baru di 2.12.1+75
 

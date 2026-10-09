@@ -80,14 +80,18 @@ class CurrencyService {
     return displayed.toDouble() / r;
   }
 
-  /// Format nominal IDR ke mata uang + simbol aktif.
+  /// Format nominal IDR ke mata uang + simbol aktif. Grup ribuan IDR
+  /// ikut pengaturan format angka ('id' vs 'us'); non-IDR tetap en_US.
   static String format(num idrAmount) {
     final code = currencyCode.value;
     final symbol = kCurrencySymbols[code] ?? 'Rp';
     final dec = kCurrencyDecimals(code);
     final v = convert(idrAmount);
+    final locale = code == 'IDR'
+        ? (numberFormat.value == 'us' ? 'en_US' : 'id_ID')
+        : 'en_US';
     final f = NumberFormat.currency(
-      locale: code == 'IDR' ? 'id_ID' : 'en_US',
+      locale: locale,
       symbol: symbol,
       decimalDigits: dec,
     );

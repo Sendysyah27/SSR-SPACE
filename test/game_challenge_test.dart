@@ -8,6 +8,10 @@ void main() {
     expect(challengeWeekStart(d(2026, 10, 9)), d(2026, 10, 5));
   });
 
+  test('awal minggu bisa minggu', () {
+    expect(challengeWeekStart(d(2026, 10, 9), 7), d(2026, 10, 4));
+  });
+
   test('nospend selesai dan berjalan', () {
     final now = d(2026, 10, 9);
     final done = evalChallenge(

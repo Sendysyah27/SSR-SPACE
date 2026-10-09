@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/game_badges.dart';
@@ -55,7 +56,7 @@ class ArcadeScreenState extends State<ArcadeScreen> {
     try {
       final orgId = await activeOrgId();
       final now = DateTime.now();
-      final wk = weekKey(weekMonday(now));
+      final wk = weekKey(weekMonday(now, weekStart.value));
       var st = const GameStats();
       var evalMap = <String, ChallengeState>{};
       var storedMap = <String, int>{};
@@ -245,7 +246,7 @@ class ArcadeScreenState extends State<ArcadeScreen> {
 
   /// Transaksi minggu berjalan untuk evaluasi tantangan.
   Future<List<WeekTx>> _weekTxs(String orgId, DateTime now) async {
-    final mon = challengeWeekStart(now);
+    final mon = challengeWeekStart(now, weekStart.value);
     final end = now.add(const Duration(days: 1));
     final rows =
         await TransactionService().listRange(orgId, _ymd(mon), _ymd(end));

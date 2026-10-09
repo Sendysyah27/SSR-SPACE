@@ -1573,6 +1573,21 @@ const _t = <String, Map<String, String>>{
     'id': 'Belum ada data bulan lalu buat dibandingin.',
     'en': 'No last-month data to compare yet.',
   },
+  // Perluasan pengaturan (referensi Money Lover/Wallet/YNAB)
+  'st_numformat': {'id': 'Format angka', 'en': 'Number format'},
+  'st_def_wallet': {'id': 'Dompet default', 'en': 'Default wallet'},
+  'st_def_wallet_none': {'id': 'Tanpa default', 'en': 'No default'},
+  'st_weekstart': {'id': 'Awal minggu', 'en': 'Week start'},
+  'st_weekstart_sub': {
+    'id': 'Mempengaruhi kilasan mingguan dan tantangan.',
+    'en': 'Affects weekly recap and challenges.',
+  },
+  'st_lock_timeout': {'id': 'Kunci otomatis', 'en': 'Auto-lock'},
+  'st_lock_sub': {
+    'id': 'Kunci PIN setelah app di background.',
+    'en': 'PIN lock after app goes to background.',
+  },
+  'st_lock_min': {'id': '{n} mnt', 'en': '{n} min'},
   // LOOP 3: Goals (casual, tidak menghakimi)
   'goal_title': {'id': 'Target nabung', 'en': 'Saving goals'},
   'goal_sub': {

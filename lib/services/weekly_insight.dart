@@ -38,10 +38,14 @@ class WeeklyInsight {
   });
 }
 
-/// Senin minggu berjalan (Senin tetap awal minggu, ikut calm_streak).
-DateTime weekMonday(DateTime d) {
+/// Awal minggu berjalan. [startWeekday] 1 = Senin (default, ikut
+/// calm_streak), 7 = Minggu. Kunci ISO [weekKey] tetap basis Senin
+/// (identitas internal, bukan jendela hitung).
+DateTime weekMonday(DateTime d, [int startWeekday = 1]) {
   final day = DateTime(d.year, d.month, d.day);
-  return day.subtract(Duration(days: (day.weekday - 1) % 7));
+  final start = (startWeekday == 7) ? 7 : 1;
+  final offset = (day.weekday - start + 7) % 7;
+  return day.subtract(Duration(days: offset));
 }
 
 /// Kunci minggu ISO sederhana `YYYY-Www` untuk prefs dismiss.

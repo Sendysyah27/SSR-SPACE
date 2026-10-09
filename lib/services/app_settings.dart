@@ -24,6 +24,10 @@ const _kWeeklyMinute = 'weekly_minute';
 const _kWidgetToday = 'widget_today';
 const _kWalletUse = 'wallet_use_count';
 const _kThemeChoice = 'app_theme_choice';
+const _kNumberFormat = 'app_number_format';
+const _kDefaultWallet = 'app_default_wallet';
+const _kWeekStart = 'app_week_start';
+const _kLockTimeout = 'app_lock_timeout';
 
 /// Pengaturan aplikasi: bahasa, mata uang tampilan, skala font.
 /// Diisi di main() sebelum runApp; layar settings mengubah + simpan.
@@ -51,6 +55,18 @@ final weeklyHour = ValueNotifier<int>(20);
 final weeklyMinute = ValueNotifier<int>(0);
 final widgetToday = ValueNotifier<bool>(false);
 final themeChoice = ValueNotifier<String>('otomatis');
+
+/// Format angka: 'id' (1.000.000) atau 'us' (1,000,000).
+final numberFormat = ValueNotifier<String>('id');
+
+/// Dompet default form catat (id wallet, '' = tanpa default).
+final defaultWalletId = ValueNotifier<String>('');
+
+/// Hari awal minggu: 1 Senin, 7 Minggu.
+final weekStart = ValueNotifier<int>(1);
+
+/// Auto-lock menit: 1, 5, 15, atau 30.
+final lockTimeoutMinutes = ValueNotifier<int>(5);
 
 /// Hitung pemakaian dompet manual (id ke jumlah), untuk urutan dropdown.
 /// Hanya naik lewat noteWalletUsed; auto-track tidak menyentuh.
@@ -96,6 +112,14 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
   walletUseCounts.value = decodeUsage(prefs.getString(_kWalletUse));
   final tc = prefs.getString(_kThemeChoice);
   themeChoice.value = (tc == 'noir') ? 'noir' : 'otomatis';
+  final nf = prefs.getString(_kNumberFormat);
+  numberFormat.value = (nf == 'us') ? 'us' : 'id';
+  defaultWalletId.value = prefs.getString(_kDefaultWallet) ?? '';
+  final ws = prefs.getInt(_kWeekStart) ?? 1;
+  weekStart.value = (ws == 7) ? 7 : 1;
+  final lt = prefs.getInt(_kLockTimeout) ?? 5;
+  lockTimeoutMinutes.value =
+      (lt == 1 || lt == 5 || lt == 15 || lt == 30) ? lt : 5;
 }
 
 Future<void> setLocaleCode(String v) async {
@@ -217,6 +241,33 @@ Future<void> setThemeChoice(String v) async {
   themeChoice.value = v;
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kThemeChoice, v);
+}
+
+Future<void> setNumberFormat(String v) async {
+  final nv = (v == 'us') ? 'us' : 'id';
+  numberFormat.value = nv;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kNumberFormat, nv);
+}
+
+Future<void> setDefaultWalletId(String v) async {
+  defaultWalletId.value = v;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kDefaultWallet, v);
+}
+
+Future<void> setWeekStart(int v) async {
+  final nv = (v == 7) ? 7 : 1;
+  weekStart.value = nv;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt(_kWeekStart, nv);
+}
+
+Future<void> setLockTimeoutMinutes(int v) async {
+  final nv = (v == 1 || v == 5 || v == 15 || v == 30) ? v : 5;
+  lockTimeoutMinutes.value = nv;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt(_kLockTimeout, nv);
 }
 
 /// Catat satu pemakaian dompet manual. Id kosong diabaikan.

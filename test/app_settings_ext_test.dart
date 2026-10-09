@@ -19,6 +19,42 @@ void main() {
     expect(inputDefaultCurrency.value, 'IDR');
   });
 
+  test('opsi baru fail-safe + persist', () async {
+    SharedPreferences.setMockInitialValues({});
+    final p = await SharedPreferences.getInstance();
+    await loadAppSettings(p);
+    expect(numberFormat.value, 'id');
+    expect(defaultWalletId.value, '');
+    expect(weekStart.value, 1);
+    expect(lockTimeoutMinutes.value, 5);
+    await setNumberFormat('us');
+    expect(numberFormat.value, 'us');
+    await setNumberFormat('xx');
+    expect(numberFormat.value, 'id');
+    await setDefaultWalletId('w1');
+    expect(defaultWalletId.value, 'w1');
+    await setWeekStart(7);
+    expect(weekStart.value, 7);
+    await setWeekStart(3);
+    expect(weekStart.value, 1);
+    await setLockTimeoutMinutes(15);
+    expect(lockTimeoutMinutes.value, 15);
+    await setLockTimeoutMinutes(99);
+    expect(lockTimeoutMinutes.value, 5);
+    SharedPreferences.setMockInitialValues({
+      'app_number_format': 'us',
+      'app_default_wallet': 'w9',
+      'app_week_start': 7,
+      'app_lock_timeout': 30,
+    });
+    final p2 = await SharedPreferences.getInstance();
+    await loadAppSettings(p2);
+    expect(numberFormat.value, 'us');
+    expect(defaultWalletId.value, 'w9');
+    expect(weekStart.value, 7);
+    expect(lockTimeoutMinutes.value, 30);
+  });
+
   test('theme choice fail-safe + persist', () async {
     SharedPreferences.setMockInitialValues({});
     final p = await SharedPreferences.getInstance();

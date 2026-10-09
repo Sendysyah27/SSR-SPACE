@@ -10,6 +10,12 @@ void main() {
     expect(weekKey(d(2026, 1, 1)), '2026-W01');
   });
 
+  test('awal minggu bisa minggu', () {
+    expect(weekMonday(d(2026, 10, 9), 7), d(2026, 10, 4));
+    expect(weekMonday(d(2026, 10, 4), 7), d(2026, 10, 4));
+    expect(weekMonday(d(2026, 10, 9), 9), d(2026, 10, 5));
+  });
+
   test('insight penuh: total, rata-rata, top naik, saran', () {
     final now = d(2026, 10, 9);
     final txs = [

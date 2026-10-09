@@ -256,7 +256,7 @@ class BerandaScreenState extends State<BerandaScreen> {
       WeeklyInsight? wi;
       String? wiKey;
       try {
-        final thisMon = weekMonday(now);
+        final thisMon = weekMonday(now, weekStart.value);
         final lastMon = thisMon.subtract(const Duration(days: 7));
         final dismissKey =
             'insight_seen_${weekKey(lastMon)}_$orgId';

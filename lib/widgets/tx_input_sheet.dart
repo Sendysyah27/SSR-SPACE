@@ -208,7 +208,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
     time = t == null
         ? TimeOfDay.now()
         : TimeOfDay(hour: t.hour, minute: t.minute);
-    walletId = e?.walletId ?? widget.initialWalletId;
+    walletId =
+        e?.walletId ?? widget.initialWalletId ?? _defaultWallet();
     toWalletId = e?.toWalletId;
     catC.text = e?.category != null
         ? parseCategory(e!.category!).top
@@ -219,6 +220,17 @@ class _TxInputSheetState extends State<TxInputSheet> {
     noteC.text = e?.note ?? widget.initialNote ?? '';
     _selCat = catC.text.trim().isEmpty ? null : catC.text.trim();
     _step = _isEdit ? 1 : 0;
+  }
+
+  /// Dompet default pengaturan (bila masih ada di daftar). Null = pilih
+  /// manual / urutan Most-used seperti biasa.
+  String? _defaultWallet() {
+    final dw = defaultWalletId.value;
+    if (dw.isEmpty) return null;
+    for (final w in widget.wallets) {
+      if (w.id == dw) return dw;
+    }
+    return null;
   }
 
   @override

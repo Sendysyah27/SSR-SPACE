@@ -30,6 +30,13 @@ void main() {
     expect(CurrencyService.placeholder(), 'Rp ••••••');
   });
 
+  test('format US pakai koma', () {
+    numberFormat.value = 'us';
+    expect(CurrencyService.format(1500000), 'Rp1,500,000');
+    numberFormat.value = 'id';
+    expect(CurrencyService.format(1500000), 'Rp1.500.000');
+  });
+
   test('format USD pakai kurs cache + simbol', () {
     CurrencyService.rates = {'USD': 0.00006};
     currencyCode.value = 'USD';
