@@ -5,8 +5,6 @@ import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
-import 'package:ssr_space/screens/auth/onboarding_screen.dart';
-import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/screens/shell/main_shell.dart';
 import 'package:ssr_space/screens/auth/auth_screen.dart';
 import 'package:ssr_space/screens/auth/intro_consent_screen.dart';
@@ -75,7 +73,9 @@ class _SplashScreenState extends State<SplashScreen> {
         'splash decide firstRun=${widget.session.isFirstRun} '
         'hasPin=${widget.session.hasPin}',
       );
-      if (widget.session.isFirstRun) {
+      // BYPASS-PIN SEMENTARA (darurat FC): skip lock total, langsung shell.
+      // TODO: kembalikan gate hasPin setelah root cause FC diperbaiki.
+      /* if (widget.session.isFirstRun) {
         await pinLog('splash -> onboarding');
         await _go(OnboardingScreen(session: widget.session));
         return;
@@ -84,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen> {
         await _go(LockScreen(session: widget.session));
         await pinLog('splash lock returned');
         return;
-      }
+      } */
       await pinLog('splash -> shell');
       await _go(MainShell(session: widget.session));
     } catch (e, st) {

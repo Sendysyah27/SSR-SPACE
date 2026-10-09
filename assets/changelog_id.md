@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.13.2+78.
+Versi terpasang: 2.13.3+79.
+
+## Yang baru di 2.13.3+79
+
+1. BYPASS PIN sementara (darurat): layar kunci dimatikan total, app langsung masuk beranda. Sementara sampai crash setelah PIN ketemu akarnya.
 
 ## Yang baru di 2.13.2+78
 

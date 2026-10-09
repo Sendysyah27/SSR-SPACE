@@ -3,9 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
-import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
-import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/pin_debug_log.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
@@ -16,7 +14,6 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
-import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/other_screen.dart';
@@ -98,30 +95,12 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   /// Kunci ulang saat kembali dari background melewati timeout
   /// (hanya bila PIN terpasang). Guard anti-tumpuk: resume cepat
   /// beruntun tak boleh menumpuk layar kunci.
-  bool _lockOpen = false;
+  // BYPASS-PIN SEMENTARA: kunci ulang dimatikan total.
+  // TODO: kembalikan setelah root cause FC diperbaiki.
+  // bool _lockOpen = false;
 
   Future<void> _checkRelock() async {
-    if (!mounted || _lockOpen) return;
-    final session = widget.session;
-    if (!session.hasPin) return;
-    if (!session.shouldRelock(
-      timeout: Duration(minutes: lockTimeoutMinutes.value),
-    )) {
-      return;
-    }
-    _lockOpen = true;
-    try {
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => LockScreen(session: session),
-        ),
-      );
-    } catch (err, st) {
-      await ErrorReporter.capture(err, st, context: 'relock_nav');
-    } finally {
-      _lockOpen = false;
-      session.touch();
-    }
+    return;
   }
 
   /// Buka detail read-only bila ada ketuk notif tersimpan.

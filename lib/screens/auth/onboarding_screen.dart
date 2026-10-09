@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
-import 'package:ssr_space/screens/auth/lock_screen.dart';
+import 'package:ssr_space/screens/shell/main_shell.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/pin_pad.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
@@ -68,9 +68,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await widget.session.completeOnboarding(nameC.text);
     await widget.session.setPin(pinC.text);
     if (!mounted) return;
+    // BYPASS-PIN SEMENTARA: langsung shell, skip lock.
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => LockScreen(session: widget.session)),
+      MaterialPageRoute(builder: (_) => MainShell(session: widget.session)),
     );
   }
 
