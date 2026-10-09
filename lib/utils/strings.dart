@@ -1647,6 +1647,93 @@ const _t = <String, Map<String, String>>{
     'id': 'Target {a} sampai {b} (3-6x belanja).',
     'en': 'Target {a} to {b} (3-6x spending).',
   },
+  // LOOP 4: Gamifikasi (casual)
+  'game_title': {'id': 'Pencapaian', 'en': 'Achievements'},
+  'game_sub': {
+    'id': 'Badge, tantangan, level',
+    'en': 'Badges, challenges, levels',
+  },
+  'game_level': {'id': 'Lv.{n} {t}', 'en': 'Lv.{n} {t}'},
+  'game_xp_left': {
+    'id': '{n} XP lagi ke {t}.',
+    'en': '{n} XP to {t}.',
+  },
+  'game_max': {
+    'id': 'Level mentok. Sungkem.',
+    'en': 'Max level. Respect.',
+  },
+  'lvl_1': {'id': 'Baru Mulai', 'en': 'Fresh Start'},
+  'lvl_2': {'id': 'Sadar Duit', 'en': 'Money Aware'},
+  'lvl_3': {'id': 'Tukang Catat', 'en': 'Habit Logger'},
+  'lvl_4': {'id': 'Penjaga Budget', 'en': 'Budget Guard'},
+  'lvl_5': {'id': 'Penabung Rajin', 'en': 'Diligent Saver'},
+  'lvl_6': {'id': 'Sultan Mini', 'en': 'Mini Sultan'},
+  'lvl_7': {'id': 'Legenda Ledger', 'en': 'Ledger Legend'},
+  'game_badges': {'id': 'Badge', 'en': 'Badges'},
+  'game_new': {'id': 'Baru', 'en': 'New'},
+  'b_streak7_t': {'id': 'Seminggu Konsisten', 'en': 'Consistent Week'},
+  'b_streak7_d': {
+    'id': 'Catat 7 hari beruntun.',
+    'en': 'Log 7 days in a row.',
+  },
+  'b_streak30_t': {'id': 'Sebulan Penuh', 'en': 'Full Month'},
+  'b_streak30_d': {
+    'id': 'Catat 30 hari beruntun.',
+    'en': 'Log 30 days in a row.',
+  },
+  'b_streak100_t': {'id': 'Seratus Hari', 'en': 'Hundred Days'},
+  'b_streak100_d': {
+    'id': 'Catat 100 hari beruntun.',
+    'en': 'Log 100 days in a row.',
+  },
+  'b_save1m_t': {'id': 'Jutawan Mini', 'en': 'Mini Millionaire'},
+  'b_save1m_d': {
+    'id': 'Total nabung tembus 1 juta.',
+    'en': 'Total savings hit 1 million.',
+  },
+  'b_clean30_t': {'id': 'Bulan Bersih', 'en': 'Clean Month'},
+  'b_clean30_d': {
+    'id': 'Sebulan tanpa budget jebol.',
+    'en': 'A month with no broken budget.',
+  },
+  'b_goal1_t': {'id': 'Mimpi Kecapai', 'en': 'Dream Reached'},
+  'b_goal1_d': {
+    'id': 'Satu target nabung tercapai.',
+    'en': 'One saving goal reached.',
+  },
+  'b_tx100_t': {'id': 'Seratus Catatan', 'en': 'Hundred Notes'},
+  'b_tx100_d': {
+    'id': '100+ transaksi tercatat.',
+    'en': '100+ transactions logged.',
+  },
+  'b_emsafe_t': {'id': 'Dana Aman', 'en': 'Fund Safe'},
+  'b_emsafe_d': {
+    'id': 'Dana darurat sudah aman.',
+    'en': 'Emergency fund is safe.',
+  },
+  'game_challenges': {'id': 'Tantangan', 'en': 'Challenges'},
+  'ch_nospend3_t': {'id': 'Puasa Belanja', 'en': 'No-Spend Days'},
+  'ch_nospend3_d': {
+    'id': '3 hari tanpa belanja minggu ini.',
+    'en': '3 days with no spending this week.',
+  },
+  'ch_jajan50_t': {'id': 'Jajan Kalem', 'en': 'Calm Snacking'},
+  'ch_jajan50_d': {
+    'id': 'Jajan di bawah 50rb minggu ini.',
+    'en': 'Snacks under 50k this week.',
+  },
+  'ch_log7_t': {'id': 'Rajin Absen', 'en': 'Daily Check-in'},
+  'ch_log7_d': {
+    'id': 'Catat tiap hari selama 7 hari.',
+    'en': 'Log every day for 7 days.',
+  },
+  'ch_take': {'id': 'Ikut', 'en': 'Join'},
+  'ch_done': {'id': 'Selesai +50 XP', 'en': 'Done +50 XP'},
+  'ch_failed': {
+    'id': 'Gagal, coba lagi minggu depan.',
+    'en': 'Failed, try again next week.',
+  },
+  'ch_progress': {'id': '{p} dari {t}', 'en': '{p} of {t}'},
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

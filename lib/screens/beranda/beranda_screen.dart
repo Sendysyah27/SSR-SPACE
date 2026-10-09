@@ -15,6 +15,9 @@ import 'package:ssr_space/services/weekly_insight.dart';
 import 'package:ssr_space/services/savings_goal.dart';
 import 'package:ssr_space/services/goal_forecast.dart';
 import 'package:ssr_space/services/goal_store.dart';
+import 'package:ssr_space/services/game_level.dart';
+import 'package:ssr_space/services/game_store.dart';
+import 'package:ssr_space/screens/lainnya/arcade_screen.dart';
 import 'package:ssr_space/screens/lainnya/goals_screen.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/today_widget.dart';
@@ -76,6 +79,7 @@ class BerandaScreenState extends State<BerandaScreen> {
   EmergencyStatus? emergency;
   SavingsGoal? nearGoal;
   double nearAuto = 0;
+  int gameXp = 0;
 
   @override
   void initState() {
@@ -89,6 +93,13 @@ class BerandaScreenState extends State<BerandaScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const GoalsScreen()),
+    );
+  }
+
+  void _openArcade() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ArcadeScreen()),
     );
   }
 
@@ -323,9 +334,27 @@ class BerandaScreenState extends State<BerandaScreen> {
           near = open.first;
           nearSum = sums[near.id] ?? 0;
         }
+        var doneCh = 0;
+        try {
+          final storedCh = await loadChallenges();
+          for (final c in storedCh) {
+            if (c.status == 1) doneCh++;
+          }
+        } catch (_) {}
+        var goalsHit = 0;
+        for (final g in gs) {
+          if (g.remaining(sums[g.id] ?? 0) <= 0) goalsHit++;
+        }
+        gameXp = calcXp(
+          txCount: hist.length,
+          streakDays: st?.days ?? 0,
+          challengesDone: doneCh,
+          goalsReached: goalsHit,
+        );
       } catch (_) {
         em = null;
         near = null;
+        gameXp = 0;
       }
       if (!mounted) return;
       setState(() {
@@ -615,6 +644,8 @@ class BerandaScreenState extends State<BerandaScreen> {
             onTap: _openGoals,
           ),
         ],
+        const SizedBox(height: SsrSpace.md),
+        _LevelRow(xp: gameXp, onTap: _openArcade),
         if (calm.any((b) => b)) ...[
           const SizedBox(height: SsrSpace.md),
           _CalmWeeks(weeks: calm),
@@ -1302,6 +1333,72 @@ class _DreamCard extends StatelessWidget {
                 ],
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Baris level ringkas: Lv + judul + bar mini. Ketuk = buka Arcade.
+class _LevelRow extends StatelessWidget {
+  final int xp;
+  final VoidCallback onTap;
+
+  const _LevelRow({required this.xp, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final lv = levelFor(xp);
+    return GestureDetector(
+      onTap: onTap,
+      child: SectionCard(
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tr('game_level')
+                        .replaceFirst('{n}', '$lv')
+                        .replaceFirst('{t}', tr('lvl_$lv')),
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    height: 6,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: ColoredBox(
+                              color:
+                                  scheme.outline.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          FractionallySizedBox(
+                            widthFactor: levelProgress(xp),
+                            heightFactor: 1,
+                            alignment: Alignment.centerLeft,
+                            child: ColoredBox(color: scheme.primary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: SsrSpace.sm),
+            Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: scheme.outline,
+            ),
           ],
         ),
       ),

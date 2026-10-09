@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.11.0+73.
+Versi terpasang: 2.12.0+74.
+
+## Yang baru di 2.12.0+74
+
+1. Pencapaian: kumpulkan 8 badge (streak, nabung, bulan bersih, dan lainnya). Yang baru kebuka ditandai, yang terkunci tampil beserta syaratnya.
+2. Tantangan mingguan: Puasa Belanja, Jajan Kalem, Rajin Absen. Ikut seikhlasnya, progres jalan otomatis, selesai dapat 50 XP.
+3. Level: tiap catatan, streak, tantangan, dan goal menambah XP. Beranda menampilkan Lv dan julukanmu, dari Baru Mulai sampai Legenda Ledger.
 
 ## Yang baru di 2.11.0+73
 

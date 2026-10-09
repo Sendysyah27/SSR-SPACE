@@ -23,6 +23,7 @@ import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/billing_screen.dart';
 import 'package:ssr_space/screens/lainnya/categories_screen.dart';
 import 'package:ssr_space/screens/lainnya/help_screen.dart';
+import 'package:ssr_space/screens/lainnya/arcade_screen.dart';
 import 'package:ssr_space/screens/lainnya/goals_screen.dart';
 import 'package:ssr_space/screens/lainnya/recurring_bills_screen.dart';
 import 'package:ssr_space/screens/lainnya/import_preview_screen.dart';
@@ -443,6 +444,7 @@ class _OtherScreenState extends State<OtherScreen> {
             onHistory: () => _push(const TransactionsScreen()),
             onBills: () => _push(const RecurringBillsScreen()),
             onGoals: () => _push(const GoalsScreen()),
+            onArcade: () => _push(const ArcadeScreen()),
             onNfc: () => _push(const NfcCardsScreen()),
             onTracking: () => _push(const NotifSettingsScreen()),
             onBackup: _backup,
@@ -479,6 +481,7 @@ class _HubList extends StatelessWidget {
   final VoidCallback onHistory;
   final VoidCallback onBills;
   final VoidCallback onGoals;
+  final VoidCallback onArcade;
   final VoidCallback onNfc;
   final VoidCallback onTracking;
   final VoidCallback onBackup;
@@ -508,6 +511,7 @@ class _HubList extends StatelessWidget {
     required this.onHistory,
     required this.onBills,
     required this.onGoals,
+    required this.onArcade,
     required this.onNfc,
     required this.onTracking,
     required this.onBackup,
@@ -535,6 +539,7 @@ class _HubList extends StatelessWidget {
         onHistory: onHistory,
         onBills: onBills,
         onGoals: onGoals,
+        onArcade: onArcade,
         onNfc: onNfc,
         budgetNonce: budgetNonce,
       ),
@@ -644,6 +649,7 @@ class _DataSection extends StatefulWidget {
   final VoidCallback onHistory;
   final VoidCallback onBills;
   final VoidCallback onGoals;
+  final VoidCallback onArcade;
   final VoidCallback onNfc;
   final int budgetNonce;
 
@@ -654,6 +660,7 @@ class _DataSection extends StatefulWidget {
     required this.onHistory,
     required this.onBills,
     required this.onGoals,
+    required this.onArcade,
     required this.onNfc,
     required this.budgetNonce,
   });
@@ -744,6 +751,13 @@ class _DataSectionState extends State<_DataSection> {
           title: tr('goal_title'),
           subtitle: tr('goal_sub'),
           onTap: widget.onGoals,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.health,
+          title: tr('game_title'),
+          subtitle: tr('game_sub'),
+          onTap: widget.onArcade,
         ),
         const Divider(height: 1),
         NavTile(
