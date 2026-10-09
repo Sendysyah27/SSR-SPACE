@@ -1588,6 +1588,10 @@ const _t = <String, Map<String, String>>{
     'en': 'PIN lock after app goes to background.',
   },
   'st_lock_min': {'id': '{n} mnt', 'en': '{n} min'},
+  'st_notif_denied': {
+    'id': 'Izin notif ditolak HP, pengingat tak bisa bunyi. Nyalakan di Pengaturan HP.',
+    'en': 'Notification permission denied, reminders cannot fire. Enable it in phone Settings.',
+  },
   // LOOP 3: Goals (casual, tidak menghakimi)
   'goal_title': {'id': 'Target nabung', 'en': 'Saving goals'},
   'goal_sub': {

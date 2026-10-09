@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/widget_snapshot.dart';
@@ -30,6 +31,12 @@ Future<void> refreshTodayWidget({
         masked: maskAmounts.value,
       ),
     );
+    // Minta provider native gambar ulang (tanpa ini widget diam di
+    // tampilan lama karena updatePeriodMillis=0). Gagal = diam.
+    try {
+      await const MethodChannel('ssr_space/widget')
+          .invokeMethod('refresh');
+    } catch (_) {}
   } catch (_) {}
 }
 

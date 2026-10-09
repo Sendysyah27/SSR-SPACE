@@ -673,7 +673,15 @@ class _ThemeCard extends StatelessWidget {
 class _ReminderCard extends StatelessWidget {
   const _ReminderCard();
 
-  Future<void> _toggle(bool v) async {
+  Future<void> _toggle(BuildContext context, bool v) async {
+    if (v && !await ReminderService.notificationsAllowed()) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('st_notif_denied'))),
+        );
+      }
+      return;
+    }
     await setReminderEnabled(v);
     try {
       if (v) {
@@ -725,7 +733,7 @@ class _ReminderCard extends StatelessWidget {
                     contentPadding: EdgeInsets.zero,
                     title: Text(tr('st_reminder_on')),
                     value: enabled,
-                    onChanged: _toggle,
+                    onChanged: (v) => _toggle(context, v),
                   ),
                   Row(
                     children: [
@@ -758,7 +766,15 @@ class _ReminderCard extends StatelessWidget {
 class _WeeklySection extends StatelessWidget {
   const _WeeklySection();
 
-  Future<void> _toggle(bool v) async {
+  Future<void> _toggle(BuildContext context, bool v) async {
+    if (v && !await ReminderService.notificationsAllowed()) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('st_notif_denied'))),
+        );
+      }
+      return;
+    }
     await setWeeklyEnabled(v);
     try {
       if (v) {
@@ -830,7 +846,7 @@ class _WeeklySection extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   title: Text(tr('st_weekly_on')),
                   value: enabled,
-                  onChanged: _toggle,
+                  onChanged: (v) => _toggle(context, v),
                 ),
                 Row(
                   children: [
