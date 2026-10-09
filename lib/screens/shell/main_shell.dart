@@ -6,6 +6,7 @@ import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/pin_debug_log.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
 import 'package:ssr_space/services/session_service.dart';
@@ -42,6 +43,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkDetail());
     unawaited(_initServices());
   }
 
@@ -66,8 +68,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     } catch (e, st) {
       await pinLogError('shell init', e, st);
     }
-  }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkDetail());
   }
 
   @override
