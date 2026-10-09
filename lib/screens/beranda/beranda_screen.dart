@@ -3,8 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/budget_pace.dart';
+import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/calm_streak.dart';
+import 'package:ssr_space/services/category_meta.dart';
+import 'package:ssr_space/services/health_score.dart';
 import 'package:ssr_space/services/month.dart';
+import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -54,6 +59,11 @@ class BerandaScreenState extends State<BerandaScreen> {
   List<RecurringBill> billsDue = [];
   bool loading = true;
   String? err;
+  DailyStreak? streak;
+  HealthBreakdown? health;
+  int? healthDelta;
+  int paceWarn = 0;
+  int paceDanger = 0;
 
   @override
   void initState() {
@@ -81,11 +91,87 @@ class BerandaScreenState extends State<BerandaScreen> {
       }
       final txs = await TransactionService().listMonth(orgId, month);
       final allBills = await loadBills();
+      final now = DateTime.now();
+      // Streak: tanggal ringan lintas bulan, fail-open (kartu sembunyi).
+      DailyStreak? st;
+      try {
+        st = dailyStreak(await TransactionService().listDates(orgId), now);
+      } catch (_) {
+        st = null;
+      }
+      // Health + pace: hanya bulan berjalan (limit budget milik bulan
+      // berjalan). Bulan lampau tak dihitung, kartu sembunyi.
+      HealthBreakdown? hb;
+      int? delta;
+      var w = 0;
+      var dgr = 0;
+      if (month == currentMonth()) {
+        try {
+          final prev =
+              await TransactionService().listMonth(orgId, prevMonth(month));
+          final spent = <String, double>{};
+          var totalIn = 0.0;
+          var curOut = 0.0;
+          for (final t in txs) {
+            if (t.type == 'in') totalIn += t.amount;
+            if (t.type != 'out') continue;
+            if (isSavingCategory(t.category)) continue;
+            if (!((t.date ?? '').startsWith(month))) continue;
+            curOut += t.amount;
+            final top = topOf(t.category);
+            final k = top.isEmpty ? tr('cat_other') : top;
+            spent[k] = (spent[k] ?? 0) + t.amount;
+          }
+          var prevOut = 0.0;
+          for (final t in prev) {
+            if (t.type != 'out') continue;
+            if (isSavingCategory(t.category)) continue;
+            prevOut += t.amount;
+          }
+          final limits = await fetchBudgetLimits(orgId);
+          final hbInputs = [
+            for (final b in limits)
+              if (!isSavingCategory(b.category) && b.limit > 0)
+                HealthBudget(
+                  limit: b.limit,
+                  spent: spent[b.category] ?? 0,
+                ),
+          ];
+          hb = computeHealth(
+            totalIn: totalIn,
+            budgets: hbInputs,
+            savingOut: savingOutOf(txs, month: month),
+            curOut: curOut,
+            prevOut: prevOut,
+            streakDays: st?.days ?? 0,
+          );
+          final key = 'health_prev_$orgId';
+          final prevScore = prefs.getInt(key);
+          if (prevScore != null) delta = hb.total - prevScore;
+          await prefs.setInt(key, hb.total);
+          for (final b in hbInputs) {
+            final pace = budgetPace(
+              spent: b.spent,
+              limit: b.limit,
+              today: now,
+            );
+            if (pace.state == PaceState.warn) w++;
+            if (pace.state == PaceState.danger) dgr++;
+          }
+        } catch (_) {
+          hb = null;
+        }
+      }
       if (!mounted) return;
       setState(() {
         orgName = prefs.getString('active_org_name') ?? '-';
         items = txs;
-        billsDue = dueBills(allBills, DateTime.now());
+        billsDue = dueBills(allBills, now);
+        streak = st;
+        health = hb;
+        healthDelta = delta;
+        paceWarn = w;
+        paceDanger = dgr;
         loading = false;
       });
       _pushTodaySnapshot(txs);
@@ -329,6 +415,18 @@ class BerandaScreenState extends State<BerandaScreen> {
         ),
         const SizedBox(height: SsrSpace.sm),
         _surplusCard(totalIn, totalOut, surplus, inShare, pctOut),
+        if (streak != null) ...[
+          const SizedBox(height: SsrSpace.md),
+          _StreakCard(streak: streak!),
+        ],
+        if (health != null) ...[
+          const SizedBox(height: SsrSpace.md),
+          _HealthCard(health: health!, delta: healthDelta),
+        ],
+        if (paceWarn + paceDanger > 0) ...[
+          const SizedBox(height: SsrSpace.md),
+          _PaceBanner(warn: paceWarn, danger: paceDanger, onTap: _goBudget),
+        ],
         if (calm.any((b) => b)) ...[
           const SizedBox(height: SsrSpace.md),
           _CalmWeeks(weeks: calm),
@@ -598,6 +696,217 @@ class _CalmWeeks extends StatelessWidget {
           const SizedBox(height: SsrSpace.xs),
           Text(tr('calm_sub'), style: theme.textTheme.bodySmall),
         ],
+      ),
+    );
+  }
+}
+
+/// Kartu streak harian: angka besar + satu kalimat jujur sesuai kondisi.
+/// Tanpa ikon dekorasi, tanpa klaim. Ketuk tak ke mana (bukan tombol).
+class _StreakCard extends StatelessWidget {
+  final DailyStreak streak;
+
+  const _StreakCard({required this.streak});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final s = streak;
+    final String sub;
+    if (s.days <= 0) {
+      sub = tr('streak_empty');
+    } else if (isMilestone(s.days)) {
+      sub = tr('streak_hit').replaceFirst('{m}', '${s.days}');
+    } else if (s.graceUsed) {
+      sub = tr('streak_grace');
+    } else if (s.todayDone) {
+      sub = tr('streak_today');
+    } else {
+      sub = tr('streak_empty');
+    }
+    final next = nextMilestone(s.days);
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  tr('streak_title'),
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+              if (isMilestone(s.days))
+                StatusChip(
+                  label: '${s.days}',
+                  tone: StatusTone.accent,
+                ),
+            ],
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Text(
+            tr('streak_days').replaceFirst('{n}', '${s.days}'),
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Text(sub, style: theme.textTheme.bodySmall),
+          if (next != null && s.days > 0 && !isMilestone(s.days)) ...[
+            const SizedBox(height: SsrSpace.xs),
+            Text(
+              tr('streak_next')
+                  .replaceFirst('{n}', '${next - s.days}')
+                  .replaceFirst('{m}', '$next'),
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu skor keuangan 0-100: angka besar + delta vs kemarin +
+/// tombol rincian (dialog 4 komponen + bobotnya).
+class _HealthCard extends StatelessWidget {
+  final HealthBreakdown health;
+  final int? delta;
+
+  const _HealthCard({required this.health, required this.delta});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final h = health;
+    final d = delta;
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  tr('health_title'),
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+              if (d != null && d != 0)
+                StatusChip(
+                  label: tr('health_vs')
+                      .replaceFirst('{p}', '${d > 0 ? '+' : ''}$d'),
+                  tone: d > 0 ? StatusTone.accent : StatusTone.danger,
+                ),
+            ],
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '${h.total}',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              Text('/100', style: theme.textTheme.bodySmall),
+            ],
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => _openBreakdown(context, h),
+              child: Text(tr('health_detail')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openBreakdown(BuildContext context, HealthBreakdown h) {
+    // Bobot cerminan computeHealth: 40/30/20/10.
+    final rows = [
+      (tr('health_c_budget'), h.budget, '40%'),
+      (tr('health_c_saving'), h.saving, '30%'),
+      (tr('health_c_trend'), h.trend, '20%'),
+      (tr('health_c_streak'), h.streak, '10%'),
+    ];
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('health_title')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final (label, score, weight) in rows)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(child: Text('$label ($weight)')),
+                    Text(
+                      '$score',
+                      style: const TextStyle(
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(tr('close')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ringkasan pace: hanya muncul bila ada waspada/bahaya. Ketuk = buka
+/// layar Budget. Merah bila ada bahaya, emas bila waspada saja.
+class _PaceBanner extends StatelessWidget {
+  final int warn;
+  final int danger;
+  final VoidCallback onTap;
+
+  const _PaceBanner({
+    required this.warn,
+    required this.danger,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bad = danger > 0;
+    final tint = bad ? scheme.error : AppColors.gold;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(SsrSpace.md),
+        decoration: BoxDecoration(
+          color: tint.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(SsrRadius.tile),
+          border: Border.all(color: tint.withValues(alpha: 0.45)),
+        ),
+        child: Text(
+          tr('pace_summary')
+              .replaceFirst('{w}', '$warn')
+              .replaceFirst('{b}', '$danger'),
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
       ),
     );
   }

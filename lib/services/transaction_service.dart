@@ -121,6 +121,21 @@ class TransactionService {
         .toList();
   }
 
+  /// Tanggal-tanggal terbaru saja (kolom date, tanpa nominal).
+  /// Dasar streak harian: ringan, tanpa nominal, tanpa upload tambahan.
+  Future<List<DateTime>> listDates(String orgId, {int limit = 120}) async {
+    final rows = await SupabaseConfig.client
+        .from('transactions')
+        .select('date')
+        .eq('org_id', orgId)
+        .order('date', ascending: false)
+        .limit(limit);
+    return [
+      for (final r in List<Map<String, dynamic>>.from(rows))
+        DateTime.tryParse((r['date'] ?? '').toString()),
+    ].whereType<DateTime>().toList();
+  }
+
   /// Jendela terbaru (untuk auto-gabung transfer): tanpa filter bulan,
   /// dibatasi 100 baris. Dasar `_tryAutoMerge` — bukan untuk UI.
   Future<List<SaasTransaction>> listSince(String orgId, DateTime since) async {

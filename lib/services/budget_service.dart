@@ -53,6 +53,27 @@ class BudgetMonth {
   }
 }
 
+/// Baris limit budget sebulan (tanpa hitung spent). Dasar kartu pace di
+/// Beranda yang sudah memegang transaksi bulan berjalan — hemat 1 query
+/// dibanding [fetchBudgets] yang me-list transaksi sendiri.
+Future<List<Budget>> fetchBudgetLimits(String orgId) async {
+  final c = SupabaseConfig.client;
+  final rows = await c
+      .from('budgets')
+      .select()
+      .eq('org_id', orgId)
+      .eq('month', currentMonth());
+  return [
+    for (final r in List<Map<String, dynamic>>.from(rows))
+      Budget(
+        category: (r['category'] ?? '').toString(),
+        limit: (r['limit_amount'] as num).toDouble(),
+        spent: 0,
+        warnPct: (r['warn_pct'] as num?)?.toInt() ?? 80,
+      ),
+  ];
+}
+
 Future<BudgetMonth> fetchBudgets(String orgId) async {
   final c = SupabaseConfig.client;
   final rows = await c.from('budgets').select().eq('org_id', orgId).eq('month', currentMonth());

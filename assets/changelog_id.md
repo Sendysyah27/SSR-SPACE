@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.8.0+70.
+Versi terpasang: 2.9.0+71.
+
+## Yang baru di 2.9.0+71
+
+1. Streak catat harian di Beranda: jumlah hari beruntun, toleransi 1 hari bolong, perayaan tiap 7, 30, dan 100 hari.
+2. Skor keuangan 0-100 di Beranda: satu angka kondisi dompet (patuh budget, nabung, tren belanja, streak) plus rincian per komponen dan naik-turun vs kemarin.
+3. Pace budget: tiap kategori kini berkabar Aman, Waspada (dengan perkiraan tanggal habis), atau Bahaya. Ringkasannya ada di Beranda, ketuk untuk buka Budget.
 
 ## Yang baru di 2.8.0+70
 

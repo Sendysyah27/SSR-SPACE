@@ -1490,8 +1490,52 @@ const _t = <String, Map<String, String>>{
     'en': 'Only owners/admins can change the mode.',
   },
   'sp_badmode': {'id': 'Mode tidak dikenal.', 'en': 'Unknown mode.'},
+  'close': {'id': 'Tutup', 'en': 'Close'},
   'sp_by_you': {'id': 'Kamu', 'en': 'You'},
   'sp_by_member': {'id': 'Anggota •{s}', 'en': 'Member •{s}'},
+  // LOOP 1: Daily Touch (streak, health score, pace budget)
+  'streak_title': {'id': 'Streak catat', 'en': 'Logging streak'},
+  'streak_empty': {
+    'id': 'Belum ada streak. Catat hari ini buat mulai.',
+    'en': 'No streak yet. Log today to start.',
+  },
+  'streak_today': {
+    'id': 'Udah catat hari ini. Besok balik lagi ya.',
+    'en': 'Logged today. Come back tomorrow.',
+  },
+  'streak_grace': {
+    'id': 'Kemarin bolong, tapi streak aman. Catat hari ini biar lanjut.',
+    'en': 'Yesterday slipped, streak still safe. Log today to keep it.',
+  },
+  'streak_next': {
+    'id': 'Lagi {n} hari ke {m} hari. Gas.',
+    'en': '{n} more days to {m}. Keep going.',
+  },
+  'streak_hit': {
+    'id': '{m} hari beruntun. Keren.',
+    'en': '{m} days in a row. Nice.',
+  },
+  'streak_days': {'id': '{n} hari', 'en': '{n} days'},
+  'health_title': {'id': 'Skor keuangan', 'en': 'Money score'},
+  'health_detail': {'id': 'Lihat rincian', 'en': 'See details'},
+  'health_vs': {'id': '{p} poin vs kemarin', 'en': '{p} pts vs yesterday'},
+  'health_c_budget': {'id': 'Patuh budget', 'en': 'Budget discipline'},
+  'health_c_saving': {'id': 'Nabung', 'en': 'Saving'},
+  'health_c_trend': {'id': 'Tren belanja', 'en': 'Spending trend'},
+  'health_c_streak': {'id': 'Streak', 'en': 'Streak'},
+  'pace_safe': {'id': 'Aman sampai akhir bulan', 'en': 'Safe until month end'},
+  'pace_warn': {
+    'id': 'Pace ini habis sekitar {d}',
+    'en': 'At this pace, out around {d}',
+  },
+  'pace_danger': {
+    'id': 'Jebol atau habis dalam 7 hari',
+    'en': 'Over or out within 7 days',
+  },
+  'pace_summary': {
+    'id': '{w} waspada, {b} bahaya. Cek layar Budget.',
+    'en': '{w} warning, {b} danger. Check Budget.',
+  },
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

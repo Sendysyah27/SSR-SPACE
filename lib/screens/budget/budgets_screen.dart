@@ -6,7 +6,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/services/budget_alerts.dart';
+import 'package:ssr_space/services/budget_pace.dart';
 import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/saving.dart';
@@ -791,6 +793,64 @@ class _BudgetCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          _PaceLine(budget: b),
+        ],
+      ),
+    );
+  }
+}
+
+/// Baris pace budget: titik warna + satu kalimat. Hijau aman, emas
+/// waspada (tanggal proyeksi habis), merah bahaya. Sembunyi bila limit
+/// nol (tak ada batas yang bisa dikejar).
+class _PaceLine extends StatelessWidget {
+  final Budget budget;
+
+  const _PaceLine({required this.budget});
+
+  @override
+  Widget build(BuildContext context) {
+    final b = budget;
+    if (b.limit <= 0) return const SizedBox.shrink();
+    final pace = budgetPace(spent: b.spent, limit: b.limit, today: DateTime.now());
+    final scheme = Theme.of(context).colorScheme;
+    final Color dot;
+    final String text;
+    switch (pace.state) {
+      case PaceState.safe:
+        dot = scheme.primary;
+        text = tr('pace_safe');
+        break;
+      case PaceState.warn:
+        dot = AppColors.gold;
+        final dd = pace.depletedDate!;
+        final ymd =
+            '${dd.year.toString().padLeft(4, '0')}-'
+            '${dd.month.toString().padLeft(2, '0')}-'
+            '${dd.day.toString().padLeft(2, '0')}';
+        text = tr('pace_warn').replaceFirst('{d}', dayLabel(ymd));
+        break;
+      case PaceState.danger:
+        dot = scheme.error;
+        text = tr('pace_danger');
+        break;
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: SsrSpace.xs),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: SsrSpace.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
         ],
       ),
