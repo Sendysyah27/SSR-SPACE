@@ -66,10 +66,10 @@ class _LockScreenState extends State<LockScreen> {
     }
     if (!mounted) return;
     if (ok) {
+      final nav = Navigator.of(context);
       try {
         await pinLog('lock nav shell start');
-        await Navigator.pushReplacement(
-          context,
+        await nav.pushReplacement(
           MaterialPageRoute(
             builder: (_) => MainShell(session: widget.session),
           ),
