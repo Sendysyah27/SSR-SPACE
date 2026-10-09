@@ -6,9 +6,11 @@ import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/goal_forecast.dart';
 import 'package:ssr_space/services/goal_store.dart';
+import 'package:ssr_space/services/savings_goal.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
@@ -347,6 +349,7 @@ class GoalsScreenState extends State<GoalsScreen> {
             targetC: targetC,
             deadlineC: deadlineC,
             iconC: iconC,
+            nameFocus: nameFocus,
             autoMode: autoMode,
             onAuto: (v) => setState(() => autoMode = v),
             formErr: formErr,
@@ -416,7 +419,7 @@ class _GoalCard extends StatelessWidget {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: DecoratedBox(
+                    child: ColoredBox(
                       color: scheme.outline.withValues(alpha: 0.35),
                     ),
                   ),
@@ -424,7 +427,7 @@ class _GoalCard extends StatelessWidget {
                     widthFactor: g.progress(autoSaved),
                     heightFactor: 1,
                     alignment: Alignment.centerLeft,
-                    child: DecoratedBox(
+                    child: ColoredBox(
                       color: done ? AppColors.gold : scheme.primary,
                     ),
                   ),
@@ -527,6 +530,7 @@ class _GoalForm extends StatelessWidget {
   final TextEditingController targetC;
   final TextEditingController deadlineC;
   final TextEditingController iconC;
+  final FocusNode nameFocus;
   final bool autoMode;
   final ValueChanged<bool> onAuto;
   final String? formErr;
@@ -537,6 +541,7 @@ class _GoalForm extends StatelessWidget {
     required this.targetC,
     required this.deadlineC,
     required this.iconC,
+    required this.nameFocus,
     required this.autoMode,
     required this.onAuto,
     required this.formErr,
