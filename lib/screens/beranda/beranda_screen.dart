@@ -207,9 +207,9 @@ class BerandaScreenState extends State<BerandaScreen> {
       try {
         final thisMon = weekMonday(now);
         final lastMon = thisMon.subtract(const Duration(days: 7));
-        wiKey =
+        final dismissKey =
             'insight_seen_${weekKey(lastMon)}_$orgId';
-        if (prefs.getBool(wiKey!) != true) {
+        if (prefs.getBool(dismissKey) != true) {
           final start = lastMon.subtract(const Duration(days: 28));
           final range = await TransactionService().listRange(
             orgId,
@@ -230,7 +230,7 @@ class BerandaScreenState extends State<BerandaScreen> {
             ));
           }
           wi = buildWeeklyInsight(txs: wtxs, now: now);
-          if (wi == null) wiKey = null;
+          if (wi != null) wiKey = dismissKey;
         } else {
           wiKey = null;
         }
