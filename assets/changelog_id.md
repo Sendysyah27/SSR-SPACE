@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.13.5+81.
+Versi terpasang: 2.13.5+82.
+
+## Yang baru di 2.13.5+82
+
+1. Perbaikan Beranda stuck loading (masih mode BYPASS PIN): file-log sementara yang menahan pemuatan transaksi sebulan kini dicabut total, daftar bulan langsung dimuat tanpa menunggu izin storage.
 
 ## Yang baru di 2.13.5+81
 

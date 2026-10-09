@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/async_guard.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
-import 'package:ssr_space/services/pin_debug_log.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
 import 'package:ssr_space/services/session_service.dart';
@@ -45,27 +44,14 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     unawaited(_initServices());
   }
 
-  /// Init service DEBUG-build: tiap langkah dicatat, gagal dicatat + stack.
+  /// Init service: fail-open, tanpa file-log (pernah blokir Beranda).
   Future<void> _initServices() async {
     try {
-      await pinLog('shell init start');
-      // force: resubscribe bila stream sempat error / app resume dari background
-      try {
-        await NotifTrack.ensureListening(force: true);
-        await pinLog('shell track ok');
-      } catch (e, st) {
-        await pinLogError('shell track', e, st);
-      }
-      try {
-        await ForegroundTrack.syncFromPrefs();
-        await pinLog('shell foreground ok');
-      } catch (e, st) {
-        await pinLogError('shell foreground', e, st);
-      }
-      await pinLog('shell init done');
-    } catch (e, st) {
-      await pinLogError('shell init', e, st);
-    }
+      await NotifTrack.ensureListening(force: true);
+    } catch (_) {}
+    try {
+      await ForegroundTrack.syncFromPrefs();
+    } catch (_) {}
   }
 
   @override

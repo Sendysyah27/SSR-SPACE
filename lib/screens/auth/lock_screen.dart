@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/error_reporter.dart';
-import 'package:ssr_space/services/pin_debug_log.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -54,30 +53,24 @@ class _LockScreenState extends State<LockScreen> {
   Future<void> _verify() async {
     if (_verifying) return;
     _verifying = true;
-    await pinLog('lock verify start len=${pinC.text.length}');
     var ok = false;
     try {
       ok = await widget.session.verifyPin(pinC.text);
-      await pinLog('lock verify result ok=$ok');
     } catch (e, st) {
       await ErrorReporter.capture(e, st, context: 'lock_verify');
-      await pinLogError('lock verify', e, st);
       ok = false;
     }
     if (!mounted) return;
     if (ok) {
       final nav = Navigator.of(context);
       try {
-        await pinLog('lock nav shell start');
         await nav.pushReplacement(
           MaterialPageRoute(
             builder: (_) => MainShell(session: widget.session),
           ),
         );
-        await pinLog('lock nav shell returned');
       } catch (err, st) {
         await ErrorReporter.capture(err, st, context: 'lock_nav');
-        await pinLogError('lock nav shell', err, st);
       }
       if (mounted) setState(() => _verifying = false);
       return;

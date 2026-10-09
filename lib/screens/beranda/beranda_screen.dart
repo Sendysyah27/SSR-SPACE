@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/async_guard.dart';
-import 'package:ssr_space/services/pin_debug_log.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/services/budget_pace.dart';
 import 'package:ssr_space/services/budget_service.dart';
@@ -139,7 +138,6 @@ class BerandaScreenState extends State<BerandaScreen> {
       err = null;
     });
     try {
-      await pinLog('beranda load start month=$month');
       final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
       final orgId = prefs.getString('active_org_id') ?? '';
@@ -408,9 +406,7 @@ class BerandaScreenState extends State<BerandaScreen> {
         loading = false;
       });
       _pushTodaySnapshot(txs);
-      await pinLog('beranda load ok n=${txs.length}');
-    } catch (e, st) {
-      await pinLogError('beranda load', e, st);
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         loading = false;
