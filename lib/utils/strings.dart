@@ -1536,6 +1536,43 @@ const _t = <String, Map<String, String>>{
     'id': '{w} waspada, {b} bahaya. Cek layar Budget.',
     'en': '{w} warning, {b} danger. Check Budget.',
   },
+  // LOOP 2: Smart Nudges (casual, tidak menghakimi)
+  'nudge_title': {'id': 'Ngebut nih', 'en': 'Spending fast'},
+  'nudge_line': {
+    'id': 'Belanja {c} ngebut, habis sekitar {d} kalau gini terus.',
+    'en': '{c} spending is fast, out around {d} at this pace.',
+  },
+  'ins_title': {'id': 'Kilasan minggu lalu', 'en': 'Last week recap'},
+  'ins_total': {
+    'id': 'Keluar {m} minggu lalu',
+    'en': 'Spent {m} last week',
+  },
+  'ins_vs': {
+    'id': '{p}% dibanding rata-rata',
+    'en': '{p}% vs average',
+  },
+  'ins_avg': {
+    'id': 'Rata-rata {a} per minggu',
+    'en': 'Average {a} per week',
+  },
+  'ins_top': {
+    'id': '{c} paling naik ({p}%)',
+    'en': '{c} rose the most ({p}%)',
+  },
+  'ins_new': {
+    'id': '{c} paling gede minggu lalu ({m})',
+    'en': '{c} was biggest last week ({m})',
+  },
+  'ins_tip': {
+    'id': 'Coba kurangi {c} {w} per minggu, hematnya {m} per bulan.',
+    'en': 'Try cutting {c} by {w} a week, saves {m} a month.',
+  },
+  'cmp_title': {'id': 'Bulan ini vs bulan lalu', 'en': 'This vs last month'},
+  'cmp_new': {'id': 'Baru', 'en': 'New'},
+  'cmp_empty': {
+    'id': 'Belum ada data bulan lalu buat dibandingin.',
+    'en': 'No last-month data to compare yet.',
+  },
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

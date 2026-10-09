@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.9.0+71.
+Versi terpasang: 2.10.0+72.
+
+## Yang baru di 2.10.0+72
+
+1. Ngebut nih: Beranda kini nyebut kategori yang lajunya kencang plus perkiraan tanggal budget habis, dengan bahasa yang santai.
+2. Kilasan minggu lalu: tiap minggu ada kartu rangkuman belanja vs rata-rata, kategori paling naik, dan satu saran hemat konkret. Bisa ditutup kalau sedang tak mau diganggu.
+3. Laporan punya seksi baru Bulan ini vs bulan lalu: naik-turun per kategori dalam persen, 3 perubahan terbesar ditandai.
 
 ## Yang baru di 2.9.0+71
 

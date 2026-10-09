@@ -17,6 +17,7 @@ import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/export_files.dart';
 import 'package:ssr_space/services/export_saved_notify.dart';
 import 'package:ssr_space/services/month.dart';
+import 'package:ssr_space/services/month_compare.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/report_export.dart';
 import 'package:ssr_space/services/report_pdf.dart';
@@ -49,6 +50,7 @@ class ReportsScreen extends StatefulWidget {
 class ReportsScreenState extends State<ReportsScreen> {
   late String month;
   List<SaasTransaction> items = [];
+  List<SaasTransaction> prevItems = [];
   Map<String, String> walletNames = {};
   String flowFilter = 'all';
   String? filterWallet;
@@ -79,9 +81,17 @@ class ReportsScreenState extends State<ReportsScreen> {
       }
       final txs = await TransactionService().listMonth(orgId, month);
       final ws = await WalletService().list(orgId);
+      // Bulan lalu untuk kartu banding, fail-open (kartu sembunyi).
+      var prev = <SaasTransaction>[];
+      try {
+        prev = await TransactionService().listMonth(orgId, prevMonth(month));
+      } catch (_) {
+        prev = <SaasTransaction>[];
+      }
       if (!mounted) return;
       setState(() {
         items = txs;
+        prevItems = prev;
         walletNames = {for (final w in ws) w.id: w.name};
         if (filterWallet != null && !walletNames.containsKey(filterWallet)) {
           filterWallet = null;
@@ -253,8 +263,27 @@ class ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _summarySection(_MonthFigures f, bool hasItems) {
+  /// Total per kategori lapis-atas dari list yang sudah difilter dompet.
+  /// Dipakai kartu banding (bulan tampil vs bulan lalu, apel lawan apel).
+  Map<String, double> _catTotalsOf(List<SaasTransaction> txs) {
+    final out = <String, double>{};
+    for (final t in txs) {
+      if (t.type != 'out') continue;
+      if (isSavingCategory(t.category)) continue;
+      final top = topOf(t.category);
+      final name = top.isEmpty ? tr('cat_other') : top;
+      out[name] = (out[name] ?? 0) + t.amount;
+    }
+    return out;
+  }
+
+  Widget _summarySection(
+    _MonthFigures f,
+    bool hasItems,
+    Map<String, double> prevCats,
+  ) {
     final hasFlow = f.totalIn + f.spendOut + f.savingOut > 0;
+    final deltas = compareMonths(_catTotalsOf(f.items), prevCats);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -276,6 +305,10 @@ class ReportsScreenState extends State<ReportsScreen> {
           onExportCsv: () => _runExport(_exportCsv),
           onExportPdf: () => _guardPdf(),
         ),
+        if (deltas.isNotEmpty) ...[
+          const SizedBox(height: SsrSpace.md),
+          _CompareCard(deltas: deltas),
+        ],
       ],
     );
   }
@@ -300,6 +333,7 @@ class ReportsScreenState extends State<ReportsScreen> {
       return _ReportsScaffold(ErrorView(message: err!, onRetry: _load));
     }
     final figs = _totalsFor(filterByWallet(items, filterWallet));
+    final prevCats = _catTotalsOf(filterByWallet(prevItems, filterWallet));
     return _ReportsScaffold(
       Column(
         children: [
@@ -316,7 +350,7 @@ class ReportsScreenState extends State<ReportsScreen> {
             child: _ReportSections(
               month: month,
               reordering: reordering,
-              summary: _summarySection(figs, items.isNotEmpty),
+              summary: _summarySection(figs, items.isNotEmpty, prevCats),
               recapTotals: figs.catTotals,
               list: _listSection(figs.items),
               listSlivers: _listSlivers(figs.items),
@@ -1265,6 +1299,111 @@ class _TxListCard extends StatelessWidget {
 
 /// Ringkasan bulan berjalan: kartu Masuk + Keluar, kartu Selisih,
 /// dan tombol unduh CSV / PDF.
+/// Kartu banding bulan ini vs bulan lalu per kategori, urut perubahan
+/// terbesar. 3 teratas tebal + panah berwarna (naik = merah, turun =
+/// hijau). Panah selalu ditemani angka persen, bukan makna tunggal.
+class _CompareCard extends StatelessWidget {
+  final List<MonthDelta> deltas;
+
+  const _CompareCard({required this.deltas});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(tr('cmp_title'), style: theme.textTheme.titleSmall),
+          const SizedBox(height: SsrSpace.sm),
+          for (var i = 0; i < deltas.length; i++)
+            _CompareRow(
+              delta: deltas[i],
+              highlight: i < 3,
+              upColor: scheme.error,
+              downColor: scheme.primary,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompareRow extends StatelessWidget {
+  final MonthDelta delta;
+  final bool highlight;
+  final Color upColor;
+  final Color downColor;
+
+  const _CompareRow({
+    required this.delta,
+    required this.highlight,
+    required this.upColor,
+    required this.downColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final d = delta;
+    final up = d.delta > 0;
+    final same = d.delta == 0;
+    final color = same
+        ? theme.colorScheme.outline
+        : (up ? upColor : downColor);
+    final pctText = d.pct == null
+        ? tr('cmp_new')
+        : '${d.pct! >= 0 ? '+' : ''}${d.pct!.round()}%';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          if (!same)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: DuoIcon(
+                up ? AppIcons.arrowUp : AppIcons.arrowDown,
+                size: 16,
+                color: color,
+              ),
+            ),
+          Expanded(
+            child: Text(
+              d.category,
+              overflow: TextOverflow.ellipsis,
+              style: (highlight
+                      ? theme.textTheme.bodyMedium
+                      : theme.textTheme.bodySmall)
+                  ?.copyWith(fontWeight:
+                      highlight ? FontWeight.w700 : FontWeight.w400),
+            ),
+          ),
+          Text(
+            amt(d.cur),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 56,
+            child: Text(
+              pctText,
+              textAlign: TextAlign.right,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MonthlySummary extends StatelessWidget {
   final String monthLabel;
   final double totalIn;

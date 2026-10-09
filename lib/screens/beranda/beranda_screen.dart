@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/services/budget_pace.dart';
 import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/calm_streak.dart';
@@ -10,6 +11,7 @@ import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/health_score.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/saving.dart';
+import 'package:ssr_space/services/weekly_insight.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -64,6 +66,9 @@ class BerandaScreenState extends State<BerandaScreen> {
   int? healthDelta;
   int paceWarn = 0;
   int paceDanger = 0;
+  List<MapEntry<String, BudgetPace>> paceNotes = [];
+  WeeklyInsight? insight;
+  String? insightDismissKey;
 
   @override
   void initState() {
@@ -72,6 +77,29 @@ class BerandaScreenState extends State<BerandaScreen> {
   }
 
   Future<void> reload() => _load();
+
+  static String _ymd(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
+  /// Tutup kartu insight minggu ini (prefs saja, tanpa server).
+  Future<void> _dismissInsight() async {
+    final key = insightDismissKey;
+    if (key != null) {
+      try {
+        await (await SharedPreferences.getInstance()).setBool(key, true);
+      } catch (_) {
+        // Fail-open: kartu sekadar muncul lagi besok.
+      }
+    }
+    if (mounted) {
+      setState(() {
+        insight = null;
+        insightDismissKey = null;
+      });
+    }
+  }
 
   Future<void> _load() async {
     setState(() {
@@ -105,6 +133,7 @@ class BerandaScreenState extends State<BerandaScreen> {
       int? delta;
       var w = 0;
       var dgr = 0;
+      var notes = <MapEntry<String, BudgetPace>>[];
       if (month == currentMonth()) {
         try {
           final prev =
@@ -149,18 +178,70 @@ class BerandaScreenState extends State<BerandaScreen> {
           final prevScore = prefs.getInt(key);
           if (prevScore != null) delta = hb.total - prevScore;
           await prefs.setInt(key, hb.total);
-          for (final b in hbInputs) {
+          notes = <MapEntry<String, BudgetPace>>[];
+          for (final b in limits) {
+            if (isSavingCategory(b.category) || b.limit <= 0) continue;
             final pace = budgetPace(
-              spent: b.spent,
+              spent: spent[b.category] ?? 0,
               limit: b.limit,
               today: now,
             );
             if (pace.state == PaceState.warn) w++;
             if (pace.state == PaceState.danger) dgr++;
+            if (pace.state != PaceState.safe &&
+                pace.depletedDate != null) {
+              notes.add(MapEntry(b.category, pace));
+            }
           }
+          notes.sort((a, b) {
+            final da = a.value.depletedDate!;
+            final db = b.value.depletedDate!;
+            final sa = a.value.state == PaceState.danger ? 0 : 1;
+            final sb = b.value.state == PaceState.danger ? 0 : 1;
+            if (sa != sb) return sa - sb;
+            return da.compareTo(db);
+          });
         } catch (_) {
           hb = null;
+          notes = <MapEntry<String, BudgetPace>>[];
         }
+      }
+      // Insight mingguan: 5 minggu terakhir, tak tergantung bulan tampil.
+      WeeklyInsight? wi;
+      String? wiKey;
+      try {
+        final thisMon = weekMonday(now);
+        final lastMon = thisMon.subtract(const Duration(days: 7));
+        wiKey =
+            'insight_seen_${weekKey(lastMon)}_$orgId';
+        if (prefs.getBool(wiKey!) != true) {
+          final start = lastMon.subtract(const Duration(days: 28));
+          final range = await TransactionService().listRange(
+            orgId,
+            _ymd(start),
+            _ymd(thisMon),
+          );
+          final wtxs = <WeeklyTx>[];
+          for (final t in range) {
+            if (t.type != 'out') continue;
+            if (isSavingCategory(t.category)) continue;
+            final parsed = DateTime.tryParse(t.date ?? '');
+            if (parsed == null) continue;
+            final top = topOf(t.category);
+            wtxs.add(WeeklyTx(
+              date: parsed,
+              amount: t.amount,
+              category: top.isEmpty ? tr('cat_other') : top,
+            ));
+          }
+          wi = buildWeeklyInsight(txs: wtxs, now: now);
+          if (wi == null) wiKey = null;
+        } else {
+          wiKey = null;
+        }
+      } catch (_) {
+        wi = null;
+        wiKey = null;
       }
       if (!mounted) return;
       setState(() {
@@ -172,6 +253,9 @@ class BerandaScreenState extends State<BerandaScreen> {
         healthDelta = delta;
         paceWarn = w;
         paceDanger = dgr;
+        paceNotes = notes;
+        insight = wi;
+        insightDismissKey = wiKey;
         loading = false;
       });
       _pushTodaySnapshot(txs);
@@ -426,6 +510,14 @@ class BerandaScreenState extends State<BerandaScreen> {
         if (paceWarn + paceDanger > 0) ...[
           const SizedBox(height: SsrSpace.md),
           _PaceBanner(warn: paceWarn, danger: paceDanger, onTap: _goBudget),
+        ],
+        for (final n in paceNotes.take(2)) ...[
+          const SizedBox(height: SsrSpace.md),
+          _NudgeCard(cat: n.key, pace: n.value),
+        ],
+        if (insight != null) ...[
+          const SizedBox(height: SsrSpace.md),
+          _InsightCard(insight: insight!, onDismiss: _dismissInsight),
         ],
         if (calm.any((b) => b)) ...[
           const SizedBox(height: SsrSpace.md),
@@ -907,6 +999,126 @@ class _PaceBanner extends StatelessWidget {
               .replaceFirst('{b}', '$danger'),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
+      ),
+    );
+  }
+}
+
+/// Nudge satu kategori yang ngebut: chip status + kalimat casual yang
+/// tidak menghakimi. Bukan tombol (tak ada onTap).
+class _NudgeCard extends StatelessWidget {
+  final String cat;
+  final BudgetPace pace;
+
+  const _NudgeCard({required this.cat, required this.pace});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bad = pace.state == PaceState.danger;
+    final dd = pace.depletedDate!;
+    final ymd =
+        '${dd.year.toString().padLeft(4, '0')}-'
+        '${dd.month.toString().padLeft(2, '0')}-'
+        '${dd.day.toString().padLeft(2, '0')}';
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  tr('nudge_title'),
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+              StatusChip(
+                label: cat,
+                tone: bad ? StatusTone.danger : StatusTone.accent,
+              ),
+            ],
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Text(
+            tr('nudge_line')
+                .replaceFirst('{c}', cat)
+                .replaceFirst('{d}', dayLabel(ymd)),
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu kilasan minggu lalu: total, banding rata-rata, kategori paling
+/// naik, satu saran nominal konkret. Dismiss via tombol tutup.
+class _InsightCard extends StatelessWidget {
+  final WeeklyInsight insight;
+  final VoidCallback onDismiss;
+
+  const _InsightCard({required this.insight, required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ins = insight;
+    final signed =
+        '${ins.totalPct >= 0 ? '+' : ''}${ins.totalPct.round()}';
+    final String topLine;
+    if (ins.topPct != null) {
+      topLine = tr('ins_top')
+          .replaceFirst('{c}', ins.topCategory)
+          .replaceFirst('{p}', '${ins.topPct!.round()}');
+    } else {
+      topLine = tr('ins_new')
+          .replaceFirst('{c}', ins.topCategory)
+          .replaceFirst('{m}', amt(ins.topTotal));
+    }
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  tr('ins_title'),
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                tooltip: tr('close'),
+                onPressed: onDismiss,
+              ),
+            ],
+          ),
+          Text(
+            tr('ins_total').replaceFirst('{m}', amt(ins.lastTotal)),
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Text(
+            ins.hasAvg
+                ? tr('ins_vs').replaceFirst('{p}', signed)
+                : tr('ins_avg').replaceFirst('{a}', amt(ins.avgWeekly)),
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Text(topLine, style: theme.textTheme.bodySmall),
+          const SizedBox(height: SsrSpace.xs),
+          Text(
+            tr('ins_tip')
+                .replaceFirst('{c}', ins.topCategory)
+                .replaceFirst('{w}', amt(ins.saveWeekly))
+                .replaceFirst('{m}', amt(ins.saveMonthly)),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

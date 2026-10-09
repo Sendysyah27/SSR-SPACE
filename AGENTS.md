@@ -376,7 +376,8 @@ git add -A && git commit -m "feat: …" && git push origin main
 gh run watch $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
 
 # unduh APK terbaru (rilis rolling ci-apk, bebas kuota artifact)
-gh release download ci-apk -D /sdcard/Download/SSR-SPACE/ --clobber
+# WAJIB pakai -p pola versi baru saja; tanpa pola = seluruh arsip ikut keunduh
+gh release download ci-apk -p "SSR-SPACE-2.9.0-71-arm64.apk" -D /sdcard/Download/SSR-SPACE/ --clobber
 
 # cek SS (screenshot) terbaru dari user — bukti bug / package app / UI device
 ls -t /sdcard/DCIM/Screenshots | head -5
@@ -395,7 +396,7 @@ ls -t /sdcard/DCIM/Screenshots | head -5
 4. **Jangan** hardcode secret di repo.
 5. **Jangan** policy org_members self-recursive.
 6. **Test** untuk logic murni (parse, hash, budget math) wajib; jalankan via CI.
-7. File deliverable → `/sdcard/Download/SSR-SPACE/`. **Tester: hanya varian kecil `*-arm64.apk`** (universal di-skip, hemat tempat & share).
+7. File deliverable → `/sdcard/Download/SSR-SPACE/`. **Tester: hanya varian kecil `*-arm64.apk`** (universal di-skip, hemat tempat & share). **Unduh APK wajib berpola: `gh release download ci-apk` SELALU pakai `-p "<nama-file-versi-baru>"`; JANGAN pernah tanpa pola** (rilis rolling berisi seluruh arsip lama, ikut keunduh semua).
 8. Konfirmasi sebelum commit besar / push kalau user belum minta.
 9. **Version wajib naik tiap update app (Skema A):** setiap perubahan kode (`lib/`, `supabase/`, `.github/`, `pubspec.yaml`, `assets/`) yang di-push ke `main` wajib bump version — `pubspec.yaml` (`version:`) dan `lib/utils/app_info.dart` (`AppInfo.version`) harus identik; fix kecil → `+build` saja (`2.3.9+22` → `2.3.9+23`), fitur/perilaku baru → `+patch/minor`; catat versi baru di `AUDIT.md` §7. **Tiap bump version wajib tambah entri `assets/changelog_id.md`** (seksi "Yang baru di X.Y.Z" paling atas + sesuaikan "Versi terpasang") — changelog adalah janji ke user, jangan basi. Docs-only (`AGENTS.md`/`AUDIT.md`/`README.md`/`docs/`) boleh tanpa bump. Tanpa bump = jangan push.
 
@@ -446,4 +447,5 @@ Before starting, ask the user when antislop applies: during the work, or after i
 - **Relasi aritmetika (2026-10-08, TDD RED 4-merah → GREEN 5/5 + regresi 15/15 lokal):** Kopi Kenangan 2.8.0+67 Rp0 — label tanpa angka + 6 angka nyasar @1x. Fix: triple tunai-kembali (tepat 1 set + label → nilai tengah; temuan debug: 1 triple terbaca 2 arah) + jumlah-item (subset ≥2, NPWP/TRXID/poinku/tanggal/voucher dikecualikan, cap 12). Tanpa label/triple-ganda → null. 5 test baru (`_t7` + triple/ambig/itemsum). Bump `2.8.0+68` + changelog.
 - **Item hanya produk (2026-10-08, TDD RED 2-merah → GREEN 5/5 lokal):** catatan device sampah (`Server KK 1`, `ML-F 1`, `Order Date: 48`) — reproduksi persis di RED. Fix items: nama ≥3 huruf + harga ≥Rp100 + `_fragKey` (server/wifi/order/alamat/NPWP/member/dsb) + total-toleran di loop item. 3 test baru (`_t8` + note + NPWP). Bump `2.8.0+69` + changelog.
 - **Anti-sampah kontak (2026-10-08, TDD RED 6-merah → GREEN 8/8 lokal):** note `19,900 · ihatsApp + 7818` — 2 mekanisme terbukti: merchant fallback comot angka murni + keyword cacat lolos guard literal. Fix: merchant wajib ≥3 huruf + `_phoneLine` (`+digit`, digit polos ≥8) + `_fragKey` kontak (whatsapp/telp/hp/http/@/dsb) + gabung fragmen + tolak caps-tengah (`[a-z][A-Z]`). 5 test baru (`_t9` + merchant/phone/fragmen/caps). Bump `2.8.0+70` + changelog.
+- **LOOP 1 Daily Touch (2026-10-09, `5ac0d76`, run `37874816407` hijau):** streak harian (grace 1 hari, milestone 7/30/100) + health score 0-100 (40/30/20/10 + delta + dialog rincian) di Beranda + pace budget per kategori (aman/waspada+tanggal/bahaya) di Budget + ringkasan di Beranda. Offline-first lokal, tanpa migration/dep. Lokal `dart --enable-asserts` 25/25, CI 18 test baru. Bump `2.9.0+71` + changelog. APK `SSR-SPACE-2.9.0-71-arm64.apk`.
 - **Form catat jelas + OCR semua kategori (2026-10-08, 2 bagian, SDD chat-design approved):** B1 — label Nominal + error berlabuh per-field (`validateTxField`/`TxInvalid`, `validateTxInput` delegasi, test lama hijau) + chips ber-state aksen (`CategoryChips.selected/onPick` + test widget) + caption ketik-cepat + judul Langkah 1/2 + Kembali (ganti Ubah) + hint tanggal + helper dompet-tujuan + banner asal-struk + subkategori lipat; 9 kunci strings. B2 — `receipt_kind.dart` murni (registry `kReceiptDocPatterns` minimarket/dining/generic + `detectReceiptKind` + `suggestReceiptCategory` merchant→item, guard daftar) + `test/receipt_kind_test.dart` (8 test, lokal `dart --enable-asserts` 8/8); sheet pakai saran (menang atas default Belanja). Tanpa migration/dep/upload; foto tetap dihapus. Bump `2.8.0+65` + changelog.

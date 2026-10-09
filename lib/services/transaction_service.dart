@@ -136,6 +136,27 @@ class TransactionService {
     ].whereType<DateTime>().toList();
   }
 
+  /// Rentang tanggal (untuk insight mingguan). Fail-open di pemanggil:
+  /// gagal = kartu sembunyi, bukan error.
+  Future<List<SaasTransaction>> listRange(
+    String orgId,
+    String startYmd,
+    String endYmd, {
+    int limit = 300,
+  }) async {
+    final rows = await SupabaseConfig.client
+        .from('transactions')
+        .select()
+        .eq('org_id', orgId)
+        .gte('date', startYmd)
+        .lt('date', endYmd)
+        .order('date', ascending: false)
+        .limit(limit);
+    return List<Map<String, dynamic>>.from(rows)
+        .map(SaasTransaction.fromMap)
+        .toList();
+  }
+
   /// Jendela terbaru (untuk auto-gabung transfer): tanpa filter bulan,
   /// dibatasi 100 baris. Dasar `_tryAutoMerge` — bukan untuk UI.
   Future<List<SaasTransaction>> listSince(String orgId, DateTime since) async {
