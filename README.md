@@ -12,7 +12,7 @@ Allowlist package prefix (bukan substring). Dedup hash per hari. Tanggal = waktu
 
 ## Migrasi Supabase (wajib)
 Jalankan berurutan di SQL Editor bila belum:
-`schema.sql` → `migration_02` … `migration_17_quotas.sql`
+`schema.sql` → `migration_02` … `migration_18_scale.sql`
 (daftar lengkap & urutan: AGENTS.md §3.4)
 
 - migration 07: join workspace hanya pembuat/owner-admin + `mint_tx_code` wajib member
@@ -23,6 +23,7 @@ Jalankan berurutan di SQL Editor bila belum:
 - migration 15: We Space (mode Bebas/Bendahara + RPC + trigger tulis)
 - migration 16: peringatan budget real-time (trigger + tabel budget_alerts)
 - migration 17: **kuota paket server-side** (RPC check_quota + 3 trigger QUOTA_EXCEEDED; Pro = `organizations.plan`)
+- migration 18: **skala baca + heartbeat** (RPC month_mix + tabel heartbeat/touch + cron harian guarded)
 
 ## CI (3 workflow)
 - `build-apk` — analyze + test + APK release (action di-pin SHA, dependabot weekly)

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:csv/csv.dart';
@@ -18,11 +19,11 @@ import 'package:ssr_space/services/export_files.dart';
 import 'package:ssr_space/services/export_saved_notify.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/month_compare.dart';
+import 'package:ssr_space/services/month_figures.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/report_export.dart';
 import 'package:ssr_space/services/report_pdf.dart';
 import 'package:ssr_space/services/reports_topn.dart';
-import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/transfer_detect.dart';
 import 'package:ssr_space/services/tx_day_group.dart';
@@ -50,12 +51,18 @@ class ReportsScreen extends StatefulWidget {
 class ReportsScreenState extends State<ReportsScreen> {
   late String month;
   List<SaasTransaction> items = [];
-  List<SaasTransaction> prevItems = [];
   Map<String, String> walletNames = {};
   String flowFilter = 'all';
   String? filterWallet;
   bool loading = true;
   bool exporting = false;
+  // Angka eksak via RPC (ikut filter dompet); display via halaman.
+  MonthFigures? fig;
+  Map<String, double> prevCats = {};
+  // Pagination display: halaman 100, sambung saat gulir mentok.
+  final _scroll = ScrollController();
+  bool hasMore = true;
+  bool loadingMore = false;
   bool reordering = false;
   String? err;
 
@@ -63,7 +70,22 @@ class ReportsScreenState extends State<ReportsScreen> {
   void initState() {
     super.initState();
     month = currentMonth();
+    _scroll.addListener(_onScroll);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _scroll.removeListener(_onScroll);
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scroll.hasClients || loading || loadingMore || !hasMore) return;
+    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 600) {
+      unawaited(_loadMore());
+    }
   }
 
   Future<void> reload() => _load();
@@ -72,6 +94,9 @@ class ReportsScreenState extends State<ReportsScreen> {
     setState(() {
       loading = true;
       err = null;
+      items = [];
+      hasMore = true;
+      loadingMore = false;
     });
     try {
       final orgId = await activeOrgId();
@@ -80,19 +105,28 @@ class ReportsScreenState extends State<ReportsScreen> {
         setState(() => loading = false);
         return;
       }
-      final txs = await TransactionService().listMonth(orgId, month);
-      final ws = await WalletService().list(orgId);
-      // Bulan lalu untuk kartu banding, fail-open (kartu sembunyi).
-      var prev = <SaasTransaction>[];
+      // Angka eksak via RPC (ikut filter dompet); gagal → fallback list.
+      final cur = await _figuresFor(orgId, month, filterWallet);
+      var prev = <String, double>{};
       try {
-        prev = await TransactionService().listMonth(orgId, prevMonth(month));
+        final pm = await _figuresFor(
+          orgId,
+          prevMonth(month),
+          filterWallet,
+        );
+        prev = pm.catTotalsNoSaving;
       } catch (_) {
-        prev = <SaasTransaction>[];
+        prev = {};
       }
+      final ws = await WalletService().list(orgId);
+      // Display: halaman terbaru (cukup untuk rekap + daftar awal).
+      final txs = await TransactionService().listMonthPage(orgId, month);
       if (!mounted) return;
       setState(() {
         items = txs;
-        prevItems = prev;
+        fig = cur;
+        prevCats = prev;
+        hasMore = txPageHasMore(txs.length, txPageSize);
         walletNames = {for (final w in ws) w.id: w.name};
         if (filterWallet != null && !walletNames.containsKey(filterWallet)) {
           filterWallet = null;
@@ -108,10 +142,79 @@ class ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
+  /// Angka sebulan (ikut filter dompet): RPC dulu, list penuh bila gagal.
+  Future<MonthFigures> _figuresFor(
+    String orgId,
+    String m,
+    String? walletId,
+  ) async {
+    try {
+      final mix = await TransactionService()
+          .monthMix(orgId, m, walletId: walletId);
+      return foldMonthMix(
+        mix.rows,
+        otherLabel: tr('cat_other'),
+        totalN: mix.totalN,
+      );
+    } catch (_) {
+      final full = await TransactionService().listMonth(orgId, m);
+      final f = filterByWallet(full, walletId);
+      return foldMonthMix(
+        mixRowsFromTx([
+          for (final t in f)
+            {'type': t.type, 'category': t.category, 'amount': t.amount},
+        ]),
+        otherLabel: tr('cat_other'),
+        totalN: f.length,
+      );
+    }
+  }
+
+  /// Halaman display berikut (filter dompet tetap di klien, spt semula).
+  Future<void> _loadMore() async {
+    if (loading || loadingMore || !hasMore || err != null) return;
+    setState(() => loadingMore = true);
+    try {
+      final orgId = await activeOrgId();
+      if (!mounted) return;
+      if (orgId.isEmpty) {
+        setState(() => loadingMore = false);
+        return;
+      }
+      final t = await TransactionService()
+          .listMonthPage(orgId, month, offset: items.length);
+      if (!mounted) return;
+      setState(() {
+        items = [...items, ...t];
+        hasMore = txPageHasMore(t.length, txPageSize);
+        loadingMore = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => loadingMore = false);
+    }
+  }
+
   /// Item ekspor = yang tampil di layar (filter dompet + jenis sesi).
   /// CSV dan PDF memakai daftar yang sama.
-  List<SaasTransaction> _exportItems() =>
-      applyReportFilters(items, filterWallet, flowFilter);
+  List<SaasTransaction> _exportItems(List<SaasTransaction> src) =>
+      applyReportFilters(src, filterWallet, flowFilter);
+
+  /// Ekspor memuat SEMUA halaman dulu (cap 2000) supaya tak kepotong
+  /// paginasi display. Gagal muat = lempar (ditangkap _runExport).
+  Future<List<SaasTransaction>> _allItems() async {
+    final orgId = await activeOrgId();
+    final all = <SaasTransaction>[];
+    var offset = 0;
+    for (var i = 0; i < 20; i++) {
+      final page = await TransactionService()
+          .listMonthPage(orgId, month, offset: offset);
+      all.addAll(page);
+      if (!txPageHasMore(page.length, txPageSize)) break;
+      offset += page.length;
+    }
+    return all;
+  }
 
   String? _exportWalletLabel() => filterWallet == null
       ? null
@@ -129,7 +232,7 @@ class ReportsScreenState extends State<ReportsScreen> {
   Future<void> _exportCsv() async {
     String num(double v) =>
         v % 1 == 0 ? v.toInt().toString() : v.toString();
-    final data = _exportItems();
+    final data = _exportItems(await _allItems());
     final rows = <List<dynamic>>[
       ['tanggal', 'jenis', 'nominal', 'dompet', 'ke_dompet', 'kategori', 'catatan'],
       for (final t in data)
@@ -158,7 +261,7 @@ class ReportsScreenState extends State<ReportsScreen> {
   }
 
   Future<void> _exportPdf() async {
-    final data = _exportItems();
+    final data = _exportItems(await _allItems());
     final bytes = await buildReportPdf(
       orgName: await activeOrgName(),
       monthLabel: monthLabel(month),
@@ -227,55 +330,29 @@ class ReportsScreenState extends State<ReportsScreen> {
     _load();
   }
 
-  void _onWalletChanged(String? v) => setState(() => filterWallet = v);
+  void _onWalletChanged(String? v) {
+    // Angka ikut filter dompet → hitung ulang (figures + halaman).
+    setState(() => filterWallet = v);
+    _load();
+  }
 
   void _toggleOrdering() => setState(() => reordering = !reordering);
 
-  /// Angka turunan sebulan dari list yang sudah difilter dompet.
-  /// Isi identik dengan hitungan inline build sebelumnya.
-  _MonthFigures _totalsFor(List<SaasTransaction> filtered) {
-    final totalIn = filtered
-        .where((t) => t.type == 'in')
-        .fold<double>(0, (s, t) => s + t.amount);
-    final totalOut = filtered
-        .where((t) => t.type == 'out')
-        .fold<double>(0, (s, t) => s + t.amount);
-    final net = totalIn - totalOut;
-    // Iris tabungan: OUT berkategori Tabungan/Savings (sumber sama: filtered).
-    final savingOut = savingOutOf(filtered);
-    var spendOut = totalOut - savingOut;
-    if (spendOut < 0) spendOut = 0;
-    final catTotals = <String, double>{};
-    for (final t in filtered) {
-      if (t.type != 'out') continue;
-      // Grup di lapis kategori (abaikan sub) agar konsisten dengan budget.
-      final top = topOf(t.category);
-      final name = top.isEmpty ? tr('cat_other') : top;
-      catTotals[name] = (catTotals[name] ?? 0) + t.amount;
-    }
+  /// Angka sebulan dari agregat RPC (eksak, ikut filter dompet);
+  /// display/export memakai item termuat di bawah.
+  _MonthFigures _figuresFromFold(List<SaasTransaction> loaded) {
+    final f = fig ?? MonthFigures.empty;
     return _MonthFigures(
-      items: filtered,
-      totalIn: totalIn,
-      totalOut: totalOut,
-      spendOut: spendOut,
-      savingOut: savingOut,
-      net: net,
-      catTotals: catTotals,
+      items: loaded,
+      totalIn: f.totalIn,
+      totalOut: f.totalOut,
+      spendOut: f.spendOut,
+      savingOut: f.savingOut,
+      net: f.net,
+      catTotals: f.catTotals,
+      catTotalsNoSaving: f.catTotalsNoSaving,
+      totalN: f.totalN,
     );
-  }
-
-  /// Total per kategori lapis-atas dari list yang sudah difilter dompet.
-  /// Dipakai kartu banding (bulan tampil vs bulan lalu, apel lawan apel).
-  Map<String, double> _catTotalsOf(List<SaasTransaction> txs) {
-    final out = <String, double>{};
-    for (final t in txs) {
-      if (t.type != 'out') continue;
-      if (isSavingCategory(t.category)) continue;
-      final top = topOf(t.category);
-      final name = top.isEmpty ? tr('cat_other') : top;
-      out[name] = (out[name] ?? 0) + t.amount;
-    }
-    return out;
   }
 
   Widget _summarySection(
@@ -284,7 +361,7 @@ class ReportsScreenState extends State<ReportsScreen> {
     Map<String, double> prevCats,
   ) {
     final hasFlow = f.totalIn + f.spendOut + f.savingOut > 0;
-    final deltas = compareMonths(_catTotalsOf(f.items), prevCats);
+    final deltas = compareMonths(f.catTotalsNoSaving, prevCats);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -342,8 +419,7 @@ class ReportsScreenState extends State<ReportsScreen> {
     if (err != null) {
       return _ReportsScaffold(ErrorView(message: err!, onRetry: _load));
     }
-    final figs = _totalsFor(filterByWallet(items, filterWallet));
-    final prevCats = _catTotalsOf(filterByWallet(prevItems, filterWallet));
+    final figs = _figuresFromFold(filterByWallet(items, filterWallet));
     return _ReportsScaffold(
       Column(
         children: [
@@ -363,7 +439,13 @@ class ReportsScreenState extends State<ReportsScreen> {
               summary: _summarySection(figs, items.isNotEmpty, prevCats),
               recapTotals: figs.catTotals,
               list: _listSection(figs.items),
-              listSlivers: _listSlivers(figs.items),
+              listSlivers: _listSlivers(
+                figs.items,
+                totalN: figs.totalN,
+              ),
+              scrollController: _scroll,
+              loadingMore: loadingMore,
+              hasMore: hasMore,
             ),
           ),
         ],
@@ -375,7 +457,11 @@ class ReportsScreenState extends State<ReportsScreen> {
 
   /// Bagian filter + daftar untuk path lazy (mode baca).
   /// Path susun-ulang (reorder) tetap pakai [_listSection] eager.
-  List<Widget> _listSlivers(List<SaasTransaction> filtered) {
+  /// [totalN] = cacah filter eksak (ikut filter dompet) untuk caption jujur.
+  List<Widget> _listSlivers(
+    List<SaasTransaction> filtered, {
+    required int totalN,
+  }) {
     final parts = _flowParts(filtered);
     final head = SliverPadding(
       padding: const EdgeInsets.fromLTRB(
@@ -444,7 +530,62 @@ class ReportsScreenState extends State<ReportsScreen> {
         ),
       ];
     }
-    return [head, ..._TxListCard(items: parts.visible).slivers(context)];
+    return [
+      head,
+      ..._TxListCard(items: parts.visible).slivers(context),
+      ..._pageFooter(totalN: totalN, loaded: filtered.length),
+    ];
+  }
+
+  /// Kaki paginasi: spinner saat muat, caption jujur saat parsial/habis.
+  List<Widget> _pageFooter({required int totalN, required int loaded}) {
+    if (loadingMore) {
+      return const [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: SsrSpace.lg),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+    if (hasMore && loaded > 0) {
+      return [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: SsrSpace.md),
+            child: Center(
+              child: Text(
+                tr('tx_partial').replaceFirst('{n}', '$loaded'),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+    if (!hasMore && totalN > 0) {
+      return [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: SsrSpace.md),
+            child: Center(
+              child: Text(
+                tr('tx_all_shown').replaceFirst('{n}', '$totalN'),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+    return const [];
   }
 
   /// Saring alur + deteksi pasangan transfer (dipakai list widget & slivers).
@@ -503,6 +644,8 @@ class _MonthFigures {
   final double savingOut;
   final double net;
   final Map<String, double> catTotals;
+  final Map<String, double> catTotalsNoSaving;
+  final int totalN;
 
   const _MonthFigures({
     required this.items,
@@ -512,6 +655,8 @@ class _MonthFigures {
     required this.savingOut,
     required this.net,
     required this.catTotals,
+    required this.catTotalsNoSaving,
+    required this.totalN,
   });
 }
 
@@ -586,6 +731,9 @@ class _ReportSections extends StatelessWidget {
   /// Varian lazy seksi daftar untuk mode baca (dibangun di parent).
   final List<Widget> listSlivers;
 
+  /// Paginasi display (milik state parent).
+  final ScrollController scrollController;
+
   const _ReportSections({
     required this.month,
     required this.reordering,
@@ -593,6 +741,7 @@ class _ReportSections extends StatelessWidget {
     required this.recapTotals,
     required this.list,
     required this.listSlivers,
+    required this.scrollController,
   });
 
   @override
@@ -613,6 +762,7 @@ class _ReportSections extends StatelessWidget {
         final kids = _sectionKids(order, sections, recapTotals.isEmpty);
         if (!reordering) {
           return CustomScrollView(
+            controller: scrollController,
             slivers: [
               for (final id in order)
                 if (id == 'recap' && recapTotals.isEmpty)

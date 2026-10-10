@@ -8,6 +8,7 @@ import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
+import 'package:ssr_space/services/heartbeat_service.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/reminder_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
@@ -52,6 +53,9 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('jadwal ulang pengingat gagal: $e');
   }
+  // Heartbeat anti-pause (max 1/hari, fail-silent): aktivitas API harian
+  // menjaga project free-tier tetap hidup walau semua cron diam.
+  unawaited(touchHeartbeatDaily());
   final app = SsrSpaceApp(session: SessionService(prefs));
   runZonedGuarded(
     () => runApp(app),

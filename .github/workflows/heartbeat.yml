@@ -1,0 +1,30 @@
+name: heartbeat
+on:
+  schedule:
+    # Tiap 3 hari 03:10 UTC (= 10:10 WIB): jauh di dalam batas pause 7 hari.
+    - cron: '10 3 */3 * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cek secret SUPABASE_DB_URL
+        id: guard
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "has_url=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Secret SUPABASE_DB_URL belum di-set — heartbeat dilewati."
+          else
+            echo "has_url=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Ping heartbeat (insert via psql)
+        if: steps.guard.outputs.has_url == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          docker run --rm \
+            -e SUPABASE_DB_URL="$SUPABASE_DB_URL" \
+            postgres:18-alpine \
+            psql "$SUPABASE_DB_URL" -c "insert into heartbeat (source) values ('gh-cron');"

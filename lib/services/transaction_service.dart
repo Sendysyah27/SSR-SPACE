@@ -1,4 +1,5 @@
 import 'package:ssr_space/services/month.dart';
+import 'package:ssr_space/services/month_figures.dart';
 import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/models/transaction.dart';
@@ -202,8 +203,35 @@ class TransactionService {
         .toList();
   }
 
-  /// Satu transaksi by id (untuk sheet koreksi instan). Null bila tak ada.
-  Future<SaasTransaction?> getById(String orgId, String id) async {
+  /// Agregat sebulan per (jenis, kategori) via RPC month_mix
+  /// (migration_18). [walletId] null = semua (transfer ikut bila salah
+  /// satu kaki cocok, selaras filterByWallet). Melempar bila RPC tak ada
+  /// atau gagal → pemanggil fallback listMonth + mixRowsFromTx.
+  Future<({List<MonthMixRow> rows, int totalN})> monthMix(
+    String orgId,
+    String month, {
+    String? walletId,
+  }) async {
+    final res = await SupabaseConfig.client.rpc(
+      'month_mix',
+      params: {
+        'p_org_id': orgId,
+        'p_month': month,
+        if (walletId != null && walletId.isNotEmpty) 'p_wallet': walletId,
+      },
+    );
+    final m = Map<String, dynamic>.from(res as Map);
+    final raw = (m['rows'] as List? ?? []);
+    return (
+      rows: [
+        for (final r in raw)
+          MonthMixRow.fromMap(Map<String, dynamic>.from(r as Map)),
+      ],
+      totalN: (m['total_n'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// Satu transaksi by id (untuk sheet koreksi instan). Null bila tak ada.  Future<SaasTransaction?> getById(String orgId, String id) async {
     final row = await SupabaseConfig.client
         .from('transactions')
         .select()

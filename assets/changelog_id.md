@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.17.0+88.
+Versi terpasang: 2.18.0+89.
+
+## Yang baru di 2.18.0+89
+
+1. Angka Beranda & Laporan kini eksak di bulan yang ramai (dulu kepotong 200 transaksi). Riwayat dimuat bertahap saat digulir, ekspor tetap lengkap.
+2. Aplikasi menyapa server tiap hari agar layanan tetap hidup.
+3. Perlu tindakan: jalankan `migration_18_scale.sql` di Supabase SQL Editor (setelah migration_17).
 
 ## Yang baru di 2.17.0+88
 

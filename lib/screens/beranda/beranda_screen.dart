@@ -10,6 +10,7 @@ import 'package:ssr_space/services/calm_streak.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/health_score.dart';
 import 'package:ssr_space/services/month.dart';
+import 'package:ssr_space/services/month_figures.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/weekly_insight.dart';
 import 'package:ssr_space/services/savings_goal.dart';
@@ -66,6 +67,10 @@ class BerandaScreenState extends State<BerandaScreen> {
   String month = currentMonth();
   String orgName = '-';
   List<SaasTransaction> items = [];
+  // Angka hero eksak via RPC (tak tergantung halaman display).
+  double figIn = 0;
+  double figOut = 0;
+  int figN = 0;
   List<RecurringBill> billsDue = [];
   bool loading = true;
   String? err;
@@ -145,10 +150,34 @@ class BerandaScreenState extends State<BerandaScreen> {
           loading = false;
           items = [];
           billsDue = [];
+          figIn = 0;
+          figOut = 0;
+          figN = 0;
         });
         return;
       }
-      final txs = await TransactionService().listMonth(orgId, month);
+      // Display: halaman terbaru saja (cukup untuk 7 bucket x 5).
+      // Matematika: agregat RPC eksak (tak peduli 200/2000 baris).
+      final txs = await TransactionService().listMonthPage(orgId, month);
+      MonthFigures fig;
+      try {
+        final mix = await TransactionService().monthMix(orgId, month);
+        fig = foldMonthMix(
+          mix.rows,
+          otherLabel: tr('cat_other'),
+          totalN: mix.totalN,
+        );
+      } catch (_) {
+        final full = await TransactionService().listMonth(orgId, month);
+        fig = foldMonthMix(
+          mixRowsFromTx([
+            for (final t in full)
+              {'type': t.type, 'category': t.category, 'amount': t.amount},
+          ]),
+          otherLabel: tr('cat_other'),
+          totalN: full.length,
+        );
+      }
       final allBills = await loadBills();
       final now = DateTime.now();
       // Streak: tanggal ringan lintas bulan, fail-open (kartu sembunyi).
@@ -167,27 +196,31 @@ class BerandaScreenState extends State<BerandaScreen> {
       var notes = <MapEntry<String, BudgetPace>>[];
       if (month == currentMonth()) {
         try {
-          final prev =
-              await TransactionService().listMonth(orgId, prevMonth(month));
-          final spent = <String, double>{};
-          var totalIn = 0.0;
-          var curOut = 0.0;
-          for (final t in txs) {
-            if (t.type == 'in') totalIn += t.amount;
-            if (t.type != 'out') continue;
-            if (isSavingCategory(t.category)) continue;
-            if (!((t.date ?? '').startsWith(month))) continue;
-            curOut += t.amount;
-            final top = topOf(t.category);
-            final k = top.isEmpty ? tr('cat_other') : top;
-            spent[k] = (spent[k] ?? 0) + t.amount;
+          MonthFigures prevFig;
+          try {
+            final pm = await TransactionService()
+                .monthMix(orgId, prevMonth(month));
+            prevFig = foldMonthMix(
+              pm.rows,
+              otherLabel: tr('cat_other'),
+              totalN: pm.totalN,
+            );
+          } catch (_) {
+            final pl = await TransactionService()
+                .listMonth(orgId, prevMonth(month));
+            prevFig = foldMonthMix(
+              mixRowsFromTx([
+                for (final t in pl)
+                  {'type': t.type, 'category': t.category, 'amount': t.amount},
+              ]),
+              otherLabel: tr('cat_other'),
+              totalN: pl.length,
+            );
           }
-          var prevOut = 0.0;
-          for (final t in prev) {
-            if (t.type != 'out') continue;
-            if (isSavingCategory(t.category)) continue;
-            prevOut += t.amount;
-          }
+          final spent = Map<String, double>.of(fig.catTotalsNoSaving);
+          final totalIn = fig.totalIn;
+          final curOut = fig.spendOut;
+          final prevOut = prevFig.spendOut;
           final limits = await fetchBudgetLimits(orgId);
           final hbInputs = [
             for (final b in limits)
@@ -200,7 +233,7 @@ class BerandaScreenState extends State<BerandaScreen> {
           hb = computeHealth(
             totalIn: totalIn,
             budgets: hbInputs,
-            savingOut: savingOutOf(txs, month: month),
+            savingOut: fig.savingOut,
             curOut: curOut,
             prevOut: prevOut,
             streakDays: st?.days ?? 0,
@@ -371,6 +404,9 @@ class BerandaScreenState extends State<BerandaScreen> {
       setState(() {
         orgName = prefs.getString('active_org_name') ?? '-';
         items = txs;
+        figIn = fig.totalIn;
+        figOut = fig.totalOut;
+        figN = fig.totalN;
         billsDue = dueBills(allBills, now);
         streak = st;
         health = hb;
@@ -588,12 +624,9 @@ class BerandaScreenState extends State<BerandaScreen> {
   Widget _content({Key? key}) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final totalIn = items
-        .where((t) => t.type == 'in')
-        .fold<double>(0, (s, t) => s + t.amount);
-    final totalOut = items
-        .where((t) => t.type == 'out')
-        .fold<double>(0, (s, t) => s + t.amount);
+    // Hero dari agregat RPC (eksak); display dari halaman terbaru.
+    final totalIn = figIn;
+    final totalOut = figOut;
     final surplus = totalIn - totalOut;
     final denom = totalIn + totalOut;
     final inShare = denom <= 0 ? 0.0 : totalIn / denom;
@@ -709,7 +742,7 @@ class BerandaScreenState extends State<BerandaScreen> {
           const SizedBox(height: SsrSpace.xl),
         ],
         Text(tr('beranda_recent'), style: theme.textTheme.titleMedium),
-        if (items.isNotEmpty) ...[
+        if (figN > 0) ...[
           const SizedBox(height: SsrSpace.xs),
           InkWell(
             onTap: _openMonthTx,
@@ -718,7 +751,7 @@ class BerandaScreenState extends State<BerandaScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
                 tr('beranda_tx_line')
-                    .replaceFirst('{n}', '${items.length}')
+                    .replaceFirst('{n}', '$figN')
                     .replaceFirst('{m}', _monthLower()),
                 style: TextStyle(
                   color: theme.colorScheme.primary,
@@ -728,7 +761,7 @@ class BerandaScreenState extends State<BerandaScreen> {
             ),
           ),
         ],
-        if (items.isEmpty)
+        if (figN == 0)
           SizedBox(
             height: 280,
             child: EmptyView(

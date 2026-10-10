@@ -755,6 +755,84 @@ exception when others then
   if sqlerrm not like '%QUOTA_EXCEEDED%' then raise; end if;
 end $$;
 
+-- ===== T31: month_mix agregat eksak + wallet filter (migration_18) =====
+-- Bulan fiktif 2020-01 (terisolasi dari fixture lain).
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+insert into transactions (org_id, type, amount, category, wallet_id, date)
+values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'in', 100, 'Gaji', null, '2020-01-15'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 40, 'Makan', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeee01', '2020-01-15'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'out', 10, 'Tabungan', null, '2020-01-20');
+select t_assert(
+  (public.month_mix('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '2020-01')->>'total_n')::int = 3,
+  'T31 total_n 3 baris');
+select t_assert(
+  (select coalesce(sum((r->>'s')::double precision), 0) from jsonb_array_elements(
+    public.month_mix('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '2020-01')->'rows') r
+   where r->>'t' = 'in') = 100,
+  'T31 in_sum eksak');
+select t_assert(
+  (select coalesce(sum((r->>'s')::double precision), 0) from jsonb_array_elements(
+    public.month_mix('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '2020-01',
+      'eeeeeeee-eeee-4eee-8eee-eeeeeeeeee01')->'rows') r) = 40,
+  'T31 filter dompet hanya baris cocok');
+-- Bukan member → NOT_MEMBER; anon → permission denied; bulan rusak → MIX_BAD_MONTH.
+set test.user_id = '77777777-7777-4777-8777-777777777777';
+do $$
+begin
+  perform public.month_mix('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '2020-01');
+  raise exception 'ASSERT GAGAL: T31 non-member bisa month_mix';
+exception when others then
+  if sqlerrm not like '%NOT_MEMBER%' then raise; end if;
+end $$;
+set role anon;
+do $$
+begin
+  perform public.month_mix('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', '2020-01');
+  raise exception 'ASSERT GAGAL: T31 anon bisa month_mix';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+do $$
+begin
+  perform public.month_mix('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'bukan-bulan');
+  raise exception 'ASSERT GAGAL: T31 bulan rusak lolos';
+exception when others then
+  if sqlerrm not like '%MIX_BAD_MONTH%' then raise; end if;
+end $$;
+
+-- ===== T32: touch_heartbeat tulis + prune + anon ditolak (migration_18) =====
+select t_assert(public.touch_heartbeat('t32') is not null,
+  'T32 touch kembalikan waktu');
+-- heartbeat deny-all untuk client: keberadaan baris dicek superuser.
+reset role;
+select t_assert(exists (select 1 from heartbeat
+  where source = 't32'
+    and user_id = '11111111-1111-4111-8111-111111111111'),
+  'T32 baris heartbeat tercatat');
+-- Baris tua (>30 hari) ikut ter-prune saat touch.
+insert into heartbeat (pinged_at, source)
+values (now() - interval '40 days', 'tua-t32');
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select public.touch_heartbeat('t32b');
+reset role;
+select t_assert(not exists (select 1 from heartbeat where source = 'tua-t32'),
+  'T32 prune baris tua');
+set role authenticated;
+set role anon;
+do $$
+begin
+  perform public.touch_heartbeat('anon-t32');
+  raise exception 'ASSERT GAGAL: T32 anon bisa touch';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');
