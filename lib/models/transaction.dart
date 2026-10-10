@@ -45,4 +45,22 @@ class SaasTransaction {
         sourceHash: m['source_hash']?.toString(),
         createdBy: m['created_by']?.toString(),
       );
+
+  /// Kebalikan fromMap (cache offline). Key identik supaya round-trip utuh.
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'org_id': orgId,
+        'type': type,
+        'amount': amount,
+        'wallet_id': walletId,
+        'to_wallet_id': toWalletId,
+        'category': category,
+        'note': note,
+        'date': date,
+        'code': code,
+        'created_at': createdAt,
+        'source_package': sourcePackage,
+        'source_hash': sourceHash,
+        'created_by': createdBy,
+      };
 }

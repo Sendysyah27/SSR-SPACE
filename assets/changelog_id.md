@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.19.0+93.
+Versi terpasang: 2.20.0+94.
+
+## Yang baru di 2.20.0+94
+
+1. Tetap bisa dibuka tanpa internet: data terakhir tersimpan otomatis ditampilkan, dengan penanda offline. Mencatat baru tetap butuh internet.
 
 ## Yang baru di 2.19.0+93
 

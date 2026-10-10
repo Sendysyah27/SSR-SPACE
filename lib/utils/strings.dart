@@ -1684,6 +1684,12 @@ const _t = <String, Map<String, String>>{
     'id': 'Semua {n} transaksi tampil.',
     'en': 'All {n} transactions shown.',
   },
+  // Batch 8: cache offline
+  'off_s': {
+    'id': 'Kamu offline — menampilkan data terakhir tersimpan.',
+    'en': 'You are offline — showing last saved data.',
+  },
+  'off_retry': {'id': 'Muat ulang', 'en': 'Reload'},
   // LOOP 3: Goals (casual, tidak menghakimi)
   'goal_title': {'id': 'Target nabung', 'en': 'Saving goals'},
   'goal_sub': {

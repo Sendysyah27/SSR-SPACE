@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/month_figures.dart';
+import 'package:ssr_space/services/offline_cache.dart';
 import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/models/transaction.dart';
@@ -97,18 +100,31 @@ class TransactionService {
   }
 
   Future<List<SaasTransaction>> listMonth(String orgId, String month) async {
-    final rows = await SupabaseConfig.client
-        .from('transactions')
-        .select()
-        .eq('org_id', orgId)
-        .gte('date', monthStart(month))
-        .lt('date', monthEnd(month))
-        .order('date', ascending: false)
-        .order('created_at', ascending: false)
-        .limit(200);
-    return List<Map<String, dynamic>>.from(rows)
-        .map(SaasTransaction.fromMap)
-        .toList();
+    try {
+      final rows = await SupabaseConfig.client
+          .from('transactions')
+          .select()
+          .eq('org_id', orgId)
+          .gte('date', monthStart(month))
+          .lt('date', monthEnd(month))
+          .order('date', ascending: false)
+          .order('created_at', ascending: false)
+          .limit(200);
+      markOnline();
+      unawaited(writeTxCache(orgId, month, List<dynamic>.from(rows)));
+      return List<Map<String, dynamic>>.from(rows)
+          .map(SaasTransaction.fromMap)
+          .toList();
+    } catch (e) {
+      // Offline: sodorkan cache terakhir; tanpa cache = lempar asli.
+      if (!isNetworkError(e)) rethrow;
+      markOffline();
+      final cached = await readTxCache(orgId, month);
+      if (cached != null) {
+        return cached.map(SaasTransaction.fromMap).toList();
+      }
+      rethrow;
+    }
   }
 
   /// Semua transaksi yang menyentuh satu dompet (sumber atau tujuan
@@ -138,18 +154,36 @@ class TransactionService {
     int offset = 0,
     int limit = txPageSize,
   }) async {
-    final rows = await SupabaseConfig.client
-        .from('transactions')
-        .select()
-        .eq('org_id', orgId)
-        .gte('date', monthStart(month))
-        .lt('date', monthEnd(month))
-        .order('date', ascending: false)
-        .order('created_at', ascending: false)
-        .range(offset, offset + limit - 1);
-    return List<Map<String, dynamic>>.from(rows)
-        .map(SaasTransaction.fromMap)
-        .toList();
+    try {
+      final rows = await SupabaseConfig.client
+          .from('transactions')
+          .select()
+          .eq('org_id', orgId)
+          .gte('date', monthStart(month))
+          .lt('date', monthEnd(month))
+          .order('date', ascending: false)
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+      markOnline();
+      // Cache hanya halaman pertama (tampilan awal offline).
+      if (offset == 0) {
+        unawaited(writeTxCache(orgId, month, List<dynamic>.from(rows)));
+      }
+      return List<Map<String, dynamic>>.from(rows)
+          .map(SaasTransaction.fromMap)
+          .toList();
+    } catch (e) {
+      if (!isNetworkError(e)) rethrow;
+      markOffline();
+      // Offline: halaman lanjutan tak ada → list kosong (hasMore padam
+      // di pemanggil bila tanpa cache); halaman pertama pakai cache.
+      if (offset > 0) return [];
+      final cached = await readTxCache(orgId, month);
+      if (cached != null) {
+        return cached.map(SaasTransaction.fromMap).toList();
+      }
+      rethrow;
+    }
   }
 
   /// Tanggal-tanggal terbaru saja (kolom date, tanpa nominal).
@@ -212,15 +246,31 @@ class TransactionService {
     String month, {
     String? walletId,
   }) async {
-    final res = await SupabaseConfig.client.rpc(
-      'month_mix',
-      params: {
-        'p_org_id': orgId,
-        'p_month': month,
-        if (walletId != null && walletId.isNotEmpty) 'p_wallet': walletId,
-      },
-    );
-    final m = Map<String, dynamic>.from(res as Map);
+    try {
+      final res = await SupabaseConfig.client.rpc(
+        'month_mix',
+        params: {
+          'p_org_id': orgId,
+          'p_month': month,
+          if (walletId != null && walletId.isNotEmpty) 'p_wallet': walletId,
+        },
+      );
+      markOnline();
+      final m = Map<String, dynamic>.from(res as Map);
+      unawaited(writeMixCache(orgId, month, walletId, m));
+      return _mixFromMap(m);
+    } catch (e) {
+      if (!isNetworkError(e)) rethrow;
+      markOffline();
+      final cached = await readMixCache(orgId, month, walletId);
+      if (cached != null) return _mixFromMap(cached);
+      rethrow;
+    }
+  }
+
+  ({List<MonthMixRow> rows, int totalN}) _mixFromMap(
+    Map<String, dynamic> m,
+  ) {
     final raw = (m['rows'] as List? ?? []);
     return (
       rows: [

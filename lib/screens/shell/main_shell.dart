@@ -7,6 +7,7 @@ import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
+import 'package:ssr_space/services/offline_cache.dart';
 import 'package:ssr_space/services/realtime_sync.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/session_service.dart';
@@ -48,15 +49,22 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     NotifTrack.ensureListening(force: true);
     unawaited(ForegroundTrack.syncFromPrefs());
     unawaited(_ensureRealtime());
+    netOnline.addListener(_onNetChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkDetail());
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkRecovery());
   }
 
   @override
   void dispose() {
+    netOnline.removeListener(_onNetChanged);
     unawaited(RealtimeSync.stop());
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Internet kembali setelah offline: sinkron ulang semua tab.
+  void _onNetChanged() {
+    if (mounted && netOnline.value) _reloadAll();
   }
 
   /// Langganan realtime org aktif; ledakan event → muat ulang semua tab.
@@ -197,23 +205,35 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      body: ValueListenableBuilder<bool>(
-        valueListenable: maskAmounts,
-        builder: (context, masked, child) => IndexedStack(
-          index: index,
-          children: [
-            BerandaScreen(
-              key: berandaKey,
-              onCatat: () => _select(1),
-              onBudget: () => _select(2),
-              onLaporan: () => _select(3),
-              onProfil: _openProfil,
+      body: Column(
+        children: [
+          ValueListenableBuilder<bool>(
+            valueListenable: netOnline,
+            builder: (context, online, _) => online
+                ? const SizedBox.shrink()
+                : _OfflineBar(onRetry: () => _reloadAll()),
+          ),
+          Expanded(
+            child: ValueListenableBuilder<bool>(
+              valueListenable: maskAmounts,
+              builder: (context, masked, child) => IndexedStack(
+                index: index,
+                children: [
+                  BerandaScreen(
+                    key: berandaKey,
+                    onCatat: () => _select(1),
+                    onBudget: () => _select(2),
+                    onLaporan: () => _select(3),
+                    onProfil: _openProfil,
+                  ),
+                  TransactionsScreen(key: txKey),
+                  BudgetsScreen(key: budgetKey),
+                  ReportsScreen(key: reportsKey),
+                ],
+              ),
             ),
-            TransactionsScreen(key: txKey),
-            BudgetsScreen(key: budgetKey),
-            ReportsScreen(key: reportsKey),
-          ],
-        ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openInput,
@@ -224,6 +244,47 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: _MainBottomBar(index: index, onSelect: _select),
+    );
+  }
+}
+
+/// Strip offline global: data terakhir tersimpan + tombol muat ulang.
+/// Muncul bila panggilan jaringan gagal (tanpa plugin konektivitas).
+class _OfflineBar extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _OfflineBar({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      color: scheme.error.withValues(alpha: 0.12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                tr('off_s'),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: scheme.error),
+              ),
+            ),
+            TextButton(
+              onPressed: onRetry,
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
+              child: Text(tr('off_retry')),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
