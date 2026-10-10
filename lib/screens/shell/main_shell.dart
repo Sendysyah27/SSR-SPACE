@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
-import 'package:ssr_space/services/async_guard.dart';
+import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
@@ -14,6 +14,7 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
+import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/other_screen.dart';
@@ -40,18 +41,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // force: resubscribe bila stream sempat error / app resume dari background
+    NotifTrack.ensureListening(force: true);
+    unawaited(ForegroundTrack.syncFromPrefs());
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkDetail());
-    unawaited(_initServices());
-  }
-
-  /// Init service: fail-open, tanpa file-log (pernah blokir Beranda).
-  Future<void> _initServices() async {
-    try {
-      await NotifTrack.ensureListening(force: true);
-    } catch (_) {}
-    try {
-      await ForegroundTrack.syncFromPrefs();
-    } catch (_) {}
   }
 
   @override
@@ -66,13 +59,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _resumed = true;
       unawaited(_checkRelock());
-      // Guard: panggilan resume tak boleh lempar async tak tertangani
-      // (itu yang jadi "has stopped" tanpa jejak di build).
-      unawaited(runGuarded(
-        () => NotifTrack.ensureListening(force: true),
-      ));
-      unawaited(runGuarded(() => ForegroundTrack.syncFromPrefs()));
-      unawaited(runGuarded(() => _checkDetail()));
+      NotifTrack.ensureListening(force: true);
+      unawaited(ForegroundTrack.syncFromPrefs());
+      unawaited(_checkDetail());
       // Poll budget alerts tiap resume supaya banner/badge segar
       // walau tab Budget sedang tidak aktif.
       budgetKey.currentState?.reload();
@@ -84,14 +73,23 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 
   /// Kunci ulang saat kembali dari background melewati timeout
-  /// (hanya bila PIN terpasang). Guard anti-tumpuk: resume cepat
-  /// beruntun tak boleh menumpuk layar kunci.
-  // BYPASS-PIN SEMENTARA: kunci ulang dimatikan total.
-  // TODO: kembalikan setelah root cause FC diperbaiki.
-  // bool _lockOpen = false;
-
+  /// (hanya bila PIN terpasang). Sebelumnya shouldRelock tak dipanggil
+  /// siapa pun — timeout 5 menit cuma tulisan.
   Future<void> _checkRelock() async {
-    return;
+    if (!mounted) return;
+    final session = widget.session;
+    if (!session.hasPin) return;
+    if (!session.shouldRelock(
+      timeout: Duration(minutes: lockTimeoutMinutes.value),
+    )) {
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LockScreen(session: session),
+      ),
+    );
+    session.touch();
   }
 
   /// Buka detail read-only bila ada ketuk notif tersimpan.

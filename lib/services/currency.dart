@@ -64,38 +64,29 @@ class CurrencyService {
 
   /// Konversi nominal IDR ke mata uang aktif.
   static double convert(num idrAmount) {
-    final v = idrAmount.toDouble();
-    // Non-finite (data aneh) → 0, bukan nular ke format/build.
-    if (!v.isFinite) return 0;
     final code = currencyCode.value;
-    if (code == 'IDR') return v;
+    if (code == 'IDR') return idrAmount.toDouble();
     final r = rates[code];
-    if (r == null || !r.isFinite) return v;
-    final out = v * r;
-    return out.isFinite ? out : 0;
+    if (r == null) return idrAmount.toDouble();
+    return idrAmount.toDouble() * r;
   }
 
   /// Kembalikan input mata uang aktif ke IDR untuk disimpan.
   static double toIdr(num displayed) {
-    final v = displayed.toDouble();
-    if (!v.isFinite) return 0;
     final code = currencyCode.value;
-    if (code == 'IDR') return v;
+    if (code == 'IDR') return displayed.toDouble();
     final r = rates[code];
-    if (r == null || r == 0 || !r.isFinite) return v;
-    final out = v / r;
-    return out.isFinite ? out : 0;
+    if (r == null || r == 0) return displayed.toDouble();
+    return displayed.toDouble() / r;
   }
 
   /// Format nominal IDR ke mata uang + simbol aktif. Grup ribuan IDR
   /// ikut pengaturan format angka ('id' vs 'us'); non-IDR tetap en_US.
-  /// Tak pernah throw: non-finite → fallback teks (kartu tetap tampil).
   static String format(num idrAmount) {
     final code = currencyCode.value;
     final symbol = kCurrencySymbols[code] ?? 'Rp';
-    final v = convert(idrAmount);
-    if (!v.isFinite) return '$symbol -';
     final dec = kCurrencyDecimals(code);
+    final v = convert(idrAmount);
     final locale = code == 'IDR'
         ? (numberFormat.value == 'us' ? 'en_US' : 'id_ID')
         : 'en_US';

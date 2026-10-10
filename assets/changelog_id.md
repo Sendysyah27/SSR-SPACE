@@ -1,31 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.13.5+82.
+Versi terpasang: 2.13.6+83.
 
-## Yang baru di 2.13.5+82
+## Yang baru di 2.13.6+83
 
-1. Perbaikan Beranda stuck loading (masih mode BYPASS PIN): file-log sementara yang menahan pemuatan transaksi sebulan kini dicabut total, daftar bulan langsung dimuat tanpa menunggu izin storage.
-
-## Yang baru di 2.13.5+81
-
-1. Perbaikan crash saat Beranda dimuat (masih mode BYPASS PIN): tiap pengambilan data kini punya cadangan bila gagal, dan semua error hanya dicatat tanpa mematikan aplikasi.
-
-## Yang baru di 2.13.4+80
-
-1. Perbaikan crash Beranda (masih mode BYPASS PIN): hitungan Loop 1-4 kini tahan data aneh (nominal kosong, bagi-nol, tanggal rusak) dan satu kartu yang error tak lagi mematikan seluruh layar.
-
-## Yang baru di 2.13.3+79
-
-1. BYPASS PIN sementara (darurat): layar kunci dimatikan total, app langsung masuk beranda. Sementara sampai crash setelah PIN ketemu akarnya.
-
-## Yang baru di 2.13.2+78
-
-1. Perbaikan crash layar kunci: baca data tersimpan kini anti-rusak, navigasi usai PIN dijaga, dan kunci otomatis tak lagi menumpuk.
-
-## Yang baru di 2.13.1+77
-
-1. Pengingat kini tampil heads-up, dan bila izin notif HP ditolak, aplikasi bilang jujur saat toggle dinyalakan.
-2. Widget hari ini ikut diperbarui tiap Beranda dimuat (syarat: widget sudah dipasang di layar utama).
+1. Kembali ke versi stabil 2.13.0: perbaikan darurat 2.13.1 sampai 2.13.5 masih crash di HP, jadi seluruh perubahan itu dibatalkan dulu. PIN dan kunci otomatis jalan normal lagi.
 
 ## Yang baru di 2.13.0+76
 

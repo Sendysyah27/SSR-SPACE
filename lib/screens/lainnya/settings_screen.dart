@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
-import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/reminder_service.dart';
 import 'package:ssr_space/services/session_service.dart';
@@ -372,7 +371,7 @@ class _DefaultWalletCardState extends State<_DefaultWalletCard> {
     try {
       final orgId = await activeOrgId();
       if (orgId.isEmpty) return [];
-      return await WalletService().list(orgId);
+      return WalletService().list(orgId);
     } catch (_) {
       return [];
     }
@@ -674,15 +673,7 @@ class _ThemeCard extends StatelessWidget {
 class _ReminderCard extends StatelessWidget {
   const _ReminderCard();
 
-  Future<void> _toggle(BuildContext context, bool v) async {
-    if (v && !await ReminderService.notificationsAllowed()) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr('st_notif_denied'))),
-        );
-      }
-      return;
-    }
+  Future<void> _toggle(bool v) async {
     await setReminderEnabled(v);
     try {
       if (v) {
@@ -734,7 +725,7 @@ class _ReminderCard extends StatelessWidget {
                     contentPadding: EdgeInsets.zero,
                     title: Text(tr('st_reminder_on')),
                     value: enabled,
-                    onChanged: (v) => _toggle(context, v),
+                    onChanged: _toggle,
                   ),
                   Row(
                     children: [
@@ -767,15 +758,7 @@ class _ReminderCard extends StatelessWidget {
 class _WeeklySection extends StatelessWidget {
   const _WeeklySection();
 
-  Future<void> _toggle(BuildContext context, bool v) async {
-    if (v && !await ReminderService.notificationsAllowed()) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr('st_notif_denied'))),
-        );
-      }
-      return;
-    }
+  Future<void> _toggle(bool v) async {
     await setWeeklyEnabled(v);
     try {
       if (v) {
@@ -847,7 +830,7 @@ class _WeeklySection extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   title: Text(tr('st_weekly_on')),
                   value: enabled,
-                  onChanged: (v) => _toggle(context, v),
+                  onChanged: _toggle,
                 ),
                 Row(
                   children: [
@@ -991,9 +974,6 @@ class _PinCardState extends State<_PinCard> {
           () => err = svc.isLockedOut ? tr('lk_lockout') : tr('b_pin_wrong'),
         );
       }
-    } catch (e, st) {
-      await ErrorReporter.capture(e, st, context: 'pin_check');
-      if (mounted) setState(() => err = tr('w_err_save'));
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -1022,8 +1002,7 @@ class _PinCardState extends State<_PinCard> {
         step = 'sent';
         msg = tr('st_pin_sent_link').replaceFirst('{e}', mail);
       });
-    } catch (e, st) {
-      await ErrorReporter.capture(e, st, context: 'pin_link_send');
+    } catch (_) {
       if (!mounted) return;
       setState(() => err = tr('w_err_save'));
     } finally {
@@ -1055,8 +1034,7 @@ class _PinCardState extends State<_PinCard> {
       });
       pinC.clear();
       pin2C.clear();
-    } catch (e, st) {
-      await ErrorReporter.capture(e, st, context: 'pin_save');
+    } catch (_) {
       if (!mounted) return;
       setState(() => err = tr('w_err_save'));
     } finally {

@@ -487,72 +487,6 @@ jobs:
           assert lay.exists() and info.exists()
           print('widget+qs-tile inject ok:', dotted)
           EOF
-      - run: |
-          python3 - <<'EOF'
-          import glob, pathlib
-          # Channel 'ssr_space/widget' -> siarkan APPWIDGET_UPDATE agar
-          # TodayWidgetProvider menggambar ulang snapshot terbaru.
-          # Tanpa ini widget diam di tampilan lama (updatePeriodMillis=0).
-          mains = glob.glob('android/app/src/main/kotlin/**/MainActivity.*',
-                              recursive=True)
-          mains += glob.glob('android/app/src/main/java/**/MainActivity.*',
-                              recursive=True)
-          assert len(mains) == 1, f'MainActivity tak ketemu: {mains}'
-          p = pathlib.Path(mains[0])
-          s = p.read_text()
-          if 'ssr_space/widget' not in s:
-              if p.suffix == '.kt':
-                  assert 'class MainActivity' in s, 'kelas MainActivity aneh'
-                  s = s.replace(
-                      'import io.flutter.embedding.android.FlutterActivity',
-                      'import android.appwidget.AppWidgetManager\n'
-                      'import android.content.ComponentName\n'
-                      'import android.content.Intent\n'
-                      'import io.flutter.embedding.android.FlutterActivity\n'
-                      'import io.flutter.embedding.engine.FlutterEngine\n'
-                      'import io.flutter.plugin.common.MethodChannel',
-                  )
-                  body = '''
-              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-                  super.configureFlutterEngine(flutterEngine)
-                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
-                          "ssr_space/widget").setMethodCallHandler { call, result ->
-                      if (call.method == "refresh") {
-                          try {
-                              val c = applicationContext
-                              val mgr = AppWidgetManager.getInstance(c)
-                              val ids = mgr.getAppWidgetIds(ComponentName(
-                                      c, TodayWidgetProvider::class.java))
-                              if (ids.isNotEmpty()) {
-                                  val intent = Intent(c,
-                                          TodayWidgetProvider::class.java)
-                                  intent.action = AppWidgetManager
-                                          .ACTION_APPWIDGET_UPDATE
-                                  intent.putExtra(AppWidgetManager
-                                          .EXTRA_APPWIDGET_IDS, ids)
-                                  c.sendBroadcast(intent)
-                              }
-                              result.success(true)
-                          } catch (e: Exception) {
-                              result.success(false)
-                          }
-                      } else {
-                          result.notImplemented()
-                      }
-                  }
-              }'''
-                  if s.rstrip().endswith(')'):
-                      # Template satu baris: class MainActivity : FlutterActivity()
-                      s = s.rstrip() + ' {' + body + '\n}\n'
-                  else:
-                      assert s.rstrip().endswith('}'), 'body MainActivity aneh'
-                      s = s.rstrip()[:-1] + body + '\n}\n'
-              else:
-                  raise SystemExit('MainActivity bukan kotlin, cek manual')
-          p.write_text(s)
-          assert 'ssr_space/widget' in p.read_text()
-          print('widget channel ok')
-          EOF
       - name: Setup release signing
         env:
           SSR_KEYSTORE_B64: ${{ secrets.SSR_KEYSTORE_B64 }}
@@ -788,8 +722,8 @@ jobs:
           set -e
           VER=$(grep '^version:' pubspec.yaml | awk '{print $2}' | tr '+' '-')
           D=build/app/outputs/flutter-apk
-          cp "$D/app-release.apk" "$D/SSR-SPACE-$VER-BYPASS-full.apk"
-          cp "$D/app-arm64-v8a-release.apk" "$D/SSR-SPACE-$VER-BYPASS-arm64.apk"
-          cp "$D/app-armeabi-v7a-release.apk" "$D/SSR-SPACE-$VER-BYPASS-v7a.apk"
-          cp "$D/app-x86_64-release.apk" "$D/SSR-SPACE-$VER-BYPASS-x64.apk"
-          gh release upload ci-apk "$D/SSR-SPACE-$VER-BYPASS-"*.apk --clobber
+          cp "$D/app-release.apk" "$D/SSR-SPACE-$VER-full.apk"
+          cp "$D/app-arm64-v8a-release.apk" "$D/SSR-SPACE-$VER-arm64.apk"
+          cp "$D/app-armeabi-v7a-release.apk" "$D/SSR-SPACE-$VER-v7a.apk"
+          cp "$D/app-x86_64-release.apk" "$D/SSR-SPACE-$VER-x64.apk"
+          gh release upload ci-apk "$D/SSR-SPACE-$VER-"*.apk --clobber

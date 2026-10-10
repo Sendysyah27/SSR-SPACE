@@ -23,12 +23,7 @@ class SessionService {
         _mem = {},
         _inMemory = true;
 
-  /// Baca prefs anti-tipe-korup: nilai bertipe lain (bekas versi lama /
-  /// tulis manual) jadi null, bukan throw `as` yang membunuh flow lock.
-  T? _get<T>(String k) {
-    final Object? v = _inMemory ? _mem[k] : _prefs!.get(k);
-    return v is T ? v : null;
-  }
+  T? _get<T>(String k) => _inMemory ? _mem[k] as T? : _prefs!.get(k) as T?;
   Future<void> _set(String k, Object v) async {
     if (_inMemory) {
       _mem[k] = v;

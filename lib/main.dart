@@ -18,20 +18,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Boundary per-kartu: subtree yang throw saat build diganti placeholder
-  // tak terlihat (bukan layar abu/merah seluruh halaman). Satu kartu data
-  // aneh tak mematikan Beranda; error tetap dilaporkan via ErrorReporter
-  // oleh framework (FlutterError.onError).
-  ErrorWidget.builder = (details) {
-    try {
-      ErrorReporter.capture(
-        details.exception,
-        details.stack ?? StackTrace.empty,
-        context: 'widget_build',
-      );
-    } catch (_) {}
-    return const SizedBox.shrink();
-  };
   ErrorReporter.init();
   await SupabaseConfig.init();
   ForegroundTrack.initOnce();
@@ -67,13 +53,7 @@ Future<void> main() async {
   final app = SsrSpaceApp(session: SessionService(prefs));
   runZonedGuarded(
     () => runApp(app),
-    // Handler zona tak boleh throw: bungkus ganda (capture sendiri
-    // sudah anti-throw, tapi kontrak ini dijaga eksplisit).
-    (err, stack) {
-      try {
-        ErrorReporter.capture(err, stack, context: 'zone');
-      } catch (_) {}
-    },
+    (err, stack) => ErrorReporter.capture(err, stack, context: 'zone'),
   );
 }
 

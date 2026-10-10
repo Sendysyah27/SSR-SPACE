@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
-import 'package:ssr_space/services/async_guard.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/services/budget_pace.dart';
 import 'package:ssr_space/services/budget_service.dart';
@@ -149,13 +148,8 @@ class BerandaScreenState extends State<BerandaScreen> {
         });
         return;
       }
-      // Tiap Future individual ber-fallback: gagal = data kosong untuk
-      // seksi itu, bukan throw yang membunuh _load / layar.
-      final txs = await guardAsync(
-        () => TransactionService().listMonth(orgId, month),
-        <SaasTransaction>[],
-      );
-      final allBills = await guardAsync(loadBills, <RecurringBill>[]);
+      final txs = await TransactionService().listMonth(orgId, month);
+      final allBills = await loadBills();
       final now = DateTime.now();
       // Streak: tanggal ringan lintas bulan, fail-open (kartu sembunyi).
       DailyStreak? st;
@@ -374,24 +368,10 @@ class BerandaScreenState extends State<BerandaScreen> {
         gameXp = 0;
       }
       if (!mounted) return;
-      // Hitung di luar setState dengan guard: tak ada throw yang lolos
-      // dari closure setState (itu yang selama ini jadi "konten tak load").
-      List<RecurringBill> due;
-      try {
-        due = dueBills(allBills, now);
-      } catch (_) {
-        due = <RecurringBill>[];
-      }
-      String name;
-      try {
-        name = prefs.getString('active_org_name') ?? '-';
-      } catch (_) {
-        name = '-';
-      }
       setState(() {
-        orgName = name;
+        orgName = prefs.getString('active_org_name') ?? '-';
         items = txs;
-        billsDue = due;
+        billsDue = dueBills(allBills, now);
         streak = st;
         health = hb;
         healthDelta = delta;
@@ -463,9 +443,7 @@ class BerandaScreenState extends State<BerandaScreen> {
   /// Snapshot widget hari ini: surplus tanggal berjalan saja (bukan
   /// sebulan), ditulis fire-and-forget agar UI tak menunggu IO prefs.
   void _pushTodaySnapshot(List<SaasTransaction> txs) {
-    // Guard sync: widget snapshot tak boleh ikut membunuh _load.
-    try {
-      final now = DateTime.now();
+    final now = DateTime.now();
     final today =
         '${now.year.toString().padLeft(4, '0')}-'
         '${now.month.toString().padLeft(2, '0')}-'
@@ -480,64 +458,49 @@ class BerandaScreenState extends State<BerandaScreen> {
         tOut += t.amount;
       }
     }
-    unawaited(runGuarded(
-      () => refreshTodayWidget(date: today, surplus: tIn - tOut),
-    ));
-    } catch (_) {}
+    unawaited(refreshTodayWidget(date: today, surplus: tIn - tOut));
   }
 
   /// Lewati: majukan nextDue satu periode tanpa insert.
-  /// Guard penuh: handler tombol tak boleh lempar async tak tertangani.
   Future<void> _skipBill(RecurringBill bill) async {
-    try {
-      final all = await guardAsync(loadBills, <RecurringBill>[]);
-      final from =
-          DateTime.tryParse(bill.nextDue) ?? DateTime.now();
-      final next = [
-        for (final b in all)
-          if (b.id == bill.id)
-            b.copyWith(
-              nextDue: _ymd(advanceBill(b, from)),
-            )
-          else
-            b,
-      ];
-      await runGuarded(() => saveBills(next));
-      await _load();
-    } catch (_) {}
+    final all = await loadBills();
+    final from =
+        DateTime.tryParse(bill.nextDue) ?? DateTime.now();
+    final next = [
+      for (final b in all)
+        if (b.id == bill.id)
+          b.copyWith(
+            nextDue: _ymd(advanceBill(b, from)),
+          )
+        else
+          b,
+    ];
+    await saveBills(next);
+    await _load();
   }
 
   /// Catat: buka sheet prefill, bila tersimpan rekam riwayat bayar
   /// (nominal master tagihan; nominal asli ada di baris transaksi)
   /// lalu majukan periode.
   Future<void> _recordBill(RecurringBill bill) async {
-    // Guard penuh: semua IO ber-fallback, tak ada throw ke framework.
-    bool ok = false;
-    try {
-      ok = await openTxInputSheet(
-        context,
-        initialType: 'out',
-        initialAmountIdr: bill.amount,
-        initialCategory: bill.category.isEmpty ? null : bill.category,
-        initialWalletId: bill.walletId,
-        initialNote: bill.label,
-      );
-    } catch (_) {
-      return;
-    }
+    final ok = await openTxInputSheet(
+      context,
+      initialType: 'out',
+      initialAmountIdr: bill.amount,
+      initialCategory: bill.category.isEmpty ? null : bill.category,
+      initialWalletId: bill.walletId,
+      initialNote: bill.label,
+    );
     if (!ok) return;
-    try {
-      final all = await guardAsync(loadBills, <RecurringBill>[]);
-      final idx = all.indexWhere((b) => b.id == bill.id);
-      if (idx < 0) return;
-      final rec =
-          recordPayment(all[idx], all[idx].nextDue, bill.amount, DateTime.now());
-      all[idx] = rec.bill;
-      await runGuarded(() => saveBills(all));
-      final pays = await guardAsync(loadPayments, <PaymentEntry>[]);
-      await runGuarded(() => savePayments([rec.entry, ...pays]));
-      await _load();
-    } catch (_) {}
+    final all = await loadBills();
+    final idx = all.indexWhere((b) => b.id == bill.id);
+    if (idx < 0) return;
+    final rec = recordPayment(all[idx], all[idx].nextDue, bill.amount, DateTime.now());
+    all[idx] = rec.bill;
+    await saveBills(all);
+    final pays = await loadPayments();
+    await savePayments([rec.entry, ...pays]);
+    await _load();
   }
 
   static String _ymd(DateTime d) =>
@@ -614,47 +577,21 @@ class BerandaScreenState extends State<BerandaScreen> {
   Widget _content({Key? key}) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    // Sanitasi build: semua agregat dipaksa finite. Satu nilai aneh
-    // (data real korup) tak boleh melempar di build → seluruh konten mati.
-    double fin(double v) => v.isFinite ? v : 0;
-    final totalIn = fin(items
+    final totalIn = items
         .where((t) => t.type == 'in')
-        .fold<double>(0, (s, t) => s + t.amount));
-    final totalOut = fin(items
+        .fold<double>(0, (s, t) => s + t.amount);
+    final totalOut = items
         .where((t) => t.type == 'out')
-        .fold<double>(0, (s, t) => s + t.amount));
+        .fold<double>(0, (s, t) => s + t.amount);
     final surplus = totalIn - totalOut;
     final denom = totalIn + totalOut;
-    final inShare =
-        (denom <= 0 || !denom.isFinite) ? 0.0 : (totalIn / denom).clamp(0.0, 1.0);
-    int? pctOut;
-    if (totalOut > 0) {
-      final p = surplus / totalOut * 100;
-      if (p.isFinite) {
-        try {
-          pctOut = p.round();
-        } catch (_) {
-          pctOut = null;
-        }
-      }
-    }
-    var buckets = <DayBucket>[];
-    try {
-      buckets = groupDayBuckets(items);
-    } catch (_) {
-      buckets = <DayBucket>[];
-    }
-    var calm = List<bool>.filled(8, false);
-    try {
-      calm = calmWeeks(
-        [
-          for (final t in items) DateTime.tryParse(t.date ?? ''),
-        ].whereType<DateTime>().toList(),
-        DateTime.now(),
-      );
-    } catch (_) {
-      calm = List<bool>.filled(8, false);
-    }
+    final inShare = denom <= 0 ? 0.0 : totalIn / denom;
+    final pctOut = totalOut <= 0 ? null : (surplus / totalOut * 100).round();
+    final buckets = groupDayBuckets(items);
+    final calmDates = [
+      for (final t in items) DateTime.tryParse(t.date ?? ''),
+    ].whereType<DateTime>().toList();
+    final calm = calmWeeks(calmDates, DateTime.now());
     return ListView(
       key: key,
       padding: const EdgeInsets.fromLTRB(
@@ -1224,10 +1161,7 @@ class _NudgeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bad = pace.state == PaceState.danger;
-    // Guard data real: depletedDate null (tak seharusnya, tapi jangan
-    // bunuh Beranda) → kartu sembunyi, bukan throw '!' di build.
-    final dd = pace.depletedDate;
-    if (dd == null) return const SizedBox.shrink();
+    final dd = pace.depletedDate!;
     final ymd =
         '${dd.year.toString().padLeft(4, '0')}-'
         '${dd.month.toString().padLeft(2, '0')}-'

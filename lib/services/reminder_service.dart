@@ -22,21 +22,6 @@ class ReminderService {
       FlutterLocalNotificationsPlugin();
   static bool _inited = false;
 
-  /// Izin notif jujur: true bila boleh tampil. Dipakai UI sebelum
-  /// menyalakan toggle supaya tak ON palsu saat izin ditolak.
-  static Future<bool> notificationsAllowed() async {
-    await init();
-    final android = _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    try {
-      return await android?.requestNotificationsPermission() ?? false;
-    } catch (_) {
-      return true;
-    }
-  }
-
   static Future<void> init() async {
     if (_inited) return;
     tzdata.initializeTimeZones();
@@ -52,13 +37,11 @@ class ReminderService {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const settings = InitializationSettings(android: android);
     await _plugin.initialize(settings: settings);
-    // Max agar pengingat tampil heads-up (default = sunyi, mudah
-    // terlewat dan dikira "tidak muncul").
     const channel = AndroidNotificationChannel(
       channelId,
       channelName,
       description: channelDesc,
-      importance: Importance.max,
+      importance: Importance.defaultImportance,
     );
     await _plugin
         .resolvePlatformSpecificImplementation<
@@ -98,8 +81,6 @@ class ReminderService {
         channelId,
         channelName,
         channelDescription: channelDesc,
-        importance: Importance.max,
-        priority: Priority.high,
       ),
     );
     final body = tr(reminderKeyFor(next, hour));
@@ -164,8 +145,6 @@ class ReminderService {
         channelId,
         channelName,
         channelDescription: channelDesc,
-        importance: Importance.max,
-        priority: Priority.high,
       ),
     );
     final body = tr(reminderKeyFor(next, h));
