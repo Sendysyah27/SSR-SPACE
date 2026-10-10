@@ -43,8 +43,8 @@ void main() {
   test('isNetworkError: jaringan ya, server/bentuk tidak', () {
     expect(isNetworkError(const SocketException('x')), isTrue);
     expect(isNetworkError(const HttpException('x')), isTrue);
-    expect(isNetworkError(const TimeoutException('x')), isTrue);
-    expect(isNetworkError(FormatException('x')), isFalse);
+    expect(isNetworkError(TimeoutException('x')), isTrue);
+    expect(isNetworkError(const FormatException('x')), isFalse);
     expect(isNetworkError(StateError('x')), isFalse);
   });
 
