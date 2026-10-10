@@ -831,6 +831,15 @@ const _t = <String, Map<String, String>>{
   'bl_sent': {'id': 'Permintaan terkirim', 'en': 'Request sent'},
   'bl_failed': {'id': 'Gagal', 'en': 'Failed'},
   'bl_cta': {'id': 'Naik ke Pro', 'en': 'Upgrade to Pro'},
+  'bl_soon': {'id': 'Segera hadir', 'en': 'Coming soon'},
+  'bl_soon_s': {
+    'id': 'Pembayaran Pro dalam persiapan. Kuota Gratis tetap berlaku dan kini ditegakkan server.',
+    'en': 'Pro payments are being prepared. Free quotas still apply and are now enforced server-side.',
+  },
+  'iv_quota': {
+    'id': 'Anggota workspace penuh (maksimal 3 di paket Gratis).',
+    'en': 'Workspace members full (maximum 3 on the Free plan).',
+  },
   // Undang anggota
   'iv_err_create': {
     'id': 'Gagal membuat undangan. Coba lagi.',

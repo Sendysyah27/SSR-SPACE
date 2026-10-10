@@ -12,13 +12,17 @@ Allowlist package prefix (bukan substring). Dedup hash per hari. Tanggal = waktu
 
 ## Migrasi Supabase (wajib)
 Jalankan berurutan di SQL Editor bila belum:
-`schema.sql` → `migration_02` … `migration_13_retention.sql`
+`schema.sql` → `migration_02` … `migration_17_quotas.sql`
 (daftar lengkap & urutan: AGENTS.md §3.4)
 
 - migration 07: join workspace hanya pembuat/owner-admin + `mint_tx_code` wajib member
 - migration 08: **wajib jika sudah jalan 07** — hapus policy SELECT org_members yang bikin RLS recursion ("Gagal memuat dompet")
 - migration 12: **fix P0 bikin workspace baru gagal** sejak 07 + re-join invite idempoten
 - migration 13: retention pg_cron harian (client_errors 30h, audit_logs 180h)
+- migration 14: admin workspace (kick, hapus + RPC)
+- migration 15: We Space (mode Bebas/Bendahara + RPC + trigger tulis)
+- migration 16: peringatan budget real-time (trigger + tabel budget_alerts)
+- migration 17: **kuota paket server-side** (RPC check_quota + 3 trigger QUOTA_EXCEEDED; Pro = `organizations.plan`)
 
 ## CI (3 workflow)
 - `build-apk` — analyze + test + APK release (action di-pin SHA, dependabot weekly)

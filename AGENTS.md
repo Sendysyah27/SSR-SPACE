@@ -147,6 +147,10 @@ migration_10_org_invites.sql         ← Fase 1 (invite workspace)
 migration_11_hardening.sql           ← Fase 2 (rate limit + audit_logs + client_errors)
 migration_12_join_fixes.sql          ← fix P0 bikin workspace gagal + invite idempoten (2026-09-25)
 migration_13_retention.sql           ← Fase 3 (pg_cron retention; di test suite dilewati, butuh pg_cron)
+migration_14_workspace_admin.sql     ← admin workspace (kick/hapus)
+migration_15_we_space.sql            ← We Space (mode + trigger tulis)
+migration_16_budget_alerts.sql       ← peringatan budget real-time
+migration_17_quotas.sql              ← Sprint Batch 3 (kuota server-side)
 ```
 
 **Aturan RLS (jangan dilanggar):**
@@ -456,3 +460,4 @@ Before starting, ask the user when antislop applies: during the work, or after i
 - **Fix FC 2.13.1 aman (2026-10-10, systematic-debugging, tanpa bypass):** vonis H1 MethodChannel widget + broadcast native tiap Beranda + H2 izin notif diminta di `main()` startup. Widget channel DISABLE sementara (prefs-only + try-catch + `catchError`, tanpa inject `apk.yml`); schedule silent di startup (`interactive=false`), izin hanya via toggle settings (`notificationsAllowed` + `st_notif_denied`, `interactive:true`); heads-up max/high kembali. Tanpa migration/dep. Bump `2.13.7+84`.
 - **Sprint Batch 1 (2026-10-10, bounded, `2.14.0+85`):** (1) lupa password — `AuthService.resetPassword/updatePassword`, `PinLinkVerify.consume` terima `type=recovery` → flag `passwordRecovery`, `SetPasswordScreen` (validasi murni `newPasswordError` + test), routing Splash (initial-link anti-race) + AuthScreen/MainShell (hangat); (2) invite `tryParseInviteDate` fail-closed (rusak → kedaluwarsa, label `–`) + test. Tanpa migration/dep/config Dashboard baru (pakai ulang callback PIN). Roadmap: `docs/SPRINT_ROADMAP.md`, audit: `docs/SPRINT_AUDIT.md`.
 - **Sprint Batch 2 (2026-10-10, bounded, `2.15.0+86`):** (1) `TrackWizardScreen` 3 langkah (izin → master → mapping pakai ulang `BankTrackRow`, flag `track_wizard_done`) + tombol/banner di notif_settings; (2) pagination Transaksi (`listMonthPage` range 100 + `txPageHasMore` murni + test, infinite scroll + footer + caption jujur `tx_partial`); `listMonth` lama tak disentuh. Tanpa migration/dep.
+- **Sprint Batch 3 (2026-10-10, bounded, `2.16.0+87`, keputusan Hibrida):** kuota server-side `migration_17` (RPC `check_quota` + trigger `trg_auto/member/workspace_quota` → `QUOTA_EXCEEDED`; suite RLS T28-T30 lulus lokal via Postgres Termux) + gate klien server-dulu-lokal-fallback (`canAutoTrack/Invite/CreateWorkspaceServer`) + mapping error (`saveErrorStatus`, `iv_quota`) + Billing jujur (tombol palsu → chip `bl_soon`, tanpa baris pending). **User wajib jalankan `migration_17` manual.** Tanpa dep baru.

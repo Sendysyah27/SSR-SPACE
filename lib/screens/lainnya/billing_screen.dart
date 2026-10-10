@@ -4,7 +4,6 @@ import 'package:ssr_space/utils/money.dart';
 import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
-import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
@@ -20,8 +19,6 @@ class BillingScreen extends StatefulWidget {
 class _BillingScreenState extends State<BillingScreen> {
   String plan = '';
   bool loading = true;
-  bool upgrading = false;
-  String? msg;
   String? err;
 
   @override
@@ -56,26 +53,6 @@ class _BillingScreenState extends State<BillingScreen> {
     }
   }
 
-  Future<void> _upgrade() async {
-    if (upgrading) return;
-    setState(() {
-      upgrading = true;
-      msg = null;
-    });
-    try {
-      await requestUpgrade(await activeOrgId(), 'pro', proPrice);
-      if (!mounted) return;
-      setState(() {
-        msg = tr('bl_req_ok');
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => msg = tr('bl_req_fail'));
-    } finally {
-      if (mounted) setState(() => upgrading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -95,12 +72,7 @@ class _BillingScreenState extends State<BillingScreen> {
           ),
           const SizedBox(height: SsrSpace.lg),
           _FreePlanCard(isPro: isPro),
-          _ProPlanCard(
-            isPro: isPro,
-            msg: msg,
-            upgrading: upgrading,
-            onUpgrade: _upgrade,
-          ),
+          _ProPlanCard(isPro: isPro),
         ],
       ),
     );
@@ -144,20 +116,13 @@ class _FreePlanCard extends StatelessWidget {
   }
 }
 
-/// Kartu paket Pro: harga, fitur, chip status, pesan hasil upgrade,
-/// dan tombol "Naik ke Pro".
+/// Kartu paket Pro: harga, fitur, chip status. Tanpa tombol bayar —
+/// pembayaran dalam persiapan ("segera hadir", Batch 3 Sprint): tak ada
+/// lagi baris `pending` palsu yang tak pernah diproses.
 class _ProPlanCard extends StatelessWidget {
   final bool isPro;
-  final String? msg;
-  final bool upgrading;
-  final VoidCallback onUpgrade;
 
-  const _ProPlanCard({
-    required this.isPro,
-    required this.msg,
-    required this.upgrading,
-    required this.onUpgrade,
-  });
+  const _ProPlanCard({required this.isPro});
 
   @override
   Widget build(BuildContext context) {
@@ -166,7 +131,7 @@ class _ProPlanCard extends StatelessWidget {
       title: tr('bl_pro'),
       statusChip: isPro
           ? StatusChip(label: tr('bl_active_chip'), tone: StatusTone.accent)
-          : StatusChip(label: tr('bl_upgrade_chip'), tone: StatusTone.neutral),
+          : StatusChip(label: tr('bl_soon'), tone: StatusTone.neutral),
       price: Text(
         '${rp(proPrice)}/bulan',
         style: AppTheme.money.copyWith(
@@ -176,23 +141,10 @@ class _ProPlanCard extends StatelessWidget {
       ),
       features: [tr('bl_f_pro1'), tr('bl_f_pro2'), tr('bl_f_pro3')],
       extra: [
-        if (msg != null) ...[
-          const SizedBox(height: SsrSpace.md),
-          StatusChip(
-            label: msg == tr('bl_req_ok') ? tr('bl_sent') : tr('bl_failed'),
-            tone: msg == tr('bl_req_ok')
-                ? StatusTone.accent
-                : StatusTone.danger,
-          ),
+        if (!isPro) ...[
           const SizedBox(height: SsrSpace.sm),
-          Text(msg!, style: Theme.of(context).textTheme.bodySmall),
+          Text(tr('bl_soon_s'), style: Theme.of(context).textTheme.bodySmall),
         ],
-        const SizedBox(height: SsrSpace.lg),
-        PrimaryButton(
-          label: tr('bl_cta'),
-          loading: upgrading,
-          onPressed: isPro ? null : onUpgrade,
-        ),
       ],
     );
   }

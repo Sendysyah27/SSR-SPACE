@@ -7,5 +7,7 @@ void main() {
     expect(e.message, 'Kode undangan kedaluwarsa.');
     expect(InviteException.fromRpc('boom').message,
         'Gagal bergabung. Coba lagi.');
+    expect(InviteException.fromRpc('QUOTA_EXCEEDED').message,
+        'Anggota workspace penuh (maksimal 3 di paket Gratis).');
   });
 }

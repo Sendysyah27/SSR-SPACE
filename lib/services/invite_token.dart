@@ -68,5 +68,8 @@ String inviteErrorMessage(String rpcMessage) {
   if (rpcMessage.contains('NOT_AUTHENTICATED')) {
     return tr('iv_needlogin');
   }
+  if (rpcMessage.contains('QUOTA_EXCEEDED')) {
+    return tr('iv_quota');
+  }
   return tr('iv_joinfail');
 }

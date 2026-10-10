@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
-import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/invite_service.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/supabase_config.dart';
@@ -84,8 +83,11 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
     });
     try {
       final activeId = await activeOrgId();
-      final plan = activeId.isEmpty ? 'free' : await currentPlan(activeId);
-      if (!canCreateWorkspace(plan: plan, joined: orgs.length)) {
+      // Gate kuota server (migration_17) + fallback lokal.
+      if (!await canCreateWorkspaceServer(
+        contextOrgId: activeId,
+        joined: orgs.length,
+      )) {
         if (!mounted) return;
         setState(() => busy = false);
         await requirePro(
@@ -109,7 +111,18 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
       });
       nameC.clear();
       await _select({'id': newId, 'name': name});
-    } catch (_) {
+    } catch (e) {
+      if (!mounted) return;
+      // Trigger server menembak duluan (user belum refresh daftar):
+      // tawarkan Pro, bukan error generik.
+      if ('$e'.contains('QUOTA_EXCEEDED')) {
+        setState(() => busy = false);
+        await requirePro(
+          context,
+          tr('q_ws').replaceFirst('{n}', '${PlanLimits.freeWorkspaces}'),
+        );
+        return;
+      }
       formErr = tr('org_err_create');
     } finally {
       if (mounted) setState(() => busy = false);

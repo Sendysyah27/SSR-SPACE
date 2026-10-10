@@ -636,6 +636,125 @@ select t_assert((select count(*) from budget_alerts
     and category = 'Jajan' and level = 'breach') = 0,
   'T27 belum breach di 55%');
 
+-- ===== T28: kuota auto-track 150/bln free (migration_17) =====
+-- Bersihkan 10 baris T06 dulu (assert-nya sudah lewat) supaya rate limit
+-- 10/60 dtk (migration_11) tak ikut menembak: baris uji dimundurkan 1 jam.
+reset role;
+delete from transactions
+where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+  and source_package = 'id.dana';
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+insert into transactions (org_id, type, amount, source_package, date, created_at)
+select 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'in', 1000, 'id.dana',
+       current_date, now() - interval '1 hour'
+from generate_series(1, 150);
+select t_assert((select count(*) from transactions
+  where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+    and source_package is not null
+    and date >= date_trunc('month', current_date)::date) = 150,
+  'T28 150 auto bulan ini tersimpan');
+do $$
+begin
+  insert into transactions (org_id, type, amount, source_package, date, created_at)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'in', 1000, 'id.dana',
+          current_date, now() - interval '1 hour');
+  raise exception 'ASSERT GAGAL: T28 auto ke-151 lolos';
+exception when others then
+  if sqlerrm not like '%QUOTA_EXCEEDED%' then raise; end if;
+end $$;
+-- Manual (tanpa source_package) tetap bebas kuota.
+insert into transactions (org_id, type, amount)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'in', 1000);
+select t_assert(
+  (public.check_quota('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'auto')->>'allowed')::boolean = false
+  and (public.check_quota('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'auto')->>'used')::int = 150
+  and (public.check_quota('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'auto')->>'plan') = 'free',
+  'T28 check_quota auto jujur');
+
+-- ===== T29: kuota anggota 3/org free + RPC (migration_17) =====
+-- Org A sudah 3 anggota (alice+5555+6666): erin ditolak trigger.
+reset role;
+insert into auth.users (id) values ('77777777-7777-4777-8777-777777777777')
+on conflict (id) do nothing;
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+do $$
+begin
+  insert into org_members (org_id, user_id, role)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+          '77777777-7777-4777-8777-777777777777', 'member');
+  raise exception 'ASSERT GAGAL: T29 anggota ke-4 lolos';
+exception when others then
+  if sqlerrm not like '%QUOTA_EXCEEDED%' then raise; end if;
+end $$;
+select t_assert(
+  (public.check_quota('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'members')->>'allowed')::boolean = false
+  and (public.check_quota('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'members')->>'used')::int = 3,
+  'T29 check_quota members jujur');
+-- Bukan member → NOT_MEMBER; kind asing → fail-closed.
+set test.user_id = '77777777-7777-4777-8777-777777777777';
+do $$
+begin
+  perform public.check_quota('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'auto');
+  raise exception 'ASSERT GAGAL: T29 non-member bisa check_quota';
+exception when others then
+  if sqlerrm not like '%NOT_MEMBER%' then raise; end if;
+end $$;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+do $$
+begin
+  perform public.check_quota('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'emas');
+  raise exception 'ASSERT GAGAL: T29 kind asing lolos';
+exception when others then
+  if sqlerrm not like '%QUOTA_UNKNOWN_KIND%' then raise; end if;
+end $$;
+-- Pro bebas: org B naik pro → tambah 2 anggota lolos.
+reset role;
+update organizations set plan = 'pro'
+where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2';
+insert into auth.users (id) values
+  ('88888888-8888-4888-8888-888888888888'),
+  ('12121212-1212-4121-8121-121212121212')
+on conflict (id) do nothing;
+set role authenticated;
+set test.user_id = '22222222-2222-4222-8222-222222222222';
+insert into org_members (org_id, user_id, role) values
+  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2', '88888888-8888-4888-8888-888888888888', 'member'),
+  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2', '12121212-1212-4121-8121-121212121212', 'member');
+select t_assert((select count(*) from public.list_org_members(
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2')) = 3,
+  'T29 org pro boleh 3+ anggota');
+select t_assert(
+  (public.check_quota('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2', 'members')->>'allowed')::boolean = true,
+  'T29 check_quota pro allowed');
+
+-- ===== T30: kuota workspace 2/user free (migration_17) =====
+-- alice ikut 1 org (A; C sudah dihapus T14): RPC jujur lalu batas menembak.
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select t_assert(
+  (public.check_quota('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'workspaces')->>'allowed')::boolean = true
+  and (public.check_quota('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'workspaces')->>'used')::int = 1,
+  'T30 check_quota workspaces jujur');
+insert into organizations (id, name, created_by)
+values ('dddddddd-dddd-4ddd-8ddd-ddddddddddd4', 'Org D',
+        '11111111-1111-4111-8111-111111111111');
+insert into org_members (org_id, user_id, role)
+values ('dddddddd-dddd-4ddd-8ddd-ddddddddddd4',
+        '11111111-1111-4111-8111-111111111111', 'owner');
+select t_assert(
+  (public.check_quota('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'workspaces')->>'allowed')::boolean = false,
+  'T30 penuh di 2 workspace');
+do $$
+begin
+  insert into organizations (id, name, created_by)
+  values ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeee05', 'Org E',
+          '11111111-1111-4111-8111-111111111111');
+  raise exception 'ASSERT GAGAL: T30 workspace ke-3 lolos';
+exception when others then
+  if sqlerrm not like '%QUOTA_EXCEEDED%' then raise; end if;
+end $$;
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');

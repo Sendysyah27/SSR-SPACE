@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.15.0+86.
+Versi terpasang: 2.16.0+87.
+
+## Yang baru di 2.16.0+87
+
+1. Kuota Gratis kini ditegakkan server (workspace 2, anggota 3, auto-track 150/bulan) — tak bisa diakali. Paket Pro ditandai "Segera hadir" sampai pembayaran siap.
+2. Perlu tindakan: jalankan `migration_17_quotas.sql` di Supabase SQL Editor (setelah migration_16).
 
 ## Yang baru di 2.15.0+86
 

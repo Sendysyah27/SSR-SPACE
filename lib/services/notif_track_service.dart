@@ -9,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
-import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/notif_parse.dart';
 import 'package:ssr_space/services/transfer_detect.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -62,9 +61,14 @@ String connectionLabel({
 
 /// Status baris recent saat insert transaksi ditolak server.
 /// RATE_LIMITED = trigger rate limit auto-insert (migration_11).
+/// QUOTA_EXCEEDED = trigger kuota paket (migration_17).
 String saveErrorStatus(PostgrestException err) {
   if (err.message.contains('RATE_LIMITED')) {
     return tr('svc_rate');
+  }
+  if (err.message.contains('QUOTA_EXCEEDED')) {
+    return tr('q_auto')
+        .replaceFirst('{n}', '${PlanLimits.freeAutoPerMonth}');
   }
   // Mode bendahara: tulis member ditolak RLS — status jujur, tanpa retry.
   if (err.code == '42501') return tr('sp_only_treasurer');
@@ -395,9 +399,9 @@ class NotifTrack {
         return;
       }
       try {
-        final plan = await currentPlan(orgId);
-        final used = await autoUsedThisMonth(orgId, ymd(n.at).substring(0, 7));
-        if (!canAutoTrack(plan: plan, used: used)) {
+        // Gate kuota server (migration_17) + fallback lokal bila RPC
+        // belum ada (user belum jalan migration_17) atau offline.
+        if (!await canAutoTrackServer(orgId)) {
           n.status = tr('q_auto')
               .replaceFirst('{n}', '${PlanLimits.freeAutoPerMonth}');
           _remember(n);
