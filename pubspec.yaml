@@ -1,7 +1,7 @@
 name: ssr_space
 description: SSR SPACE - Simple. Secure. Reliable. Your Finance Space. Pencatatan keuangan multi-dompet dengan workspace bersama dan auto-track notifikasi bank.
 publish_to: 'none'
-version: 2.20.0+94
+version: 2.21.0+95
 environment:
   sdk: '>=3.11.0 <4.0.0'
 dependencies:
@@ -39,6 +39,8 @@ dependencies:
   # compileSdk 37, app 36) → build merah checkReleaseAarMetadata.
   # 12.0.3 = android 13.0.1 (compileSdk 35), API Dart yang dipakai stabil.
   permission_handler: 12.0.3
+  # Backup JSON: pilih file via picker sistem (tanpa izin Manifest).
+  file_picker: ^12.1.2
   timezone: ^0.11.1
   intl: ^0.19.0
   supabase_flutter: ^2.5.0

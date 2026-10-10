@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.20.0+94.
+Versi terpasang: 2.21.0+95.
+
+## Yang baru di 2.21.0+95
+
+1. Cadangan JSON: satu file utuh (dompet + transaksi + budget) yang bisa dipulihkan kapan saja. Menu Profil → Cadangan JSON.
 
 ## Yang baru di 2.20.0+94
 

@@ -1690,6 +1690,57 @@ const _t = <String, Map<String, String>>{
     'en': 'You are offline — showing last saved data.',
   },
   'off_retry': {'id': 'Muat ulang', 'en': 'Reload'},
+  // Batch 9: cadangan JSON + pulihkan
+  'bx_title': {'id': 'Cadangan JSON', 'en': 'JSON backup'},
+  'bx_sub': {
+    'id': 'Satu file utuh yang bisa dipulihkan.',
+    'en': 'One complete file that can be restored.',
+  },
+  'bx_share': {
+    'id': 'Cadangan data SSR SPACE (JSON)',
+    'en': 'SSR SPACE data backup (JSON)',
+  },
+  'bx_backup_t': {'id': 'Cadangkan', 'en': 'Back up'},
+  'bx_backup_s': {
+    'id': 'Simpan dompet, transaksi, dan budget workspace aktif ke satu file JSON.',
+    'en': 'Save the active workspace wallets, transactions, and budgets to one JSON file.',
+  },
+  'bx_backup_btn': {'id': 'Buat cadangan', 'en': 'Make backup'},
+  'bx_backup_ok': {
+    'id': 'Cadangan {n} transaksi tersimpan + dibagikan.',
+    'en': 'Backup of {n} transactions saved + shared.',
+  },
+  'bx_backup_fail': {
+    'id': 'Cadangan gagal. Cek internet lalu coba lagi.',
+    'en': 'Backup failed. Check internet and try again.',
+  },
+  'bx_restore_t': {'id': 'Pulihkan', 'en': 'Restore'},
+  'bx_restore_s': {
+    'id': 'Pilih file cadangan JSON. Dompet dicocokkan per nama (hilang = dibuat), transaksi dikode-ulang.',
+    'en': 'Pick a JSON backup file. Wallets match by name (missing = created), transactions get fresh codes.',
+  },
+  'bx_restore_btn': {'id': 'Pilih file', 'en': 'Pick file'},
+  'bx_pick_fail': {
+    'id': 'File tak terbaca atau bukan cadangan SSR SPACE.',
+    'en': 'File unreadable or not an SSR SPACE backup.',
+  },
+  'bx_preview': {
+    'id': '{t} transaksi siap • {w} dompet baru • {s} dilewati.',
+    'en': '{t} transactions ready • {w} new wallets • {s} skipped.',
+  },
+  'bx_capped': {
+    'id': 'Dibatasi 2000 transaksi pertama.',
+    'en': 'Limited to the first 2000 transactions.',
+  },
+  'bx_confirm': {'id': 'Pulihkan sekarang', 'en': 'Restore now'},
+  'bx_result': {
+    'id': 'Selesai: {o} masuk, {s} dilewati, {f} gagal, {w} dompet dibuat.',
+    'en': 'Done: {o} added, {s} skipped, {f} failed, {w} wallets created.',
+  },
+  'bx_restore_fail': {
+    'id': 'Pulihkan gagal. Cek internet lalu coba lagi.',
+    'en': 'Restore failed. Check internet and try again.',
+  },
   // LOOP 3: Goals (casual, tidak menghakimi)
   'goal_title': {'id': 'Target nabung', 'en': 'Saving goals'},
   'goal_sub': {

@@ -21,6 +21,7 @@ import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/app_info.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/billing_screen.dart';
+import 'package:ssr_space/screens/lainnya/backup_screen.dart';
 import 'package:ssr_space/screens/lainnya/categories_screen.dart';
 import 'package:ssr_space/screens/lainnya/help_screen.dart';
 import 'package:ssr_space/screens/lainnya/arcade_screen.dart';
@@ -450,6 +451,7 @@ class _OtherScreenState extends State<OtherScreen> {
             onNfc: () => _push(const NfcCardsScreen()),
             onTracking: () => _push(const NotifSettingsScreen()),
             onBackup: _backup,
+            onBackupJson: () => _push(const BackupScreen()),
             onExport: () => _push(const ReportsScreen()),
             onImportP2: () => _push(const ImportPreviewScreen()),
             onClearCache: _clearLocalCache,
@@ -487,6 +489,7 @@ class _HubList extends StatelessWidget {
   final VoidCallback onNfc;
   final VoidCallback onTracking;
   final VoidCallback onBackup;
+  final VoidCallback onBackupJson;
   final VoidCallback onExport;
   final VoidCallback onImportP2;
   final VoidCallback onClearCache;
@@ -517,6 +520,7 @@ class _HubList extends StatelessWidget {
     required this.onNfc,
     required this.onTracking,
     required this.onBackup,
+    required this.onBackupJson,
     required this.onExport,
     required this.onImportP2,
     required this.onClearCache,
@@ -552,6 +556,7 @@ class _HubList extends StatelessWidget {
       _BackupSection(
         backupBusy: backupBusy,
         onBackup: onBackup,
+        onBackupJson: onBackupJson,
         onExport: onExport,
         onImportP2: onImportP2,
         onClearCache: onClearCache,
@@ -808,6 +813,7 @@ class _TrackingSection extends StatelessWidget {
 class _BackupSection extends StatelessWidget {
   final bool backupBusy;
   final VoidCallback onBackup;
+  final VoidCallback onBackupJson;
   final VoidCallback onExport;
   final VoidCallback onImportP2;
   final VoidCallback onClearCache;
@@ -815,6 +821,7 @@ class _BackupSection extends StatelessWidget {
   const _BackupSection({
     required this.backupBusy,
     required this.onBackup,
+    required this.onBackupJson,
     required this.onExport,
     required this.onImportP2,
     required this.onClearCache,
@@ -831,6 +838,13 @@ class _BackupSection extends StatelessWidget {
           title: tr('o_backup'),
           subtitle: tr('o_backup_s'),
           onTap: backupBusy ? null : onBackup,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.backup,
+          title: tr('bx_title'),
+          subtitle: tr('bx_sub'),
+          onTap: onBackupJson,
         ),
         const Divider(height: 1),
         NavTile(
