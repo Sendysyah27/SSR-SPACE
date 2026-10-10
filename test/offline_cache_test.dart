@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -41,8 +42,8 @@ void main() {
 
   test('isNetworkError: jaringan ya, server/bentuk tidak', () {
     expect(isNetworkError(const SocketException('x')), isTrue);
-    expect(isNetworkError(HttpException('x')), isTrue);
-    expect(isNetworkError(TimeoutException('x')), isTrue);
+    expect(isNetworkError(const HttpException('x')), isTrue);
+    expect(isNetworkError(const TimeoutException('x')), isTrue);
     expect(isNetworkError(FormatException('x')), isFalse);
     expect(isNetworkError(StateError('x')), isFalse);
   });
