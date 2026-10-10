@@ -11,7 +11,9 @@ import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/wallet.dart';
+import 'package:ssr_space/screens/lainnya/track_wizard_screen.dart';
 import 'package:ssr_space/widgets/bank_track_row.dart';
+import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -35,6 +37,7 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
   bool loading = true;
   String scanStatus = '';
   bool scanning = false;
+  bool wizardDone = true;
 
   @override
   void initState() {
@@ -61,6 +64,7 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
       serviceConnected = conn;
       foregroundRunning = fr;
       wallets = ws;
+      wizardDone = prefs.getBool(trackWizardDoneKey) ?? false;
       perApp = {
         for (final a in watchedApps)
           a.label: prefs.getBool('track_${a.label}') ?? true,
@@ -148,6 +152,22 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
     await _load();
   }
 
+  /// Buka wizard 3 langkah; kembali → muat ulang (langkah menulis
+  /// kunci prefs yang sama dengan layar ini).
+  Future<void> _openWizard() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const TrackWizardScreen()),
+    );
+    if (mounted) await _load();
+  }
+
+  Future<void> _dismissWizardOffer() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(trackWizardDoneKey, true);
+    if (mounted) setState(() => wizardDone = true);
+  }
+
   Future<void> _reconnect() async {
     await NotifTrack.reconnectService();
     await Future.delayed(const Duration(milliseconds: 900));
@@ -171,6 +191,11 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
         children: [
           const _NotifIntro(),
           const SizedBox(height: SsrSpace.md),
+          _WizardEntry(
+            showOffer: !wizardDone && !(granted && master),
+            onOpen: _openWizard,
+            onLater: _dismissWizardOffer,
+          ),
           _StatusCard(
             master: master,
             onMasterChanged: _setMaster,
@@ -196,6 +221,70 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
             scanStatus: scanStatus,
             onScan: _scan,
             onSaved: _onNotifSaved,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pintu wizard 3 langkah: banner tawaran bila setup belum lengkap
+/// (izin + master), tombol ringkas bila sudah (bisa diulang kapan saja).
+class _WizardEntry extends StatelessWidget {
+  final bool showOffer;
+  final VoidCallback onOpen;
+  final VoidCallback onLater;
+
+  const _WizardEntry({
+    required this.showOffer,
+    required this.onOpen,
+    required this.onLater,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!showOffer) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: SsrSpace.md),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onOpen,
+            icon: const DuoIcon(AppIcons.scan),
+            label: Text(tr('wz_cta')),
+          ),
+        ),
+      );
+    }
+    return SectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('wz_offer_t'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: SsrSpace.xs),
+          Text(
+            tr('wz_offer_s'),
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: SsrSpace.sm),
+          Row(
+            children: [
+              Expanded(
+                child: PrimaryButton(
+                  label: tr('wz_start'),
+                  onPressed: onOpen,
+                ),
+              ),
+              const SizedBox(width: SsrSpace.sm),
+              TextButton(
+                onPressed: onLater,
+                child: Text(tr('wz_later')),
+              ),
+            ],
           ),
         ],
       ),

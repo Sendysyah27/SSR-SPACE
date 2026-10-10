@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.14.0+85.
+Versi terpasang: 2.15.0+86.
+
+## Yang baru di 2.15.0+86
+
+1. Panduan pelacakan 3 langkah: izin notifikasi, nyalakan tombol, petakan tiap bank ke dompet. Buka dari Pelacakan otomatis.
+2. Riwayat Transaksi kini dimuat bertahap saat digulir — bulan yang ramai tetap tampil semua.
 
 ## Yang baru di 2.14.0+85
 

@@ -1619,6 +1619,47 @@ const _t = <String, Map<String, String>>{
     'en':
         'Notification permission denied, reminders cannot fire. Enable it in phone Settings.',
   },
+  // Batch 2: wizard auto-track 3 langkah
+  'wz_title': {'id': 'Panduan pelacakan', 'en': 'Tracking guide'},
+  'wz_step': {'id': 'Langkah {n} dari 3', 'en': 'Step {n} of 3'},
+  'wz_skip': {'id': 'Lewati', 'en': 'Skip'},
+  'wz_next': {'id': 'Lanjut', 'en': 'Next'},
+  'wz_back': {'id': 'Kembali', 'en': 'Back'},
+  'wz_done': {'id': 'Selesai', 'en': 'Done'},
+  'wz_s1_t': {'id': '1. Izinkan baca notifikasi', 'en': '1. Allow reading notifications'},
+  'wz_s1_s': {
+    'id': 'Tanpa izin ini tak ada yang tercatat. Buka pengaturan HP, nyalakan akses notifikasi untuk SSR SPACE, lalu kembali dan cek lagi.',
+    'en': 'Without this permission nothing is recorded. Open phone settings, enable notification access for SSR SPACE, then come back and recheck.',
+  },
+  'wz_s1_open': {'id': 'Buka pengaturan', 'en': 'Open settings'},
+  'wz_s1_recheck': {'id': 'Cek lagi', 'en': 'Recheck'},
+  'wz_s2_t': {'id': '2. Nyalakan pelacakan', 'en': '2. Turn tracking on'},
+  'wz_s2_s': {
+    'id': 'Satu tombol untuk semua bank dan dompet. App menjaga pemantauan tetap hidup di latar.',
+    'en': 'One switch for all banks and wallets. The app keeps monitoring alive in the background.',
+  },
+  'wz_s3_t': {'id': '3. Petakan ke dompet', 'en': '3. Map to wallets'},
+  'wz_s3_s': {
+    'id': 'Tiap aplikasi uang masuk ke dompet mana? Yang belum dipetakan ikut tebakan nama — ketuk untuk betulkan.',
+    'en': 'Which wallet does each money app go to? Unmapped ones follow name guesses — tap to fix.',
+  },
+  'wz_cta': {'id': 'Panduan 3 langkah', 'en': '3-step guide'},
+  'wz_offer_t': {'id': 'Belum mencatat otomatis?', 'en': 'Not auto-recording yet?'},
+  'wz_offer_s': {
+    'id': 'Tiga langkah cepat: izin, nyalakan, petakan dompet. Mulai sekarang?',
+    'en': 'Three quick steps: permission, switch on, map wallets. Start now?',
+  },
+  'wz_start': {'id': 'Mulai', 'en': 'Start'},
+  'wz_later': {'id': 'Nanti', 'en': 'Later'},
+  // Batch 2: pagination riwayat
+  'tx_partial': {
+    'id': 'Menampilkan {n} pertama — gulir ke bawah untuk muat semua.',
+    'en': 'Showing first {n} — scroll down to load all.',
+  },
+  'tx_all_shown': {
+    'id': 'Semua {n} transaksi tampil.',
+    'en': 'All {n} transactions shown.',
+  },
   // LOOP 3: Goals (casual, tidak menghakimi)
   'goal_title': {'id': 'Target nabung', 'en': 'Saving goals'},
   'goal_sub': {

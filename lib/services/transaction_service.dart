@@ -73,6 +73,14 @@ Map<String, dynamic> txUpdatePayload({
   return row;
 }
 
+/// Ukuran halaman riwayat (Batch 2 Sprint). Satu order deterministik
+/// (date DESC, created_at DESC) dipakai semua halaman supaya tak loncat.
+const txPageSize = 100;
+
+/// True bila kemungkinan masih ada halaman berikut (yang datang penuh).
+/// Murni Dart — dasar infinite scroll, bisa di-test tanpa backend.
+bool txPageHasMore(int fetched, int limit) => fetched >= limit;
+
 class TransactionService {
   Future<List<SaasTransaction>> list(String orgId) async {
     final rows = await SupabaseConfig.client
@@ -116,6 +124,28 @@ class TransactionService {
         .order('date', ascending: false)
         .order('created_at', ascending: false)
         .limit(200);
+    return List<Map<String, dynamic>>.from(rows)
+        .map(SaasTransaction.fromMap)
+        .toList();
+  }
+
+  /// Satu halaman bulan berjalan (untuk infinite scroll). `offset` dari 0.
+  /// Order identik dengan [listMonth] agar sambungan antar-halaman mulus.
+  Future<List<SaasTransaction>> listMonthPage(
+    String orgId,
+    String month, {
+    int offset = 0,
+    int limit = txPageSize,
+  }) async {
+    final rows = await SupabaseConfig.client
+        .from('transactions')
+        .select()
+        .eq('org_id', orgId)
+        .gte('date', monthStart(month))
+        .lt('date', monthEnd(month))
+        .order('date', ascending: false)
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);
     return List<Map<String, dynamic>>.from(rows)
         .map(SaasTransaction.fromMap)
         .toList();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
@@ -40,12 +42,32 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   bool loading = true;
   String? err;
   bool onlyNoWallet = false;
+  // Pagination Batch 2: halaman 100 via range, sambung saat gulir mentok.
+  final _scroll = ScrollController();
+  bool hasMore = true;
+  bool loadingMore = false;
 
   @override
   void initState() {
     super.initState();
     month = widget.initialMonth ?? currentMonth();
+    _scroll.addListener(_onScroll);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _scroll.removeListener(_onScroll);
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scroll.hasClients || loading || loadingMore || !hasMore) return;
+    if (_scroll.position.pixels >=
+        _scroll.position.maxScrollExtent - 600) {
+      unawaited(_loadMore());
+    }
   }
 
   /// Muat ulang dari luar (dipanggil MainShell setelah sheet tersimpan).
@@ -55,6 +77,9 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     setState(() {
       loading = true;
       err = null;
+      items = [];
+      hasMore = true;
+      loadingMore = false;
     });
     try {
       final orgId = await activeOrgId();
@@ -66,11 +91,12 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         });
         return;
       }
-      final t = await TransactionService().listMonth(orgId, month);
+      final t = await TransactionService().listMonthPage(orgId, month);
       if (!mounted) return;
       setState(() {
         noOrg = false;
         items = t;
+        hasMore = txPageHasMore(t.length, txPageSize);
         loading = false;
       });
     } catch (_) {
@@ -79,6 +105,33 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         loading = false;
         err = tr('tx_err_load');
       });
+    }
+  }
+
+  /// Halaman berikut: tambah di ekor, order server identik jadi mulus.
+  Future<void> _loadMore() async {
+    if (loading || loadingMore || !hasMore || err != null) return;
+    setState(() => loadingMore = true);
+    try {
+      final orgId = await activeOrgId();
+      if (!mounted) return;
+      if (orgId.isEmpty) {
+        setState(() => loadingMore = false);
+        return;
+      }
+      final t = await TransactionService()
+          .listMonthPage(orgId, month, offset: items.length);
+      if (!mounted) return;
+      setState(() {
+        items = [...items, ...t];
+        hasMore = txPageHasMore(t.length, txPageSize);
+        loadingMore = false;
+      });
+    } catch (_) {
+      // Halaman gagal = diam (data yang ada tetap tampil); coba lagi
+      // saat pengguna menggulir ulang.
+      if (!mounted) return;
+      setState(() => loadingMore = false);
     }
   }
 
@@ -132,6 +185,9 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         onlyNoWallet: onlyNoWallet,
         onToggleNoWallet: () =>
             setState(() => onlyNoWallet = !onlyNoWallet),
+        scrollController: _scroll,
+        loadingMore: loadingMore,
+        hasMore: hasMore,
       ),
     );
   }
@@ -394,6 +450,9 @@ class _TxListBody extends StatelessWidget {
   final VoidCallback onEmptyAction;
   final bool onlyNoWallet;
   final VoidCallback onToggleNoWallet;
+  final ScrollController scrollController;
+  final bool loadingMore;
+  final bool hasMore;
 
   const _TxListBody({
     required this.month,
@@ -403,11 +462,15 @@ class _TxListBody extends StatelessWidget {
     required this.onEmptyAction,
     required this.onlyNoWallet,
     required this.onToggleNoWallet,
+    required this.scrollController,
+    required this.loadingMore,
+    required this.hasMore,
   });
 
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
+      controller: scrollController,
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.only(
@@ -423,6 +486,16 @@ class _TxListBody extends StatelessWidget {
                 MonthPicker(month: month, onChanged: onMonthChanged),
                 const SizedBox(height: SsrSpace.md),
                 _TxSummaryStrip(items: items),
+                // Jujur saat halaman belum habis: strip dihitung dari
+                // yang sudah termuat, bukan sebulan penuh.
+                if (hasMore && items.isNotEmpty) ...[
+                  const SizedBox(height: SsrSpace.xs),
+                  Text(
+                    tr('tx_partial')
+                        .replaceFirst('{n}', '${items.length}'),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
                 const SizedBox(height: SsrSpace.xl),
               ],
             ),
@@ -436,6 +509,32 @@ class _TxListBody extends StatelessWidget {
           onlyNoWallet: onlyNoWallet,
           onToggleNoWallet: onToggleNoWallet,
         ).slivers(context),
+        if (loadingMore)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: SsrSpace.lg),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          )
+        else if (!hasMore && items.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: SsrSpace.md),
+              child: Center(
+                child: Text(
+                  tr('tx_all_shown')
+                      .replaceFirst('{n}', '${items.length}'),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ),
+          ),
         const SliverToBoxAdapter(child: SizedBox(height: 120)),
       ],
     );
