@@ -63,7 +63,7 @@ Future<String> saveBackupFile(String fileName, String content) =>
 /// Pilih file .json via picker sistem. Null = user batal.
 /// Isi bukan-JSON valid = lempar [BackupInvalid] saat parse (oleh pemanggil).
 Future<String?> pickBackupText() async {
-  final result = await FilePicker.platform.pickFiles(
+  final result = await FilePicker().pickFiles(
     type: FileType.custom,
     allowedExtensions: ['json'],
   );
