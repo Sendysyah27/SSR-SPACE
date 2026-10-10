@@ -30,6 +30,15 @@ void main() {
     );
   });
 
+  test('link recovery valid terparse (lupa password)', () {
+    final t = parseAuthLinkToken(
+      Uri.parse('com.ssr.space.ssrspace://login-callback'
+          '?token_hash=rec456&type=recovery'),
+    );
+    expect(t?.tokenHash, 'rec456');
+    expect(t?.type, 'recovery');
+  });
+
   test('uri asing ditolak', () {
     expect(parseAuthLinkToken(Uri.parse('https://example.com/a?b=c')), isNull);
     expect(parseAuthLinkToken(Uri.parse('com.ssr.space.ssrspace://other')),

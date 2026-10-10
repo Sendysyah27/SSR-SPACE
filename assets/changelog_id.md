@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.13.7+84.
+Versi terpasang: 2.14.0+85.
+
+## Yang baru di 2.14.0+85
+
+1. Lupa password: ketuk "Lupa password?" di layar Masuk, cek email, ketuk linknya, buat password baru di dalam app.
+2. Daftar undangan workspace tak lagi crash bila datanya rusak (dianggap kedaluwarsa).
 
 ## Yang baru di 2.13.7+84
 

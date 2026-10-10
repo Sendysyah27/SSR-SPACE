@@ -29,8 +29,21 @@ String maskInviteToken(String token) {
   return '${groups.first}-…-${groups.last}';
 }
 
-String inviteStatusLabel({
-  required DateTime expiresAt,
+/// Parse tanggal invite dari Supabase secara aman (Batch 1 Sprint).
+/// Null bila kosong/rusak — pemanggil wajib fail-closed (anggap kedaluwarsa
+/// untuk status, tampilkan `–` untuk label), jangan pernah melempar.
+DateTime? tryParseInviteDate(Object? raw) {
+  if (raw == null) return null;
+  final s = raw.toString().trim();
+  if (s.isEmpty || s.toLowerCase() == 'null') return null;
+  try {
+    return DateTime.parse(s).toLocal();
+  } catch (_) {
+    return null;
+  }
+}
+
+String inviteStatusLabel({  required DateTime expiresAt,
   required bool revoked,
   required int usedCount,
   required int maxUses,

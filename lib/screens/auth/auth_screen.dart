@@ -6,6 +6,8 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
+import 'package:ssr_space/screens/auth/set_password_screen.dart';
+import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/utils/strings.dart';
 
@@ -27,9 +29,28 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   void dispose() {
+    passwordRecovery.removeListener(_onRecovery);
     emailC.dispose();
     passC.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    passwordRecovery.addListener(_onRecovery);
+  }
+
+  /// App dibuka hangat saat link recovery diketuk: langsung ke password baru.
+  void _onRecovery() {
+    if (passwordRecovery.value && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SetPasswordScreen(session: widget.session),
+        ),
+      );
+    }
   }
 
   String _friendly(Object e) {
@@ -120,6 +141,34 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  /// Lupa password: kirim email reset ke alamat di field. Link kembali
+  /// lewat deep-link app (pola magic-link PIN), bukan browser.
+  Future<void> _forgot() async {
+    final email = emailC.text.trim();
+    if (email.isEmpty) {
+      setState(() {
+        err = tr('au_need_email');
+        info = null;
+      });
+      return;
+    }
+    setState(() {
+      loading = true;
+      err = null;
+      info = null;
+    });
+    try {
+      await AuthService().resetPassword(email);
+      if (!mounted) return;
+      setState(() => info = tr('au_reset_sent'));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => err = _friendly(e));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,6 +183,7 @@ class _AuthScreenState extends State<AuthScreen> {
           needVerify: needVerify,
           onSubmit: _submit,
           onResend: _resend,
+          onForgot: _forgot,
           onToggleMode: () => setState(() => isLogin = !isLogin),
         ),
       ),
@@ -153,6 +203,7 @@ class _AuthForm extends StatelessWidget {
   final bool needVerify;
   final Future<void> Function() onSubmit;
   final Future<void> Function() onResend;
+  final Future<void> Function() onForgot;
   final VoidCallback onToggleMode;
 
   const _AuthForm({
@@ -165,6 +216,7 @@ class _AuthForm extends StatelessWidget {
     required this.needVerify,
     required this.onSubmit,
     required this.onResend,
+    required this.onForgot,
     required this.onToggleMode,
   });
 
@@ -185,6 +237,7 @@ class _AuthForm extends StatelessWidget {
           isLogin: isLogin,
           loading: loading,
           onSubmit: onSubmit,
+          onForgot: onForgot,
           onToggleMode: onToggleMode,
         ),
       ],
@@ -337,12 +390,14 @@ class _AuthActions extends StatelessWidget {
   final bool isLogin;
   final bool loading;
   final Future<void> Function() onSubmit;
+  final Future<void> Function() onForgot;
   final VoidCallback onToggleMode;
 
   const _AuthActions({
     required this.isLogin,
     required this.loading,
     required this.onSubmit,
+    required this.onForgot,
     required this.onToggleMode,
   });
 
@@ -357,6 +412,11 @@ class _AuthActions extends StatelessWidget {
           loading: loading,
           onPressed: onSubmit,
         ),
+        if (isLogin)
+          TextButton(
+            onPressed: onForgot,
+            child: Text(tr('au_forgot')),
+          ),
         TextButton(
           onPressed: onToggleMode,
           child: Text(

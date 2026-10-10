@@ -24,6 +24,21 @@ void main() {
     );
   });
 
+  test('tryParseInviteDate: ISO valid → lokal', () {
+    final d = tryParseInviteDate('2026-10-01T10:00:00+00:00');
+    expect(d, isNotNull);
+    expect(d!.year, 2026);
+  });
+
+  test('tryParseInviteDate: null/kosong/sampah → null (fail-closed)', () {
+    expect(tryParseInviteDate(null), isNull);
+    expect(tryParseInviteDate(''), isNull);
+    expect(tryParseInviteDate('   '), isNull);
+    expect(tryParseInviteDate('null'), isNull);
+    expect(tryParseInviteDate('bukan-tanggal'), isNull);
+    expect(tryParseInviteDate(12345), isNull);
+  });
+
   test('label status', () {
     final now = DateTime(2026, 9, 24);
     expect(

@@ -19,8 +19,14 @@ String get pinLinkCallback => '$pinLinkScheme://$pinLinkHost';
 /// link baru dan setelah PIN tersimpan.
 final pinLinkVerified = ValueNotifier<bool>(false);
 
+/// True setelah link lupa-password (type=recovery) berhasil ditukar sesi.
+/// Splash/MainShell mengarahkannya ke layar password baru. Di-reset setelah
+/// password tersimpan (jangan tertinggal true → loop layar password).
+final passwordRecovery = ValueNotifier<bool>(false);
+
 /// Tangkap deep-link callback auth -> tukar token_hash jadi sesi.
-/// Fail-closed: hanya type=magiclink yang diterima. Tak pernah melempar.
+/// Fail-closed: hanya type=magiclink (PIN) dan type=recovery (password)
+/// yang diterima. Tak pernah melempar.
 class PinLinkVerify {
   static bool _started = false;
 
@@ -44,14 +50,26 @@ class PinLinkVerify {
     try {
       if (uri.scheme != pinLinkScheme) return false;
       final t = parseAuthLinkToken(uri);
-      if (t == null || t.type != 'magiclink') return false;
-      final res = await SupabaseConfig.client.auth.verifyOTP(
-        tokenHash: t.tokenHash,
-        type: OtpType.magiclink,
-      );
-      final ok = res.session != null;
-      if (ok) pinLinkVerified.value = true;
-      return ok;
+      if (t == null) return false;
+      if (t.type == 'magiclink') {
+        final res = await SupabaseConfig.client.auth.verifyOTP(
+          tokenHash: t.tokenHash,
+          type: OtpType.magiclink,
+        );
+        final ok = res.session != null;
+        if (ok) pinLinkVerified.value = true;
+        return ok;
+      }
+      if (t.type == 'recovery') {
+        final res = await SupabaseConfig.client.auth.verifyOTP(
+          tokenHash: t.tokenHash,
+          type: OtpType.recovery,
+        );
+        final ok = res.session != null;
+        if (ok) passwordRecovery.value = true;
+        return ok;
+      }
+      return false;
     } catch (err, st) {
       ErrorReporter.capture(err, st, context: 'pin_link_consume');
       return false;
@@ -60,5 +78,6 @@ class PinLinkVerify {
 
   static void reset() {
     pinLinkVerified.value = false;
+    passwordRecovery.value = false;
   }
 }

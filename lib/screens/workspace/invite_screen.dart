@@ -291,7 +291,10 @@ class _InviteListCard extends StatelessWidget {
   const _InviteListCard({required this.invites, required this.onRevoke});
 
   static String _status(Map<String, dynamic> row) {
-    final expires = DateTime.parse(row['expires_at'].toString()).toLocal();
+    // Fail-closed: tanggal rusak/tak terbaca = anggap kedaluwarsa,
+    // jangan pernah lempar (baris sampah tak boleh crash layar).
+    final expires = tryParseInviteDate(row['expires_at']);
+    if (expires == null) return tr('iv_st_expired');
     return inviteStatusLabel(
       expiresAt: expires,
       revoked: row['revoked'] == true,
@@ -314,10 +317,11 @@ class _InviteListCard extends StatelessWidget {
         ((row['max_uses'] as num?)?.toInt() ?? 1) -
         ((row['used_count'] as num?)?.toInt() ?? 0);
     final roleName = row['role'] == 'admin' ? tr('iv_admin') : tr('iv_member');
-    final createdAt = DateTime.parse(row['created_at'].toString()).toLocal();
-    final createdLabel =
-        '${createdAt.day.toString().padLeft(2, '0')}/'
-        '${createdAt.month.toString().padLeft(2, '0')}';
+    final createdAt = tryParseInviteDate(row['created_at']);
+    final createdLabel = createdAt == null
+        ? '–'
+        : '${createdAt.day.toString().padLeft(2, '0')}/'
+            '${createdAt.month.toString().padLeft(2, '0')}';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
       child: Row(

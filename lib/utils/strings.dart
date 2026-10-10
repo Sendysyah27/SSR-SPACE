@@ -661,6 +661,31 @@ const _t = <String, Map<String, String>>{
     'en': 'Verification link resent. Check inbox/spam.',
   },
   'au_try_again': {'id': 'Coba Lagi', 'en': 'Try Again'},
+  'au_forgot': {'id': 'Lupa password?', 'en': 'Forgot password?'},
+  'au_need_email': {
+    'id': 'Isi email dulu, link reset dikirim ke sana.',
+    'en': 'Enter your email first, the reset link goes there.',
+  },
+  'au_reset_sent': {
+    'id': 'Link reset dikirim. Cek email, ketuk linknya, lalu buat password baru.',
+    'en': 'Reset link sent. Check your email, tap the link, then make a new password.',
+  },
+  'np_title': {'id': 'Password baru', 'en': 'New password'},
+  'np_sub': {
+    'id': 'Buat password pengganti yang minimal 6 karakter.',
+    'en': 'Make a replacement password, at least 6 characters.',
+  },
+  'np_pass1': {'id': 'Password baru', 'en': 'New password'},
+  'np_pass2': {'id': 'Ulangi password', 'en': 'Repeat password'},
+  'np_mismatch': {
+    'id': 'Password tidak sama. Ulangi dengan teliti.',
+    'en': 'Passwords do not match. Repeat carefully.',
+  },
+  'np_short': {
+    'id': 'Password minimal 6 karakter.',
+    'en': 'Password must be at least 6 characters.',
+  },
+  'np_save': {'id': 'Simpan password', 'en': 'Save password'},
   'lk_lockout': {
     'id': 'Terlalu banyak salah. Tunggu 60 detik lalu coba lagi.',
     'en': 'Too many attempts. Wait 60 seconds then try again.',

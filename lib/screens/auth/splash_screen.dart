@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:app_links/app_links.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/onboarding_screen.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
+import 'package:ssr_space/screens/auth/set_password_screen.dart';
 import 'package:ssr_space/screens/shell/main_shell.dart';
 import 'package:ssr_space/screens/auth/auth_screen.dart';
 import 'package:ssr_space/screens/auth/intro_consent_screen.dart';
@@ -45,6 +48,16 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
+      // Link awal (mis. ketukan email lupa-password): tukar dulu sebelum
+      // cek sesi — stream AppLinks bisa datang setelah boot lewat.
+      try {
+        final initial = await AppLinks().getInitialLink();
+        if (initial != null) await PinLinkVerify.consume(initial);
+      } catch (_) {}
+      if (passwordRecovery.value) {
+        await _go(SetPasswordScreen(session: widget.session));
+        return;
+      }
       if (SupabaseConfig.isConfigured) {
         if (!widget.skipAuth &&
             SupabaseConfig.client.auth.currentSession == null) {

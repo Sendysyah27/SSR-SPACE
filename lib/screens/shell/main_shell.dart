@@ -7,6 +7,7 @@ import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
+import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -15,6 +16,7 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
+import 'package:ssr_space/screens/auth/set_password_screen.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/other_screen.dart';
@@ -45,6 +47,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     NotifTrack.ensureListening(force: true);
     unawaited(ForegroundTrack.syncFromPrefs());
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkDetail());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkRecovery());
   }
 
   @override
@@ -62,6 +65,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       NotifTrack.ensureListening(force: true);
       unawaited(ForegroundTrack.syncFromPrefs());
       unawaited(_checkDetail());
+      _checkRecovery();
       // Poll budget alerts tiap resume supaya banner/badge segar
       // walau tab Budget sedang tidak aktif.
       budgetKey.currentState?.reload();
@@ -92,8 +96,18 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     session.touch();
   }
 
-  /// Buka detail read-only bila ada ketuk notif tersimpan.
-  /// Prefs ditulis AutoSavedNotify saat notif tampil maupun diketuk.
+  /// Link lupa-password diketuk saat app sudah masuk (hangat): arahkan ke
+  /// layar password baru. Flag di-reset layar itu setelah tersimpan.
+  void _checkRecovery() {
+    if (!mounted || !passwordRecovery.value) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SetPasswordScreen(session: widget.session),
+      ),
+    );
+  }
+
+  /// Buka detail read-only bila ada ketuk notif tersimpan.  /// Prefs ditulis AutoSavedNotify saat notif tampil maupun diketuk.
   Future<void> _checkDetail() async {
     if (_detailOpen || !_resumed || !mounted) return;
     try {
