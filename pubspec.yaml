@@ -1,7 +1,7 @@
 name: ssr_space
 description: SSR SPACE - Simple. Secure. Reliable. Your Finance Space. Pencatatan keuangan multi-dompet dengan workspace bersama dan auto-track notifikasi bank.
 publish_to: 'none'
-version: 2.16.0+87
+version: 2.17.0+88
 environment:
   sdk: '>=3.11.0 <4.0.0'
 dependencies:
@@ -29,6 +29,9 @@ dependencies:
   # NFC gate: cek dukungan/switch HP (API terverifikasi docs 3.6.2).
   flutter_nfc_kit: ^3.6.2
   app_links: ^7.2.1
+  # Login Google native (API klasik 6.x, stabil; 7.x breaking).
+  # Tanpa google-services.json + SHA-1, native gagal → fallback browser.
+  google_sign_in: ^6.3.0
   flutter_foreground_task: ^11.0.3
   flutter_local_notifications: ^22.3.1
   google_mlkit_text_recognition: ^0.15.0

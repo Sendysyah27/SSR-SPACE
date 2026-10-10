@@ -18,6 +18,13 @@ void main() {
     expect(s.isLockedOut, true);
   });
 
+  test('markUnlocked membuka tanpa PIN (biometrik)', () async {
+    final s = SessionService.inMemory();
+    await s.setPin('123456');
+    s.markUnlocked();
+    expect(s.shouldRelock(timeout: const Duration(minutes: 5)), false);
+  });
+
   test('first run flips after onboarding', () async {
     final s = SessionService.inMemory();
     expect(s.isFirstRun, true);

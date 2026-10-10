@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.16.0+87.
+Versi terpasang: 2.17.0+88.
+
+## Yang baru di 2.17.0+88
+
+1. Masuk dengan Google: ketuk tombolnya di layar Masuk (butuh aktivasi Google di server — tanya admin bila gagal).
+2. Buka kunci sidik jari: nyalakan di Pengaturan → PIN tetap bisa dipakai. PIN tak lagi wajib diketik tiap buka.
 
 ## Yang baru di 2.16.0+87
 

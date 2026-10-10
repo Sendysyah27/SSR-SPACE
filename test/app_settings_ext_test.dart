@@ -22,11 +22,15 @@ void main() {
   test('opsi baru fail-safe + persist', () async {
     SharedPreferences.setMockInitialValues({});
     final p = await SharedPreferences.getInstance();
-    await loadAppSettings(p);
-    expect(numberFormat.value, 'id');
+    await loadAppSettings(p);    expect(numberFormat.value, 'id');
     expect(defaultWalletId.value, '');
     expect(weekStart.value, 1);
     expect(lockTimeoutMinutes.value, 5);
+    expect(biometricEnabled.value, false);
+    await setBiometricEnabled(true);
+    expect(biometricEnabled.value, true);
+    await setBiometricEnabled(false);
+    expect(biometricEnabled.value, false);
     await setNumberFormat('us');
     expect(numberFormat.value, 'us');
     await setNumberFormat('xx');
@@ -46,6 +50,7 @@ void main() {
       'app_default_wallet': 'w9',
       'app_week_start': 7,
       'app_lock_timeout': 30,
+      'app_biometric': true,
     });
     final p2 = await SharedPreferences.getInstance();
     await loadAppSettings(p2);
@@ -53,6 +58,7 @@ void main() {
     expect(defaultWalletId.value, 'w9');
     expect(weekStart.value, 7);
     expect(lockTimeoutMinutes.value, 30);
+    expect(biometricEnabled.value, true);
   });
 
   test('theme choice fail-safe + persist', () async {

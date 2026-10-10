@@ -264,6 +264,31 @@ jobs:
           import pathlib
           m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
           s = m.read_text()
+          # Biometrik (local_auth): izin normal, tanpa dialog runtime.
+          if 'android.permission.USE_BIOMETRIC' not in s:
+              s = s.replace(
+                  '</manifest>',
+                  '    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>\n</manifest>',
+              )
+          m.write_text(s)
+          assert 'android.permission.USE_BIOMETRIC' in m.read_text()
+          print('biometric permission ok')
+          EOF
+      - name: Tulis google-services.json bila secret ada
+        env:
+          SSR_GOOGLE_SERVICES_JSON: ${{ secrets.SSR_GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$SSR_GOOGLE_SERVICES_JSON" ]; then
+            echo "$SSR_GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo 'google-services.json ok (native Google login aktif)'
+          else
+            echo 'tanpa google-services.json (native gagal, fallback browser OAuth)'
+          fi
+      - run: |
+          python3 - <<'EOF'
+          import pathlib
+          m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
+          s = m.read_text()
           # Ekspor Laporan: simpan ke Documents/ssr-space milik user.
           # API 30+ butuh MANAGE_EXTERNAL_STORAGE (minta saat runtime,
           # user menyetujui di halaman akses khusus; APK sideload jadi

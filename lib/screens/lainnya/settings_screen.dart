@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/app_settings.dart';
+import 'package:ssr_space/services/biometric_auth.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/reminder_service.dart';
@@ -174,6 +175,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(key: _widgetKey, child: const _WidgetCard()),
           const SizedBox(height: SsrSpace.md),
           Container(key: _pinKey, child: const _PinCard()),
+          const SizedBox(height: SsrSpace.md),
+          const _BiometricCard(),
         ],
       ),
     );
@@ -922,6 +925,60 @@ class _WidgetCard extends StatelessWidget {
             subtitle: Text(tr('wg_open')),
             value: value,
             onChanged: _toggle,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Biometrik sebagai alternatif PIN (opt-in, default mati).
+/// Toggle hanya aktif bila HP mendukung + ada biometrik terdaftar;
+/// buka kunci tetap bisa lewat PIN kapan saja.
+class _BiometricCard extends StatefulWidget {
+  const _BiometricCard();
+
+  @override
+  State<_BiometricCard> createState() => _BiometricCardState();
+}
+
+class _BiometricCardState extends State<_BiometricCard> {
+  bool? supported;
+
+  @override
+  void initState() {
+    super.initState();
+    BiometricAuth.isSupported().then((v) {
+      if (mounted) setState(() => supported = v);
+    });
+  }
+
+  Future<void> _toggle(bool v) async {
+    if (v && supported != true) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('bio_unsupported'))),
+      );
+      return;
+    }
+    await setBiometricEnabled(v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('bio_t'),
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: biometricEnabled,
+          builder: (context, enabled, _) => SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(tr('bio_t')),
+            subtitle: Text(
+              supported == false ? tr('bio_unsupported') : tr('bio_s'),
+            ),
+            value: enabled && supported == true,
+            onChanged: supported == null ? null : _toggle,
           ),
         ),
       ],

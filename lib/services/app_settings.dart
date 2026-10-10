@@ -28,6 +28,7 @@ const _kNumberFormat = 'app_number_format';
 const _kDefaultWallet = 'app_default_wallet';
 const _kWeekStart = 'app_week_start';
 const _kLockTimeout = 'app_lock_timeout';
+const _kBiometric = 'app_biometric';
 
 /// Pengaturan aplikasi: bahasa, mata uang tampilan, skala font.
 /// Diisi di main() sebelum runApp; layar settings mengubah + simpan.
@@ -67,6 +68,9 @@ final weekStart = ValueNotifier<int>(1);
 
 /// Auto-lock menit: 1, 5, 15, atau 30.
 final lockTimeoutMinutes = ValueNotifier<int>(5);
+
+/// Biometrik sebagai alternatif PIN (default MATI = opt-in eksplisit).
+final biometricEnabled = ValueNotifier<bool>(false);
 
 /// Hitung pemakaian dompet manual (id ke jumlah), untuk urutan dropdown.
 /// Hanya naik lewat noteWalletUsed; auto-track tidak menyentuh.
@@ -120,6 +124,7 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
   final lt = prefs.getInt(_kLockTimeout) ?? 5;
   lockTimeoutMinutes.value =
       (lt == 1 || lt == 5 || lt == 15 || lt == 30) ? lt : 5;
+  biometricEnabled.value = prefs.getBool(_kBiometric) ?? false;
 }
 
 Future<void> setLocaleCode(String v) async {
@@ -268,6 +273,14 @@ Future<void> setLockTimeoutMinutes(int v) async {
   lockTimeoutMinutes.value = nv;
   final prefs = await SharedPreferences.getInstance();
   await prefs.setInt(_kLockTimeout, nv);
+}
+
+/// Biometrik on/off (opt-in; default mati). Tanpa validasi perangkat di
+/// sini — LockScreen cek dukungan saat dipakai (fail-closed).
+Future<void> setBiometricEnabled(bool v) async {
+  biometricEnabled.value = v;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool(_kBiometric, v);
 }
 
 /// Catat satu pemakaian dompet manual. Id kosong diabaikan.

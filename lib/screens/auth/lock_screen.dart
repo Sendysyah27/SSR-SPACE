@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ssr_space/services/app_settings.dart';
+import 'package:ssr_space/services/biometric_auth.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -21,6 +23,8 @@ class _LockScreenState extends State<LockScreen> {
   String? err;
   Timer? _ticker;
   bool _verifying = false;
+  bool _bioTried = false;
+  bool _bioAvailable = false;
 
   @override
   void initState() {
@@ -29,6 +33,45 @@ class _LockScreenState extends State<LockScreen> {
       err = tr('lk_lockout');
       _startTicker();
     }
+    _checkBio();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tryBiometric());
+  }
+
+  /// Cek dukungan biometrik sekali (untuk tombol manual). Gagal = sembunyi.
+  Future<void> _checkBio() async {
+    if (!biometricEnabled.value) return;
+    final ok = await BiometricAuth.isSupported();
+    if (mounted) setState(() => _bioAvailable = ok);
+  }
+
+  /// Coba biometrik otomatis sekali saat layar dibuka (opt-in saja).
+  /// Batal/gagal = diam, PIN pad tetap jadi jalan utama.
+  Future<void> _tryBiometric() async {
+    if (_bioTried || !mounted) return;
+    _bioTried = true;
+    if (!biometricEnabled.value) return;
+    if (!await BiometricAuth.isSupported()) return;
+    if (!mounted) return;
+    final ok = await BiometricAuth.unlock(tr('lk_bio'));
+    if (!mounted) return;
+    if (ok) _openApp();
+  }
+
+  /// Ketuk tombol sidik jari manual (coba ulang setelah batal).
+  Future<void> _bioManual() async {
+    _bioTried = true;
+    if (!mounted) return;
+    final ok = await BiometricAuth.unlock(tr('lk_bio'));
+    if (!mounted) return;
+    if (ok) _openApp();
+  }
+
+  void _openApp() {
+    widget.session.markUnlocked();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => MainShell(session: widget.session)),
+    );
   }
 
   @override
@@ -60,10 +103,7 @@ class _LockScreenState extends State<LockScreen> {
     }
     if (!mounted) return;
     if (ok) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => MainShell(session: widget.session)),
-      );
+      _openApp();
       return;
     }
     setState(() {
@@ -120,6 +160,13 @@ class _LockScreenState extends State<LockScreen> {
                 ),
                 const SizedBox(height: SsrSpace.xxl),
                 PinPad(controller: pinC, length: 6),
+                if (_bioAvailable) ...[
+                  const SizedBox(height: SsrSpace.md),
+                  TextButton(
+                    onPressed: _bioManual,
+                    child: Text(tr('lk_bio')),
+                  ),
+                ],
               ],
             ),
           ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/auth_service.dart';
@@ -26,9 +28,33 @@ class _AuthScreenState extends State<AuthScreen> {
   String? err;
   String? info;
   bool needVerify = false;
+  StreamSubscription<AuthState>? _authSub;
+  bool _navigated = false;
+
+  void _goSplash() {
+    if (_navigated || !mounted) return;
+    _navigated = true;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SplashScreen(session: widget.session, skipAuth: true),
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Sesi OAuth browser datang via deep-link (plugin tukar otomatis):
+    // dengar sekali, navigasi sekali.
+    _authSub = AuthService().authChanges().listen((s) {
+      if (s.session != null) _goSplash();
+    });
+  }
 
   @override
   void dispose() {
+    _authSub?.cancel();
     passwordRecovery.removeListener(_onRecovery);
     emailC.dispose();
     passC.dispose();
@@ -88,14 +114,7 @@ class _AuthScreenState extends State<AuthScreen> {
           });
           return;
         }
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                SplashScreen(session: widget.session, skipAuth: true),
-          ),
-        );
+        _goSplash();
       } else {
         final res = await auth.signUp(emailC.text.trim(), passC.text);
         if (res.session == null) {
@@ -106,14 +125,7 @@ class _AuthScreenState extends State<AuthScreen> {
           });
           return;
         }
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                SplashScreen(session: widget.session, skipAuth: true),
-          ),
-        );
+        _goSplash();
       }
     } catch (e) {
       final m = _friendly(e);
@@ -141,9 +153,28 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  /// Lupa password: kirim email reset ke alamat di field. Link kembali
-  /// lewat deep-link app (pola magic-link PIN), bukan browser.
+  /// Login Google: native dulu; false = browser dibuka (sesi datang
+  /// via listener). Batal = diam di form.
+  Future<void> _google() async {
+    setState(() {
+      loading = true;
+      err = null;
+      info = null;
+    });
+    try {
+      final native = await AuthService().signInWithGoogle();
+      if (native) _goSplash();
+    } on GoogleSignInCancelled {
+      // User batal pilih akun: diam, tetap di form.
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => err = _friendly(e));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
   Future<void> _forgot() async {
+    // Lupa password: email reset, link kembali via deep-link app.
     final email = emailC.text.trim();
     if (email.isEmpty) {
       setState(() {
@@ -184,6 +215,7 @@ class _AuthScreenState extends State<AuthScreen> {
           onSubmit: _submit,
           onResend: _resend,
           onForgot: _forgot,
+          onGoogle: _google,
           onToggleMode: () => setState(() => isLogin = !isLogin),
         ),
       ),
@@ -204,6 +236,7 @@ class _AuthForm extends StatelessWidget {
   final Future<void> Function() onSubmit;
   final Future<void> Function() onResend;
   final Future<void> Function() onForgot;
+  final Future<void> Function() onGoogle;
   final VoidCallback onToggleMode;
 
   const _AuthForm({
@@ -217,6 +250,7 @@ class _AuthForm extends StatelessWidget {
     required this.onSubmit,
     required this.onResend,
     required this.onForgot,
+    required this.onGoogle,
     required this.onToggleMode,
   });
 
@@ -238,6 +272,7 @@ class _AuthForm extends StatelessWidget {
           loading: loading,
           onSubmit: onSubmit,
           onForgot: onForgot,
+          onGoogle: onGoogle,
           onToggleMode: onToggleMode,
         ),
       ],
@@ -391,6 +426,7 @@ class _AuthActions extends StatelessWidget {
   final bool loading;
   final Future<void> Function() onSubmit;
   final Future<void> Function() onForgot;
+  final Future<void> Function() onGoogle;
   final VoidCallback onToggleMode;
 
   const _AuthActions({
@@ -398,6 +434,7 @@ class _AuthActions extends StatelessWidget {
     required this.loading,
     required this.onSubmit,
     required this.onForgot,
+    required this.onGoogle,
     required this.onToggleMode,
   });
 
@@ -411,6 +448,11 @@ class _AuthActions extends StatelessWidget {
           label: isLogin ? tr('au_login') : tr('au_register'),
           loading: loading,
           onPressed: onSubmit,
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        OutlinedButton(
+          onPressed: loading ? null : onGoogle,
+          child: Text(tr('au_google')),
         ),
         if (isLogin)
           TextButton(

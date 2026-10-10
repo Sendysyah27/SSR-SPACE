@@ -670,6 +670,17 @@ const _t = <String, Map<String, String>>{
     'id': 'Link reset dikirim. Cek email, ketuk linknya, lalu buat password baru.',
     'en': 'Reset link sent. Check your email, tap the link, then make a new password.',
   },
+  'au_google': {'id': 'Masuk dengan Google', 'en': 'Sign in with Google'},
+  'lk_bio': {'id': 'Buka dengan sidik jari', 'en': 'Unlock with fingerprint'},
+  'bio_t': {'id': 'Sidik jari', 'en': 'Fingerprint'},
+  'bio_s': {
+    'id': 'Buka kunci tanpa ketik PIN. PIN tetap bisa dipakai kapan saja.',
+    'en': 'Unlock without typing PIN. PIN still works anytime.',
+  },
+  'bio_unsupported': {
+    'id': 'HP ini tak punya sidik jari terdaftar.',
+    'en': 'This phone has no enrolled fingerprint.',
+  },
   'np_title': {'id': 'Password baru', 'en': 'New password'},
   'np_sub': {
     'id': 'Buat password pengganti yang minimal 6 karakter.',

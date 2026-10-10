@@ -80,6 +80,13 @@ class SessionService {
   bool get isLockedOut =>
       DateTime.now().millisecondsSinceEpoch < (_get<int>('pin_lock_until') ?? 0);
 
+  /// Buka via biometrik (PIN tak diketik): efek sama dengan verifyPin
+  /// sukses (tanpa menyentuh counter gagal/lockout).
+  void markUnlocked() {
+    unlockAt = DateTime.now();
+    lastActiveAt = DateTime.now();
+    sessionId = const Uuid().v4();
+  }
   bool shouldRelock({Duration timeout = const Duration(minutes: 5)}) =>
       DateTime.now().difference(lastActiveAt) > timeout;
 
