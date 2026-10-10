@@ -7,6 +7,7 @@ import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
+import 'package:ssr_space/services/realtime_sync.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -46,14 +47,40 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     // force: resubscribe bila stream sempat error / app resume dari background
     NotifTrack.ensureListening(force: true);
     unawaited(ForegroundTrack.syncFromPrefs());
+    unawaited(_ensureRealtime());
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkDetail());
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkRecovery());
   }
 
   @override
   void dispose() {
+    unawaited(RealtimeSync.stop());
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Langganan realtime org aktif; ledakan event → muat ulang semua tab.
+  /// Ganti workspace = MainShell baru → resubscribe otomatis.
+  Future<void> _ensureRealtime() async {
+    if (!mounted) return;
+    try {
+      final orgId = await activeOrgId();
+      if (!mounted || orgId.isEmpty) return;
+      await RealtimeSync.ensure(
+        orgId,
+        onBurst: () {
+          if (mounted) _reloadAll();
+        },
+      );
+    } catch (_) {}
+  }
+
+  /// Muat ulang semua tab (dipakai burst realtime).
+  void _reloadAll() {
+    berandaKey.currentState?.reload();
+    txKey.currentState?.reload();
+    budgetKey.currentState?.reload();
+    reportsKey.currentState?.reload();
   }
 
   @override
@@ -64,6 +91,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       unawaited(_checkRelock());
       NotifTrack.ensureListening(force: true);
       unawaited(ForegroundTrack.syncFromPrefs());
+      // Realtime bisa putus saat background: pastikan ulang + muat ulang
+      // (reload ini juga fallback bila realtime mati total).
+      unawaited(_ensureRealtime());
       unawaited(_checkDetail());
       _checkRecovery();
       // Poll budget alerts tiap resume supaya banner/badge segar

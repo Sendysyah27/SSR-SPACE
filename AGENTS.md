@@ -152,6 +152,7 @@ migration_15_we_space.sql            ← We Space (mode + trigger tulis)
 migration_16_budget_alerts.sql       ← peringatan budget real-time
 migration_17_quotas.sql              ← Sprint Batch 3 (kuota server-side)
 migration_18_scale.sql               ← Sprint Batch 5 (month_mix + heartbeat)
+migration_19_realtime.sql            ← Sprint Batch 6 (realtime sync)
 ```
 
 **Aturan RLS (jangan dilanggar):**
@@ -466,3 +467,4 @@ Before starting, ask the user when antislop applies: during the work, or after i
 - **Sprint Batch 5 (2026-10-10, bounded, `2.18.0+89`):** (1) angka eksak skala penuh — RPC `month_mix` + `month_figures.dart` murni (fold + fallback converter + test) + `monthMix()` service; Beranda hero/health/pace dari fold (display halaman-1, count `figN`); Laporan rekap/banding dari fold + display infinite scroll + ekspor full-load cap-2000; (2) heartbeat anti-pause 3 lapis (`heartbeat` + `touch_heartbeat` + cron guarded + `heartbeat.yml` tiap 3 hari + touch harian di main). Suite RLS T31/T32 lulus lokal. **User wajib jalankan `migration_18` manual.** Tanpa dep baru.
 - **Fix Google native (2026-10-10, `2.18.0+90`):** vonis = `serverClientId` tak dikirim → audien idToken salah → Supabase tolak → fallback browser. `googleWebClientId` dari dart-define `GOOGLE_WEB_CLIENT_ID` (secret CI, kosong = perilaku lama) + wiring 2 build command + log alasan gagal native. User wajib: Web OAuth client ID di secret + provider Supabase.
 - **Fix biometrik diam (2026-10-10, systematic-debugging, `2.18.0+91`):** vonis = `authenticate()` butuh `FlutterFragmentActivity`, template CI `FlutterActivity` → `no_fragment_activity` tiap tap + ditelan (`false` sunyi). Inject CI ganti MainActivity ke Fragment (Kotlin+Java) + `BiometricAuth.lastError` + pesan `bio_failed` di LockScreen + `test/biometric_auth_test.dart` (fail-closed tanpa platform). `canCheckBiometrics` tak butuh itu → tombol tetap muncul (sesuai laporan).
+- **Sprint Batch 6 (2026-10-10, bounded, `2.19.0+92`):** realtime sync — `RealtimeSync` (1 channel/org: tx/anggota/dompet/budget, debounce 2 dtk → reload 4 tab, lifecycle ikut MainShell, reconnect plugin + fallback reload-resume) + `migration_19` (REPLICA IDENTITY FULL + publication guarded) + RLS T33 + `test/realtime_sync_test.dart`. Tanpa dep/migration manual selain 19. **User wajib jalankan `migration_19` manual.**

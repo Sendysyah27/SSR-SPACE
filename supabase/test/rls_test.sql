@@ -833,6 +833,36 @@ end $$;
 set role authenticated;
 set test.user_id = '11111111-1111-4111-8111-111111111111';
 
+-- ===== T33: realtime ready (migration_19) =====
+-- Replica identity FULL selalu bisa dicek di postgres mana pun.
+select t_assert((select relreplident = 'f' from pg_class
+  where relname = 'transactions'),
+  'T33 replica full transactions');
+select t_assert((select relreplident = 'f' from pg_class
+  where relname = 'org_members'),
+  'T33 replica full org_members');
+select t_assert((select relreplident = 'f' from pg_class
+  where relname = 'wallets'),
+  'T33 replica full wallets');
+select t_assert((select relreplident = 'f' from pg_class
+  where relname = 'budgets'),
+  'T33 replica full budgets');
+-- Publication hanya ada di Supabase asli: tak ada = SKIP jujur.
+do $$
+begin
+  if not exists (select 1 from pg_publication
+                 where pubname = 'supabase_realtime') then
+    raise notice 'SKIP T33 publication (bukan Supabase)';
+    return;
+  end if;
+  if (select count(*) from pg_publication_tables
+      where pubname = 'supabase_realtime'
+        and tablename in
+          ('transactions', 'org_members', 'wallets', 'budgets')) <> 4 then
+    raise exception 'ASSERT GAGAL: T33 publication tak lengkap';
+  end if;
+end $$;
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');

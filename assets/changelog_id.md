@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.18.0+91.
+Versi terpasang: 2.19.0+92.
+
+## Yang baru di 2.19.0+92
+
+1. Perubahan workspace kini muncul sendiri tanpa tarik-muat-ulang (mis. teman mencatat, saldomu ikut segar).
+2. Perlu tindakan: jalankan `migration_19_realtime.sql` di Supabase SQL Editor (setelah migration_18).
 
 ## Yang baru di 2.18.0+91
 
