@@ -88,6 +88,33 @@ class _BackupScreenState extends State<BackupScreen> {
 
   Future<void> _pick() async {
     if (picking) return;
+    final c = TextEditingController();
+    final pasted = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('bx_paste_t')),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: TextField(
+            controller: c,
+            maxLines: 8,
+            decoration: InputDecoration(hintText: '{"app":"ssr-space",…}'),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(tr('close')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, c.text),
+            child: Text(tr('bx_paste_ok')),
+          ),
+        ],
+      ),
+    );
+    c.dispose();
+    if (pasted == null || pasted.trim().isEmpty) return; // batal: diam
     setState(() {
       picking = true;
       preview = null;
@@ -98,11 +125,9 @@ class _BackupScreenState extends State<BackupScreen> {
     try {
       final orgId = await activeOrgId();
       if (orgId.isEmpty) throw StateError('org kosong');
-      final text = await pickBackupText();
-      if (text == null) return; // user batal: diam
       ParsedBackup parsed;
       try {
-        parsed = parseBackup(jsonDecode(text));
+        parsed = parseBackup(jsonDecode(pasted));
       } catch (_) {
         if (!mounted) return;
         setState(() => err = tr('bx_pick_fail'));

@@ -1716,10 +1716,12 @@ const _t = <String, Map<String, String>>{
   },
   'bx_restore_t': {'id': 'Pulihkan', 'en': 'Restore'},
   'bx_restore_s': {
-    'id': 'Pilih file cadangan JSON. Dompet dicocokkan per nama (hilang = dibuat), transaksi dikode-ulang.',
-    'en': 'Pick a JSON backup file. Wallets match by name (missing = created), transactions get fresh codes.',
+    'id': 'Tempel isi file cadangan JSON. Dompet dicocokkan per nama (hilang = dibuat), transaksi dikode-ulang.',
+    'en': 'Paste a JSON backup file content. Wallets match by name (missing = created), transactions get fresh codes.',
   },
-  'bx_restore_btn': {'id': 'Pilih file', 'en': 'Pick file'},
+  'bx_restore_btn': {'id': 'Tempel JSON', 'en': 'Paste JSON'},
+  'bx_paste_t': {'id': 'Tempel cadangan', 'en': 'Paste backup'},
+  'bx_paste_ok': {'id': 'Lanjut', 'en': 'Continue'},
   'bx_pick_fail': {
     'id': 'File tak terbaca atau bukan cadangan SSR SPACE.',
     'en': 'File unreadable or not an SSR SPACE backup.',

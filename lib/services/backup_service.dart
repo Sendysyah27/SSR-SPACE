@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:ssr_space/services/backup_json.dart';
 import 'package:ssr_space/services/export_files.dart';
 import 'package:ssr_space/services/supabase_config.dart';
@@ -60,21 +59,6 @@ Future<String> saveBackupFile(String fileName, String content) =>
       },
     );
 
-/// Pilih file .json via picker sistem. Null = user batal.
-/// Isi bukan-JSON valid = lempar [BackupInvalid] saat parse (oleh pemanggil).
-/// Toleran dua bentuk return file_picker (Result lawas vs List baru).
-Future<String?> pickBackupText() async {
-  final dynamic picked = await FilePicker.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: ['json'],
-  );
-  if (picked == null) return null;
-  final dynamic files = picked is List ? picked : picked.files;
-  if (files is! List || files.isEmpty) return null;
-  final String? path = files.first?.path as String?;
-  if (path == null || path.isEmpty) throw const BackupInvalid('bad-root');
-  return File(path).readAsString();
-}
 
 /// Rencana pratinjau sebelum pulihkan (tanpa tulis apa pun).
 Future<RestorePlan> previewRestore(

@@ -39,9 +39,6 @@ dependencies:
   # compileSdk 37, app 36) → build merah checkReleaseAarMetadata.
   # 12.0.3 = android 13.0.1 (compileSdk 35), API Dart yang dipakai stabil.
   permission_handler: 12.0.3
-  # Backup JSON: pilih file via picker sistem (tanpa izin Manifest).
-  # Pin 11.x: 12.x butuh win32 ^6 vs share_plus ^10 (butuh ^5) → solve gagal.
-  file_picker: ^11.0.3
   timezone: ^0.11.1
   intl: ^0.19.0
   supabase_flutter: ^2.5.0
