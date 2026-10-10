@@ -71,7 +71,7 @@ Future<String?> pickBackupText() async {
   if (picked == null) return null;
   final dynamic files = picked is List ? picked : picked.files;
   if (files is! List || files.isEmpty) return null;
-  final String? path = (files as List).first?.path as String?;
+  final String? path = files.first?.path as String?;
   if (path == null || path.isEmpty) throw const BackupInvalid('bad-root');
   return File(path).readAsString();
 }
