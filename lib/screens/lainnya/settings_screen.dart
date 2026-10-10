@@ -371,7 +371,7 @@ class _DefaultWalletCardState extends State<_DefaultWalletCard> {
     try {
       final orgId = await activeOrgId();
       if (orgId.isEmpty) return [];
-      return WalletService().list(orgId);
+      return await WalletService().list(orgId);
     } catch (_) {
       return [];
     }
