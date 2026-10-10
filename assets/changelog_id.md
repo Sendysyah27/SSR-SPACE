@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.19.0+92.
+Versi terpasang: 2.19.0+93.
+
+## Yang baru di 2.19.0+93
+
+1. Bersih-bersih internal (tak ada perubahan fitur): migrasi database dijadikan satu file agar pemasangan baru lebih mudah; kode tak terpakai dibuang sehingga aplikasi lebih ringan.
 
 ## Yang baru di 2.19.0+92
 

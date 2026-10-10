@@ -132,28 +132,13 @@ Keputusan produk Fase 1: **foreground service penuh** (bukan opt-in), start dari
 ### 3.4 Workflow Supabase migration
 Semua SQL di `supabase/`. User jalankan manual di **Dashboard → SQL Editor**.
 
-Urutan install fresh:
+Urutan install fresh (Batch 7: 16 file 02..19 disquash):
 ```
 schema.sql
-migration_02_org_policies.sql
-migration_03_budgets.sql
-migration_04_subscriptions.sql
-migration_05_tx_codes.sql
-migration_06_notif_source.sql
-migration_07_security.sql
-migration_08_fix_rls_recursion.sql   ← wajib bila pernah jalan 07 versi lama
-migration_09_wallet_balance.sql
-migration_10_org_invites.sql         ← Fase 1 (invite workspace)
-migration_11_hardening.sql           ← Fase 2 (rate limit + audit_logs + client_errors)
-migration_12_join_fixes.sql          ← fix P0 bikin workspace gagal + invite idempoten (2026-09-25)
-migration_13_retention.sql           ← Fase 3 (pg_cron retention; di test suite dilewati, butuh pg_cron)
-migration_14_workspace_admin.sql     ← admin workspace (kick/hapus)
-migration_15_we_space.sql            ← We Space (mode + trigger tulis)
-migration_16_budget_alerts.sql       ← peringatan budget real-time
-migration_17_quotas.sql              ← Sprint Batch 3 (kuota server-side)
-migration_18_scale.sql               ← Sprint Batch 5 (month_mix + heartbeat)
-migration_19_realtime.sql            ← Sprint Batch 6 (realtime sync)
+migration_squashed.sql   ← gabungan 02..19 (baseline; ekuivalen dump-terbukti)
 ```
+DB produksi yang sudah jalan 02..19 tak perlu apa-apa. Migration baru
+berikutnya lanjut nomor 20 (`migration_20_*.sql`, glob tetap urut benar).
 
 **Aturan RLS (jangan dilanggar):**
 - Policy SELECT di `org_members` **TIDAK BOLEH** subquery ke `org_members` lagi → infinite recursion.
@@ -468,3 +453,4 @@ Before starting, ask the user when antislop applies: during the work, or after i
 - **Fix Google native (2026-10-10, `2.18.0+90`):** vonis = `serverClientId` tak dikirim → audien idToken salah → Supabase tolak → fallback browser. `googleWebClientId` dari dart-define `GOOGLE_WEB_CLIENT_ID` (secret CI, kosong = perilaku lama) + wiring 2 build command + log alasan gagal native. User wajib: Web OAuth client ID di secret + provider Supabase.
 - **Fix biometrik diam (2026-10-10, systematic-debugging, `2.18.0+91`):** vonis = `authenticate()` butuh `FlutterFragmentActivity`, template CI `FlutterActivity` → `no_fragment_activity` tiap tap + ditelan (`false` sunyi). Inject CI ganti MainActivity ke Fragment (Kotlin+Java) + `BiometricAuth.lastError` + pesan `bio_failed` di LockScreen + `test/biometric_auth_test.dart` (fail-closed tanpa platform). `canCheckBiometrics` tak butuh itu → tombol tetap muncul (sesuai laporan).
 - **Sprint Batch 6 (2026-10-10, bounded, `2.19.0+92`):** realtime sync — `RealtimeSync` (1 channel/org: tx/anggota/dompet/budget, debounce 2 dtk → reload 4 tab, lifecycle ikut MainShell, reconnect plugin + fallback reload-resume) + `migration_19` (REPLICA IDENTITY FULL + publication guarded) + RLS T33 + `test/realtime_sync_test.dart`. Tanpa dep/migration manual selain 19. **User wajib jalankan `migration_19` manual.**
+- **Sprint Batch 7 (2026-10-10, bounded, `2.19.0+93`):** squash 16 file 02..19 → `migration_squashed.sql` (gabung verbatim + guard pg_cron ala 18; ekuivalen dump-terbukti vs rantai lama, suite 78 asserts hijau via baseline baru) + hapus `dashboard_service`(+test), `requestUpgrade`, dep `flutter_secure_storage` (nol referensi). Tanpa migration manual (DB lama tak perlu apa-apa).

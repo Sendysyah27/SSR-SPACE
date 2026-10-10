@@ -12,19 +12,11 @@ Allowlist package prefix (bukan substring). Dedup hash per hari. Tanggal = waktu
 
 ## Migrasi Supabase (wajib)
 Jalankan berurutan di SQL Editor bila belum:
-`schema.sql` → `migration_02` … `migration_19_realtime.sql`
+`schema.sql` → `migration_squashed.sql` (baseline gabungan 02..19, Batch 7;
+DB lama yang sudah termigrasi tak perlu apa-apa)
 (daftar lengkap & urutan: AGENTS.md §3.4)
 
-- migration 07: join workspace hanya pembuat/owner-admin + `mint_tx_code` wajib member
-- migration 08: **wajib jika sudah jalan 07** — hapus policy SELECT org_members yang bikin RLS recursion ("Gagal memuat dompet")
-- migration 12: **fix P0 bikin workspace baru gagal** sejak 07 + re-join invite idempoten
-- migration 13: retention pg_cron harian (client_errors 30h, audit_logs 180h)
-- migration 14: admin workspace (kick, hapus + RPC)
-- migration 15: We Space (mode Bebas/Bendahara + RPC + trigger tulis)
-- migration 16: peringatan budget real-time (trigger + tabel budget_alerts)
-- migration 17: **kuota paket server-side** (RPC check_quota + 3 trigger QUOTA_EXCEEDED; Pro = `organizations.plan`)
-- migration 18: **skala baca + heartbeat** (RPC month_mix + tabel heartbeat/touch + cron harian guarded)
-- migration 19: **realtime sync** (REPLICA IDENTITY FULL + publication guarded; channel per org di app)
+- baseline squash: isi = 07 (join+mint guard) + 08 (anti-recursion) + 12 (fix bikin workspace) + 13 (retention pg_cron) + 14 (admin) + 15 (We Space) + 16 (budget alerts) + 17 (kuota server-side) + 18 (month_mix + heartbeat) + 19 (realtime) + fondasi awal
 
 ## CI (3 workflow)
 - `build-apk` — analyze + test + APK release (action di-pin SHA, dependabot weekly)

@@ -1,4 +1,4 @@
--- Suite test RLS SSR SPACE — dijalankan run.sh SETELAH schema + migration_02..11.
+-- Suite test RLS SSR SPACE — dijalankan run.sh SETELAH schema + baseline squash.
 -- Aktor: `set role authenticated` + `set test.user_id = '<uuid>'` (lihat setup.sql).
 -- Konvensi: kegagalan assert = exception → psql ON_ERROR_STOP → CI merah.
 
