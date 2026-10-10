@@ -50,6 +50,7 @@ class _AuthScreenState extends State<AuthScreen> {
     _authSub = AuthService().authChanges().listen((s) {
       if (s.session != null) _goSplash();
     });
+    passwordRecovery.addListener(_onRecovery);
   }
 
   @override
@@ -59,12 +60,6 @@ class _AuthScreenState extends State<AuthScreen> {
     emailC.dispose();
     passC.dispose();
     super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    passwordRecovery.addListener(_onRecovery);
   }
 
   /// App dibuka hangat saat link recovery diketuk: langsung ke password baru.
