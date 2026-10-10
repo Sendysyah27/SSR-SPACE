@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -64,13 +63,14 @@ Future<String> saveBackupFile(String fileName, String content) =>
 /// Pilih file .json via picker sistem. Null = user batal.
 /// Isi bukan-JSON valid = lempar [BackupInvalid] saat parse (oleh pemanggil).
 Future<String?> pickBackupText() async {
-  final f = await FilePicker.pickFile(
+  final result = await FilePicker.platform.pickFiles(
     type: FileType.custom,
     allowedExtensions: ['json'],
   );
-  if (f == null) return null;
-  final bytes = await f.readAsBytes();
-  return utf8.decode(bytes);
+  if (result == null || result.files.isEmpty) return null;
+  final path = result.files.single.path;
+  if (path == null || path.isEmpty) throw const BackupInvalid('bad-root');
+  return File(path).readAsString();
 }
 
 /// Rencana pratinjau sebelum pulihkan (tanpa tulis apa pun).
