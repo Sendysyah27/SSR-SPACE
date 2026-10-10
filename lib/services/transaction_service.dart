@@ -231,7 +231,8 @@ class TransactionService {
     );
   }
 
-  /// Satu transaksi by id (untuk sheet koreksi instan). Null bila tak ada.  Future<SaasTransaction?> getById(String orgId, String id) async {
+  /// Satu transaksi by id (untuk sheet koreksi instan). Null bila tak ada.
+  Future<SaasTransaction?> getById(String orgId, String id) async {
     final row = await SupabaseConfig.client
         .from('transactions')
         .select()
