@@ -34,6 +34,8 @@ Future<void> main() async {
     debugPrint('kurs refresh gagal: $e');
   }
   try {
+    // Startup = silent reschedule (tanpa dialog izin; dialog izin hanya
+    // dari toggle settings — minta izin sebelum Activity siap = FC 2.13.1).
     if (reminderEnabled.value) {
       final h = reminderHour.value.clamp(0, 23);
       final m = reminderMinute.value.clamp(0, 59);

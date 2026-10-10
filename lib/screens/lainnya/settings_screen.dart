@@ -673,13 +673,22 @@ class _ThemeCard extends StatelessWidget {
 class _ReminderCard extends StatelessWidget {
   const _ReminderCard();
 
-  Future<void> _toggle(bool v) async {
+  Future<void> _toggle(BuildContext context, bool v) async {
+    if (v && !await ReminderService.notificationsAllowed()) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('st_notif_denied'))),
+        );
+      }
+      return;
+    }
     await setReminderEnabled(v);
     try {
       if (v) {
         await ReminderService.scheduleDaily(
           reminderHour.value,
           reminderMinute.value,
+          interactive: true,
         );
       } else {
         await ReminderService.cancel();
@@ -698,7 +707,11 @@ class _ReminderCard extends StatelessWidget {
     await setReminderTime(t.hour, t.minute);
     if (!reminderEnabled.value) return;
     try {
-      await ReminderService.scheduleDaily(t.hour, t.minute);
+      await ReminderService.scheduleDaily(
+        t.hour,
+        t.minute,
+        interactive: true,
+      );
     } catch (e) {
       debugPrint('pengingat gagal: $e');
     }
@@ -725,7 +738,7 @@ class _ReminderCard extends StatelessWidget {
                     contentPadding: EdgeInsets.zero,
                     title: Text(tr('st_reminder_on')),
                     value: enabled,
-                    onChanged: _toggle,
+                    onChanged: (v) => _toggle(context, v),
                   ),
                   Row(
                     children: [
@@ -758,7 +771,15 @@ class _ReminderCard extends StatelessWidget {
 class _WeeklySection extends StatelessWidget {
   const _WeeklySection();
 
-  Future<void> _toggle(bool v) async {
+  Future<void> _toggle(BuildContext context, bool v) async {
+    if (v && !await ReminderService.notificationsAllowed()) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('st_notif_denied'))),
+        );
+      }
+      return;
+    }
     await setWeeklyEnabled(v);
     try {
       if (v) {
@@ -766,6 +787,7 @@ class _WeeklySection extends StatelessWidget {
           weeklyWeekday.value,
           weeklyHour.value,
           weeklyMinute.value,
+          interactive: true,
         );
       } else {
         await ReminderService.cancelWeekly();
@@ -788,6 +810,7 @@ class _WeeklySection extends StatelessWidget {
         weeklyWeekday.value,
         t.hour,
         t.minute,
+        interactive: true,
       );
     } catch (e) {
       debugPrint('pengingat mingguan gagal: $e');
@@ -803,6 +826,7 @@ class _WeeklySection extends StatelessWidget {
         wd,
         weeklyHour.value,
         weeklyMinute.value,
+        interactive: true,
       );
     } catch (e) {
       debugPrint('pengingat mingguan gagal: $e');
@@ -830,7 +854,7 @@ class _WeeklySection extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   title: Text(tr('st_weekly_on')),
                   value: enabled,
-                  onChanged: _toggle,
+                  onChanged: (v) => _toggle(context, v),
                 ),
                 Row(
                   children: [

@@ -22,6 +22,22 @@ class ReminderService {
       FlutterLocalNotificationsPlugin();
   static bool _inited = false;
 
+  /// Izin notif jujur: true bila boleh tampil. Hanya dipanggil dari UI
+  /// (toggle settings, user-initiated) — JANGAN dari main() startup
+  /// (dialog izin sebelum Activity siap = FC di sebagian HP, 2.13.1).
+  static Future<bool> notificationsAllowed() async {
+    await init();
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    try {
+      return await android?.requestNotificationsPermission() ?? false;
+    } catch (_) {
+      return true;
+    }
+  }
+
   static Future<void> init() async {
     if (_inited) return;
     tzdata.initializeTimeZones();
@@ -41,7 +57,9 @@ class ReminderService {
       channelId,
       channelName,
       description: channelDesc,
-      importance: Importance.defaultImportance,
+      // Max agar pengingat tampil heads-up (default = sunyi, mudah
+      // terlewat dan dikira "tidak muncul").
+      importance: Importance.max,
     );
     await _plugin
         .resolvePlatformSpecificImplementation<
@@ -51,21 +69,29 @@ class ReminderService {
     _inited = true;
   }
 
-  static Future<void> scheduleDaily(int hour, int minute) async {
+  /// [interactive]=true hanya dari toggle settings (boleh dialog izin).
+  /// Startup main() wajib false (silent reschedule, tanpa request izin).
+  static Future<void> scheduleDaily(
+    int hour,
+    int minute, {
+    bool interactive = false,
+  }) async {
     await init();
-    final android = _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    try {
-      await android?.requestNotificationsPermission();
-    } catch (e) {
-      debugPrint('reminder izin gagal: $e');
-    }
-    try {
-      await android?.requestExactAlarmsPermission();
-    } catch (e) {
-      debugPrint('reminder alarm tepat gagal: $e');
+    if (interactive) {
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      try {
+        await android?.requestNotificationsPermission();
+      } catch (e) {
+        debugPrint('reminder izin gagal: $e');
+      }
+      try {
+        await android?.requestExactAlarmsPermission();
+      } catch (e) {
+        debugPrint('reminder alarm tepat gagal: $e');
+      }
     }
     final next = nextDaily(hour, minute, DateTime.now());
     final scheduled = tz.TZDateTime(
@@ -81,6 +107,8 @@ class ReminderService {
         channelId,
         channelName,
         channelDescription: channelDesc,
+        importance: Importance.max,
+        priority: Priority.high,
       ),
     );
     final body = tr(reminderKeyFor(next, hour));
@@ -112,21 +140,30 @@ class ReminderService {
 
   /// Pengingat mingguan: hari [weekday] (1 Senin .. 7 Minggu) pukul jam:menit.
   /// Id notifikasi terpisah (7002) agar tak saling menimpa harian.
-  static Future<void> scheduleWeekly(int weekday, int hour, int minute) async {
+  /// [interactive]=true hanya dari toggle settings (boleh dialog izin).
+  /// Startup main() wajib false (silent reschedule, tanpa request izin).
+  static Future<void> scheduleWeekly(
+    int weekday,
+    int hour,
+    int minute, {
+    bool interactive = false,
+  }) async {
     await init();
-    final android = _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    try {
-      await android?.requestNotificationsPermission();
-    } catch (e) {
-      debugPrint('reminder izin gagal: $e');
-    }
-    try {
-      await android?.requestExactAlarmsPermission();
-    } catch (e) {
-      debugPrint('reminder alarm tepat gagal: $e');
+    if (interactive) {
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      try {
+        await android?.requestNotificationsPermission();
+      } catch (e) {
+        debugPrint('reminder izin gagal: $e');
+      }
+      try {
+        await android?.requestExactAlarmsPermission();
+      } catch (e) {
+        debugPrint('reminder alarm tepat gagal: $e');
+      }
     }
     final wd = weekday.clamp(1, 7);
     final h = hour.clamp(0, 23);
@@ -145,6 +182,8 @@ class ReminderService {
         channelId,
         channelName,
         channelDescription: channelDesc,
+        importance: Importance.max,
+        priority: Priority.high,
       ),
     );
     final body = tr(reminderKeyFor(next, h));

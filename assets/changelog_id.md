@@ -1,8 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.13.6+83.
+Versi terpasang: 2.13.7+84.
 
-## Yang baru di 2.13.6+83
+## Yang baru di 2.13.7+84
+
+1. Perbaikan crash 2.13.1: widget Beranda kini tulis snapshot saja (tanpa channel native), pengingat tetap heads-up tapi izin hanya diminta saat toggle dinyalakan (startup silent tanpa dialog).
 
 1. Kembali ke versi stabil 2.13.0: perbaikan darurat 2.13.1 sampai 2.13.5 masih crash di HP, jadi seluruh perubahan itu dibatalkan dulu. PIN dan kunci otomatis jalan normal lagi.
 

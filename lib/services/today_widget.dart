@@ -10,6 +10,11 @@ import 'package:ssr_space/utils/strings.dart';
 /// (tanpa token, tanpa query). Ditulis saat Beranda dimuat dari surplus
 /// HARI INI (masuk kurang keluar tanggal hari ini), ikut mask bila aktif.
 /// Toggle mati menghapus snapshot lokal.
+///
+/// SENGAJA tanpa MethodChannel refresh (2.13.1 menambahkan channel
+/// 'ssr_space/widget' + broadcast APPWIDGET_UPDATE tiap Beranda dimuat dan
+/// mulai FC di HP user). Snapshot prefs-only ini fail-open via try-catch;
+/// trigger gambar-ulang native = follow-up setelah stabil.
 const _kSnapshot = 'widget_snapshot';
 
 Future<void> refreshTodayWidget({

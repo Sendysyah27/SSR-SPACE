@@ -442,23 +442,34 @@ class BerandaScreenState extends State<BerandaScreen> {
 
   /// Snapshot widget hari ini: surplus tanggal berjalan saja (bukan
   /// sebulan), ditulis fire-and-forget agar UI tak menunggu IO prefs.
+  /// Fail-open total (2.13.1 FC dari trigger widget di path ini): body
+  /// sync dibungkus try-catch + future tak pernah rethrow ke zone.
   void _pushTodaySnapshot(List<SaasTransaction> txs) {
-    final now = DateTime.now();
-    final today =
-        '${now.year.toString().padLeft(4, '0')}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
-    var tIn = 0.0;
-    var tOut = 0.0;
-    for (final t in txs) {
-      if (t.date != today) continue;
-      if (t.type == 'in') {
-        tIn += t.amount;
-      } else if (t.type == 'out') {
-        tOut += t.amount;
+    try {
+      final now = DateTime.now();
+      final today =
+          '${now.year.toString().padLeft(4, '0')}-'
+          '${now.month.toString().padLeft(2, '0')}-'
+          '${now.day.toString().padLeft(2, '0')}';
+      var tIn = 0.0;
+      var tOut = 0.0;
+      for (final t in txs) {
+        if (t.date != today) continue;
+        if (t.type == 'in') {
+          tIn += t.amount;
+        } else if (t.type == 'out') {
+          tOut += t.amount;
+        }
       }
+      unawaited(
+        refreshTodayWidget(
+          date: today,
+          surplus: tIn - tOut,
+        ).catchError((_) {}),
+      );
+    } catch (_) {
+      // Diam: widget snapshot tak boleh ganggu Beranda.
     }
-    unawaited(refreshTodayWidget(date: today, surplus: tIn - tOut));
   }
 
   /// Lewati: majukan nextDue satu periode tanpa insert.
