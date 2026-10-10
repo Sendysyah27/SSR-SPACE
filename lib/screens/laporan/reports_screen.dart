@@ -444,8 +444,6 @@ class ReportsScreenState extends State<ReportsScreen> {
                 totalN: figs.totalN,
               ),
               scrollController: _scroll,
-              loadingMore: loadingMore,
-              hasMore: hasMore,
             ),
           ),
         ],
