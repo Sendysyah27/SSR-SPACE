@@ -57,10 +57,11 @@ class RealtimeSync {
         );
       }
       ch.subscribe((status, [err]) {
-        if (status == 'SUBSCRIBED') {
+        if (status == RealtimeSubscribeStatus.subscribed) {
           _subscribed = true;
           _orgId = orgId;
-        } else if (status == 'CHANNEL_ERROR' || status == 'TIMED_OUT') {
+        } else if (status == RealtimeSubscribeStatus.channelError ||
+            status == RealtimeSubscribeStatus.timedOut) {
           debugPrint('realtime status: $status $err');
         }
       });
