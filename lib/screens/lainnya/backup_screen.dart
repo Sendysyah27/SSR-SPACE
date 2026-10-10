@@ -98,7 +98,7 @@ class _BackupScreenState extends State<BackupScreen> {
           child: TextField(
             controller: c,
             maxLines: 8,
-            decoration: InputDecoration(hintText: '{"app":"ssr-space",…}'),
+            decoration: const InputDecoration(hintText: '{"app":"ssr-space",…}'),
           ),
         ),
         actions: [
