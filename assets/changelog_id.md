@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.18.0+89.
+Versi terpasang: 2.18.0+90.
+
+## Yang baru di 2.18.0+90
+
+1. Perbaikan login Google native (kirim Web client ID agar tak mental ke browser). Butuh Web client ID di secret CI — tanya admin bila masih lewat browser.
 
 ## Yang baru di 2.18.0+89
 

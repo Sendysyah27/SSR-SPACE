@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/supabase_config.dart';
@@ -9,6 +10,14 @@ class GoogleSignInCancelled implements Exception {
   @override
   String toString() => 'GoogleSignInCancelled';
 }
+
+/// Web client ID Google Cloud (dart-define GOOGLE_WEB_CLIENT_ID, dari
+/// secret CI). Wajib untuk native: tanpa ini idToken beraudien klien
+/// Android dan ditolak Supabase → jatuh ke browser. Kosong = perilaku lama.
+const googleWebClientId = String.fromEnvironment(
+  'GOOGLE_WEB_CLIENT_ID',
+  defaultValue: '',
+);
 
 class AuthService {
   SupabaseClient get _c => SupabaseConfig.client;
@@ -46,8 +55,11 @@ class AuthService {
   /// User batal pilih akun → lempar [GoogleSignInCancelled] (UI diam).
   Future<bool> signInWithGoogle() async {
     try {
-      final acct =
-          await GoogleSignIn(scopes: const ['email']).signIn();
+      final acct = await GoogleSignIn(
+        scopes: const ['email'],
+        serverClientId:
+            googleWebClientId.isEmpty ? null : googleWebClientId,
+      ).signIn();
       if (acct == null) throw const GoogleSignInCancelled();
       final gauth = await acct.authentication;
       final idToken = gauth.idToken;
@@ -62,7 +74,10 @@ class AuthService {
       return res.session != null;
     } on GoogleSignInCancelled {
       rethrow;
-    } catch (_) {
+    } catch (e) {
+      // Alasan native gagal dicatat untuk diagnosis (adb logcat):
+      // config (tanpa google-services/SHA-1/audien) = wajar → browser.
+      debugPrint('google native gagal, fallback browser: $e');
       await _c.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: pinLinkCallback,

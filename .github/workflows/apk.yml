@@ -725,12 +725,12 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-      - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         env:
           SSR_KEYSTORE_PASS: ${{ secrets.SSR_KEYSTORE_PASS }}
           SSR_KEY_ALIAS: ${{ secrets.SSR_KEY_ALIAS }}
           SSR_KEY_PASS: ${{ secrets.SSR_KEY_PASS }}
-      - run: flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - run: flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         env:
           SSR_KEYSTORE_PASS: ${{ secrets.SSR_KEYSTORE_PASS }}
           SSR_KEY_ALIAS: ${{ secrets.SSR_KEY_ALIAS }}
