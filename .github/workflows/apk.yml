@@ -274,6 +274,40 @@ jobs:
           assert 'android.permission.USE_BIOMETRIC' in m.read_text()
           print('biometric permission ok')
           EOF
+      - run: |
+          python3 - <<'EOF'
+          import glob, pathlib
+          # Biometrik (local_auth): authenticate() butuh FragmentActivity,
+          # template default FlutterActivity → PlatformException
+          # no_fragment_activity tiap tap (bug: tombol diam tanpa pesan).
+          mains = glob.glob('android/app/src/main/kotlin/**/MainActivity.*',
+                              recursive=True)
+          mains += glob.glob('android/app/src/main/java/**/MainActivity.*',
+                              recursive=True)
+          assert len(mains) == 1, f'MainActivity tak ketemu: {mains}'
+          p = pathlib.Path(mains[0])
+          s = p.read_text()
+          if p.suffix == '.kt':
+              if 'FlutterFragmentActivity' not in s:
+                  assert 'FlutterActivity' in s, 'MainActivity aneh'
+                  s = s.replace(
+                      'import io.flutter.embedding.android.FlutterActivity',
+                      'import io.flutter.embedding.android.FlutterFragmentActivity',
+                  )
+                  s = s.replace(': FlutterActivity()', ': FlutterFragmentActivity()')
+                  s = s.replace(': FlutterActivity', ': FlutterFragmentActivity')
+          else:
+              if 'FlutterFragmentActivity' not in s:
+                  assert 'FlutterActivity' in s, 'MainActivity aneh'
+                  s = s.replace(
+                      'import io.flutter.embedding.android.FlutterActivity;',
+                      'import io.flutter.embedding.android.FlutterFragmentActivity;',
+                  )
+                  s = s.replace('extends FlutterActivity', 'extends FlutterFragmentActivity')
+          p.write_text(s)
+          assert 'FlutterFragmentActivity' in p.read_text()
+          print('fragment activity ok:', mains[0])
+          EOF
       - name: Tulis google-services.json bila secret ada
         env:
           SSR_GOOGLE_SERVICES_JSON: ${{ secrets.SSR_GOOGLE_SERVICES_JSON }}

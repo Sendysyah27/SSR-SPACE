@@ -58,12 +58,22 @@ class _LockScreenState extends State<LockScreen> {
   }
 
   /// Ketuk tombol sidik jari manual (coba ulang setelah batal).
+  /// Gagal config = tampil jujur di bawah PIN (jangan diam seperti dulu).
   Future<void> _bioManual() async {
     _bioTried = true;
     if (!mounted) return;
     final ok = await BiometricAuth.unlock(tr('lk_bio'));
     if (!mounted) return;
-    if (ok) _openApp();
+    if (ok) {
+      _openApp();
+      return;
+    }
+    final errDetail = BiometricAuth.lastError;
+    if (errDetail != null && errDetail.isNotEmpty) {
+      setState(() {
+        err = tr('bio_failed').replaceFirst('{c}', errDetail);
+      });
+    }
   }
 
   void _openApp() {

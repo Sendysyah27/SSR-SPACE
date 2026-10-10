@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.18.0+90.
+Versi terpasang: 2.18.0+91.
+
+## Yang baru di 2.18.0+91
+
+1. Perbaikan sidik jari tak merespon: aktivitas Android diganti agar dialog biometrik bisa tampil. Bila masih gagal, layar kunci kini menampilkan alasannya (tidak diam lagi).
 
 ## Yang baru di 2.18.0+90
 

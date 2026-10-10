@@ -681,6 +681,10 @@ const _t = <String, Map<String, String>>{
     'id': 'HP ini tak punya sidik jari terdaftar.',
     'en': 'This phone has no enrolled fingerprint.',
   },
+  'bio_failed': {
+    'id': 'Sidik jari gagal ({c}). Coba PIN atau periksa pengaturan HP.',
+    'en': 'Fingerprint failed ({c}). Try PIN or check phone settings.',
+  },
   'np_title': {'id': 'Password baru', 'en': 'New password'},
   'np_sub': {
     'id': 'Buat password pengganti yang minimal 6 karakter.',
