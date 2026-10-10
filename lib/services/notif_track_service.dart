@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
+import 'package:ssr_space/services/budget_alert_notify.dart';
 import 'package:ssr_space/services/notif_parse.dart';
 import 'package:ssr_space/services/transfer_detect.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -434,6 +435,8 @@ class NotifTrack {
           sourceHash: notifHash(pkg, title, content, at: n.at),
         );
         n.status = tr('st_saved');
+        // Alert budget baru (bila tembus): idempoten, fail-silent.
+        unawaited(BudgetAlertNotify.check(orgId));
         if (txId != null) {
           final pair = await _tryAutoMerge(orgId, txId);
           if (pair != null) {
@@ -502,6 +505,7 @@ class NotifTrack {
       );
       n.type = type;
       n.status = tr('st_saved');
+      unawaited(BudgetAlertNotify.check(orgId));
       if (txId != null) {
         await AutoSavedNotify.showSaved(
           txId: txId,

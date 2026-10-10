@@ -8,6 +8,7 @@ import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/app_settings.dart';
+import 'package:ssr_space/services/budget_alert_notify.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
@@ -528,6 +529,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
           await noteWalletUsed(toWalletId!);
         }
       } catch (_) {}
+      // Alert budget baru (bila tembus): idempoten, fail-silent.
+      unawaited(BudgetAlertNotify.check(widget.orgId));
       if (!mounted) return;
       Navigator.pop(context, 'saved');
     } catch (e) {

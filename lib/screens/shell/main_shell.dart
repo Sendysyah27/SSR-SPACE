@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
+import 'package:ssr_space/services/budget_alert_notify.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
 import 'package:ssr_space/services/offline_cache.dart';
@@ -91,6 +92,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     reportsKey.currentState?.reload();
   }
 
+  /// Alert budget baru (mis. dicatat perangkat lain). Idempoten.
+  Future<void> _checkBudgetAlerts() async {
+    try {
+      final orgId = await activeOrgId();
+      if (!mounted || orgId.isEmpty) return;
+      await BudgetAlertNotify.check(orgId);
+    } catch (_) {}
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -102,6 +112,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       // Realtime bisa putus saat background: pastikan ulang + muat ulang
       // (reload ini juga fallback bila realtime mati total).
       unawaited(_ensureRealtime());
+      // Alert budget baru dari perangkat lain (idempoten, fail-silent).
+      unawaited(_checkBudgetAlerts());
       unawaited(_checkDetail());
       _checkRecovery();
       // Poll budget alerts tiap resume supaya banner/badge segar

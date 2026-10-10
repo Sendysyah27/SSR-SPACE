@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.21.0+95.
+Versi terpasang: 2.22.0+96.
+
+## Yang baru di 2.22.0+96
+
+1. Budget kini menepuk bahu: notifikasi muncul saat belanja menyentuh 80% dan 100% batas (sekali per kategori, tak spam).
 
 ## Yang baru di 2.21.0+95
 

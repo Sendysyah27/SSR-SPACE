@@ -1743,6 +1743,14 @@ const _t = <String, Map<String, String>>{
     'id': 'Pulihkan gagal. Cek internet lalu coba lagi.',
     'en': 'Restore failed. Check internet and try again.',
   },
+  // Batch 10: notifikasi lokal alert budget
+  'ba_n_warn_t': {'id': 'Budget hampir habis', 'en': 'Budget almost spent'},
+  'ba_n_breach_t': {'id': 'Budget jebol', 'en': 'Budget exceeded'},
+  'ba_n_multi_t': {'id': 'Peringatan budget', 'en': 'Budget warnings'},
+  'ba_n_multi_s': {
+    'id': '{n} kategori menyentuh batas budget. Buka Budget untuk rincian.',
+    'en': '{n} categories hit budget limits. Open Budget for details.',
+  },
   // LOOP 3: Goals (casual, tidak menghakimi)
   'goal_title': {'id': 'Target nabung', 'en': 'Saving goals'},
   'goal_sub': {
