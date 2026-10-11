@@ -590,6 +590,22 @@ const _t = <String, Map<String, String>>{
     'id': 'Catatan penuh (50). Hapus yang tak dipakai dulu.',
     'en': 'Records are full (50). Delete an unused one first.',
   },
+  // Anggota keluarga (Batch 24, ringkasan per anggota)
+  'fam_title': {'id': 'Anggota', 'en': 'Members'},
+  'fam_sub': {
+    'id': 'Belanja per anggota bulan ini.',
+    'en': 'Per-member spending this month.',
+  },
+  'fam_notx': {'id': 'Belum ada transaksi', 'en': 'No transactions yet'},
+  'fam_empty_t': {'id': 'Belum ada anggota', 'en': 'No members yet'},
+  'fam_empty_s': {
+    'id': 'Undang keluarga lewat kode undangan.',
+    'en': 'Invite family with an invite code.',
+  },
+  'fam_kick_fail': {
+    'id': 'Gagal mengeluarkan anggota.',
+    'en': 'Failed to remove member.',
+  },
   // Voice input (Batch 18, isi kolom ketik-cepat)
   'vc_mic': {'id': 'Isi dengan suara', 'en': 'Fill by voice'},
   'vc_listening': {

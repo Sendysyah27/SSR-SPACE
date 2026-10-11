@@ -73,6 +73,9 @@ class AppIcons {
     fontFamily: kPhosphorDuotoneFamily,
   );
   static const invite = IconData(0xe68f, fontFamily: kPhosphorDuotoneFamily);
+  // Anggota keluarga: codepoint bebas, render selalu via Coolicons
+  // (font Phosphor sudah dilepas) — jangan pakai untuk glyph Phosphor.
+  static const members = IconData(0xe1f1, fontFamily: kPhosphorDuotoneFamily);
   static const tracking = IconData(0xe0cf, fontFamily: kPhosphorDuotoneFamily);
   static const backup = IconData(0xe20d, fontFamily: kPhosphorDuotoneFamily);
   static const billing = IconData(0xe1d3, fontFamily: kPhosphorDuotoneFamily);

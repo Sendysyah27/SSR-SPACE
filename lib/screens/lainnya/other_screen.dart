@@ -35,6 +35,7 @@ import 'package:ssr_space/screens/lainnya/settings_screen.dart';
 import 'package:ssr_space/screens/laporan/reports_screen.dart';
 import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
 import 'package:ssr_space/screens/workspace/invite_screen.dart';
+import 'package:ssr_space/screens/workspace/family_screen.dart';
 import 'package:ssr_space/screens/workspace/space_activity_screen.dart';
 import 'package:ssr_space/screens/workspace/workspace_detail_screen.dart';
 import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
@@ -332,6 +333,8 @@ class _OtherScreenState extends State<OtherScreen> {
         await _push(OrgSwitcherScreen(session: widget.session));
       case 'invite':
         await _push(const InviteScreen());
+      case 'family':
+        await _push(const FamilyScreen());
       case 'detail':
         await _openWorkspaceDetail();
       case 'space_activity':
@@ -441,6 +444,7 @@ class _OtherScreenState extends State<OtherScreen> {
             budgetNonce: _budgetNonce,
             onSwitch: () => _push(OrgSwitcherScreen(session: widget.session)),
             onInvite: () => _push(const InviteScreen()),
+            onFamily: () => _push(const FamilyScreen()),
             onDetail: _openWorkspaceDetail,
             onActivity: () => _push(const SpaceActivityScreen()),
             onBilling: () => _push(const BillingScreen()),
@@ -482,6 +486,7 @@ class _HubList extends StatelessWidget {
   final int budgetNonce;
   final VoidCallback onSwitch;
   final VoidCallback onInvite;
+  final VoidCallback onFamily;
   final VoidCallback onDetail;
   final VoidCallback onActivity;
   final VoidCallback onBilling;
@@ -516,6 +521,7 @@ class _HubList extends StatelessWidget {
     required this.budgetNonce,
     required this.onSwitch,
     required this.onInvite,
+    required this.onFamily,
     required this.onDetail,
     required this.onActivity,
     required this.onBilling,
@@ -581,6 +587,7 @@ class _HubList extends StatelessWidget {
         planLabel: planLabel,
         onSwitch: onSwitch,
         onInvite: onInvite,
+        onFamily: onFamily,
         onDetail: onDetail,
         onActivity: onActivity,
         onBilling: onBilling,
@@ -919,6 +926,7 @@ class _WorkspaceSection extends StatelessWidget {
   final String planLabel;
   final VoidCallback onSwitch;
   final VoidCallback onInvite;
+  final VoidCallback onFamily;
   final VoidCallback onDetail;
   final VoidCallback onActivity;
   final VoidCallback onBilling;
@@ -928,6 +936,7 @@ class _WorkspaceSection extends StatelessWidget {
     required this.planLabel,
     required this.onSwitch,
     required this.onInvite,
+    required this.onFamily,
     required this.onDetail,
     required this.onActivity,
     required this.onBilling,
@@ -958,6 +967,13 @@ class _WorkspaceSection extends StatelessWidget {
           title: tr('o_invite'),
           subtitle: tr('o_invite_s'),
           onTap: onInvite,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.members,
+          title: tr('fam_title'),
+          subtitle: tr('fam_sub'),
+          onTap: onFamily,
         ),
         const Divider(height: 1),
         NavTile(

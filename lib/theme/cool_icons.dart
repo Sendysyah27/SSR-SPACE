@@ -199,6 +199,8 @@ class CoolSvg {
         return mail;
       case 0xe1f0:
         return voice;
+      case 0xe1f1:
+        return users;
       default:
         return null;
     }

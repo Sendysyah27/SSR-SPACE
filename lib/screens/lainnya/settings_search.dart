@@ -88,6 +88,12 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     route: 'invite',
   ),
   SettingsSearchEntry(
+    titleKey: 'fam_title',
+    en: 'family members spending per member',
+    sectionKey: 'pf_workspace',
+    route: 'family',
+  ),
+  SettingsSearchEntry(
     titleKey: 'o_switch',
     en: 'switch workspace change',
     sectionKey: 'pf_workspace',

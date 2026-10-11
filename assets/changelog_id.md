@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.33.0+110.
+Versi terpasang: 2.34.0+111.
+
+## Yang baru di 2.34.0+111
+
+1. Layar Anggota: lihat belanja tiap anggota workspace bulan ini, undang anggota baru, dan keluarkan anggota (owner/admin). Menu Profil → Workspace → Anggota.
 
 ## Yang baru di 2.33.0+110
 
