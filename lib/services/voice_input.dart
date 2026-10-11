@@ -44,7 +44,7 @@ class VoiceInput {
             );
       await _stt.listen(
         onResult: (r) => onResult(r.recognizedWords, r.finalResult),
-        options: options,
+        listenOptions: options,
       );
       return true;
     } catch (_) {
