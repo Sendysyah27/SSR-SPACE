@@ -36,10 +36,15 @@ class VoiceInput {
     String? localeId,
   }) async {
     try {
+      final options = localeId == null
+          ? SpeechListenOptions(partialResults: true)
+          : SpeechListenOptions(
+              localeId: localeId,
+              partialResults: true,
+            );
       await _stt.listen(
         onResult: (r) => onResult(r.recognizedWords, r.finalResult),
-        localeId: localeId,
-        partialResults: true,
+        options: options,
       );
       return true;
     } catch (_) {
