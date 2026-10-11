@@ -1,14 +1,18 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/export_open.dart';
 import 'package:ssr_space/utils/strings.dart';
 
 /// Notifikasi "file tersimpan" tiap ekspor Laporan selesai.
 ///
-/// Ketuk badan = buka app saja. Tombol aksi [Bagikan] = share sheet file
-/// (butuh app foreground, jadi aksi dijalankan setelah ketuk membuka app;
-/// tanpa foreground Android tak mengizinkan share sheet: batas jujur).
-/// Tak melempar.
+/// Ketuk badan = buka file langsung (via FileProvider plugin, MIME
+/// eksplisit xlsx/pdf + FLAG_GRANT_READ internal). Gagal dibuka (tak ada
+/// app) = fallback share sheet sebagai chooser. Tombol aksi [Bagikan] =
+/// share sheet file (butuh app foreground, jadi aksi dijalankan setelah
+/// ketuk membuka app; tanpa foreground Android tak mengizinkan share
+/// sheet: batas jujur). Tak melempar.
 class ExportSavedNotify {
   static const String channelId = 'ssr_export_saved';
   static const String channelName = 'Ekspor tersimpan';
@@ -36,6 +40,17 @@ class ExportSavedNotify {
                 await Share.shareXFiles([XFile(path)]);
               }
             }
+            return;
+          }
+          // Ketuk badan: buka file-nya langsung.
+          final path = exportOpenPath(resp.payload);
+          if (path == null || path.isEmpty) return;
+          final result = await OpenFilex.open(
+            path,
+            type: exportOpenMime(path),
+          );
+          if (result.type != ResultType.done) {
+            await Share.shareXFiles([XFile(path)]);
           }
         } catch (err, st) {
           ErrorReporter.capture(err, st, context: 'export_saved_share');

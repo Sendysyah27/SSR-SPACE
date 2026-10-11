@@ -37,6 +37,8 @@ dependencies:
   flutter_local_notifications: ^22.3.1
   google_mlkit_text_recognition: ^0.15.0
   image_picker: ^1.1.2
+  # Buka file ekspor dari ketuk notifikasi (FileProvider via merger).
+  open_filex: ^4.7.0
   # Voice input sheet catat (butuh izin RECORD_AUDIO + runtime mic).
   speech_to_text: ^7.5.0
   # Dipin exact: 13.x menarik permission_handler_android 14 (butuh
