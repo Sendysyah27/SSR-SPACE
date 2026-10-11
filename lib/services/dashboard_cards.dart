@@ -3,9 +3,11 @@
 // via stringList, hidden di `dashboard_hidden` (pola reports_section_order).
 
 /// Id kartu yang dikenal, sekaligus urutan default.
-const kDashboardDefault = ['budget', 'fitur', 'utang'];
+const kDashboardDefault = ['budget', 'fitur', 'utang', 'allowance'];
 
 /// Parse toleran: rusak/kosong/asing jatuh ke default (fail-open).
+/// Id default yang belum ada di simpanan lama dilengkapi di belakang
+/// (kartu baru otomatis tampil; hidden tetap dihormati pemanggil).
 List<String> parseDashboardOrder(dynamic raw) {
   if (raw is! List) return List.of(kDashboardDefault);
   final out = <String>[];
@@ -13,7 +15,9 @@ List<String> parseDashboardOrder(dynamic raw) {
     final v = e?.toString() ?? '';
     if (kDashboardDefault.contains(v) && !out.contains(v)) out.add(v);
   }
-  if (out.isEmpty) return List.of(kDashboardDefault);
+  for (final id in kDashboardDefault) {
+    if (!out.contains(id)) out.add(id);
+  }
   return out;
 }
 

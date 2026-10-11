@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.31.0+108.
+Versi terpasang: 2.32.0+109.
+
+## Yang baru di 2.32.0+109
+
+1. Jatah harian di Beranda: sisa budget dibagi sisa hari (mis. Rp3jt / 15 hari = Rp200rb/hari), lampu hijau/kuning/merah ikut pace belanja. Ikut tersusun di mode Susun dashboard.
 
 ## Yang baru di 2.31.0+108
 

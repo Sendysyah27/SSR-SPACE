@@ -626,6 +626,9 @@ const _t = <String, Map<String, String>>{
   'dash_budget': {'id': 'Status budget', 'en': 'Budget status'},
   'dash_feature': {'id': 'Fitur', 'en': 'Features'},
   'dash_debt': {'id': 'Utang ringkas', 'en': 'Debts at a glance'},
+  'dash_allow': {'id': 'Jatah harian', 'en': 'Daily allowance'},
+  'dash_allow_per': {'id': 'per hari', 'en': 'per day'},
+  'dash_allow_days': {'id': '{n} hari lagi', 'en': '{n} days left'},
   // Subkategori + meta (P2 subcategory-picker)
   'sub_hint': {'id': 'Subkategori (opsional)', 'en': 'Subcategory (optional)'},
   'sub_add': {'id': 'Tambah subkategori', 'en': 'Add subcategory'},

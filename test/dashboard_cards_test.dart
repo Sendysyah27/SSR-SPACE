@@ -2,19 +2,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ssr_space/services/dashboard_cards.dart';
 
 void main() {
-  test('default tiga kartu berurutan', () {
-    expect(kDashboardDefault, ['budget', 'fitur', 'utang']);
+  test('default empat kartu berurutan', () {
+    expect(kDashboardDefault, ['budget', 'fitur', 'utang', 'allowance']);
   });
 
   test('parse rusak jatuh ke default', () {
     expect(parseDashboardOrder(null), kDashboardDefault);
     expect(parseDashboardOrder('ngawur'), kDashboardDefault);
-    expect(parseDashboardOrder(['fitur', 'asing', 'budget']), ['fitur', 'budget']);
+    expect(
+      parseDashboardOrder(['fitur', 'asing', 'budget']),
+      ['fitur', 'budget', 'utang', 'allowance'],
+    );
     expect(parseDashboardOrder([]), kDashboardDefault);
   });
 
+  test('order lama tanpa allowance dilengkapi di belakang', () {
+    expect(
+      parseDashboardOrder(['utang', 'budget', 'fitur']),
+      ['utang', 'budget', 'fitur', 'allowance'],
+    );
+  });
+
   test('round-trip via stringList prefs', () {
-    final order = ['utang', 'budget', 'fitur'];
+    final order = ['utang', 'budget', 'fitur', 'allowance'];
     expect(parseDashboardOrder(List.of(order)), order);
   });
 

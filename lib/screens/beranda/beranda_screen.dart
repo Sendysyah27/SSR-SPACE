@@ -9,6 +9,7 @@ import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/calm_streak.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/dashboard_cards.dart';
+import 'package:ssr_space/services/allowance.dart';
 import 'package:ssr_space/services/debt_track.dart';
 import 'package:ssr_space/services/health_score.dart';
 import 'package:ssr_space/services/month.dart';
@@ -98,6 +99,9 @@ class BerandaScreenState extends State<BerandaScreen> {
   /// dengan pace: non-tabungan, limit > 0). Nol query baru.
   List<Budget> dashBudgets = [];
 
+  /// Rata belanja non-tabungan per hari bulan berjalan (untuk jatah).
+  double dashAvgOut = 0;
+
   /// Utang dashboard: prefs-lokal (tanpa server), fail-open kosong.
   List<DebtRecord> dashDebts = [];
 
@@ -163,6 +167,7 @@ class BerandaScreenState extends State<BerandaScreen> {
   Future<void> _load() async {
     snapBudgetLeft = null;
     dashBudgets = [];
+    dashAvgOut = 0;
     dashDebts = [];
     setState(() {
       loading = true;
@@ -324,11 +329,17 @@ class BerandaScreenState extends State<BerandaScreen> {
           }
           snapBudgetLeft = hasBudget ? left : null;
           dashBudgets = dash;
+          var spendSum = 0.0;
+          for (final v in spent.values) {
+            spendSum += v;
+          }
+          dashAvgOut = now.day > 0 ? spendSum / now.day : 0;
         } catch (_) {
           hb = null;
           notes = <MapEntry<String, BudgetPace>>[];
           snapBudgetLeft = null;
           dashBudgets = [];
+          dashAvgOut = 0;
         }
       }
       // Riwayat 12 bulan (1 query, dipakai insight + darurat + goal).
@@ -578,6 +589,17 @@ class BerandaScreenState extends State<BerandaScreen> {
             context,
             MaterialPageRoute(builder: (_) => const DebtsScreen()),
           ),
+        );
+      case 'allowance':
+        // Jatah milik bulan berjalan; tanpa budget = sembunyi.
+        if (month != currentMonth()) return const SizedBox.shrink();
+        final left = snapBudgetLeft;
+        if (left == null) return const SizedBox.shrink();
+        return _DashAllowanceCard(
+          remaining: left,
+          avgDailyOut: dashAvgOut,
+          today: DateTime.now(),
+          onOpen: _goBudget,
         );
       default:
         return const SizedBox.shrink();
@@ -1328,6 +1350,83 @@ class _DashDebtCard extends StatelessWidget {
 
 /// Kartu status budget dashboard: Top-3 belanja + lampu traffic-light.
 /// Tanpa budget = CTA buat. Ketuk = tab Budget.
+/// Kartu jatah harian: sisa budget dibagi sisa hari + lampu YNAB.
+/// Ketuk = tab Budget.
+class _DashAllowanceCard extends StatelessWidget {
+  final double remaining;
+  final double avgDailyOut;
+  final DateTime today;
+  final VoidCallback onOpen;
+
+  const _DashAllowanceCard({
+    required this.remaining,
+    required this.avgDailyOut,
+    required this.today,
+    required this.onOpen,
+  });
+
+  Color _light(BuildContext context, String l) {
+    final scheme = Theme.of(context).colorScheme;
+    return switch (l) {
+      'gold' => AppColors.gold,
+      'red' => scheme.error,
+      _ => scheme.primary,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final days = daysLeftInMonth(today);
+    final perDay = dailyAllowance(remaining: remaining, daysLeft: days);
+    final light = allowanceLight(
+      remaining: remaining,
+      avgDailyOut: avgDailyOut,
+      daysLeft: days,
+    );
+    return SectionCard(
+      child: InkWell(
+        onTap: onOpen,
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: _light(context, light),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: SsrSpace.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tr('dash_allow'),
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${tr('dash_allow_days').replaceFirst('{n}', '$days')}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '${amt(perDay)} · ${tr('dash_allow_per')}',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DashBudgetCard extends StatelessWidget {
   final List<Budget> budgets;
   final VoidCallback onOpen;
