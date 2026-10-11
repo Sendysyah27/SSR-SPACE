@@ -86,6 +86,10 @@ class BerandaScreenState extends State<BerandaScreen> {
   /// Dipakai snapshot widget; dihitung dari data yang sudah dipegang.
   double? snapBudgetLeft;
 
+  /// Budget dashboard: kategori + limit + spent + warnPct (definisi sama
+  /// dengan pace: non-tabungan, limit > 0). Nol query baru.
+  List<Budget> dashBudgets = [];
+
   /// Dashboard: urutan kartu + sembunyi + mode Susun (prefs, fail-open).
   List<String> dashOrder = kDashboardDefault;
   Set<String> dashHidden = {};
@@ -147,6 +151,7 @@ class BerandaScreenState extends State<BerandaScreen> {
 
   Future<void> _load() async {
     snapBudgetLeft = null;
+    dashBudgets = [];
     setState(() {
       loading = true;
       err = null;
@@ -285,16 +290,28 @@ class BerandaScreenState extends State<BerandaScreen> {
           // (non-tabungan, limit > 0). Nol query baru.
           var left = 0.0;
           var hasBudget = false;
+          final dash = <Budget>[];
           for (final b in limits) {
             if (isSavingCategory(b.category) || b.limit <= 0) continue;
             hasBudget = true;
-            left += b.limit - (spent[b.category] ?? 0);
+            final sp = spent[b.category] ?? 0;
+            left += b.limit - sp;
+            dash.add(
+              Budget(
+                category: b.category,
+                limit: b.limit,
+                spent: sp,
+                warnPct: b.warnPct,
+              ),
+            );
           }
           snapBudgetLeft = hasBudget ? left : null;
+          dashBudgets = dash;
         } catch (_) {
           hb = null;
           notes = <MapEntry<String, BudgetPace>>[];
           snapBudgetLeft = null;
+          dashBudgets = [];
         }
       }
       // Riwayat 12 bulan (1 query, dipakai insight + darurat + goal).
@@ -532,6 +549,9 @@ class BerandaScreenState extends State<BerandaScreen> {
   Widget _dashCard(String id) {
     switch (id) {
       case 'budget':
+        // Data budget milik bulan berjalan (preseden kartu pace/health).
+        if (month != currentMonth()) return const SizedBox.shrink();
+        return _DashBudgetCard(budgets: dashBudgets, onOpen: _goBudget);
       case 'fitur':
       case 'utang':
         return const SizedBox.shrink();
@@ -1118,6 +1138,121 @@ class _CalmWeeks extends StatelessWidget {
 
 /// Kartu streak harian: angka besar + satu kalimat jujur sesuai kondisi.
 /// Tanpa ikon dekorasi, tanpa klaim. Ketuk tak ke mana (bukan tombol).
+/// Kartu status budget dashboard: Top-3 belanja + lampu traffic-light.
+/// Tanpa budget = CTA buat. Ketuk = tab Budget.
+class _DashBudgetCard extends StatelessWidget {
+  final List<Budget> budgets;
+  final VoidCallback onOpen;
+
+  const _DashBudgetCard({required this.budgets, required this.onOpen});
+
+  Color _light(BuildContext context, String l) {
+    final scheme = Theme.of(context).colorScheme;
+    return switch (l) {
+      'gold' => AppColors.gold,
+      'red' => scheme.error,
+      _ => scheme.primary,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final rows = [...budgets]
+      ..sort((a, b) => b.spent.compareTo(a.spent));
+    final top = rows.take(3).toList();
+    return SectionCard(
+      child: InkWell(
+        onTap: onOpen,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(tr('dash_budget'), style: theme.textTheme.titleSmall),
+            const SizedBox(height: SsrSpace.sm),
+            if (top.isEmpty)
+              Text(
+                tr('dash_make_budget'),
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              )
+            else
+              for (final b in top) _row(context, b),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _row(BuildContext context, Budget b) {
+    final theme = Theme.of(context);
+    final light = budgetLight(
+      spent: b.spent,
+      limit: b.limit,
+      warnPct: b.warnPct,
+    );
+    final pct = b.limit <= 0 ? 0 : (b.spent / b.limit * 100).round();
+    final frac = b.limit <= 0
+        ? 0.0
+        : (b.spent / b.limit).clamp(0.0, 1.0).toDouble();
+    final c = _light(context, light);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: SsrSpace.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: SsrSpace.sm),
+              Expanded(
+                child: Text(
+                  b.category,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              Text(
+                '${amt(b.spent)}/${amt(b.limit)} · $pct%',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 6,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ColoredBox(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  FractionallySizedBox(
+                    widthFactor: frac,
+                    heightFactor: 1,
+                    alignment: Alignment.centerLeft,
+                    child: ColoredBox(color: c),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StreakCard extends StatelessWidget {
   final DailyStreak streak;
 
