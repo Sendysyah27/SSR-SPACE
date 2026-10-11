@@ -22,7 +22,7 @@ void main() {
     );
     expect(find.text('TOKO KOPI'), findsOneWidget);
     expect(find.textContaining('Kopi'), findsOneWidget);
-    expect(find.text('TOTAL'), findsOneWidget);
+    expect(find.text(tr('rcp_total')), findsOneWidget);
     expect(find.text(tr('rcp_check')), findsNothing);
   });
 
