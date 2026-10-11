@@ -155,14 +155,24 @@ ReceiptData parseReceipt(String raw) {
       .toList();
   if (lines.isEmpty) return const ReceiptData();
 
-  // Batas item vs footer: baris total pertama (bukan "TOTAL ITEM" cacah).
-  // Item hanya dari zona pra-total; footer (PT, alamat, NPWP, terima
-  // kasih) di bawahnya tak boleh jadi item. Tanpa total = fallback
-  // perilaku lama (seluruh baris). Logika nominal tak disentuh.
+  // Batas item vs footer: baris total pertama yang berangka, atau
+  // "TOTAL :" yang angka murninya di baris berikut (batas setelah angka).
+  // "TOTAL" telanjang / "TOTAL ITEM" cacah bukan batas (banyak struk
+  // menaruhnya di atas sebagai kepala seksi). Item hanya dari zona
+  // pra-total; footer (PT, alamat, NPWP, terima kasih) di bawahnya tak
+  // boleh jadi item. Tanpa total = fallback perilaku lama.
   var totalIdx = lines.length;
   for (var i = 0; i < lines.length; i++) {
-    if (_isTotalLine(lines[i]) && !_countKey.hasMatch(lines[i])) {
+    final l = lines[i];
+    if (!_isTotalLine(l) || _countKey.hasMatch(l)) continue;
+    if (_numRe.hasMatch(l)) {
       totalIdx = i;
+      break;
+    }
+    if (i + 1 < lines.length &&
+        _numRe.allMatches(l).isEmpty &&
+        _pureAmount.hasMatch(lines[i + 1].trim())) {
+      totalIdx = i + 2;
       break;
     }
   }

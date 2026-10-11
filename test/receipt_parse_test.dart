@@ -448,4 +448,11 @@ void main() {
     final r = parseReceipt(raw);
     expect(r.items, ['Kopi 25000']);
   });
+
+  test('TOTAL telanjang bukan batas; TOTAL: + angka ya', () {
+    const raw = 'TOKO\nKopi 25000\nTOTAL :\n41.250\nPT X 99900';
+    final r = parseReceipt(raw);
+    expect(r.amount, 41250);
+    expect(r.items, ['Kopi 25000']);
+  });
 }
