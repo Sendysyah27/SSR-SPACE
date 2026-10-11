@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.24.0+98.
+Versi terpasang: 2.25.0+99.
+
+## Yang baru di 2.25.0+99
+
+1. Utang & Piutang: catat utangmu ke orang atau piutang orang ke kamu (nama, nominal, tanggal, catatan), pantau total sisa keduanya, bayar sebagian atau penuh dengan riwayat per catatan. Menu Profil → Utang & Piutang.
 
 ## Yang baru di 2.24.0+98
 
