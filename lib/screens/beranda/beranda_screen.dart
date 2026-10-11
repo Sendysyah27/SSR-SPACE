@@ -643,17 +643,6 @@ class BerandaScreenState extends State<BerandaScreen> {
             MaterialPageRoute(builder: (_) => const NetWorthScreen()),
           ),
         );
-      case 'networth':
-        if (month != currentMonth()) return const SizedBox.shrink();
-        final worth = dashNet;
-        if (worth == null) return const SizedBox.shrink();
-        return _DashNetWorthCard(
-          worth: worth,
-          onOpen: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const NetWorthScreen()),
-          ),
-        );
       default:
         return const SizedBox.shrink();
     }
