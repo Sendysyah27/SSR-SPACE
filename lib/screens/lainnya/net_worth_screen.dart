@@ -320,7 +320,7 @@ class _TrendCard extends StatelessWidget {
                 minY: lo - pad,
                 maxY: hi + pad,
                 lineTouchData: const LineTouchData(enabled: false),
-                gridData: FlGridData(
+                gridData: const FlGridData(
                   show: true,
                   drawVerticalLine: false,
                 ),
