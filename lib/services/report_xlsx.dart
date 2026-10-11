@@ -58,7 +58,7 @@ List<int>? buildReportXlsx(
   final ds = _dateStyle();
   for (var c = 0; c < xlsxHeader.length; c++) {
     sheet.updateCell(
-      CellIndex.indexByColumnRow(c, 0),
+      CellIndex.indexByColumnRow(columnIndex: c, rowIndex: 0),
       TextCellValue(xlsxHeader[c]),
       cellStyle: hs,
     );
@@ -79,37 +79,37 @@ List<int>? buildReportXlsx(
     final kategori = t.category ?? '';
     final catatan = t.note ?? '';
     sheet.updateCell(
-      CellIndex.indexByColumnRow(0, r),
+      CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: r),
       dt == null ? TextCellValue('') : DateCellValue.fromDateTime(dt),
       cellStyle: ds,
     );
     sheet.updateCell(
-      CellIndex.indexByColumnRow(1, r),
+      CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: r),
       TextCellValue(t.type),
       cellStyle: ts,
     );
     sheet.updateCell(
-      CellIndex.indexByColumnRow(2, r),
+      CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: r),
       dec ? DoubleCellValue(t.amount) : IntCellValue(t.amount.toInt()),
       cellStyle: _numStyle(dec),
     );
     sheet.updateCell(
-      CellIndex.indexByColumnRow(3, r),
+      CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: r),
       TextCellValue(dompet),
       cellStyle: ts,
     );
     sheet.updateCell(
-      CellIndex.indexByColumnRow(4, r),
+      CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: r),
       TextCellValue(keDompet),
       cellStyle: ts,
     );
     sheet.updateCell(
-      CellIndex.indexByColumnRow(5, r),
+      CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: r),
       TextCellValue(kategori),
       cellStyle: ts,
     );
     sheet.updateCell(
-      CellIndex.indexByColumnRow(6, r),
+      CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: r),
       TextCellValue(catatan),
       cellStyle: ts,
     );
