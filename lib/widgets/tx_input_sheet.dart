@@ -13,6 +13,7 @@ import 'package:ssr_space/services/budget_alert_notify.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
+import 'package:ssr_space/services/offline_cache.dart';
 import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
@@ -317,6 +318,11 @@ class _TxInputSheetState extends State<TxInputSheet> {
       if (mounted) setState(() => _listening = false);
       return;
     }
+    // Recognizer sistem butuh internet (kecuali paket on-device).
+    if (!netOnline.value) {
+      if (mounted) setState(() => _quickStatus = tr('vc_offline'));
+      return;
+    }
     PermissionStatus st;
     try {
       st = await Permission.microphone.request();
@@ -373,15 +379,24 @@ class _TxInputSheetState extends State<TxInputSheet> {
       _listening = true;
       _quickStatus = tr('vc_listening');
     });
-    final started = await _voice.listen(
-      localeId: locale,
-      onResult: (words, finalResult) {
-        if (!mounted) return;
-        quickC.text = normalizeSpoken(words);
-        _onQuickChanged(quickC.text);
-        if (finalResult) setState(() => _listening = false);
-      },
-    );
+    void onVoiceResult(String words, bool finalResult) {
+      if (!mounted) return;
+      quickC.text = normalizeSpoken(words);
+      _onQuickChanged(quickC.text);
+      if (finalResult) setState(() => _listening = false);
+    }
+
+    // Default sistem dulu; id-ID hanya sebagai retry (locale eksplisit
+    // yang tak terinstall bisa menggagalkan start).
+    var started = false;
+    for (final attempt in voiceLocaleAttempts(locale)) {
+      if (!mounted) break;
+      started = await _voice.listen(
+        localeId: attempt,
+        onResult: onVoiceResult,
+      );
+      if (started) break;
+    }
     if (!started && mounted) {
       setState(() {
         _listening = false;

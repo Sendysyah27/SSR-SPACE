@@ -607,6 +607,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Tak terdengar jelas. Coba lagi.',
     'en': 'Not heard clearly. Try again.',
   },
+  'vc_offline': {
+    'id': 'Butuh internet untuk voice input.',
+    'en': 'Voice input needs internet.',
+  },
   // Dashboard Beranda (Batch 16, kartu bisa disusun)
   'dash_title': {'id': 'Dashboard', 'en': 'Dashboard'},
   'dash_arrange': {'id': 'Susun', 'en': 'Arrange'},

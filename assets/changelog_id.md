@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.30.0+106.
+Versi terpasang: 2.30.0+107.
+
+## Yang baru di 2.30.0+107
+
+1. Perbaikan mic lanjutan: coba locale default dulu sebelum id-ID, cegah start saat offline dengan pesan jujur.
 
 ## Yang baru di 2.30.0+106
 

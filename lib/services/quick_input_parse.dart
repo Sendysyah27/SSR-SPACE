@@ -216,8 +216,7 @@ String normalizeSpoken(String raw) => raw
 /// Kunci pesan untuk kode error recognizer (biar UI tak diam saat
 /// recognizer mati tanpa hasil): tak-terdengar -> coba lagi,
 /// izin -> pengaturan, sisanya -> generik.
-String voiceErrorKey(String code) {
-  final c = code.toLowerCase();
+String voiceErrorKey(String code) {  final c = code.toLowerCase();
   if (c.contains('no_match') ||
       c.contains('speech_timeout') ||
       c.contains('no_sound')) {
@@ -228,3 +227,9 @@ String voiceErrorKey(String code) {
   }
   return 'vc_error';
 }
+
+/// Urutan coba locale dengar: default sistem dulu (isolasi; locale
+/// eksplisit yang tak terinstall bisa menggagalkan start), lalu
+/// Indonesia bila ada sebagai retry. List berisi null dulu.
+List<String?> voiceLocaleAttempts(String? indonesianLocale) =>
+    indonesianLocale == null ? [null] : [null, indonesianLocale];

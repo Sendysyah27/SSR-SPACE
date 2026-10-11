@@ -22,8 +22,7 @@ void main() {
     expect(normalizeSpoken('   '), '');
   });
 
-  test('kode error recognizer -> kunci pesan', () {
-    expect(voiceErrorKey('error_no_match'), 'vc_hear');
+  test('kode error recognizer -> kunci pesan', () {    expect(voiceErrorKey('error_no_match'), 'vc_hear');
     expect(voiceErrorKey('error_speech_timeout'), 'vc_hear');
     expect(voiceErrorKey('error_no_sound'), 'vc_hear');
     expect(voiceErrorKey('error_permission'), 'vc_denied');
@@ -31,5 +30,10 @@ void main() {
     expect(voiceErrorKey('error_busy'), 'vc_error');
     expect(voiceErrorKey('error_client'), 'vc_error');
     expect(voiceErrorKey(''), 'vc_error');
+  });
+
+  test('urutan locale: default dulu, id sebagai retry', () {
+    expect(voiceLocaleAttempts(null), [null]);
+    expect(voiceLocaleAttempts('id_ID'), [null, 'id_ID']);
   });
 }
