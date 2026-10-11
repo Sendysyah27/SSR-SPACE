@@ -233,14 +233,3 @@ String voiceErrorKey(String code) {  final c = code.toLowerCase();
 /// Indonesia bila ada sebagai retry. List berisi null dulu.
 List<String?> voiceLocaleAttempts(String? indonesianLocale) =>
     indonesianLocale == null ? [null] : [null, indonesianLocale];
-
-/// Kunci pesan saat init recognizer gagal: izin ditolak vs layanan
-/// suara tak tersedia vs lainnya. Dipakai pemanggil setelah diagnosa.
-String voiceInitKey({
-  required bool permissionGranted,
-  required bool serviceAvailable,
-}) {
-  if (!permissionGranted) return 'vc_denied';
-  if (!serviceAvailable) return 'vc_no_service';
-  return 'vc_error';
-}

@@ -188,8 +188,14 @@ class _TxInputSheetState extends State<TxInputSheet> {
   bool _showSub = false;
   String? _scanOrigin;
   // Voice input: dengar -> tulis ke quickC -> pipeline ketik-cepat.
+  // Recognizer disiapkan SEKALI saat sheet dibuka (bukan tiap tap mic)
+  // agar tak ada race init-vs-listen; tap hanya dengar/berhenti.
   final _voice = VoiceInput();
   bool _listening = false;
+  bool _voiceReady = false;
+  Future<void>? _voiceInitFuture;
+  int _voiceLocaleCount = 0;
+  String? _voiceLocale;
   // Wizard: 0 = jenis+kategori, 1 = form. Mode edit langsung ke form.
   int _step = 0;
   String? _selCat;
@@ -202,6 +208,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
   @override
   void initState() {
     super.initState();
+    _voiceInitFuture = _initVoiceOnce();
     final e = widget.editing;
     type = e?.type ?? widget.initialType ?? 'out';
     final major0 = e == null
@@ -309,15 +316,70 @@ class _TxInputSheetState extends State<TxInputSheet> {
     });
   }
 
+  /// Siapkan recognizer sekali (diagnosa jumlah locale ikut disimpan
+  /// sebagai bukti bila init gagal di device).
+  Future<void> _initVoiceOnce() async {
+    bool ok = false;
+    var count = 0;
+    String? indo;
+    try {
+      ok = await _voice.init(
+        onStatus: (s) {
+          if (!mounted) return;
+          if (s == 'done' || s == 'notListening') {
+            setState(() {
+              _listening = false;
+              if (quickC.text.trim().isEmpty) {
+                _quickStatus = tr('vc_hear');
+              }
+            });
+          }
+        },
+        onError: (code) {
+          if (!mounted) return;
+          setState(() {
+            _listening = false;
+            _quickStatus = tr(voiceErrorKey(code));
+          });
+        },
+      );
+      final ids = await _voice.localeIds();
+      count = ids.length;
+      for (final id in ids) {
+        if (id.toLowerCase().startsWith('id')) {
+          indo = id;
+          break;
+        }
+      }
+    } catch (_) {
+      ok = false;
+    }
+    if (!mounted) return;
+    setState(() {
+      _voiceReady = ok;
+      _voiceLocaleCount = count;
+      _voiceLocale = indo;
+    });
+  }
+
   /// Mic voice input: hasil dengar ditulis ke kolom ketik-cepat lalu
   /// diparse pipeline yang sama (prefill, tanpa simpan diam-diam).
-  /// Ketuk lagi = berhenti. Tiap kegagalan tampil di status (tak ada
-  /// lagi diam "mendengarkan" selamanya): izin, init, error recognizer,
-  /// gagal mulai, selesai-tanpa-hasil.
+  /// Ketuk lagi = berhenti. Init sudah sekali di awal (tunggu bila
+  /// belum selesai: tanpa race). Tiap kegagalan tampil di status.
   Future<void> _toggleMic() async {
     if (_listening) {
       await _voice.stop();
       if (mounted) setState(() => _listening = false);
+      return;
+    }
+    await _voiceInitFuture;
+    if (!mounted) return;
+    if (!_voiceReady) {
+      setState(
+        () => _quickStatus = tr(
+          'vc_init_fail',
+        ).replaceFirst('{n}', '$_voiceLocaleCount'),
+      );
       return;
     }
     // Recognizer sistem butuh internet (kecuali paket on-device).
@@ -336,56 +398,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
       if (mounted) setState(() => _quickStatus = tr('vc_denied'));
       return;
     }
-    bool ok = false;
-    try {
-      ok = await _voice.init(
-        onStatus: (s) {
-          if (!mounted) return;
-          if (s == 'done' || s == 'notListening') {
-            setState(() {
-              _listening = false;
-              // Recognizer berhenti tanpa hasil (timeout/diam): katakan,
-              // jangan biarkan status "mendengarkan" basi.
-              if (quickC.text.trim().isEmpty) {
-                _quickStatus = tr('vc_hear');
-              }
-            });
-          }
-        },
-        onError: (code) {
-          if (!mounted) return;
-          setState(() {
-            _listening = false;
-            _quickStatus = tr(voiceErrorKey(code));
-          });
-        },
-      );
-    } catch (_) {
-      ok = false;
-    }
-    if (!ok) {
-      // Pesan spesifik: izin vs layanan vs lainnya (diagnosa lokal,
-      // fallback locales bila init gagal).
-      var granted = false;
-      var available = false;
-      try {
-        granted = await _voice.hasPermission();
-      } catch (_) {}
-      try {
-        available = await _voice.serviceAvailable();
-      } catch (_) {}
-      if (!mounted) return;
-      setState(
-        () => _quickStatus = tr(
-          voiceInitKey(
-            permissionGranted: granted,
-            serviceAvailable: available,
-          ),
-        ),
-      );
-      return;
-    }
-    final locale = await _voice.pickIndonesianLocale();
+    // Init sudah sekali saat sheet dibuka; tinggal dengar (tanpa race).
     if (!mounted) return;
     setState(() {
       _listening = true;
@@ -401,7 +414,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
     // Default sistem dulu; id-ID hanya sebagai retry (locale eksplisit
     // yang tak terinstall bisa menggagalkan start).
     var started = false;
-    for (final attempt in voiceLocaleAttempts(locale)) {
+    for (final attempt in voiceLocaleAttempts(_voiceLocale)) {
       if (!mounted) break;
       started = await _voice.listen(
         localeId: attempt,

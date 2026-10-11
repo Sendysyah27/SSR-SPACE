@@ -1,62 +1,40 @@
-import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 // Voice input: pembungkus tipis plugin speech_to_text untuk sheet catat.
 // Semua gagal = false/null (pemanggil tampilkan pesan jujur, bukan crash).
-// Locale Indonesia bila tersedia di device, selain itu default sistem.
+// Izin mic diminta pemanggil saat tap (gesture), bukan di sini, supaya
+// init SEKALI saat sheet dibuka tak memunculkan dialog tiba-tiba.
 class VoiceInput {
   final SpeechToText _stt = SpeechToText();
 
   bool get isListening => _stt.isListening;
 
-  /// Siapkan recognizer. Izin mic diminta eksplisit di sini (jangan
-  /// andalkan plugin saja): ditolak = false. [onStatus] cth
+  /// Siapkan recognizer (panggil sekali). [onStatus] cth
   /// 'done'/'notListening'; [onError] terima kode error plugin.
+  /// debugLogging nyala selama fase diagnosa bug mic (logcat saja).
   Future<bool> init({
     void Function(String status)? onStatus,
     void Function(String code)? onError,
   }) async {
     try {
-      final perm = await Permission.microphone.request();
-      if (!perm.isGranted) return false;
       return await _stt.initialize(
         onStatus: onStatus == null ? null : (s) => onStatus(s),
         onError: onError == null ? null : (e) => onError(e.errorMsg),
+        debugLogging: true,
       );
     } catch (_) {
       return false;
     }
   }
 
-  /// True bila layanan suara punya locale apa pun (= tersedia).
-  /// Dipakai diagnosa saat init gagal (bedakan izin vs layanan).
-  Future<bool> serviceAvailable() async {
+  /// Semua id locale layanan suara ([] = layanan mati/tak ada).
+  /// Dipakai hitung diagnosa + pilih Indonesia.
+  Future<List<String>> localeIds() async {
     try {
       final locales = await _stt.locales();
-      return locales.isNotEmpty;
+      return [for (final l in locales) l.localeId];
     } catch (_) {
-      return false;
-    }
-  }
-
-  /// Id locale Indonesia pertama bila ada, null = pakai default.
-  Future<String?> pickIndonesianLocale() async {
-    try {
-      final locales = await _stt.locales();
-      for (final l in locales) {
-        if (l.localeId.toLowerCase().startsWith('id')) return l.localeId;
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  /// Izin mic versi plugin (tanpa prompt). Silang-cek dengan
-  /// permission_handler bila init gagal.
-  Future<bool> hasPermission() async {
-    try {
-      return await _stt.hasPermission;
-    } catch (_) {
-      return false;
+      return [];
     }
   }
 

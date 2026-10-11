@@ -36,19 +36,4 @@ void main() {
     expect(voiceLocaleAttempts(null), [null]);
     expect(voiceLocaleAttempts('id_ID'), [null, 'id_ID']);
   });
-
-  test('init gagal -> pesan spesifik', () {
-    expect(
-      voiceInitKey(permissionGranted: false, serviceAvailable: false),
-      'vc_denied',
-    );
-    expect(
-      voiceInitKey(permissionGranted: true, serviceAvailable: false),
-      'vc_no_service',
-    );
-    expect(
-      voiceInitKey(permissionGranted: true, serviceAvailable: true),
-      'vc_error',
-    );
-  });
 }

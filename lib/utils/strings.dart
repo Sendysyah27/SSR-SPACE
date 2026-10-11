@@ -600,10 +600,6 @@ const _t = <String, Map<String, String>>{
     'id': 'Izin mic ditolak. Nyalakan di Pengaturan HP.',
     'en': 'Mic permission denied. Enable it in phone Settings.',
   },
-  'vc_no_service': {
-    'id': 'Layanan suara tak tersedia. Update aplikasi Google.',
-    'en': 'Speech service unavailable. Update the Google app.',
-  },
   'vc_error': {
     'id': 'Gagal mulai mic. Coba lagi.',
     'en': 'Failed to start mic. Try again.',
@@ -615,6 +611,10 @@ const _t = <String, Map<String, String>>{
   'vc_offline': {
     'id': 'Butuh internet untuk voice input.',
     'en': 'Voice input needs internet.',
+  },
+  'vc_init_fail': {
+    'id': 'Mic gagal siap ({n} bahasa terdeteksi). Update aplikasi Google.',
+    'en': 'Mic failed to ready ({n} locales). Update the Google app.',
   },
   // Dashboard Beranda (Batch 16, kartu bisa disusun)
   'dash_title': {'id': 'Dashboard', 'en': 'Dashboard'},
