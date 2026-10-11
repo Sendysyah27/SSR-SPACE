@@ -36,4 +36,12 @@ void main() {
     expect(voiceLocaleAttempts(null), [null]);
     expect(voiceLocaleAttempts('id_ID'), [null, 'id_ID']);
   });
+
+  test('format diagnostik mic', () {
+    expect(formatMicDiagnostic(null, null), 'err:-/st:-');
+    expect(
+      formatMicDiagnostic('error_no_match', 'notListening'),
+      'err:error_no_match/st:notListening',
+    );
+  });
 }

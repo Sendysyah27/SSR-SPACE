@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.34.0+111.
+Versi terpasang: 2.35.0+112.
+
+## Yang baru di 2.35.0+112
+
+1. Mic kini menampilkan kode diagnostik bila gagal mulai (cth err:error_no_match), jadi penyebabnya ketahuan.
+2. Judul kartu tak lagi kepotong untuk nama panjang.
+3. Pembersihan kode mati voice + audit crash layar-layar baru.
 
 ## Yang baru di 2.34.0+111
 

@@ -239,6 +239,8 @@ class _DebtTile extends StatelessWidget {
                 children: [
                   Text(
                     record.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 2),

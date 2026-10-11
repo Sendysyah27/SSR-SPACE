@@ -229,6 +229,8 @@ class _SplitTile extends StatelessWidget {
                 children: [
                   Text(
                     split.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 2),

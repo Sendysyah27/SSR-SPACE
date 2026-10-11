@@ -233,3 +233,8 @@ String voiceErrorKey(String code) {  final c = code.toLowerCase();
 /// Indonesia bila ada sebagai retry. List berisi null dulu.
 List<String?> voiceLocaleAttempts(String? indonesianLocale) =>
     indonesianLocale == null ? [null] : [null, indonesianLocale];
+
+/// Rincian diagnostik mic untuk pesan gagal (bukti, bukan untuk gaya).
+String formatMicDiagnostic(String? errorMsg, String? status) =>
+    'err:${errorMsg ?? '-'}/st:${status ?? '-'}';
+

@@ -1,4 +1,5 @@
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:ssr_space/services/quick_input_parse.dart';
 
 // Voice input: pembungkus tipis plugin speech_to_text untuk sheet catat.
 // Semua gagal = false/null (pemanggil tampilkan pesan jujur, bukan crash).
@@ -8,6 +9,18 @@ class VoiceInput {
   final SpeechToText _stt = SpeechToText();
 
   bool get isListening => _stt.isListening;
+
+  /// Diagnostik terakhir plugin untuk pesan gagal ("err:x/st:y").
+  String diagnostic() {
+    try {
+      return formatMicDiagnostic(
+        _stt.lastError?.errorMsg,
+        _stt.lastStatus,
+      );
+    } catch (_) {
+      return 'err:-/st:-';
+    }
+  }
 
   /// Siapkan recognizer (panggil sekali). [onStatus] cth
   /// 'done'/'notListening'; [onError] terima kode error plugin.

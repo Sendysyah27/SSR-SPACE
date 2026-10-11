@@ -239,6 +239,8 @@ class FamilyScreenState extends State<FamilyScreen> {
                     Expanded(
                       child: Text(
                         name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                     ),

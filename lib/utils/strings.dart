@@ -620,6 +620,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Gagal mulai mic. Coba lagi.',
     'en': 'Failed to start mic. Try again.',
   },
+  'vc_error_detail': {
+    'id': 'Gagal mulai mic ({d}). Coba lagi.',
+    'en': 'Failed to start mic ({d}). Try again.',
+  },
   'vc_hear': {
     'id': 'Tak terdengar jelas. Coba lagi.',
     'en': 'Not heard clearly. Try again.',

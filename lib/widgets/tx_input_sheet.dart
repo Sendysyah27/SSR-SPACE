@@ -444,9 +444,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
       }
     }
     if (!started && mounted) {
+      final diag = _voice.diagnostic();
       setState(() {
         _listening = false;
-        _quickStatus = tr('vc_error');
+        _quickStatus = tr('vc_error_detail').replaceFirst('{d}', diag);
       });
     }
   }
