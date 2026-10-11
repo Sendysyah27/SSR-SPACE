@@ -74,7 +74,7 @@ CellStyle _noteStyle({bool zebra = false}) {
   final b = _thin();
   return CellStyle(
     indent: 1,
-    textWrapping: TextWrapping.wrapText,
+    textWrapping: TextWrapping.WrapText,
     backgroundColorHex: zebra ? ExcelColor.teal50 : ExcelColor.white,
     leftBorder: b,
     rightBorder: b,

@@ -34,7 +34,7 @@ void main() {
     final bytes = buildReportXlsx([], {}, metaLine: 'Oktober 2026')!;
     final sheet = _sheet(bytes);
     expect(sheet.maxColumns, 8);
-    final merged = sheet.getMergedCells('Transaksi');
+    final merged = sheet.spannedItems;
     expect(merged.any((s) => s.contains('A1') && s.contains('H1')), isTrue);
     final headRow = sheet.rows.firstWhere(
       (r) => r.any((c) => '${c?.value}'.contains('Tanggal')),

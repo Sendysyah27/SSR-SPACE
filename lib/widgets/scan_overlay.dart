@@ -93,7 +93,7 @@ class _LaserPainter extends CustomPainter {
     canvas.drawLine(Offset(w, h - arm), Offset(w, h), corner);
     canvas.drawLine(Offset(w, h), Offset(w - arm, h), corner);
     canvas.drawLine(const Offset(arm, h), Offset(0, h), corner);
-    canvas.drawLine(Offset(0, h), const Offset(0, h - arm), corner);
+    canvas.drawLine(Offset(0, h), Offset(0, h - arm), corner);
     // Garis laser + pijar.
     final y = 12 + progress * (h - 24);
     final glow = Paint()

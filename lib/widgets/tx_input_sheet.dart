@@ -867,12 +867,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
                 ),
               ),
             ],
-            ],
           ],
         ),
         if (_scanning) const ScanOverlay(),
-          ],
-        ),
+        ],
       ),
     );
   }
