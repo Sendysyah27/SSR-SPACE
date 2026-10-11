@@ -73,6 +73,7 @@ class CoolSvg {
   static const String mail = '$base/Mail.svg';
   static const String star = '$base/Star.svg';
   static const String option = '$base/Option.svg';
+  static const String voice = '$base/User_Voice.svg';
 
   // Ledger baru (6, gaya cat_*.svg)
   static const String invest = 'assets/icons/coolicons/Trending_Up.svg';
@@ -196,6 +197,8 @@ class CoolSvg {
         return warning;
       case 0xe219:
         return mail;
+      case 0xe1f0:
+        return voice;
       default:
         return null;
     }

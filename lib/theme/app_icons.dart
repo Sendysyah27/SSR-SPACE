@@ -102,6 +102,9 @@ class AppIcons {
   static const settings = IconData(0xe271, fontFamily: kPhosphorDuotoneFamily);
   static const warning = IconData(0xe4e3, fontFamily: kPhosphorDuotoneFamily);
   static const mail = IconData(0xe219, fontFamily: kPhosphorDuotoneFamily);
+  // Suara (voice input): codepoint bebas, render selalu via Coolicons
+  // (font Phosphor sudah dilepas) — jangan pakai untuk glyph Phosphor.
+  static const voice = IconData(0xe1f0, fontFamily: kPhosphorDuotoneFamily);
   static const cloudOff = IconData(0xe1b7, fontFamily: kPhosphorDuotoneFamily);
 
   /// Lapisan sekunder untuk [icon] (diri sendiri bila tak dikenal).

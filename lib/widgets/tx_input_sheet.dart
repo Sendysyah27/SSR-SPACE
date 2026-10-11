@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
@@ -21,6 +22,7 @@ import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/tx_validation.dart';
+import 'package:ssr_space/services/voice_input.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/wallet_usage.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -182,6 +184,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
   String? _quickStatus;
   bool _showSub = false;
   String? _scanOrigin;
+  // Voice input: dengar -> tulis ke quickC -> pipeline ketik-cepat.
+  final _voice = VoiceInput();
+  bool _listening = false;
   // Wizard: 0 = jenis+kategori, 1 = form. Mode edit langsung ke form.
   int _step = 0;
   String? _selCat;
@@ -238,6 +243,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
   @override
   void dispose() {
     _quickDeb?.cancel();
+    unawaited(_voice.stop());
     digits.dispose();
     quickC.dispose();
     catC.dispose();
@@ -298,6 +304,65 @@ class _TxInputSheetState extends State<TxInputSheet> {
       );
       _quickStatus = '$typeLabel · $what · ${amt(idr)}';
     });
+  }
+
+  /// Mic voice input: hasil dengar ditulis ke kolom ketik-cepat lalu
+  /// diparse pipeline yang sama (prefill, tanpa simpan diam-diam).
+  /// Ketuk lagi = berhenti. Izin/dukungan gagal = status jujur.
+  Future<void> _toggleMic() async {
+    if (_listening) {
+      await _voice.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+    PermissionStatus st;
+    try {
+      st = await Permission.microphone.request();
+    } catch (_) {
+      if (mounted) setState(() => _quickStatus = tr('vc_error'));
+      return;
+    }
+    if (!st.isGranted) {
+      if (mounted) setState(() => _quickStatus = tr('vc_denied'));
+      return;
+    }
+    bool ok = false;
+    try {
+      ok = await _voice.init(
+        onStatus: (s) {
+          if ((s == 'done' || s == 'notListening') && mounted) {
+            setState(() => _listening = false);
+          }
+        },
+      );
+    } catch (_) {
+      ok = false;
+    }
+    if (!ok) {
+      if (mounted) setState(() => _quickStatus = tr('vc_unsupported'));
+      return;
+    }
+    final locale = await _voice.pickIndonesianLocale();
+    if (!mounted) return;
+    setState(() {
+      _listening = true;
+      _quickStatus = tr('vc_listening');
+    });
+    final started = await _voice.listen(
+      localeId: locale,
+      onResult: (words, finalResult) {
+        if (!mounted) return;
+        quickC.text = normalizeSpoken(words);
+        _onQuickChanged(quickC.text);
+        if (finalResult) setState(() => _listening = false);
+      },
+    );
+    if (!started && mounted) {
+      setState(() {
+        _listening = false;
+        _quickStatus = tr('vc_error');
+      });
+    }
   }
 
   /// Langkah 1 -> 2: kunci kategori pilihan ke field form.
@@ -656,6 +721,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
                   controller: quickC,
                   onChanged: _onQuickChanged,
                   status: _quickStatus,
+                  onMic: _toggleMic,
+                  listening: _listening,
                 ),
               ],
               if (_scanOrigin != null) ...[
@@ -1006,11 +1073,15 @@ class _QuickSection extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final String? status;
+  final VoidCallback onMic;
+  final bool listening;
 
   const _QuickSection({
     required this.controller,
     required this.onChanged,
     this.status,
+    required this.onMic,
+    required this.listening,
   });
 
   @override
@@ -1026,6 +1097,15 @@ class _QuickSection extends StatelessWidget {
           decoration: InputDecoration(
             hintText: tr('tx_quick_hint'),
             prefixIcon: const DuoIcon(AppIcons.search, size: 20),
+            suffixIcon: IconButton(
+              icon: DuoIcon(
+                AppIcons.voice,
+                size: 22,
+                color: listening ? theme.colorScheme.primary : null,
+              ),
+              tooltip: tr('vc_mic'),
+              onPressed: onMic,
+            ),
           ),
         ),
         if (status != null) ...[

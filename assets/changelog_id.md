@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.29.0+104.
+Versi terpasang: 2.30.0+105.
+
+## Yang baru di 2.30.0+105
+
+1. Voice input: ketuk mic di kolom ketik-cepat, ngomong misal "makan siang 25 ribu" — nominal + kategori terisi otomatis. Periksa dulu, simpan tetap manual. Butuh izin mic + internet.
 
 ## Yang baru di 2.29.0+104
 

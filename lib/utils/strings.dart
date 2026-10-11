@@ -585,6 +585,24 @@ const _t = <String, Map<String, String>>{
     'id': 'Catatan penuh (50). Hapus yang tak dipakai dulu.',
     'en': 'Records are full (50). Delete an unused one first.',
   },
+  // Voice input (Batch 18, isi kolom ketik-cepat)
+  'vc_mic': {'id': 'Isi dengan suara', 'en': 'Fill by voice'},
+  'vc_listening': {
+    'id': 'Mendengarkan... ketuk mic untuk berhenti.',
+    'en': 'Listening... tap mic to stop.',
+  },
+  'vc_denied': {
+    'id': 'Izin mic ditolak. Nyalakan di Pengaturan HP.',
+    'en': 'Mic permission denied. Enable it in phone Settings.',
+  },
+  'vc_unsupported': {
+    'id': 'Perangkat tak mendukung voice input.',
+    'en': 'Voice input not supported on this device.',
+  },
+  'vc_error': {
+    'id': 'Gagal mulai mic. Coba lagi.',
+    'en': 'Failed to start mic. Try again.',
+  },
   // Dashboard Beranda (Batch 16, kartu bisa disusun)
   'dash_title': {'id': 'Dashboard', 'en': 'Dashboard'},
   'dash_arrange': {'id': 'Susun', 'en': 'Arrange'},

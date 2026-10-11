@@ -203,3 +203,12 @@ QuickInput? parseQuickInput(
     note: note,
   );
 }
+
+/// Normalisasi hasil speech-to-text menjadi teks ketik-cepat:
+/// kecil + buang kata "rupiah" + rapatkan spasi. Parser sudah kenal
+/// rb/ribu/jt/juta/k sehingga "25 ribu" langsung terurai.
+String normalizeSpoken(String raw) => raw
+    .toLowerCase()
+    .replaceAll('rupiah', ' ')
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .trim();

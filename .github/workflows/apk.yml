@@ -226,6 +226,12 @@ jobs:
                   '</manifest>',
                   '    <uses-permission android:name="android.permission.NFC"/>\n</manifest>',
               )
+          # Voice input: mic untuk speech-to-text (runtime diminta saat tap).
+          if 'android.permission.RECORD_AUDIO' not in s:
+              s = s.replace(
+                  '</manifest>',
+                  '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n</manifest>',
+              )
           if 'android.hardware.nfc' not in s:
               s = s.replace(
                   '</manifest>',
