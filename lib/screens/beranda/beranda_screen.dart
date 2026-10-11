@@ -9,6 +9,7 @@ import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/calm_streak.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/dashboard_cards.dart';
+import 'package:ssr_space/services/debt_track.dart';
 import 'package:ssr_space/services/health_score.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/month_figures.dart';
@@ -19,9 +20,16 @@ import 'package:ssr_space/services/goal_forecast.dart';
 import 'package:ssr_space/services/goal_store.dart';
 import 'package:ssr_space/services/game_level.dart';
 import 'package:ssr_space/services/game_store.dart';
+import 'package:ssr_space/screens/dompet/wallets_screen.dart';
 import 'package:ssr_space/screens/lainnya/arcade_screen.dart';
+import 'package:ssr_space/screens/lainnya/bill_splits_screen.dart';
+import 'package:ssr_space/screens/lainnya/debts_screen.dart';
 import 'package:ssr_space/screens/lainnya/goals_screen.dart';
+import 'package:ssr_space/screens/lainnya/nfc_cards_screen.dart';
+import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
+import 'package:ssr_space/screens/lainnya/recurring_bills_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_screen.dart';
+import 'package:ssr_space/screens/lainnya/subscriptions_screen.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -90,6 +98,9 @@ class BerandaScreenState extends State<BerandaScreen> {
   /// dengan pace: non-tabungan, limit > 0). Nol query baru.
   List<Budget> dashBudgets = [];
 
+  /// Utang dashboard: prefs-lokal (tanpa server), fail-open kosong.
+  List<DebtRecord> dashDebts = [];
+
   /// Dashboard: urutan kartu + sembunyi + mode Susun (prefs, fail-open).
   List<String> dashOrder = kDashboardDefault;
   Set<String> dashHidden = {};
@@ -152,6 +163,7 @@ class BerandaScreenState extends State<BerandaScreen> {
   Future<void> _load() async {
     snapBudgetLeft = null;
     dashBudgets = [];
+    dashDebts = [];
     setState(() {
       loading = true;
       err = null;
@@ -200,6 +212,11 @@ class BerandaScreenState extends State<BerandaScreen> {
         );
       }
       final allBills = await loadBills();
+      try {
+        dashDebts = await loadDebts();
+      } catch (_) {
+        dashDebts = [];
+      }
       final now = DateTime.now();
       // Streak: tanggal ringan lintas bulan, fail-open (kartu sembunyi).
       DailyStreak? st;
@@ -553,8 +570,15 @@ class BerandaScreenState extends State<BerandaScreen> {
         if (month != currentMonth()) return const SizedBox.shrink();
         return _DashBudgetCard(budgets: dashBudgets, onOpen: _goBudget);
       case 'fitur':
+        return const _DashFeatureGrid();
       case 'utang':
-        return const SizedBox.shrink();
+        return _DashDebtCard(
+          debts: dashDebts,
+          onOpen: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const DebtsScreen()),
+          ),
+        );
       default:
         return const SizedBox.shrink();
     }
@@ -1138,6 +1162,170 @@ class _CalmWeeks extends StatelessWidget {
 
 /// Kartu streak harian: angka besar + satu kalimat jujur sesuai kondisi.
 /// Tanpa ikon dekorasi, tanpa klaim. Ketuk tak ke mana (bukan tombol).
+/// Grid jalan pintas fitur: 8 tile deep-link ke layar existing.
+/// Nol logika baru; label pakai kunci strings yang sudah ada.
+class _DashFeatureGrid extends StatelessWidget {
+  const _DashFeatureGrid();
+
+  void _go(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tiles = <({IconData icon, String label, Widget screen})>[
+      (
+        icon: AppIcons.wallet,
+        label: tr('o_wallets'),
+        screen: const WalletsScreen()
+      ),
+      (
+        icon: AppIcons.bills,
+        label: tr('rb_title'),
+        screen: const RecurringBillsScreen()
+      ),
+      (
+        icon: AppIcons.calendar,
+        label: tr('sub_title'),
+        screen: const SubscriptionsScreen()
+      ),
+      (
+        icon: AppIcons.transfer,
+        label: tr('bs_title'),
+        screen: const BillSplitsScreen()
+      ),
+      (
+        icon: AppIcons.billing,
+        label: tr('db_title'),
+        screen: const DebtsScreen()
+      ),
+      (
+        icon: AppIcons.topup,
+        label: tr('goal_title'),
+        screen: const GoalsScreen()
+      ),
+      (
+        icon: AppIcons.scan,
+        label: tr('nfc_title'),
+        screen: const NfcCardsScreen()
+      ),
+      (
+        icon: AppIcons.tracking,
+        label: tr('o_tracking'),
+        screen: const NotifSettingsScreen()
+      ),
+    ];
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(tr('dash_feature'), style: theme.textTheme.titleSmall),
+          const SizedBox(height: SsrSpace.sm),
+          GridView.count(
+            crossAxisCount: 4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 0.92,
+            children: [
+              for (final t in tiles)
+                InkWell(
+                  onTap: () => _go(context, t.screen),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DuoIcon(t.icon, size: 26),
+                      const SizedBox(height: 4),
+                      Text(
+                        t.label,
+                        style: theme.textTheme.bodySmall,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu utang ringkas: total sisa utang vs piutang (prefs-lokal).
+/// Kosong = CTA catat. Ketuk = layar Utang.
+class _DashDebtCard extends StatelessWidget {
+  final List<DebtRecord> debts;
+  final VoidCallback onOpen;
+
+  const _DashDebtCard({required this.debts, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = debtTotals(debts);
+    return SectionCard(
+      child: InkWell(
+        onTap: onOpen,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(tr('dash_debt'), style: theme.textTheme.titleSmall),
+            const SizedBox(height: SsrSpace.sm),
+            if (debts.isEmpty)
+              Text(
+                tr('db_new'),
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: _cell(
+                      context,
+                      tr('db_total_debt'),
+                      amt(t.debt),
+                      theme.colorScheme.error,
+                    ),
+                  ),
+                  Expanded(
+                    child: _cell(
+                      context,
+                      tr('db_total_rec'),
+                      amt(t.receivable),
+                      theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cell(BuildContext context, String label, String value, Color c) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            color: c,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Kartu status budget dashboard: Top-3 belanja + lampu traffic-light.
 /// Tanpa budget = CTA buat. Ketuk = tab Budget.
 class _DashBudgetCard extends StatelessWidget {
