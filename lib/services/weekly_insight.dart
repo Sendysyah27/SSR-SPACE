@@ -25,6 +25,9 @@ class WeeklyInsight {
   final double topTotal;
   final double saveWeekly;
   final double saveMonthly;
+  final int topWeekday;
+  final double topDayTotal;
+  final List<TxAnomaly> anomalies;
   const WeeklyInsight({
     required this.lastTotal,
     required this.avgWeekly,
@@ -35,8 +38,31 @@ class WeeklyInsight {
     required this.topTotal,
     required this.saveWeekly,
     required this.saveMonthly,
+    required this.topWeekday,
+    required this.topDayTotal,
+    required this.anomalies,
   });
 }
+
+/// Satu transaksi janggal: nominal jauh di atas rata-rata kategorinya.
+class TxAnomaly {
+  final String category;
+  final double amount;
+  final double avg;
+  final DateTime date;
+  const TxAnomaly({
+    required this.category,
+    required this.amount,
+    required this.avg,
+    required this.date,
+  });
+}
+
+/// Ambang anomali: >= 3x rata-rata mingguan kategori + lantai Rp50rb
+/// (tanpa riwayat kategori = bukan anomali, bukan pendatang baru).
+const anomalyMultiple = 3.0;
+const anomalyFloor = 50000.0;
+const maxAnomalies = 3;
 
 /// Awal minggu berjalan. [startWeekday] 1 = Senin (default, ikut
 /// calm_streak), 7 = Minggu. Kunci ISO [weekKey] tetap basis Senin
@@ -71,8 +97,10 @@ WeeklyInsight? buildWeeklyInsight({
   final lastSunEnd = thisMon;
   double lastTotal = 0;
   final lastByCat = <String, double>{};
+  final lastByDay = List<double>.filled(8, 0);
   final prevTotals = List<double>.filled(4, 0);
   final prevByCat = <String, List<double>>{};
+  final lastTxs = <WeeklyTx>[];
   var anyPrev = false;
   for (final t in txs) {
     final day = DateTime(t.date.year, t.date.month, t.date.day);
@@ -80,6 +108,8 @@ WeeklyInsight? buildWeeklyInsight({
     if (!day.isBefore(lastMon)) {
       lastTotal += t.amount;
       lastByCat[t.category] = (lastByCat[t.category] ?? 0) + t.amount;
+      lastByDay[day.weekday] += t.amount;
+      lastTxs.add(t);
     } else {
       final weeksAgo = (lastMon.difference(day).inDays - 1) ~/ 7 + 1;
       if (weeksAgo >= 1 && weeksAgo <= 4) {
@@ -118,6 +148,34 @@ WeeklyInsight? buildWeeklyInsight({
   if (top.isEmpty) return null;
   var save = _roundK(topSum * 0.2);
   if (save <= 0) save = 1000;
+  // Hari paling boros (seri = paling awal).
+  var topDay = 1;
+  var topDaySum = 0.0;
+  for (var wd = 1; wd <= 7; wd++) {
+    if (lastByDay[wd] > topDaySum) {
+      topDaySum = lastByDay[wd];
+      topDay = wd;
+    }
+  }
+  // Anomali: nominal >= 3x rata-rata kategorinya + lantai 50rb.
+  final anoms = <TxAnomaly>[];
+  for (final t in lastTxs) {
+    final arr = prevByCat[t.category];
+    final catAvg =
+        arr == null ? 0.0 : arr.fold<double>(0, (s, v) => s + v) / 4;
+    if (catAvg <= 0) continue;
+    if (t.amount >= catAvg * anomalyMultiple && t.amount >= anomalyFloor) {
+      anoms.add(
+        TxAnomaly(
+          category: t.category,
+          amount: t.amount,
+          avg: catAvg,
+          date: t.date,
+        ),
+      );
+    }
+  }
+  anoms.sort((a, b) => b.amount.compareTo(a.amount));
   return WeeklyInsight(
     lastTotal: lastTotal,
     avgWeekly: avg,
@@ -128,5 +186,8 @@ WeeklyInsight? buildWeeklyInsight({
     topTotal: topSum,
     saveWeekly: save,
     saveMonthly: save * 4,
+    topWeekday: topDay,
+    topDayTotal: topDaySum,
+    anomalies: anoms.take(maxAnomalies).toList(),
   );
 }

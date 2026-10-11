@@ -1944,6 +1944,42 @@ class _InsightCard extends StatelessWidget {
           Text(topLine, style: theme.textTheme.bodySmall),
           const SizedBox(height: SsrSpace.xs),
           Text(
+            tr('ins_day')
+                .replaceFirst(
+                  '{d}',
+                  tr('wd_${ins.topWeekday}'),
+                )
+                .replaceFirst('{m}', amt(ins.topDayTotal)),
+            style: theme.textTheme.bodySmall,
+          ),
+          if (ins.anomalies.isNotEmpty) ...[
+            const SizedBox(height: SsrSpace.xs),
+            Text(
+              tr('ins_anom_t'),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.error,
+              ),
+            ),
+            for (final a in ins.anomalies)
+              Text(
+                tr('ins_anom')
+                    .replaceFirst('{c}', a.category)
+                    .replaceFirst('{m}', amt(a.amount))
+                    .replaceFirst('{a}', amt(a.avg)),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            Text(
+              tr('ins_anom_tip').replaceFirst('{n}', '${ins.anomalies.length}'),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          const SizedBox(height: SsrSpace.xs),
+          Text(
             tr('ins_tip')
                 .replaceFirst('{c}', ins.topCategory)
                 .replaceFirst('{w}', amt(ins.saveWeekly))

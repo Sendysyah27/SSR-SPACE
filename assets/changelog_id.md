@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.35.0+112.
+Versi terpasang: 2.36.0+113.
+
+## Yang baru di 2.36.0+113
+
+1. Kilasan mingguan makin pintar: hari paling boros + tandai transaksi janggal (nominal ≥3x rata-rata kategorinya) + tips periksa.
 
 ## Yang baru di 2.35.0+112
 

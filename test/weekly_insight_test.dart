@@ -57,4 +57,65 @@ void main() {
     expect(ins.topCategory, 'Jajan');
     expect(ins.saveWeekly, 10000);
   });
+
+  test('hari paling boros minggu lalu', () {
+    final ins = buildWeeklyInsight(
+      txs: [
+        WeeklyTx(date: d(2026, 9, 29), amount: 100000, category: 'Makan'),
+        WeeklyTx(date: d(2026, 10, 1), amount: 200000, category: 'Makan'),
+        WeeklyTx(date: d(2026, 10, 3), amount: 50000, category: 'Jajan'),
+      ],
+      now: d(2026, 10, 9),
+    )!;
+    expect(ins.topWeekday, 4);
+    expect(ins.topDayTotal, 200000);
+  });
+
+  test('anomali: 1 transaksi >= 3x rata-rata kategori', () {
+    final txs = [
+      for (var w = 0; w < 4; w++)
+        WeeklyTx(date: d(2026, 9, 21 - w * 7), amount: 20000, category: 'Makan'),
+      WeeklyTx(date: d(2026, 9, 30), amount: 100000, category: 'Makan'),
+      WeeklyTx(date: d(2026, 10, 1), amount: 50000, category: 'Jajan'),
+    ];
+    final ins = buildWeeklyInsight(txs: txs, now: d(2026, 10, 9))!;
+    expect(ins.anomalies.length, 1);
+    expect(ins.anomalies.first.category, 'Makan');
+    expect(ins.anomalies.first.amount, 100000);
+    expect(ins.anomalies.first.avg, 20000);
+  });
+
+  test('anomali: di bawah lantai 50rb bukan anomali', () {
+    final txs = [
+      for (var w = 0; w < 4; w++)
+        WeeklyTx(date: d(2026, 9, 21 - w * 7), amount: 10000, category: 'Makan'),
+      WeeklyTx(date: d(2026, 9, 30), amount: 40000, category: 'Makan'),
+    ];
+    final ins = buildWeeklyInsight(txs: txs, now: d(2026, 10, 9))!;
+    expect(ins.anomalies, isEmpty);
+  });
+
+  test('anomali: maks 3 urut nominal desc', () {
+    final txs = [
+      for (var w = 0; w < 4; w++)
+        WeeklyTx(date: d(2026, 9, 21 - w * 7), amount: 10000, category: 'Makan'),
+      for (var i = 0; i < 5; i++)
+        WeeklyTx(
+          date: d(2026, 9, 28 + i),
+          amount: 100000.0 + i * 10000,
+          category: 'Makan',
+        ),
+    ];
+    final ins = buildWeeklyInsight(txs: txs, now: d(2026, 10, 9))!;
+    expect(ins.anomalies.length, 3);
+    expect(ins.anomalies.first.amount, 140000);
+  });
+
+  test('tanpa riwayat kategori: bukan anomali', () {
+    final ins = buildWeeklyInsight(
+      txs: [WeeklyTx(date: d(2026, 9, 30), amount: 500000, category: 'Jajan')],
+      now: d(2026, 10, 9),
+    )!;
+    expect(ins.anomalies, isEmpty);
+  });
 }

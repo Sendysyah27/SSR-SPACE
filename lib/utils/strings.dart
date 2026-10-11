@@ -1855,6 +1855,19 @@ const _t = <String, Map<String, String>>{
     'id': 'Coba kurangi {c} {w} per minggu, hematnya {m} per bulan.',
     'en': 'Try cutting {c} by {w} a week, saves {m} a month.',
   },
+  'ins_day': {
+    'id': '{d} paling boros ({m})',
+    'en': '{d} spent most ({m})',
+  },
+  'ins_anom_t': {'id': 'Transaksi janggal', 'en': 'Odd transactions'},
+  'ins_anom': {
+    'id': '{c} {m} (rata-rata {a})',
+    'en': '{c} {m} (avg {a})',
+  },
+  'ins_anom_tip': {
+    'id': 'Periksa {n} transaksi di atas wajar.',
+    'en': 'Check {n} above-normal transactions.',
+  },
   'cmp_title': {'id': 'Bulan ini vs bulan lalu', 'en': 'This vs last month'},
   'cmp_new': {'id': 'Baru', 'en': 'New'},
   'cmp_empty': {
