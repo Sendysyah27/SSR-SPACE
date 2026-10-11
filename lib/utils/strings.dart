@@ -449,6 +449,47 @@ const _t = <String, Map<String, String>>{
     'id': 'Hapus tagihan ini? Riwayat transaksi tetap ada.',
     'en': 'Delete this bill? Transaction history stays.',
   },
+  // Pelacak langganan (Batch 11, pola lokal tanpa server)
+  'sub_title': {'id': 'Langganan terdeteksi', 'en': 'Detected subscriptions'},
+  'sub_sub': {
+    'id': 'Pola bayar berulang dari riwayatmu.',
+    'en': 'Recurring payment patterns from your history.',
+  },
+  'sub_empty_t': {
+    'id': 'Belum ada pola langganan',
+    'en': 'No subscription patterns yet',
+  },
+  'sub_empty_s': {
+    'id': 'Butuh minimal 2 pembayaran sama (nama + nominal) berjarak sekitar sebulan.',
+    'en': 'Needs at least 2 matching payments (name + amount) about a month apart.',
+  },
+  'sub_total': {'id': 'Total per bulan', 'en': 'Total per month'},
+  'sub_count': {'id': '{n} langganan', 'en': '{n} subscriptions'},
+  'sub_sure': {'id': 'Pasti', 'en': 'Certain'},
+  'sub_maybe': {'id': 'Mungkin', 'en': 'Likely'},
+  'sub_new': {'id': 'Baru', 'en': 'New'},
+  'sub_auto': {'id': 'Otomatis', 'en': 'Auto'},
+  'sub_every': {'id': 'tiap {n} hari', 'en': 'every {n} days'},
+  'sub_last': {'id': 'Terakhir {d}', 'en': 'Last {d}'},
+  'sub_make': {'id': 'Jadikan tagihan', 'en': 'Make a bill'},
+  'sub_made': {
+    'id': 'Tersimpan jadi tagihan rutin',
+    'en': 'Saved as a recurring bill',
+  },
+  'sub_ignore': {'id': 'Abaikan', 'en': 'Ignore'},
+  'sub_unignore': {'id': 'Batal abaikan', 'en': 'Unignore'},
+  'sub_show_ignored': {
+    'id': 'Tampilkan yang diabaikan ({n})',
+    'en': 'Show ignored ({n})',
+  },
+  'sub_hide_ignored': {
+    'id': 'Sembunyikan yang diabaikan',
+    'en': 'Hide ignored',
+  },
+  'sub_full': {
+    'id': 'Tagihan rutin penuh (30). Hapus yang tak dipakai dulu.',
+    'en': 'Recurring bills are full (30). Delete an unused one first.',
+  },
   // Subkategori + meta (P2 subcategory-picker)
   'sub_hint': {'id': 'Subkategori (opsional)', 'en': 'Subcategory (optional)'},
   'sub_add': {'id': 'Tambah subkategori', 'en': 'Add subcategory'},

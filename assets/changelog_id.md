@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.22.0+96.
+Versi terpasang: 2.23.0+97.
+
+## Yang baru di 2.23.0+97
+
+1. Pelacak langganan: pola bayar berulang (nama + nominal tiap ±30 hari) terdeteksi otomatis dari riwayat, lengkap dengan total per bulan. Yang tak dikenal ditandai Baru — jadikan tagihan rutin atau abaikan sekali ketuk. Menu Profil → Langganan terdeteksi.
 
 ## Yang baru di 2.22.0+96
 
