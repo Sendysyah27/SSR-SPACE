@@ -26,6 +26,7 @@ import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/report_export.dart';
 import 'package:ssr_space/services/report_pdf.dart';
 import 'package:ssr_space/services/report_xlsx.dart';
+import 'package:ssr_space/services/xlsx_layout.dart';
 import 'package:ssr_space/services/reports_topn.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/transfer_detect.dart';
@@ -347,7 +348,13 @@ class ReportsScreenState extends State<ReportsScreen> {
 
   Future<void> _exportXlsx() async {
     final data = _exportItems(await _allItems());
-    final bytes = buildReportXlsx(data, walletNames);
+    final bytes = buildReportXlsx(
+      data,
+      walletNames,
+      metaLine: tr('r_xlsx_meta')
+          .replaceFirst('{p}', monthLabel(month))
+          .replaceFirst('{d}', idFullDate(DateTime.now())),
+    );
     if (bytes == null) throw StateError('xlsx kosong');
     final base = exportBaseName(
       month,

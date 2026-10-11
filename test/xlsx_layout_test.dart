@@ -12,4 +12,10 @@ void main() {
   test('header ikut diukur', () {
     expect(xlsxFitWidth(['ke_dompet', 'BCA']), 11);
   });
+
+  test('tanggal full Indonesia', () {
+    expect(idFullDate(DateTime(2026, 10, 11)), '11 Okt 2026');
+    expect(idFullDate(DateTime(2026, 1, 5)), '5 Jan 2026');
+    expect(idFullDate(DateTime(2026, 12, 31)), '31 Des 2026');
+  });
 }

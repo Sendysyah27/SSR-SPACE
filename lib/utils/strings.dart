@@ -1375,6 +1375,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Laporan SSR SPACE (Excel)',
     'en': 'SSR SPACE report (Excel)',
   },
+  'r_xlsx_meta': {
+    'id': '{p} · diekspor {d}',
+    'en': '{p} · exported {d}',
+  },
   // Prakiraan kas (Batch 17, skenario waspada)
   'cf_title': {'id': 'Prakiraan 30 hari', 'en': '30-day forecast'},
   'cf_sub': {

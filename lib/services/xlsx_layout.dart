@@ -15,3 +15,22 @@ double xlsxFitWidth(
   }
   return (m + pad).clamp(min, max).toDouble();
 }
+
+/// Nama bulan Indonesia singkat untuk tanggal full struk/laporan.
+const idMonthShort = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Agu',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Des',
+];
+
+/// '11 Okt 2026' — deterministik di semua viewer (tak ikut locale HP).
+String idFullDate(DateTime d) => '${d.day} ${idMonthShort[d.month - 1]} ${d.year}';
