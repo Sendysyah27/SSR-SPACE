@@ -431,8 +431,7 @@ ReceiptData parseReceipt(String raw) {
 }
 
 /// Satu baris catatan: merchant + item, maks 200 char.
-String receiptNote(ReceiptData d) {
-  final buf = StringBuffer();
+String receiptNote(ReceiptData d) {  final buf = StringBuffer();
   if (d.merchant != null) buf.write(d.merchant);
   if (d.items.isNotEmpty) {
     if (buf.isNotEmpty) buf.write(' · ');
@@ -444,4 +443,13 @@ String receiptNote(ReceiptData d) {
   }
   final s = buf.toString();
   return s.length <= 200 ? s : s.substring(0, 200);
+}
+
+/// Pecah satu item "Nama Produk 25000" menjadi nama + nominal.
+/// Tanpa angka akhir = (teks, 0). Dipakai layout struk hasil scan.
+({String name, double amount}) splitReceiptItem(String item) {
+  final m =
+      RegExp(r'^(.*\S)\s+(\d+(?:\.\d+)?)\s*$').firstMatch(item.trim());
+  if (m == null) return (name: item.trim(), amount: 0);
+  return (name: m.group(1)!.trim(), amount: double.tryParse(m.group(2)!) ?? 0);
 }

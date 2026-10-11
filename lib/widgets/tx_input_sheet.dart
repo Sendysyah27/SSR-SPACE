@@ -34,6 +34,8 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/category_chips.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/widgets/receipt_result_sheet.dart';
+import 'package:ssr_space/widgets/scan_overlay.dart';
 import 'package:ssr_space/widgets/success_lottie.dart';
 import 'package:ssr_space/widgets/tx_numpad.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
@@ -476,7 +478,23 @@ class _TxInputSheetState extends State<TxInputSheet> {
         if (!r.confident) formErr = tr('rcp_partial');
         _step = 1;
       });
-      if (raw != null) await _showRawOcrDialog(raw);
+      if (raw != null && mounted) {
+        final data = r;
+        if (data == null) {
+          await _showRawOcrDialog(raw);
+        } else {
+          // Hasil ala layout struk (prefill sudah diterapkan di atas);
+          // teks mentah tetap sekali ketuk via tombolnya.
+          await showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            builder: (_) => ReceiptResultSheet(
+              data: data,
+              onShowRaw: () => _showRawOcrDialog(raw),
+            ),
+          );
+        }
+      }
     } on ReceiptScanException catch (e) {
       if (!mounted) return;
       final raw = lastRawOcrText;
@@ -700,7 +718,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: SingleChildScrollView(
+      child: Stack(
+        children: [
+          SingleChildScrollView(
         padding: EdgeInsets.only(
           left: SsrSpace.lg,
           right: SsrSpace.lg,
@@ -848,6 +868,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
               ),
             ],
             ],
+          ],
+        ),
+        if (_scanning) const ScanOverlay(),
           ],
         ),
       ),

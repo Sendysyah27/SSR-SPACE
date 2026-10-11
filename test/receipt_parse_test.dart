@@ -410,4 +410,16 @@ void main() {
     const raw = 'ihatsApp 7818\nTOTAL : 25,000';
     expect(parseReceipt(raw).items, isEmpty);
   });
+
+  test('split item nama + nominal', () {
+    final a = splitReceiptItem('Kopi Kenangan Mantan 25000');
+    expect(a.name, 'Kopi Kenangan Mantan');
+    expect(a.amount, 25000);
+    final b = splitReceiptItem('Roti 14900.0');
+    expect(b.name, 'Roti');
+    expect(b.amount, 14900);
+    final c = splitReceiptItem('TanpaNominal');
+    expect(c.name, 'TanpaNominal');
+    expect(c.amount, 0);
+  });
 }

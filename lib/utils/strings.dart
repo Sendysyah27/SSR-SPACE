@@ -174,6 +174,11 @@ const _t = <String, Map<String, String>>{
     'en': '(empty — no text was read)',
   },
   'rcp_raw_close': {'id': 'Tutup', 'en': 'Close'},
+  'rcp_total': {'id': 'Total', 'en': 'Total'},
+  'rcp_check': {
+    'id': 'Belum yakin — periksa manual sebelum simpan.',
+    'en': 'Unsure — check manually before saving.',
+  },
   'txv_amount': {
     'id': 'Nominal harus lebih dari 0',
     'en': 'Amount must be greater than 0',
