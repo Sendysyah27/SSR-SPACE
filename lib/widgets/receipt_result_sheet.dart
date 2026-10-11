@@ -121,7 +121,7 @@ class _ItemRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
-          Expanded(
+          Flexible(
             child: Text(
               p.name,
               maxLines: 1,
@@ -129,7 +129,7 @@ class _ItemRow extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
-          const _DotLeader(),
+          const Expanded(child: _DotLeader()),
           Text(
             money(p.amount),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -150,7 +150,8 @@ class _DotLeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (_, c) {
-        final n = (c.maxWidth ~/ 7).clamp(2, 80);
+        final w = c.maxWidth.isFinite ? c.maxWidth : 200.0;
+        final n = (w ~/ 7).clamp(2, 80);
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
           child: Text(
@@ -174,7 +175,8 @@ class _DashedLine extends StatelessWidget {
     final color = Theme.of(context).colorScheme.outline;
     return LayoutBuilder(
       builder: (_, c) {
-        final n = (c.maxWidth ~/ 9).clamp(4, 120);
+        final w = c.maxWidth.isFinite ? c.maxWidth : 200.0;
+        final n = (w ~/ 9).clamp(4, 120);
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
