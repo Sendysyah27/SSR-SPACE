@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.29.0+103.
+Versi terpasang: 2.29.0+104.
+
+## Yang baru di 2.29.0+104
+
+1. Perapihan ekspor Excel: lebar kolom menyesuaikan isi, tanggal full, nominal pakai pemisah ribuan, judul tebal berlatar + baris judul lebih lega.
 
 ## Yang baru di 2.29.0+103
 

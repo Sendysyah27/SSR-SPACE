@@ -78,4 +78,21 @@ void main() {
     expect(maps.length, 1);
     expect(maps[0]['tanggal'], '');
   });
+
+  test('lebar kolom ikut isi + tanggal full', () {
+    final bytes = buildReportXlsx(
+      [
+        _tx(
+          note:
+              'Otomatis dari SeaBank, digabung sebagai transfer ke BCA jelas',
+        ),
+      ],
+      {'w1': 'Kas'},
+    )!;
+    final sheet = _book(bytes).tables['Transaksi']!;
+    expect(sheet.getColumnWidth(0), 13);
+    expect(sheet.getColumnWidth(6), 50);
+    final maps = sheet.rowsAsMaps();
+    expect('${maps[0]['tanggal']}', contains('2026-10-01'));
+  });
 }
