@@ -16,6 +16,7 @@ import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
+import 'package:ssr_space/widgets/tx_type_selector.dart';
 
 /// Kunci prefs daftar patungan (maks [maxSplits]).
 const _kSplits = 'bill_splits';
