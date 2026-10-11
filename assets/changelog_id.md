@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.27.0+101.
+Versi terpasang: 2.28.0+102.
+
+## Yang baru di 2.28.0+102
+
+1. Dashboard baru di Beranda: kartu status budget (hijau/emas/merah per kategori), jalan pintas semua fitur, dan ringkasan utang — semuanya bisa disusun ulang dan disembunyikan lewat tombol Susun. Navigasi bawah tetap sama.
 
 ## Yang baru di 2.27.0+101
 
