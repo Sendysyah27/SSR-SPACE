@@ -13,6 +13,7 @@ import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/billing_service.dart';
+import 'package:ssr_space/services/cashflow_forecast.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/export_files.dart';
@@ -20,6 +21,7 @@ import 'package:ssr_space/services/export_saved_notify.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/month_compare.dart';
 import 'package:ssr_space/services/month_figures.dart';
+import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/report_export.dart';
 import 'package:ssr_space/services/report_pdf.dart';
@@ -60,6 +62,8 @@ class ReportsScreenState extends State<ReportsScreen> {
   // Angka eksak via RPC (ikut filter dompet); display via halaman.
   MonthFigures? fig;
   Map<String, double> prevCats = {};
+  // Prakiraan kas 30 hari (fail-open null = kartu sembunyi).
+  CashForecast? forecast;
   // Pagination display: halaman 100, sambung saat gulir mentok.
   final _scroll = ScrollController();
   bool hasMore = true;
@@ -98,6 +102,7 @@ class ReportsScreenState extends State<ReportsScreen> {
       items = [];
       hasMore = true;
       loadingMore = false;
+      forecast = null;
     });
     try {
       final orgId = await activeOrgId();
@@ -123,11 +128,21 @@ class ReportsScreenState extends State<ReportsScreen> {
       // Display: halaman terbaru (cukup untuk rekap + daftar awal).
       final txs = await TransactionService().listMonthPage(orgId, month);
       if (!mounted) return;
+      // Prakiraan kas: saldo kini + run-rate 30 hari + tagihan terjadwal.
+      // Fail-open null (kartu sembunyi), tak ganggu angka utama.
+      CashForecast? fc;
+      try {
+        fc = await _loadForecast(orgId);
+      } catch (_) {
+        fc = null;
+      }
+      if (!mounted) return;
       setState(() {
         items = txs;
         fig = cur;
         prevCats = prev;
         hasMore = txPageHasMore(txs.length, txPageSize);
+        forecast = fc;
         walletNames = {for (final w in ws) w.id: w.name};
         if (filterWallet != null && !walletNames.containsKey(filterWallet)) {
           filterWallet = null;
@@ -141,6 +156,52 @@ class ReportsScreenState extends State<ReportsScreen> {
         err = tr('r_err_load');
       });
     }
+  }
+
+  /// Prakiraan 30 hari dari hari ini: saldo dompet kini + run-rate
+  /// 30 hari terakhir + tagihan aktif terjadwal. Throw bila gagal
+  /// (pemanggil fail-open).
+  Future<CashForecast> _loadForecast(String orgId) async {
+    final bals = await WalletService().balances(orgId);
+    var start = 0.0;
+    for (final b in bals) {
+      start += b.balance;
+    }
+    final now = DateTime.now();
+    String ymd(DateTime d) =>
+        '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+    final today = ymd(now);
+    final hist = await TransactionService().listRange(
+      orgId,
+      ymd(now.subtract(const Duration(days: 29))),
+      ymd(now.add(const Duration(days: 1))),
+      limit: 500,
+    );
+    final rate = dailyRate(
+      [
+        for (final t in hist)
+          TxFlow(date: t.date ?? '', type: t.type, amount: t.amount),
+      ],
+      30,
+    );
+    final bills = await loadBills();
+    final dues = upcomingBills(
+      [
+        for (final b in bills)
+          BillDue(nextDue: b.nextDue, amount: b.amount, active: b.active),
+      ],
+      today,
+      forecastDays,
+    );
+    return projectForecast(
+      start: start,
+      inPerDay: rate.inPerDay,
+      outPerDay: rate.outPerDay,
+      dues: dues,
+      fromDate: today,
+    );
   }
 
   /// Angka sebulan (ikut filter dompet): RPC dulu, list penuh bila gagal.
@@ -402,6 +463,10 @@ class ReportsScreenState extends State<ReportsScreen> {
           onExportXlsx: () => _runExport(_exportXlsx),
           onExportPdf: () => _guardPdf(),
         ),
+        if (forecast != null && month == currentMonth()) ...[
+          const SizedBox(height: SsrSpace.md),
+          _ForecastCard(fc: forecast!),
+        ],
         if (deltas.isNotEmpty) ...[
           const SizedBox(height: SsrSpace.md),
           _CompareCard(deltas: deltas),
@@ -1577,6 +1642,177 @@ class _CompareRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Prakiraan kas 30 hari: garis saldo + angka akhir bulan + warning.
+/// Merah bila diprediksi minus; chart ikut colorScheme (dark aman).
+class _ForecastCard extends StatelessWidget {
+  final CashForecast fc;
+
+  const _ForecastCard({required this.fc});
+
+  /// Sumbu-Y kompak: 1500rb -> 1,5jt, 50000 -> 50rb.
+  String _short(double v) {
+    final a = v.abs();
+    final sign = v < 0 ? '-' : '';
+    if (a >= 1000000) {
+      final n = a / 1000000;
+      return '$sign${n.toStringAsFixed(n % 1 == 0 ? 0 : 1)}jt';
+    }
+    if (a >= 1000) {
+      final n = a / 1000;
+      return '$sign${n.toStringAsFixed(n % 1 == 0 ? 0 : 1)}rb';
+    }
+    return '$sign${a.toStringAsFixed(0)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final now = DateTime.now();
+    final lastDay = DateTime(now.year, now.month + 1, 0).day;
+    final endIdx = (lastDay - now.day).clamp(0, fc.points.length - 1);
+    final endVal = fc.points[endIdx];
+    final negative = fc.min < 0;
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(tr('cf_title'), style: theme.textTheme.titleSmall),
+          Text(tr('cf_sub'), style: theme.textTheme.bodySmall),
+          const SizedBox(height: SsrSpace.sm),
+          SizedBox(
+            height: 160,
+            child: LineChart(_data(scheme, negative)),
+          ),
+          const SizedBox(height: SsrSpace.sm),
+          Text(
+            tr('cf_end').replaceFirst('{m}', amt(endVal)),
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: endVal < 0 ? scheme.error : null,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          if (negative) ...[
+            const SizedBox(height: SsrSpace.sm),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: scheme.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(SsrRadius.chip),
+              ),
+              child: Text(
+                tr('cf_warn')
+                    .replaceFirst('{m}', amt(fc.min))
+                    .replaceFirst('{n}', '${fc.minDay}'),
+                style: TextStyle(
+                  color: scheme.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  LineChartData _data(ColorScheme scheme, bool negative) {
+    final pts = fc.points;
+    var lo = pts.first;
+    var hi = pts.first;
+    for (final v in pts) {
+      if (v < lo) lo = v;
+      if (v > hi) hi = v;
+    }
+    if ((hi - lo).abs() < 1) {
+      hi += 1;
+      lo -= 1;
+    }
+    final pad = (hi - lo) * 0.1;
+    return LineChartData(
+      minX: 0,
+      maxX: (pts.length - 1).toDouble(),
+      minY: lo - pad,
+      maxY: hi + pad,
+      lineTouchData: const LineTouchData(enabled: false),
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: false,
+        horizontalInterval: (hi - lo) / 3,
+      ),
+      titlesData: FlTitlesData(
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 44,
+            getTitlesWidget: (v, _) => Text(
+              _short(v),
+              style: const TextStyle(fontSize: 10),
+            ),
+          ),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            interval: 10,
+            getTitlesWidget: (v, _) => Text(
+              '${v.toInt()}',
+              style: const TextStyle(fontSize: 10),
+            ),
+          ),
+        ),
+        topTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+      ),
+      borderData: FlBorderData(show: false),
+      extraLinesData: negative
+          ? ExtraLinesData(
+              horizontalLines: [
+                HorizontalLine(
+                  y: 0,
+                  color: scheme.error,
+                  dashArray: [4, 4],
+                ),
+              ],
+            )
+          : const ExtraLinesData(),
+      lineBarsData: [
+        LineChartBarData(
+          spots: [
+            for (var i = 0; i < pts.length; i++) FlSpot(i.toDouble(), pts[i]),
+          ],
+          isCurved: true,
+          color: negative ? scheme.error : scheme.primary,
+          barWidth: 2.5,
+          dotData: const FlDotData(show: false),
+          belowBarData: BarAreaData(
+            show: true,
+            color: (negative ? scheme.error : scheme.primary)
+                .withValues(alpha: 0.15),
+          ),
+        ),
+        if (negative)
+          LineChartBarData(
+            spots: [FlSpot(fc.minDay.toDouble(), fc.min)],
+            color: Colors.transparent,
+            barWidth: 0,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
+                radius: 4,
+                color: scheme.error,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

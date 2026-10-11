@@ -1349,6 +1349,17 @@ const _t = <String, Map<String, String>>{
     'id': 'Laporan SSR SPACE (Excel)',
     'en': 'SSR SPACE report (Excel)',
   },
+  // Prakiraan kas (Batch 17, skenario waspada)
+  'cf_title': {'id': 'Prakiraan 30 hari', 'en': '30-day forecast'},
+  'cf_sub': {
+    'id': 'Skenario waspada: rata-rata + tagihan terjadwal. Seluruh dompet.',
+    'en': 'Cautious scenario: averages + scheduled bills. All wallets.',
+  },
+  'cf_end': {'id': 'Akhir bulan {m}', 'en': 'Month end {m}'},
+  'cf_warn': {
+    'id': 'Diprediksi minus {m}, {n} hari lagi',
+    'en': 'Predicted negative {m} in {n} days',
+  },
   'pdf_filter': {
     'id': 'Dompet: {w} • Jenis: {t}',
     'en': 'Wallet: {w} • Type: {t}',

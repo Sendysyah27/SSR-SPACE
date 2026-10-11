@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.28.0+102.
+Versi terpasang: 2.29.0+103.
+
+## Yang baru di 2.29.0+103
+
+1. Prakiraan kas di Laporan: grafik 30 hari dari saldo dompet + rata-rata belanja + tagihan terjadwal, angka akhir bulan, dan peringatan bila diprediksi minus.
 
 ## Yang baru di 2.28.0+102
 
