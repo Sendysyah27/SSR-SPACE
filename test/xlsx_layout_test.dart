@@ -6,7 +6,7 @@ void main() {
     expect(xlsxFitWidth(['ab', 'abcd']), 10);
     expect(xlsxFitWidth(['ab', 'abcd'], min: 4), 6);
     expect(xlsxFitWidth(['x']), 10);
-    expect(xlsxFitWidth([for (var i = 0; i < 60; i++) 'y'].join()), 50);
+    expect(xlsxFitWidth([List.filled(60, 'y').join()]), 50);
   });
 
   test('header ikut diukur', () {
