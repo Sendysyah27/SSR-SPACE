@@ -1328,6 +1328,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Laporan SSR SPACE (PDF)',
     'en': 'SSR SPACE report (PDF)',
   },
+  'r_share_xlsx': {
+    'id': 'Laporan SSR SPACE (Excel)',
+    'en': 'SSR SPACE report (Excel)',
+  },
   'pdf_filter': {
     'id': 'Dompet: {w} • Jenis: {t}',
     'en': 'Wallet: {w} • Type: {t}',

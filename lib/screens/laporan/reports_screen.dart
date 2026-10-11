@@ -23,6 +23,7 @@ import 'package:ssr_space/services/month_figures.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/report_export.dart';
 import 'package:ssr_space/services/report_pdf.dart';
+import 'package:ssr_space/services/report_xlsx.dart';
 import 'package:ssr_space/services/reports_topn.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/transfer_detect.dart';
@@ -283,6 +284,23 @@ class ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  Future<void> _exportXlsx() async {
+    final data = _exportItems(await _allItems());
+    final bytes = buildReportXlsx(data, walletNames);
+    if (bytes == null) throw StateError('xlsx kosong');
+    final base = exportBaseName(
+      month,
+      walletLabel: _exportWalletLabel(),
+      flow: flowFilter,
+    );
+    await _saveAndNotify(
+      base: base,
+      ext: 'xlsx',
+      shareText: tr('r_share_xlsx'),
+      write: (p) => File(p).writeAsBytes(bytes),
+    );
+  }
+
   /// Simpan ke Documents/ssr-space + notif Bagikan. Izin ditolak =
   /// fallback temp + share langsung + pesan jujur (bukan gagal).
   Future<void> _saveAndNotify({
@@ -381,6 +399,7 @@ class ReportsScreenState extends State<ReportsScreen> {
           exporting: exporting,
           hasItems: hasItems,
           onExportCsv: () => _runExport(_exportCsv),
+          onExportXlsx: () => _runExport(_exportXlsx),
           onExportPdf: () => _guardPdf(),
         ),
         if (deltas.isNotEmpty) ...[
@@ -1570,6 +1589,7 @@ class _MonthlySummary extends StatelessWidget {
   final bool exporting;
   final bool hasItems;
   final VoidCallback onExportCsv;
+  final VoidCallback onExportXlsx;
   final VoidCallback onExportPdf;
 
   const _MonthlySummary({
@@ -1580,6 +1600,7 @@ class _MonthlySummary extends StatelessWidget {
     required this.exporting,
     required this.hasItems,
     required this.onExportCsv,
+    required this.onExportXlsx,
     required this.onExportPdf,
   });
 
@@ -1658,6 +1679,8 @@ class _MonthlySummary extends StatelessWidget {
         Row(
           children: [
             _exportButton('CSV', onExportCsv),
+            const SizedBox(width: SsrSpace.sm),
+            _exportButton('XLSX', onExportXlsx),
             const SizedBox(width: SsrSpace.sm),
             _exportButton('PDF', onExportPdf),
           ],

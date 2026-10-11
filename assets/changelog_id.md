@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.25.0+99.
+Versi terpasang: 2.26.0+100.
+
+## Yang baru di 2.26.0+100
+
+1. Ekspor Excel: laporan bulanan kini bisa diunduh sebagai .xlsx — 1 sheet Transaksi dengan tombol filter tiap kolom, baris judul beku, dan nominal berupa angka (bisa SUM). Tombol XLSX di Laporan, gratis seperti CSV.
 
 ## Yang baru di 2.25.0+99
 
