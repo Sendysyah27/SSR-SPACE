@@ -193,6 +193,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
   final _voice = VoiceInput();
   bool _listening = false;
   bool _voiceReady = false;
+  bool _voiceLookup = false;
   Future<void>? _voiceInitFuture;
   int _voiceLocaleCount = 0;
   String? _voiceLocale;
@@ -317,13 +318,15 @@ class _TxInputSheetState extends State<TxInputSheet> {
   }
 
   /// Siapkan recognizer sekali (diagnosa jumlah locale ikut disimpan
-  /// sebagai bukti bila init gagal di device).
-  Future<void> _initVoiceOnce() async {
+  /// sebagai bukti bila init gagal di device). [lookup] = ulangi dengan
+  /// intent-lookup bila start gagal padahal init lolos.
+  Future<void> _initVoiceOnce({bool lookup = false}) async {
     bool ok = false;
     var count = 0;
     String? indo;
     try {
       ok = await _voice.init(
+        intentLookup: lookup,
         onStatus: (s) {
           if (!mounted) return;
           if (s == 'done' || s == 'notListening') {
@@ -421,6 +424,24 @@ class _TxInputSheetState extends State<TxInputSheet> {
         onResult: onVoiceResult,
       );
       if (started) break;
+    }
+    // Fallback terakhir: sebagian build Android tak mendaftarkan intent
+    // recognizer default (init lolos, start gagal) → init ulang sekali
+    // dengan intent lookup lalu coba dengar lagi.
+    if (!started && !_voiceLookup && mounted) {
+      _voiceLookup = true;
+      await _initVoiceOnce(lookup: true);
+      if (!mounted) return;
+      if (_voiceReady) {
+        for (final attempt in voiceLocaleAttempts(_voiceLocale)) {
+          if (!mounted) break;
+          started = await _voice.listen(
+            localeId: attempt,
+            onResult: onVoiceResult,
+          );
+          if (started) break;
+        }
+      }
     }
     if (!started && mounted) {
       setState(() {

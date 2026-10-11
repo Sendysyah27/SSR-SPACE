@@ -12,15 +12,19 @@ class VoiceInput {
   /// Siapkan recognizer (panggil sekali). [onStatus] cth
   /// 'done'/'notListening'; [onError] terima kode error plugin.
   /// debugLogging nyala selama fase diagnosa bug mic (logcat saja).
+  /// [intentLookup]: workaround build yang intent recognizer default-nya
+  /// rusak (init lolos tapi listen gagal) — hanya jalur fallback.
   Future<bool> init({
     void Function(String status)? onStatus,
     void Function(String code)? onError,
+    bool intentLookup = false,
   }) async {
     try {
       return await _stt.initialize(
         onStatus: onStatus == null ? null : (s) => onStatus(s),
         onError: onError == null ? null : (e) => onError(e.errorMsg),
         debugLogging: true,
+        options: intentLookup ? [SpeechToText.androidIntentLookup] : null,
       );
     } catch (_) {
       return false;
