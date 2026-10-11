@@ -422,4 +422,30 @@ void main() {
     expect(c.name, 'TanpaNominal');
     expect(c.amount, 0);
   });
+
+  test('footer di bawah total bukan item (Kopi Kenangan)', () {
+    const raw = 'KOPI KENANGAN\n'
+        'Kopi Kenangan Mantan 19000\n'
+        'Matcha Latte 25000\n'
+        'Friend Chip Cookie 2 34000\n'
+        'TOTAL 78000\n'
+        'PT BURL BERKAH BOGA 19900\n'
+        'DKI JAKARTA 25000\n'
+        'NPWP 01.234.567.8-901.000\n'
+        'TERIMA KASIH';
+    final r = parseReceipt(raw);
+    expect(r.amount, 78000);
+    expect(r.merchant, 'KOPI KENANGAN');
+    expect(r.items, [
+      'Kopi Kenangan Mantan 19000',
+      'Matcha Latte 25000',
+      'Friend Chip Cookie 34000',
+    ]);
+  });
+
+  test('tanpa baris total: perilaku lama (fallback)', () {
+    const raw = 'TOKO KOPI\nKopi 25000';
+    final r = parseReceipt(raw);
+    expect(r.items, ['Kopi 25000']);
+  });
 }

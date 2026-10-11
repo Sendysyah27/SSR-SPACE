@@ -40,7 +40,7 @@ final _codeKey = RegExp(
 );
 /// Fragmen non-produk: server/wifi, order, alamat, member, kontak, dsb.
 final _fragKey = RegExp(
-  r'server|wifi|password|username|user\s?name|login|order|jalan|\bjl\b|kec\b|kab\b|kel\b|npwp|trxid|member|terima|kasih|layanan|stamp|poin|struk|transaksi|whatsapp|whats|tlp|telp|telepon|hubungi|\bhp\b|http|www|@',
+  r'server|wifi|password|username|user\s?name|login|order|jalan|\bjl\b|kec\b|kab\b|kel\b|npwp|trxid|member|terima|kasih|layanan|stamp|poin|struk|transaksi|whatsapp|whats|tlp|telp|telepon|hubungi|\bhp\b|http|www|@|^pt\b|^cv\b|^ud\b|tbk',
   caseSensitive: false,
 );
 
@@ -154,6 +154,18 @@ ReceiptData parseReceipt(String raw) {
       .where((l) => l.isNotEmpty)
       .toList();
   if (lines.isEmpty) return const ReceiptData();
+
+  // Batas item vs footer: baris total pertama (bukan "TOTAL ITEM" cacah).
+  // Item hanya dari zona pra-total; footer (PT, alamat, NPWP, terima
+  // kasih) di bawahnya tak boleh jadi item. Tanpa total = fallback
+  // perilaku lama (seluruh baris). Logika nominal tak disentuh.
+  var totalIdx = lines.length;
+  for (var i = 0; i < lines.length; i++) {
+    if (_isTotalLine(lines[i]) && !_countKey.hasMatch(lines[i])) {
+      totalIdx = i;
+      break;
+    }
+  }
 
   double? amount;
   double? grand;
@@ -383,7 +395,7 @@ ReceiptData parseReceipt(String raw) {
 
   final items = <String>[];
   double? voucher;
-  for (var i = 0; i < lines.length; i++) {
+  for (var i = 0; i < totalIdx; i++) {
     var l = lines[i];
     // Voucher/diskon: catat nominalnya, jangan jadi item.
     if (_voucherKey.hasMatch(l) && !_totalKey.hasMatch(l)) {
@@ -392,7 +404,8 @@ ReceiptData parseReceipt(String raw) {
       continue;
     }
     // Gabung baris terfragmentasi ("Kopi Kenangan Mantan" / "1 25000").
-    if (i + 1 < lines.length &&
+    // Intip dibatasi zona pra-total (jangan comot baris TOTAL).
+    if (i + 1 < totalIdx &&
         !_numRe.hasMatch(l) &&
         _isFragment(l) &&
         _shortHead(lines[i + 1])) {
