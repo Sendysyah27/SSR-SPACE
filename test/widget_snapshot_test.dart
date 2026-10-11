@@ -60,4 +60,14 @@ void main() {
     expect(widgetBudgetLeft({}, {}), 0);
     expect(widgetBudgetLeft({'Makan': 100000}, {'Makan': 150000}), -50000);
   });
+
+  test('kontrak provider: 4 kunci selalu ada (fix widget FC)', () {
+    final raw = formatSnapshot(date: '2026-10-11', text: '', masked: false);
+    expect(raw, contains('"date"'));
+    expect(raw, contains('"text"'));
+    expect(raw, contains('"text2"'));
+    expect(raw, contains('"masked"'));
+    // Provider baca via optString/optInt: tak pernah throw untuk format ini.
+    expect(parseSnapshot(raw)!.text2, '');
+  });
 }

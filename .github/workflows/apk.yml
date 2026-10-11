@@ -409,6 +409,11 @@ jobs:
           public class TodayWidgetProvider extends AppWidgetProvider {
               @Override
               public void onUpdate(Context c, AppWidgetManager m, int[] ids) {
+                  // Fix widget FC: ids kosong/null = tak ada kerja; semua
+                  // baca prefs + update per-id dijaga (Throwable, bukan
+                  // sekadar Exception) supaya satu widget rusak tak
+                  // menjatuhkan provider; launch null = tanpa tap.
+                  if (ids == null || ids.length == 0) return;
                   String title = "SSR SPACE";
                   String line = "Buka aplikasi untuk memuat";
                   String line2 = "";
@@ -424,7 +429,7 @@ jobs:
                           if (!text.isEmpty()) line = text;
                           line2 = o.optString("text2", "");
                       }
-                  } catch (Exception ignored) {
+                  } catch (Throwable ignored) {
                   }
                   for (int id : ids) {
                       RemoteViews v = new RemoteViews(
@@ -438,14 +443,19 @@ jobs:
                       try {
                           Intent launch = c.getPackageManager()
                                   .getLaunchIntentForPackage(c.getPackageName());
-                          PendingIntent pi = PendingIntent.getActivity(
-                                  c, 0, launch,
-                                  PendingIntent.FLAG_UPDATE_CURRENT
-                                          | PendingIntent.FLAG_IMMUTABLE);
-                          v.setOnClickPendingIntent(R.id.wg_root, pi);
-                      } catch (Exception ignored) {
+                          if (launch != null) {
+                              PendingIntent pi = PendingIntent.getActivity(
+                                      c, 0, launch,
+                                      PendingIntent.FLAG_UPDATE_CURRENT
+                                              | PendingIntent.FLAG_IMMUTABLE);
+                              v.setOnClickPendingIntent(R.id.wg_root, pi);
+                          }
+                      } catch (Throwable ignored) {
                       }
-                      m.updateAppWidget(id, v);
+                      try {
+                          m.updateAppWidget(id, v);
+                      } catch (Throwable ignored) {
+                      }
                   }
               }
           }
