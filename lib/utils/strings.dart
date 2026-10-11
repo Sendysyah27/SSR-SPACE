@@ -600,9 +600,9 @@ const _t = <String, Map<String, String>>{
     'id': 'Izin mic ditolak. Nyalakan di Pengaturan HP.',
     'en': 'Mic permission denied. Enable it in phone Settings.',
   },
-  'vc_unsupported': {
-    'id': 'Perangkat tak mendukung voice input.',
-    'en': 'Voice input not supported on this device.',
+  'vc_no_service': {
+    'id': 'Layanan suara tak tersedia. Update aplikasi Google.',
+    'en': 'Speech service unavailable. Update the Google app.',
   },
   'vc_error': {
     'id': 'Gagal mulai mic. Coba lagi.',

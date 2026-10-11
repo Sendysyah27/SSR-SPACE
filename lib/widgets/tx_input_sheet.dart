@@ -364,14 +364,24 @@ class _TxInputSheetState extends State<TxInputSheet> {
       ok = false;
     }
     if (!ok) {
-      // Bedakan izin-plugin vs tak-dukung via silang-cek plugin.
-      var granted = true;
+      // Pesan spesifik: izin vs layanan vs lainnya (diagnosa lokal,
+      // fallback locales bila init gagal).
+      var granted = false;
+      var available = false;
       try {
         granted = await _voice.hasPermission();
       } catch (_) {}
+      try {
+        available = await _voice.serviceAvailable();
+      } catch (_) {}
       if (!mounted) return;
       setState(
-        () => _quickStatus = tr(granted ? 'vc_unsupported' : 'vc_denied'),
+        () => _quickStatus = tr(
+          voiceInitKey(
+            permissionGranted: granted,
+            serviceAvailable: available,
+          ),
+        ),
       );
       return;
     }

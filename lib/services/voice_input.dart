@@ -1,3 +1,4 @@
+import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 // Voice input: pembungkus tipis plugin speech_to_text untuk sheet catat.
@@ -8,17 +9,31 @@ class VoiceInput {
 
   bool get isListening => _stt.isListening;
 
-  /// Siapkan recognizer. [onStatus] cth 'done'/'notListening';
-  /// [onError] terima kode error plugin (cth 'error_no_match').
+  /// Siapkan recognizer. Izin mic diminta eksplisit di sini (jangan
+  /// andalkan plugin saja): ditolak = false. [onStatus] cth
+  /// 'done'/'notListening'; [onError] terima kode error plugin.
   Future<bool> init({
     void Function(String status)? onStatus,
     void Function(String code)? onError,
   }) async {
     try {
+      final perm = await Permission.microphone.request();
+      if (!perm.isGranted) return false;
       return await _stt.initialize(
         onStatus: onStatus == null ? null : (s) => onStatus(s),
         onError: onError == null ? null : (e) => onError(e.errorMsg),
       );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// True bila layanan suara punya locale apa pun (= tersedia).
+  /// Dipakai diagnosa saat init gagal (bedakan izin vs layanan).
+  Future<bool> serviceAvailable() async {
+    try {
+      final locales = await _stt.locales();
+      return locales.isNotEmpty;
     } catch (_) {
       return false;
     }

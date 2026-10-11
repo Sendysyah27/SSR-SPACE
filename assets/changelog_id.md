@@ -8,6 +8,7 @@ Versi terpasang: 2.31.0+108.
 2. Template Excel SSR SPACE: judul + periode + header + TOTAL + border + zebra.
 3. Notifikasi ekspor kini bisa diketuk untuk buka file-nya langsung.
 4. Scan struk: animasi laser saat memproses + hasil tampil ala struk (produk, total, tanggal) dengan penanda bila belum yakin.
+5. Voice input: izin diminta eksplisit sebelum init + pesan gagal spesifik (izin/layanan/error) + coba default-dulu.
 
 ## Yang baru di 2.30.0+107
 
