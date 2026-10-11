@@ -1408,7 +1408,7 @@ class _DashAllowanceCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${tr('dash_allow_days').replaceFirst('{n}', '$days')}',
+                    tr('dash_allow_days').replaceFirst('{n}', '$days'),
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
