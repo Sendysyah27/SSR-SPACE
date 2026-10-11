@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.23.0+97.
+Versi terpasang: 2.24.0+98.
+
+## Yang baru di 2.24.0+98
+
+1. Patungan: pilih transaksi, pilih anggota workspace, bagi rata atau custom — terlihat siapa berutang ke siapa, tiap utang bisa ditandai lunas. Menu Profil → Patungan.
 
 ## Yang baru di 2.23.0+97
 

@@ -490,6 +490,57 @@ const _t = <String, Map<String, String>>{
     'id': 'Tagihan rutin penuh (30). Hapus yang tak dipakai dulu.',
     'en': 'Recurring bills are full (30). Delete an unused one first.',
   },
+  // Patungan (Batch 12, simpan prefs lokal, lunas = status)
+  'bs_title': {'id': 'Patungan', 'en': 'Bill splits'},
+  'bs_sub': {
+    'id': 'Bagi tagihan ke anggota workspace.',
+    'en': 'Split bills with workspace members.',
+  },
+  'bs_empty_t': {'id': 'Belum ada patungan', 'en': 'No bill splits yet'},
+  'bs_empty_s': {
+    'id': 'Pilih transaksi lalu bagi rata atau custom ke anggota.',
+    'en': 'Pick a transaction, then split it equally or custom.',
+  },
+  'bs_new': {'id': 'Patungan baru', 'en': 'New split'},
+  'bs_pick_tx': {'id': 'Pilih transaksi', 'en': 'Pick a transaction'},
+  'bs_tx_title': {'id': 'Judul', 'en': 'Title'},
+  'bs_members': {'id': 'Peserta', 'en': 'Participants'},
+  'bs_payer': {'id': 'Dibayar dulu oleh', 'en': 'Paid first by'},
+  'bs_equal': {'id': 'Rata', 'en': 'Equal'},
+  'bs_custom': {'id': 'Custom', 'en': 'Custom'},
+  'bs_next': {'id': 'Lanjut', 'en': 'Next'},
+  'bs_save': {'id': 'Simpan patungan', 'en': 'Save split'},
+  'bs_need_two': {
+    'id': 'Pilih minimal 2 peserta.',
+    'en': 'Pick at least 2 participants.',
+  },
+  'bs_err_number': {
+    'id': 'Isi semua porsi dengan angka.',
+    'en': 'Fill every share with a number.',
+  },
+  'bs_err_mismatch': {
+    'id': 'Jumlah porsi harus pas dengan total.',
+    'en': 'Shares must add up to the total.',
+  },
+  'bs_paid': {'id': 'Lunas {n}/{m}', 'en': 'Settled {n}/{m}'},
+  'bs_done': {'id': 'Lunas semua', 'en': 'All settled'},
+  'bs_owes': {
+    'id': '{a} berutang {m} ke {b}',
+    'en': '{a} owes {m} to {b}',
+  },
+  'bs_me': {'id': 'Saya', 'en': 'Me'},
+  'bs_settle': {'id': 'Tandai lunas', 'en': 'Mark settled'},
+  'bs_unsettle': {'id': 'Batalkan', 'en': 'Reopen'},
+  'bs_del_t': {'id': 'Hapus patungan', 'en': 'Delete split'},
+  'bs_del_s': {
+    'id': 'Hapus patungan ini? Transaksi asli tetap ada.',
+    'en': 'Delete this split? The original transaction stays.',
+  },
+  'bs_saved': {'id': 'Patungan tersimpan', 'en': 'Split saved'},
+  'bs_full': {
+    'id': 'Patungan penuh (30). Hapus yang tak dipakai dulu.',
+    'en': 'Bill splits are full (30). Delete an unused one first.',
+  },
   // Subkategori + meta (P2 subcategory-picker)
   'sub_hint': {'id': 'Subkategori (opsional)', 'en': 'Subcategory (optional)'},
   'sub_add': {'id': 'Tambah subkategori', 'en': 'Add subcategory'},

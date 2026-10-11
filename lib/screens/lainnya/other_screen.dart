@@ -27,6 +27,7 @@ import 'package:ssr_space/screens/lainnya/help_screen.dart';
 import 'package:ssr_space/screens/lainnya/arcade_screen.dart';
 import 'package:ssr_space/screens/lainnya/goals_screen.dart';
 import 'package:ssr_space/screens/lainnya/recurring_bills_screen.dart';
+import 'package:ssr_space/screens/lainnya/bill_splits_screen.dart';
 import 'package:ssr_space/screens/lainnya/subscriptions_screen.dart';
 import 'package:ssr_space/screens/lainnya/import_preview_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_screen.dart';
@@ -447,6 +448,7 @@ class _OtherScreenState extends State<OtherScreen> {
             onBudgets: _openBudgets,
             onHistory: () => _push(const TransactionsScreen()),
             onBills: () => _push(const RecurringBillsScreen()),
+            onSplits: () => _push(const BillSplitsScreen()),
             onSubs: () => _push(const SubscriptionsScreen()),
             onGoals: () => _push(const GoalsScreen()),
             onArcade: () => _push(const ArcadeScreen()),
@@ -486,6 +488,7 @@ class _HubList extends StatelessWidget {
   final VoidCallback onBudgets;
   final VoidCallback onHistory;
   final VoidCallback onBills;
+  final VoidCallback onSplits;
   final VoidCallback onSubs;
   final VoidCallback onGoals;
   final VoidCallback onArcade;
@@ -518,6 +521,7 @@ class _HubList extends StatelessWidget {
     required this.onBudgets,
     required this.onHistory,
     required this.onBills,
+    required this.onSplits,
     required this.onSubs,
     required this.onGoals,
     required this.onArcade,
@@ -548,6 +552,7 @@ class _HubList extends StatelessWidget {
         onBudgets: onBudgets,
         onHistory: onHistory,
         onBills: onBills,
+        onSplits: onSplits,
         onSubs: onSubs,
         onGoals: onGoals,
         onArcade: onArcade,
@@ -660,6 +665,7 @@ class _DataSection extends StatefulWidget {
   final VoidCallback onBudgets;
   final VoidCallback onHistory;
   final VoidCallback onBills;
+  final VoidCallback onSplits;
   final VoidCallback onSubs;
   final VoidCallback onGoals;
   final VoidCallback onArcade;
@@ -672,6 +678,7 @@ class _DataSection extends StatefulWidget {
     required this.onBudgets,
     required this.onHistory,
     required this.onBills,
+    required this.onSplits,
     required this.onSubs,
     required this.onGoals,
     required this.onArcade,
@@ -758,6 +765,13 @@ class _DataSectionState extends State<_DataSection> {
           icon: AppIcons.bills,
           title: tr('rb_title'),
           onTap: widget.onBills,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.transfer,
+          title: tr('bs_title'),
+          subtitle: tr('bs_sub'),
+          onTap: widget.onSplits,
         ),
         const Divider(height: 1),
         NavTile(
