@@ -1,12 +1,12 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/debt_track.dart';
-import 'package:ssr_space/services/month.dart';
-import 'package:ssr_space/services/month_figures.dart';
+import 'package:ssr_space/services/month.dart';import 'package:ssr_space/services/month_figures.dart';
 import 'package:ssr_space/services/networth.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/wallet_composition.dart';
 import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/screens/lainnya/debts_screen.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
@@ -325,7 +325,7 @@ class _TrendCard extends StatelessWidget {
                   drawVerticalLine: false,
                 ),
                 titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
+                  leftTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
                   bottomTitles: AxisTitles(
@@ -338,7 +338,8 @@ class _TrendCard extends StatelessWidget {
                     sideTitles: SideTitles(showTitles: false),
                   ),
                 ),
-                borderData: FlBorderData(show: false),                lineBarsData: [
+                borderData: FlBorderData(show: false),
+                lineBarsData: [
                   LineChartBarData(
                     spots: [
                       for (var i = 0; i < points.length; i++)
