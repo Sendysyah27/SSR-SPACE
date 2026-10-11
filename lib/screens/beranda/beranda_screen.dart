@@ -11,6 +11,9 @@ import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/dashboard_cards.dart';
 import 'package:ssr_space/services/allowance.dart';
 import 'package:ssr_space/services/debt_track.dart';
+import 'package:ssr_space/services/networth.dart';
+import 'package:ssr_space/services/wallet_composition.dart';
+import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/health_score.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/month_figures.dart';
@@ -27,6 +30,7 @@ import 'package:ssr_space/screens/lainnya/bill_splits_screen.dart';
 import 'package:ssr_space/screens/lainnya/debts_screen.dart';
 import 'package:ssr_space/screens/lainnya/goals_screen.dart';
 import 'package:ssr_space/screens/lainnya/nfc_cards_screen.dart';
+import 'package:ssr_space/screens/lainnya/net_worth_screen.dart';
 import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
 import 'package:ssr_space/screens/lainnya/recurring_bills_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_screen.dart';
@@ -105,6 +109,9 @@ class BerandaScreenState extends State<BerandaScreen> {
   /// Utang dashboard: prefs-lokal (tanpa server), fail-open kosong.
   List<DebtRecord> dashDebts = [];
 
+  /// Kekayaan bersih dashboard (null = gagal muat / tanpa data).
+  NetWorth? dashNet;
+
   /// Dashboard: urutan kartu + sembunyi + mode Susun (prefs, fail-open).
   List<String> dashOrder = kDashboardDefault;
   Set<String> dashHidden = {};
@@ -168,6 +175,7 @@ class BerandaScreenState extends State<BerandaScreen> {
     snapBudgetLeft = null;
     dashBudgets = [];
     dashAvgOut = 0;
+    dashNet = null;
     dashDebts = [];
     setState(() {
       loading = true;
@@ -222,6 +230,29 @@ class BerandaScreenState extends State<BerandaScreen> {
       } catch (_) {
         dashDebts = [];
       }
+      NetWorth? nw;
+      if (month == currentMonth()) {
+        try {
+          final ws = await WalletService().list(orgId);
+          final bals = await WalletService().balances(orgId);
+          final comp = composeComposition(
+            {for (final b in bals) b.walletId: b.balance},
+            {for (final w in ws) w.id: w.type},
+          );
+          final t = debtTotals(dashDebts);
+          final cand = netWorth(
+            liquid: comp.liquid,
+            savings: comp.savings,
+            investments: comp.investments,
+            receivable: t.receivable,
+            debt: t.debt,
+          );
+          nw = cand.hasData ? cand : null;
+        } catch (_) {
+          nw = null;
+        }
+      }
+      dashNet = nw;
       final now = DateTime.now();
       // Streak: tanggal ringan lintas bulan, fail-open (kartu sembunyi).
       DailyStreak? st;
@@ -591,7 +622,7 @@ class BerandaScreenState extends State<BerandaScreen> {
           ),
         );
       case 'allowance':
-        // Jatah milik bulan berjalan; tanpa budget = sembunyi.
+        // Jatah milik bulan berjalan (preseden kartu pace/health).
         if (month != currentMonth()) return const SizedBox.shrink();
         final left = snapBudgetLeft;
         if (left == null) return const SizedBox.shrink();
@@ -600,6 +631,28 @@ class BerandaScreenState extends State<BerandaScreen> {
           avgDailyOut: dashAvgOut,
           today: DateTime.now(),
           onOpen: _goBudget,
+        );
+      case 'networth':
+        if (month != currentMonth()) return const SizedBox.shrink();
+        final worth = dashNet;
+        if (worth == null) return const SizedBox.shrink();
+        return _DashNetWorthCard(
+          worth: worth,
+          onOpen: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NetWorthScreen()),
+          ),
+        );
+      case 'networth':
+        if (month != currentMonth()) return const SizedBox.shrink();
+        final worth = dashNet;
+        if (worth == null) return const SizedBox.shrink();
+        return _DashNetWorthCard(
+          worth: worth,
+          onOpen: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NetWorthScreen()),
+          ),
         );
       default:
         return const SizedBox.shrink();
@@ -1417,6 +1470,53 @@ class _DashAllowanceCard extends StatelessWidget {
             Text(
               '${amt(perDay)} · ${tr('dash_allow_per')}',
               style: theme.textTheme.titleSmall?.copyWith(
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Kartu ringkas kekayaan bersih: angka net + aset vs utang.
+/// Ketuk = layar detail.
+class _DashNetWorthCard extends StatelessWidget {
+  final NetWorth worth;
+  final VoidCallback onOpen;
+
+  const _DashNetWorthCard({required this.worth, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SectionCard(
+      child: InkWell(
+        onTap: onOpen,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tr('nw_title'),
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${tr('nw_assets')} ${amt(worth.assets)} · '
+                    '${tr('nw_debt')} ${amt(worth.debt)}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              amt(worth.net),
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: worth.net < 0 ? theme.colorScheme.error : null,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),

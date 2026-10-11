@@ -2,8 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ssr_space/services/dashboard_cards.dart';
 
 void main() {
-  test('default empat kartu berurutan', () {
-    expect(kDashboardDefault, ['budget', 'fitur', 'utang', 'allowance']);
+  test('default lima kartu berurutan', () {
+    expect(kDashboardDefault, [
+      'budget',
+      'fitur',
+      'utang',
+      'allowance',
+      'networth',
+    ]);
   });
 
   test('parse rusak jatuh ke default', () {
@@ -11,7 +17,7 @@ void main() {
     expect(parseDashboardOrder('ngawur'), kDashboardDefault);
     expect(
       parseDashboardOrder(['fitur', 'asing', 'budget']),
-      ['fitur', 'budget', 'utang', 'allowance'],
+      ['fitur', 'budget', 'utang', 'allowance', 'networth'],
     );
     expect(parseDashboardOrder([]), kDashboardDefault);
   });
@@ -19,12 +25,19 @@ void main() {
   test('order lama tanpa allowance dilengkapi di belakang', () {
     expect(
       parseDashboardOrder(['utang', 'budget', 'fitur']),
-      ['utang', 'budget', 'fitur', 'allowance'],
+      ['utang', 'budget', 'fitur', 'allowance', 'networth'],
+    );
+  });
+
+  test('order lama tanpa networth dilengkapi di belakang', () {
+    expect(
+      parseDashboardOrder(['utang', 'budget', 'fitur', 'allowance']),
+      ['utang', 'budget', 'fitur', 'allowance', 'networth'],
     );
   });
 
   test('round-trip via stringList prefs', () {
-    final order = ['utang', 'budget', 'fitur', 'allowance'];
+    final order = ['utang', 'budget', 'fitur', 'allowance', 'networth'];
     expect(parseDashboardOrder(List.of(order)), order);
   });
 

@@ -629,6 +629,19 @@ const _t = <String, Map<String, String>>{
   'dash_allow': {'id': 'Jatah harian', 'en': 'Daily allowance'},
   'dash_allow_per': {'id': 'per hari', 'en': 'per day'},
   'dash_allow_days': {'id': '{n} hari lagi', 'en': '{n} days left'},
+  // Kekayaan bersih (Batch 23, piutang = aset)
+  'nw_title': {'id': 'Kekayaan bersih', 'en': 'Net worth'},
+  'nw_assets': {'id': 'Aset', 'en': 'Assets'},
+  'nw_debt': {'id': 'Utang', 'en': 'Debts'},
+  'nw_liquid': {'id': 'Likuid', 'en': 'Liquid'},
+  'nw_savings': {'id': 'Tabungan', 'en': 'Savings'},
+  'nw_invest': {'id': 'Investasi', 'en': 'Investments'},
+  'nw_rec': {'id': 'Piutang', 'en': 'Receivables'},
+  'nw_trend': {'id': 'Tren 6 bulan', 'en': '6-month trend'},
+  'nw_est': {
+    'id': 'Estimasi dari arus kas; utang dianggap konstan.',
+    'en': 'Cash-flow estimate; debts assumed constant.',
+  },
   // Subkategori + meta (P2 subcategory-picker)
   'sub_hint': {'id': 'Subkategori (opsional)', 'en': 'Subcategory (optional)'},
   'sub_add': {'id': 'Tambah subkategori', 'en': 'Add subcategory'},

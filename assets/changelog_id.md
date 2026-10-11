@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.32.0+109.
+Versi terpasang: 2.33.0+110.
+
+## Yang baru di 2.33.0+110
+
+1. Kekayaan bersih: kartu di Beranda (total aset minus utang) + layar rincian per kategori (likuid, tabungan, investasi, piutang, utang) + grafik tren 6 bulan. Piutang dihitung sebagai aset.
 
 ## Yang baru di 2.32.0+109
 

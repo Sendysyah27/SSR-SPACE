@@ -3,7 +3,7 @@
 // via stringList, hidden di `dashboard_hidden` (pola reports_section_order).
 
 /// Id kartu yang dikenal, sekaligus urutan default.
-const kDashboardDefault = ['budget', 'fitur', 'utang', 'allowance'];
+const kDashboardDefault = ['budget', 'fitur', 'utang', 'allowance', 'networth'];
 
 /// Parse toleran: rusak/kosong/asing jatuh ke default (fail-open).
 /// Id default yang belum ada di simpanan lama dilengkapi di belakang
