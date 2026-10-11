@@ -212,3 +212,19 @@ String normalizeSpoken(String raw) => raw
     .replaceAll('rupiah', ' ')
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
+
+/// Kunci pesan untuk kode error recognizer (biar UI tak diam saat
+/// recognizer mati tanpa hasil): tak-terdengar -> coba lagi,
+/// izin -> pengaturan, sisanya -> generik.
+String voiceErrorKey(String code) {
+  final c = code.toLowerCase();
+  if (c.contains('no_match') ||
+      c.contains('speech_timeout') ||
+      c.contains('no_sound')) {
+    return 'vc_hear';
+  }
+  if (c.contains('permission') || c.contains('not_allowed')) {
+    return 'vc_denied';
+  }
+  return 'vc_error';
+}

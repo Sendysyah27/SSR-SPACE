@@ -8,11 +8,16 @@ class VoiceInput {
 
   bool get isListening => _stt.isListening;
 
-  /// Siapkan recognizer. [onStatus] cth 'done'/'notListening' (opsional).
-  Future<bool> init({void Function(String status)? onStatus}) async {
+  /// Siapkan recognizer. [onStatus] cth 'done'/'notListening';
+  /// [onError] terima kode error plugin (cth 'error_no_match').
+  Future<bool> init({
+    void Function(String status)? onStatus,
+    void Function(String code)? onError,
+  }) async {
     try {
       return await _stt.initialize(
         onStatus: onStatus == null ? null : (s) => onStatus(s),
+        onError: onError == null ? null : (e) => onError(e.errorMsg),
       );
     } catch (_) {
       return false;
@@ -30,7 +35,19 @@ class VoiceInput {
     return null;
   }
 
-  /// Dengarkan; hasil parsial + final via [onResult]. False bila gagal mulai.
+  /// Izin mic versi plugin (tanpa prompt). Silang-cek dengan
+  /// permission_handler bila init gagal.
+  Future<bool> hasPermission() async {
+    try {
+      return await _stt.hasPermission;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Dengarkan; hasil parsial + final via [onResult].
+  /// Jujur via [SpeechToText.isListening] (return listen() mentah
+  /// berupa dynamic, tak bisa dipercaya langsung).
   Future<bool> listen({
     required void Function(String words, bool finalResult) onResult,
     String? localeId,
@@ -46,7 +63,7 @@ class VoiceInput {
         onResult: (r) => onResult(r.recognizedWords, r.finalResult),
         listenOptions: options,
       );
-      return true;
+      return _stt.isListening;
     } catch (_) {
       return false;
     }

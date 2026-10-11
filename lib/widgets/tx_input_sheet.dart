@@ -308,7 +308,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
 
   /// Mic voice input: hasil dengar ditulis ke kolom ketik-cepat lalu
   /// diparse pipeline yang sama (prefill, tanpa simpan diam-diam).
-  /// Ketuk lagi = berhenti. Izin/dukungan gagal = status jujur.
+  /// Ketuk lagi = berhenti. Tiap kegagalan tampil di status (tak ada
+  /// lagi diam "mendengarkan" selamanya): izin, init, error recognizer,
+  /// gagal mulai, selesai-tanpa-hasil.
   Future<void> _toggleMic() async {
     if (_listening) {
       await _voice.stop();
@@ -330,16 +332,39 @@ class _TxInputSheetState extends State<TxInputSheet> {
     try {
       ok = await _voice.init(
         onStatus: (s) {
-          if ((s == 'done' || s == 'notListening') && mounted) {
-            setState(() => _listening = false);
+          if (!mounted) return;
+          if (s == 'done' || s == 'notListening') {
+            setState(() {
+              _listening = false;
+              // Recognizer berhenti tanpa hasil (timeout/diam): katakan,
+              // jangan biarkan status "mendengarkan" basi.
+              if (quickC.text.trim().isEmpty) {
+                _quickStatus = tr('vc_hear');
+              }
+            });
           }
+        },
+        onError: (code) {
+          if (!mounted) return;
+          setState(() {
+            _listening = false;
+            _quickStatus = tr(voiceErrorKey(code));
+          });
         },
       );
     } catch (_) {
       ok = false;
     }
     if (!ok) {
-      if (mounted) setState(() => _quickStatus = tr('vc_unsupported'));
+      // Bedakan izin-plugin vs tak-dukung via silang-cek plugin.
+      var granted = true;
+      try {
+        granted = await _voice.hasPermission();
+      } catch (_) {}
+      if (!mounted) return;
+      setState(
+        () => _quickStatus = tr(granted ? 'vc_unsupported' : 'vc_denied'),
+      );
       return;
     }
     final locale = await _voice.pickIndonesianLocale();

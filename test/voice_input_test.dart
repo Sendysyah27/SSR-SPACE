@@ -21,4 +21,15 @@ void main() {
   test('kosong tetap kosong', () {
     expect(normalizeSpoken('   '), '');
   });
+
+  test('kode error recognizer -> kunci pesan', () {
+    expect(voiceErrorKey('error_no_match'), 'vc_hear');
+    expect(voiceErrorKey('error_speech_timeout'), 'vc_hear');
+    expect(voiceErrorKey('error_no_sound'), 'vc_hear');
+    expect(voiceErrorKey('error_permission'), 'vc_denied');
+    expect(voiceErrorKey('error_insufficient_permissions'), 'vc_denied');
+    expect(voiceErrorKey('error_busy'), 'vc_error');
+    expect(voiceErrorKey('error_client'), 'vc_error');
+    expect(voiceErrorKey(''), 'vc_error');
+  });
 }

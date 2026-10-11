@@ -232,6 +232,8 @@ jobs:
                   '</manifest>',
                   '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n</manifest>',
               )
+          m.write_text(s)
+          assert 'android.permission.RECORD_AUDIO' in m.read_text()
           if 'android.hardware.nfc' not in s:
               s = s.replace(
                   '</manifest>',

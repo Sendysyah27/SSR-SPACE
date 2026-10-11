@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.30.0+105.
+Versi terpasang: 2.30.0+106.
+
+## Yang baru di 2.30.0+106
+
+1. Perbaikan voice input: mic yang mati diam-diam kini menampilkan sebabnya (tak terdengar/izin/gagal mulai), bukan stuck "mendengarkan".
 
 ## Yang baru di 2.30.0+105
 
