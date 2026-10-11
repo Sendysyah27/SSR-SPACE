@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.26.0+100.
+Versi terpasang: 2.27.0+101.
+
+## Yang baru di 2.27.0+101
+
+1. Widget layar utama: tampilkan sisa budget bulan ini + pengeluaran hari ini, ketuk untuk buka app, diperbarui tiap transaksi tersimpan (maksimal 30 menit bila app tak dibuka). Cara pakai: tahan layar utama → Widget → SSR SPACE.
 
 ## Yang baru di 2.26.0+100
 

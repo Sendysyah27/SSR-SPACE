@@ -80,8 +80,11 @@ class BerandaScreenState extends State<BerandaScreen> {
   int paceWarn = 0;
   int paceDanger = 0;
   List<MapEntry<String, BudgetPace>> paceNotes = [];
-  WeeklyInsight? insight;
-  String? insightDismissKey;
+
+  /// Sisa budget bulan tampil (null = tak ada budget / gagal hitung).
+  /// Dipakai snapshot widget; dihitung dari data yang sudah dipegang.
+  double? snapBudgetLeft;
+  WeeklyInsight? insight;  String? insightDismissKey;
   EmergencyStatus? emergency;
   SavingsGoal? nearGoal;
   double nearAuto = 0;
@@ -137,6 +140,7 @@ class BerandaScreenState extends State<BerandaScreen> {
   }
 
   Future<void> _load() async {
+    snapBudgetLeft = null;
     setState(() {
       loading = true;
       err = null;
@@ -265,9 +269,20 @@ class BerandaScreenState extends State<BerandaScreen> {
             if (sa != sb) return sa - sb;
             return da.compareTo(db);
           });
+          // Sisa budget snapshot widget: definisi sama dengan pace/health
+          // (non-tabungan, limit > 0). Nol query baru.
+          var left = 0.0;
+          var hasBudget = false;
+          for (final b in limits) {
+            if (isSavingCategory(b.category) || b.limit <= 0) continue;
+            hasBudget = true;
+            left += b.limit - (spent[b.category] ?? 0);
+          }
+          snapBudgetLeft = hasBudget ? left : null;
         } catch (_) {
           hb = null;
           notes = <MapEntry<String, BudgetPace>>[];
+          snapBudgetLeft = null;
         }
       }
       // Riwayat 12 bulan (1 query, dipakai insight + darurat + goal).
@@ -476,31 +491,33 @@ class BerandaScreenState extends State<BerandaScreen> {
     );
   }
 
-  /// Snapshot widget hari ini: surplus tanggal berjalan saja (bukan
-  /// sebulan), ditulis fire-and-forget agar UI tak menunggu IO prefs.
-  /// Fail-open total (2.13.1 FC dari trigger widget di path ini): body
-  /// sync dibungkus try-catch + future tak pernah rethrow ke zone.
+  /// Snapshot widget home: keluar hari ini + sisa budget bulan berjalan.
+  /// Ditulis fire-and-forget agar UI tak menunggu IO prefs. Fail-open
+  /// total (2.13.1 FC dari trigger widget di path ini): body sync
+  /// dibungkus try-catch + future tak pernah rethrow ke zone.
+  /// Tanpa channel refresh di sini (hanya jalur simpan) + hanya bulan
+  /// berjalan (snapshot widget selalu soal hari ini).
   void _pushTodaySnapshot(List<SaasTransaction> txs) {
     try {
+      if (month != currentMonth()) return;
       final now = DateTime.now();
       final today =
           '${now.year.toString().padLeft(4, '0')}-'
           '${now.month.toString().padLeft(2, '0')}-'
           '${now.day.toString().padLeft(2, '0')}';
-      var tIn = 0.0;
       var tOut = 0.0;
       for (final t in txs) {
         if (t.date != today) continue;
-        if (t.type == 'in') {
-          tIn += t.amount;
-        } else if (t.type == 'out') {
-          tOut += t.amount;
-        }
+        if (t.type == 'out') tOut += t.amount;
       }
+      final left = snapBudgetLeft;
       unawaited(
         refreshTodayWidget(
           date: today,
-          surplus: tIn - tOut,
+          text: tr('wg_out_today').replaceFirst('{m}', amt(tOut)),
+          text2: left == null
+              ? ''
+              : tr('wg_budget_left').replaceFirst('{m}', amt(left)),
         ).catchError((_) {}),
       );
     } catch (_) {

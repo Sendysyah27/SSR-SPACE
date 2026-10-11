@@ -403,6 +403,7 @@ jobs:
               public void onUpdate(Context c, AppWidgetManager m, int[] ids) {
                   String title = "SSR SPACE";
                   String line = "Buka aplikasi untuk memuat";
+                  String line2 = "";
                   try {
                       SharedPreferences p = c.getSharedPreferences(
                               "FlutterSharedPreferences", Context.MODE_PRIVATE);
@@ -413,6 +414,7 @@ jobs:
                           String text = o.optString("text", "");
                           if (!date.isEmpty()) title = "SSR \\u2022 " + date;
                           if (!text.isEmpty()) line = text;
+                          line2 = o.optString("text2", "");
                       }
                   } catch (Exception ignored) {
                   }
@@ -421,6 +423,10 @@ jobs:
                               c.getPackageName(), R.layout.today_widget);
                       v.setTextViewText(R.id.wg_title, title);
                       v.setTextViewText(R.id.wg_line, line);
+                      v.setTextViewText(R.id.wg_line2, line2);
+                      v.setViewVisibility(R.id.wg_line2, line2.isEmpty()
+                              ? android.view.View.GONE
+                              : android.view.View.VISIBLE);
                       try {
                           Intent launch = c.getPackageManager()
                                   .getLaunchIntentForPackage(c.getPackageName());
@@ -503,6 +509,11 @@ jobs:
                   android:textSize="16sp"
                   android:textStyle="bold"
                   android:textColor="?android:attr/textColorPrimary" />
+              <TextView android:id="@+id/wg_line2"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:textSize="13sp"
+                  android:textColor="?android:attr/textColorSecondary" />
           </LinearLayout>
           ''')
           info = pathlib.Path('android/app/src/main/res/xml/today_widget_info.xml')
@@ -511,7 +522,7 @@ jobs:
           <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
               android:minWidth="180dp"
               android:minHeight="80dp"
-              android:updatePeriodMillis="0"
+              android:updatePeriodMillis="1800000"
               android:initialLayout="@layout/today_widget"
               android:resizeMode="horizontal"
               android:widgetCategory="home_screen" />
@@ -545,6 +556,130 @@ jobs:
           assert (pkgdir / 'SsrQsTile.java').exists()
           assert lay.exists() and info.exists()
           print('widget+qs-tile inject ok:', dotted)
+          EOF
+      - run: |
+          python3 - <<'EOF'
+          import glob, pathlib
+          # Channel 'ssr_space/widget' -> siarkan APPWIDGET_UPDATE agar
+          # TodayWidgetProvider menggambar ulang snapshot terbaru SEKARANG.
+          # Dipanggil Dart HANYA dari jalur simpan (bukan tiap load) —
+          # riwayat 2.13.1: pola tiap-load ikut tersangka FC.
+          # Tahan dua template MainActivity (FlutterActivity maupun
+          # FlutterFragmentActivity pasca-fix biometrik, Kotlin/Java).
+          # Gagal = assert merah di sini, bukan FC di HP user.
+          mains = glob.glob('android/app/src/main/kotlin/**/MainActivity.*',
+                              recursive=True)
+          mains += glob.glob('android/app/src/main/java/**/MainActivity.*',
+                               recursive=True)
+          assert len(mains) == 1, f'MainActivity tak ketemu: {mains}'
+          p = pathlib.Path(mains[0])
+          s = p.read_text()
+          if 'ssr_space/widget' not in s:
+              if p.suffix == '.kt':
+                  hit = False
+                  for base in ('FlutterActivity', 'FlutterFragmentActivity'):
+                      imp = f'import io.flutter.embedding.android.{base}'
+                      if imp in s:
+                          s = s.replace(
+                              imp,
+                              'import android.appwidget.AppWidgetManager\n'
+                              'import android.content.ComponentName\n'
+                              'import android.content.Intent\n'
+                              f'{imp}\n'
+                              'import io.flutter.embedding.engine.FlutterEngine\n'
+                              'import io.flutter.plugin.common.MethodChannel',
+                          )
+                          hit = True
+                          break
+                  assert hit, 'import activity tak dikenal'
+                  body = '''
+              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+                  super.configureFlutterEngine(flutterEngine)
+                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
+                          "ssr_space/widget").setMethodCallHandler { call, result ->
+                      if (call.method == "refresh") {
+                          try {
+                              val c = applicationContext
+                              val mgr = AppWidgetManager.getInstance(c)
+                              val ids = mgr.getAppWidgetIds(ComponentName(
+                                      c, TodayWidgetProvider::class.java))
+                              if (ids.isNotEmpty()) {
+                                  val intent = Intent(c,
+                                          TodayWidgetProvider::class.java)
+                                  intent.action = AppWidgetManager
+                                          .ACTION_APPWIDGET_UPDATE
+                                  intent.putExtra(AppWidgetManager
+                                          .EXTRA_APPWIDGET_IDS, ids)
+                                  c.sendBroadcast(intent)
+                              }
+                              result.success(true)
+                          } catch (e: Exception) {
+                              result.success(false)
+                          }
+                      } else {
+                          result.notImplemented()
+                      }
+                  }
+              }'''
+                  if s.rstrip().endswith(')'):
+                      s = s.rstrip() + ' {' + body + '\n}\n'
+                  else:
+                      assert s.rstrip().endswith('}'), 'body MainActivity aneh'
+                      s = s.rstrip()[:-1] + body + '\n}\n'
+              elif p.suffix == '.java':
+                  if 'import androidx.annotation.NonNull;' not in s:
+                      assert 'import io.flutter.embedding.engine.FlutterEngine;' in s, 'import engine tak ada'
+                      s = s.replace(
+                          'import io.flutter.embedding.engine.FlutterEngine;',
+                          'import androidx.annotation.NonNull;\nimport io.flutter.embedding.engine.FlutterEngine;',
+                      )
+                  for imp in ('import android.appwidget.AppWidgetManager;',
+                              'import android.content.ComponentName;',
+                              'import android.content.Intent;'):
+                      if imp not in s:
+                          assert 'import io.flutter.embedding.engine.FlutterEngine;' in s, 'import engine tak ada'
+                          s = s.replace(
+                              'import io.flutter.embedding.engine.FlutterEngine;',
+                              imp + '\nimport io.flutter.embedding.engine.FlutterEngine;',
+                          )
+                  if 'import io.flutter.plugin.common.MethodChannel;' not in s:
+                      s = s.replace(
+                          'import io.flutter.embedding.engine.FlutterEngine;',
+                          'import io.flutter.embedding.engine.FlutterEngine;\nimport io.flutter.plugin.common.MethodChannel;',
+                      )
+                  body = '''
+              @Override
+              public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
+                  super.configureFlutterEngine(flutterEngine);
+                  new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                          "ssr_space/widget").setMethodCallHandler((call, result) -> {
+                      if (call.method.equals("refresh")) {
+                          try {
+                              android.content.Context c = getApplicationContext();
+                              AppWidgetManager mgr = AppWidgetManager.getInstance(c);
+                              int[] ids = mgr.getAppWidgetIds(new ComponentName(c, TodayWidgetProvider.class));
+                              if (ids.length > 0) {
+                                  Intent intent = new Intent(c, TodayWidgetProvider.class);
+                                  intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+                                  intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
+                                  c.sendBroadcast(intent);
+                              }
+                              result.success(true);
+                          } catch (Exception e) {
+                              result.success(false);
+                          }
+                      } else {
+                          result.notImplemented();
+                      }
+                  });
+              }'''
+                  assert s.rstrip().endswith('}'), 'body MainActivity aneh'
+                  s = s.rstrip()[:-1] + body + '\n}\n'
+              else:
+                  raise SystemExit(f'ekstensi aneh: {p.suffix}')
+          p.write_text(s)
+          assert 'ssr_space/widget' in p.read_text(), 'channel hilang'
+          print('widget channel ok')
           EOF
       - name: Setup release signing
         env:

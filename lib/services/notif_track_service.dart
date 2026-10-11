@@ -11,6 +11,7 @@ import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/budget_alert_notify.dart';
 import 'package:ssr_space/services/notif_parse.dart';
+import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transfer_detect.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/plan_limits.dart';
@@ -437,6 +438,8 @@ class NotifTrack {
         n.status = tr('st_saved');
         // Alert budget baru (bila tembus): idempoten, fail-silent.
         unawaited(BudgetAlertNotify.check(orgId));
+        // Snapshot + refresh widget home: fail-silent.
+        unawaited(refreshBudgetWidgetSnapshot(orgId).catchError((_) {}));
         if (txId != null) {
           final pair = await _tryAutoMerge(orgId, txId);
           if (pair != null) {
@@ -506,6 +509,8 @@ class NotifTrack {
       n.type = type;
       n.status = tr('st_saved');
       unawaited(BudgetAlertNotify.check(orgId));
+      // Snapshot + refresh widget home: fail-silent.
+      unawaited(refreshBudgetWidgetSnapshot(orgId).catchError((_) {}));
       if (txId != null) {
         await AutoSavedNotify.showSaved(
           txId: txId,

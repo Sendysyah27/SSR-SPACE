@@ -17,6 +17,7 @@ import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
 import 'package:ssr_space/services/space_service.dart';
+import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/tx_validation.dart';
@@ -531,6 +532,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
       } catch (_) {}
       // Alert budget baru (bila tembus): idempoten, fail-silent.
       unawaited(BudgetAlertNotify.check(widget.orgId));
+      // Snapshot + refresh widget home: fail-silent.
+      unawaited(refreshBudgetWidgetSnapshot(widget.orgId).catchError((_) {}));
       if (!mounted) return;
       Navigator.pop(context, 'saved');
     } catch (e) {

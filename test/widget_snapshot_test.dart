@@ -35,4 +35,29 @@ void main() {
     expect(parseSnapshot('bukan json'), isNull);
     expect(parseSnapshot('{"date":"2026-09-27"}'), isNull);
   });
+
+  test('baris kedua round-trip', () {
+    final raw = formatSnapshot(
+      date: '2026-10-11',
+      text: 'Keluar Rp20.000',
+      text2: 'Sisa budget Rp80.000',
+      masked: false,
+    );
+    final s = parseSnapshot(raw)!;
+    expect(s.text2, 'Sisa budget Rp80.000');
+  });
+
+  test('format lama tanpa baris kedua tetap terbaca', () {
+    final raw = formatSnapshot(date: '2026-10-11', text: 'x', masked: false);
+    expect(parseSnapshot(raw)!.text2, '');
+  });
+
+  test('sisa budget = jumlah limit kurang belanja', () {
+    expect(
+      widgetBudgetLeft({'Makan': 100000, 'Belanja': 50000}, {'Makan': 30000}),
+      120000,
+    );
+    expect(widgetBudgetLeft({}, {}), 0);
+    expect(widgetBudgetLeft({'Makan': 100000}, {'Makan': 150000}), -50000);
+  });
 }

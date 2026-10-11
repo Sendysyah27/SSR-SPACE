@@ -1,4 +1,4 @@
 /// Versi app — ikut di-bump bersama pubspec.yaml (tanpa package_info_plus).
 class AppInfo {
-  static const String version = '2.26.0+100';
+  static const String version = '2.27.0+101';
 }

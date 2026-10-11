@@ -10,6 +10,7 @@ import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/services/budget_alerts.dart';
 import 'package:ssr_space/services/budget_pace.dart';
 import 'package:ssr_space/services/budget_service.dart';
+import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/month.dart';
@@ -98,6 +99,8 @@ class BudgetsScreenState extends State<BudgetsScreen> {
         alertsSeen = s;
         loading = false;
       });
+      // Snapshot + refresh widget home: fail-silent (sisa budget berubah).
+      unawaited(refreshBudgetWidgetSnapshot(orgId).catchError((_) {}));
     } catch (_) {
       if (!mounted) return;
       setState(() {

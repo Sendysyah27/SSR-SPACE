@@ -598,8 +598,15 @@ const _t = <String, Map<String, String>>{
     'en': 'Name must not contain >.',
   },
   // Widget hari ini (P2 widget-qs-tile)
-  'wg_today': {'id': 'Hari ini', 'en': 'Today'},
   'wg_open': {'id': 'Buka app untuk memuat', 'en': 'Open the app to load'},
+  'wg_out_today': {
+    'id': 'Keluar hari ini {m}',
+    'en': 'Out today {m}',
+  },
+  'wg_budget_left': {
+    'id': 'Sisa budget {m}',
+    'en': 'Budget left {m}',
+  },
   // Lainnya
   'o_logout_t': {'id': 'Keluar dari akun?', 'en': 'Log out of your account?'},
   'o_logout': {'id': 'Keluar', 'en': 'Log out'},
