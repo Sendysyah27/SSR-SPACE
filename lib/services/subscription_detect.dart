@@ -1,10 +1,9 @@
-/// Pelacak langganan: deteksi pola bayar berulang dari riwayat.
-/// Murni Dart (tanpa Flutter/Supabase) supaya bisa di-test lokal.
-///
-/// Aturan grup: label ternormalisasi + nominal sama persis.
-/// Aturan interval: tiap jeda bayar berurutan 21–40 hari (~30 hari).
-/// 3x+ konsisten = [SubscriptionCandidate.probable] (Pasti),
-/// 2x = Mungkin. Mingguan (jeda <21) dan acak (>40) ditolak.
+// Pelacak langganan: deteksi pola bayar berulang dari riwayat.
+// Murni Dart (tanpa Flutter/Supabase) supaya bisa di-test lokal.
+//
+// Aturan grup: label ternormalisasi + nominal sama persis.
+// Aturan interval: tiap jeda bayar berurutan 21-40 hari (~30 hari).
+// 3x+ konsisten = Pasti, 2x = Mungkin. Mingguan dan acak ditolak.
 
 /// Jeda minimum/maksimum antar bayar agar dihitung langganan bulanan.
 const subMinGapDays = 21;
