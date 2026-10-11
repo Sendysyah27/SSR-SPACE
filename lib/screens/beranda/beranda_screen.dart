@@ -8,6 +8,7 @@ import 'package:ssr_space/services/budget_pace.dart';
 import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/calm_streak.dart';
 import 'package:ssr_space/services/category_meta.dart';
+import 'package:ssr_space/services/dashboard_cards.dart';
 import 'package:ssr_space/services/health_score.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/month_figures.dart';
@@ -84,6 +85,11 @@ class BerandaScreenState extends State<BerandaScreen> {
   /// Sisa budget bulan tampil (null = tak ada budget / gagal hitung).
   /// Dipakai snapshot widget; dihitung dari data yang sudah dipegang.
   double? snapBudgetLeft;
+
+  /// Dashboard: urutan kartu + sembunyi + mode Susun (prefs, fail-open).
+  List<String> dashOrder = kDashboardDefault;
+  Set<String> dashHidden = {};
+  bool arranging = false;
   WeeklyInsight? insight;  String? insightDismissKey;
   EmergencyStatus? emergency;
   SavingsGoal? nearGoal;
@@ -148,6 +154,12 @@ class BerandaScreenState extends State<BerandaScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
+      try {
+        dashOrder = parseDashboardOrder(
+          prefs.getStringList('dashboard_order'),
+        );
+        dashHidden = (prefs.getStringList('dashboard_hidden') ?? []).toSet();
+      } catch (_) {}
       final orgId = prefs.getString('active_org_id') ?? '';
       if (orgId.isEmpty) {
         setState(() {
@@ -491,6 +503,109 @@ class BerandaScreenState extends State<BerandaScreen> {
     );
   }
 
+  /// Simpan order + hidden dashboard (fire-and-forget, fail-silent).
+  Future<void> _saveDashPrefs() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setStringList('dashboard_order', dashOrder);
+      await p.setStringList('dashboard_hidden', dashHidden.toList());
+    } catch (_) {}
+  }
+
+  void _dashMove(String id, int dir) {
+    setState(() => dashOrder = moveDashboardCard(dashOrder, id, dir));
+    unawaited(_saveDashPrefs().catchError((_) {}));
+  }
+
+  void _dashToggleHide(String id) {
+    final next = {...dashHidden};
+    if (next.contains(id)) {
+      next.remove(id);
+    } else {
+      next.add(id);
+    }
+    setState(() => dashHidden = next);
+    unawaited(_saveDashPrefs().catchError((_) {}));
+  }
+
+  /// Dispatcher kartu dashboard: Task 3-4 mengisi case budget/fitur/utang.
+  Widget _dashCard(String id) {
+    switch (id) {
+      case 'budget':
+      case 'fitur':
+      case 'utang':
+        return const SizedBox.shrink();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  /// Seksi dashboard di bawah hero: header Susun + kartu sesuai order.
+  List<Widget> _dashSection() {
+    final theme = Theme.of(context);
+    final rows = <Widget>[
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              tr('dash_title'),
+              style: theme.textTheme.titleMedium,
+            ),
+          ),
+          TextButton(
+            onPressed: () => setState(() => arranging = !arranging),
+            child: Text(tr(arranging ? 'dash_done' : 'dash_arrange')),
+          ),
+        ],
+      ),
+    ];
+    for (final id in dashOrder) {
+      final hidden = isDashboardHidden(dashHidden, id);
+      if (!arranging && hidden) continue;
+      rows.add(const SizedBox(height: SsrSpace.md));
+      if (!arranging) {
+        rows.add(_dashCard(id));
+        continue;
+      }
+      rows.add(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Opacity(
+                opacity: hidden ? 0.45 : 1,
+                child: _dashCard(id),
+              ),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const DuoIcon(AppIcons.arrowUp),
+                  tooltip: tr('dash_arrange'),
+                  onPressed: () => _dashMove(id, -1),
+                ),
+                IconButton(
+                  icon: const DuoIcon(AppIcons.arrowDown),
+                  tooltip: tr('dash_arrange'),
+                  onPressed: () => _dashMove(id, 1),
+                ),
+                IconButton(
+                  icon: DuoIcon(
+                    hidden ? AppIcons.eyeOff : AppIcons.eye,
+                  ),
+                  tooltip: tr(hidden ? 'dash_show' : 'dash_hide'),
+                  onPressed: () => _dashToggleHide(id),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+    return rows;
+  }
+
   /// Snapshot widget home: keluar hari ini + sisa budget bulan berjalan.
   /// Ditulis fire-and-forget agar UI tak menunggu IO prefs. Fail-open
   /// total (2.13.1 FC dari trigger widget di path ini): body sync
@@ -694,6 +809,8 @@ class BerandaScreenState extends State<BerandaScreen> {
         ),
         const SizedBox(height: SsrSpace.sm),
         _surplusCard(totalIn, totalOut, surplus, inShare, pctOut),
+        const SizedBox(height: SsrSpace.md),
+        ..._dashSection(),
         if (streak != null) ...[
           const SizedBox(height: SsrSpace.md),
           _StreakCard(streak: streak!),

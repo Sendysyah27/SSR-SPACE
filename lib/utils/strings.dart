@@ -585,6 +585,16 @@ const _t = <String, Map<String, String>>{
     'id': 'Catatan penuh (50). Hapus yang tak dipakai dulu.',
     'en': 'Records are full (50). Delete an unused one first.',
   },
+  // Dashboard Beranda (Batch 16, kartu bisa disusun)
+  'dash_title': {'id': 'Dashboard', 'en': 'Dashboard'},
+  'dash_arrange': {'id': 'Susun', 'en': 'Arrange'},
+  'dash_done': {'id': 'Selesai', 'en': 'Done'},
+  'dash_show': {'id': 'Tampilkan kartu', 'en': 'Show card'},
+  'dash_hide': {'id': 'Sembunyikan kartu', 'en': 'Hide card'},
+  'dash_make_budget': {'id': 'Buat budget', 'en': 'Create budget'},
+  'dash_budget': {'id': 'Status budget', 'en': 'Budget status'},
+  'dash_feature': {'id': 'Fitur', 'en': 'Features'},
+  'dash_debt': {'id': 'Utang ringkas', 'en': 'Debts at a glance'},
   // Subkategori + meta (P2 subcategory-picker)
   'sub_hint': {'id': 'Subkategori (opsional)', 'en': 'Subcategory (optional)'},
   'sub_add': {'id': 'Tambah subkategori', 'en': 'Add subcategory'},
