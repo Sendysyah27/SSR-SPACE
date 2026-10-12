@@ -39,7 +39,7 @@ class AiDraftScreenState extends State<AiDraftScreen> {
   late TextEditingController taxC;
   late TextEditingController totalC;
   late TextEditingController payC;
-  final List<_RowEdit> rows = [];
+  final List<_RowEdit> _rows = [];
 
   @override
   void initState() {
@@ -58,7 +58,7 @@ class AiDraftScreenState extends State<AiDraftScreen> {
     );
     payC = TextEditingController(text: d.payment ?? '');
     for (final it in d.items) {
-      rows.add(
+      _rows.add(
         _RowEdit(
           n: it.name,
           q: '${it.qty}',
@@ -76,7 +76,7 @@ class AiDraftScreenState extends State<AiDraftScreen> {
     taxC.dispose();
     totalC.dispose();
     payC.dispose();
-    for (final r in rows) {
+    for (final r in _rows) {
       r.dispose();
     }
     super.dispose();
@@ -91,7 +91,7 @@ class AiDraftScreenState extends State<AiDraftScreen> {
   void _use() {
     final items = <ReceiptItem>[];
     final strs = <String>[];
-    for (final r in rows) {
+    for (final r in _rows) {
       final name = r.name.text.trim();
       if (name.isEmpty) continue;
       var qty = int.tryParse(r.qty.text.trim()) ?? 1;
@@ -135,11 +135,11 @@ class AiDraftScreenState extends State<AiDraftScreen> {
           ),
           const SizedBox(height: SsrSpace.md),
           _ItemsCard(
-            rows: rows,
-            onAdd: () => setState(() => rows.add(_RowEdit())),
+            rows: _rows,
+            onAdd: () => setState(() => _rows.add(_RowEdit())),
             onDel: (i) => setState(() {
-              rows[i].dispose();
-              rows.removeAt(i);
+              _rows[i].dispose();
+              _rows.removeAt(i);
             }),
           ),
           const SizedBox(height: SsrSpace.md),
