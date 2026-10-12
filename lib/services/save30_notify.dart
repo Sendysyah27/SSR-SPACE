@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/reminder_schedule.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -134,10 +135,10 @@ class Save30Notify {
         ),
       );
       await _plugin.show(
-        _dailyBase + 90 + milestone,
-        tr('sv30_mile_t'),
-        tr('sv30_mile').replaceFirst('{n}', '$milestone'),
-        details,
+        id: _dailyBase + 90 + milestone,
+        title: tr('sv30_mile_t'),
+        body: tr('sv30_mile').replaceFirst('{n}', '$milestone'),
+        notificationDetails: details,
       );
     } catch (err, st) {
       ErrorReporter.capture(err, st, context: 'save30_celebrate');
