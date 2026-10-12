@@ -37,6 +37,18 @@ void main() {
     expect(out, ['A', 'B']);
   });
 
+  test('rowTol fleksibel per template', () {
+    final boxes = [
+      b('Kopi', 10, 100, 100, 120),
+      b('19000', 300, 112, 380, 132),
+    ];
+    expect(spatialLines(boxes, rowTol: 0.9), ['Kopi 19000']);
+    expect(
+      spatialLines(boxes, rowTol: 0.1),
+      ['Kopi', '19000'],
+    );
+  });
+
   test('kosong dibuang', () {
     expect(spatialLines([b('  ', 0, 0, 1, 1)]), isEmpty);
     expect(spatialLines([]), isEmpty);

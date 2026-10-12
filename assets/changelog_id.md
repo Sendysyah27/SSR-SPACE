@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.44.0+121.
+Versi terpasang: 2.45.0+122.
+
+## Yang baru di 2.45.0+122
+
+1. Ketuk catatan transaksi untuk baca selengkapnya (dialog, bisa disalin).
+2. Struk makin kenal format: minimarket, resto/kafe/fastfood, SPBU, apotek, warung — tiap tipe pakai template baca sendiri. Hasil voice & struk ikut tipe nota yang terdeteksi.
+3. Mic Android lama (MIUI/POCO dkk): recognizer kini dipilih eksplisit (Google dulu, lalu bawaan HP) agar tak nyangkut di layanan suara rusak. Bila tetap gagal, pesan menyarankan cek aplikasi asisten default.
 
 ## Yang baru di 2.44.0+121
 

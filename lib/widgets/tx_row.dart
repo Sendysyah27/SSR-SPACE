@@ -134,7 +134,22 @@ class TxRow extends StatelessWidget {
                     ],
                     if (tx.note != null && tx.note!.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text(tx.note!, style: theme.textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      GestureDetector(
+                        onTap: () => showDialog<void>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text(tr('tx_f_note')),
+                            content: SelectableText(tx.note!),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: Text(tr('rcp_raw_close')),
+                              ),
+                            ],
+                          ),
+                        ),
+                        child: Text(tx.note!, style: theme.textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      ),
                     ],
                   ],
                 ),

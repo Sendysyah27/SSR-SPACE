@@ -8,7 +8,7 @@
 // Kategori yang tak ada di [categories] tak pernah disarankan.
 
 /// Jenis dokumen struk.
-enum ReceiptDocKind { minimarket, dining, generic }
+enum ReceiptDocKind { minimarket, dining, fuel, pharmacy, generic }
 
 /// Satu pola: jenis + keyword merchant + kategori bila merchant cocok.
 class ReceiptDocPattern {
@@ -32,6 +32,14 @@ const kReceiptDocPatterns = [
       'kopi kenangan',
       'janji jiwa',
       'fore coffee',
+      'bangor',
+      'burger',
+      'kfc',
+      'mcdonald',
+      'pizza',
+      'starbucks',
+      'mixue',
+      'chatime',
       'cafe',
       'resto',
       'rumah makan',
@@ -41,8 +49,37 @@ const kReceiptDocPatterns = [
     'Makanan',
   ),
   ReceiptDocPattern(
-    ReceiptDocKind.generic,
-    ['apotek', 'kimia farma'],
+    ReceiptDocKind.minimarket,
+    [
+      'superindo',
+      'hypermart',
+      'transmart',
+      'lotte mart',
+      'giant',
+    ],
+    'Belanja',
+  ),
+  ReceiptDocPattern(
+    ReceiptDocKind.fuel,
+    [
+      'spbu',
+      'pertamina',
+      'pertalite',
+      'pertamax',
+      'shell',
+      'vivo energy',
+    ],
+    'Transportasi',
+  ),
+  ReceiptDocPattern(
+    ReceiptDocKind.pharmacy,
+    [
+      'apotek',
+      'kimia farma',
+      'k24',
+      'guardian',
+      'watsons',
+    ],
     'Kesehatan',
   ),
 ];
@@ -80,6 +117,51 @@ ReceiptDocKind detectReceiptKind(String raw) {
   }
   return ReceiptDocKind.generic;
 }
+
+/// Profil template bounding-box per jenis layout (fleksibel per nota):
+/// toleransi baris (× tinggi), pairing harga-yatim, kolom harga kanan.
+class LayoutProfile {
+  final double rowTol;
+  final bool pairOrphans;
+  final bool priceRight;
+  const LayoutProfile({
+    required this.rowTol,
+    required this.pairOrphans,
+    required this.priceRight,
+  });
+}
+
+const kLayoutProfiles = <ReceiptDocKind, LayoutProfile>{
+  ReceiptDocKind.minimarket: LayoutProfile(
+    rowTol: 0.5,
+    pairOrphans: true,
+    priceRight: true,
+  ),
+  ReceiptDocKind.dining: LayoutProfile(
+    rowTol: 0.5,
+    pairOrphans: true,
+    priceRight: false,
+  ),
+  ReceiptDocKind.fuel: LayoutProfile(
+    rowTol: 0.6,
+    pairOrphans: false,
+    priceRight: true,
+  ),
+  ReceiptDocKind.pharmacy: LayoutProfile(
+    rowTol: 0.5,
+    pairOrphans: true,
+    priceRight: true,
+  ),
+  ReceiptDocKind.generic: LayoutProfile(
+    rowTol: 0.5,
+    pairOrphans: true,
+    priceRight: false,
+  ),
+};
+
+/// Profil template untuk jenis layout (default generic, tak pernah null).
+LayoutProfile layoutFor(ReceiptDocKind kind) =>
+    kLayoutProfiles[kind] ?? kLayoutProfiles[ReceiptDocKind.generic]!;
 
 /// Saran kategori atau null (tak ada yang cocok / tak ada di daftar).
 String? suggestReceiptCategory({

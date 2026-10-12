@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_layout.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 
@@ -64,8 +65,12 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
           }
         }
       } catch (_) {}
-      final seen =
-          boxes.isEmpty ? out.text : spatialLines(boxes).join('\n');
+      final seen = boxes.isEmpty
+          ? out.text
+          : spatialLines(
+              boxes,
+              rowTol: layoutFor(detectReceiptKind(out.text)).rowTol,
+            ).join('\n');
       lastRawOcrText = seen;
       if (seen.trim().isEmpty) {
         throw const ReceiptScanException('rcp_empty');

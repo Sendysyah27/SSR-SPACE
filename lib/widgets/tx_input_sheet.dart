@@ -494,7 +494,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
             isScrollControlled: true,
           builder: (_) => ReceiptResultSheet(
             data: data,
-            mirror: mirrorReceipt(raw),
+            mirror: mirrorReceipt(
+              raw,
+              pairOrphans: layoutFor(detectReceiptKind(raw)).pairOrphans,
+            ),
             onShowRaw: () => _showRawOcrDialog(raw),
           ),
           );

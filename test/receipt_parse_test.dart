@@ -530,6 +530,14 @@ void main() {
     expect(m[1].amount, 57500);
   });
 
+  test('mirror: pairOrphans mati untuk BBM', () {
+    const raw = 'Toko\nkopi susu\nTERIMA KASIH\n25000\nTOTAL 25000';
+    final on = mirrorReceipt(raw);
+    expect(on.any((e) => e.text == 'Toko' && e.amount == 25000), isTrue);
+    final off = mirrorReceipt(raw, pairOrphans: false);
+    expect(off.any((e) => e.text == 'Toko' && e.amount == 25000), isFalse);
+  });
+
   test('struk detail: alamat kasir telp nostruk jam bayar', () {
     const raw = 'KOPI KENANGAN\n'
         'Jl. Merdeka No. 45, Bandung\n'

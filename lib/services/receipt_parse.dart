@@ -707,8 +707,9 @@ bool _headHasDigit(String l) {
 
 /// Cermin struk fisik: tiap baris OCR diklasifikasi (header/item/total/
 /// polos) dalam URUTAN ASLI; baris sampah dibuang. parseReceipt tak
-/// tersentuh (prefill + 43 test lama aman).
-List<MirrorLine> mirrorReceipt(String raw) {
+/// tersentuh (prefill + 43 test lama aman). [pairOrphans]=false untuk
+/// layout BBM (harga satuan tak dipasangkan).
+List<MirrorLine> mirrorReceipt(String raw, {bool pairOrphans = true}) {
   final lines = raw
       .split('\n')
       .map((l) => l.trim())
@@ -782,7 +783,8 @@ List<MirrorLine> mirrorReceipt(String raw) {
       out.add(MirrorLine(l, centered: true));
       continue;
     }
-    if (!hasNums &&
+    if (pairOrphans &&
+        !hasNums &&
         _isFragment(l) &&
         (seenNum || !_merchantLine.hasMatch(l))) {
       if (pending.length >= 8) pending.removeAt(0);
@@ -821,7 +823,8 @@ List<MirrorLine> mirrorReceipt(String raw) {
     final namePart = l.replaceAll(_numRe, '');
     final bareNums =
         RegExp(r'[A-Za-z]').allMatches(namePart).length < 3;
-    if (pending.isNotEmpty &&
+    if (pairOrphans &&
+        pending.isNotEmpty &&
         bareNums &&
         !_dateRe.hasMatch(l) &&
         !_phoneLine(l)) {

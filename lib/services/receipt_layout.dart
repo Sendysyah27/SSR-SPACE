@@ -17,7 +17,7 @@ class OcrBox {
   int get h => bottom - top;
 }
 
-List<String> spatialLines(List<OcrBox> boxes) {
+List<String> spatialLines(List<OcrBox> boxes, {double rowTol = 0.5}) {
   final rows = <List<OcrBox>>[];
   final sorted = [for (final b in boxes) if (b.text.trim().isNotEmpty) b]
     ..sort((a, b) => a.top.compareTo(b.top));
@@ -25,8 +25,8 @@ List<String> spatialLines(List<OcrBox> boxes) {
     var placed = false;
     for (final row in rows) {
       final first = row.first;
-      final tol = (first.h > box.h ? first.h : box.h) ~/ 2;
-      if ((box.cy - first.cy).abs() <= tol) {
+      final ref = first.h > box.h ? first.h : box.h;
+      if ((box.cy - first.cy).abs() <= ref * rowTol) {
         row.add(box);
         placed = true;
         break;

@@ -740,14 +740,54 @@ jobs:
               s = s.rstrip()[:-1] + '''
               private var voiceRecognizer: android.speech.SpeechRecognizer? = null
 
+              // Cari service recognizer terbaik: Google dulu (mibrain
+              // bawaan MIUI sering rusak walau terdaftar default),
+              // lalu default OEM, lalu service apa pun yang terlihat.
+              private fun resolveVoiceComponent(
+                      c: android.content.Context):
+                      android.content.ComponentName? {
+                  try {
+                      val probe = c.packageManager.queryIntentServices(
+                          android.content.Intent(android.speech
+                              .RecognitionService.SERVICE_INTERFACE), 0)
+                      for (ri in probe) {
+                          val pkg = ri.serviceInfo.packageName
+                          if (pkg.startsWith(
+                                  "com.google.android.googlequicksearchbox") ||
+                                  pkg.startsWith("com.google.android.tts")) {
+                              return android.content.ComponentName(
+                                  pkg, ri.serviceInfo.name)
+                          }
+                      }
+                      val cfg = android.provider.Settings.Secure.getString(
+                          c.contentResolver, "voice_recognition_service")
+                      if (cfg != null) {
+                          val cn = android.content.ComponentName
+                              .unflattenFromString(cfg)
+                          if (cn != null) return cn
+                      }
+                      if (probe.isNotEmpty()) {
+                          val ri = probe[0]
+                          return android.content.ComponentName(
+                              ri.serviceInfo.packageName, ri.serviceInfo.name)
+                      }
+                  } catch (e: Exception) {
+                  }
+                  return null
+              }
+
               private fun registerVoiceChannel(flutterEngine: FlutterEngine) {
                   MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
                           "ssr_space/voice").setMethodCallHandler { call, result ->
                       when (call.method) {
                           "isAvailable" -> {
                               try {
-                                  result.success(android.speech.SpeechRecognizer
-                                      .isRecognitionAvailable(applicationContext))
+                                  val ok = android.speech.SpeechRecognizer
+                                      .isRecognitionAvailable(
+                                          applicationContext) ||
+                                      resolveVoiceComponent(
+                                          applicationContext) != null
+                                  result.success(ok)
                               } catch (e: Exception) {
                                   result.success(false)
                               }
@@ -758,13 +798,22 @@ jobs:
                                       voiceRecognizer?.destroy()
                                   } catch (e: Exception) {
                                   }
-                                  if (!android.speech.SpeechRecognizer
-                                          .isRecognitionAvailable(applicationContext)) {
+                                  val comp = resolveVoiceComponent(
+                                      applicationContext)
+                                  val sr = try {
+                                      if (comp != null) {
+                                          android.speech.SpeechRecognizer
+                                              .createSpeechRecognizer(
+                                                  applicationContext, comp)
+                                      } else {
+                                          android.speech.SpeechRecognizer
+                                              .createSpeechRecognizer(
+                                                  applicationContext)
+                                      }
+                                  } catch (e: Exception) {
                                       result.success(false)
                                       return@setMethodCallHandler
                                   }
-                                  val sr = android.speech.SpeechRecognizer
-                                      .createSpeechRecognizer(applicationContext)
                                   voiceRecognizer = sr
                                   val ch = MethodChannel(
                                           flutterEngine.dartExecutor.binaryMessenger,
@@ -870,6 +919,42 @@ jobs:
               s = s.rstrip()[:-1] + '''
               private android.speech.SpeechRecognizer voiceRecognizer;
 
+              private android.content.ComponentName resolveVoiceComponent(
+                      android.content.Context c) {
+                  try {
+                      java.util.List<android.content.pm.ResolveInfo> probe =
+                              c.getPackageManager().queryIntentServices(
+                                      new android.content.Intent(android.speech
+                                              .RecognitionService
+                                              .SERVICE_INTERFACE),
+                                      0);
+                      for (android.content.pm.ResolveInfo ri : probe) {
+                          String pkg = ri.serviceInfo.packageName;
+                          if (pkg.startsWith(
+                                  "com.google.android.googlequicksearchbox") ||
+                                  pkg.startsWith("com.google.android.tts")) {
+                              return new android.content.ComponentName(
+                                      pkg, ri.serviceInfo.name);
+                          }
+                      }
+                      String cfg = android.provider.Settings.Secure.getString(
+                          c.getContentResolver(), "voice_recognition_service");
+                      if (cfg != null) {
+                          android.content.ComponentName cn = android.content
+                                  .ComponentName.unflattenFromString(cfg);
+                          if (cn != null) return cn;
+                      }
+                      if (!probe.isEmpty()) {
+                          android.content.pm.ResolveInfo ri = probe.get(0);
+                          return new android.content.ComponentName(
+                                  ri.serviceInfo.packageName,
+                                  ri.serviceInfo.name);
+                      }
+                  } catch (Exception ignored) {
+                  }
+                  return null;
+              }
+
               private void registerVoiceChannel(
                       io.flutter.embedding.engine.FlutterEngine flutterEngine) {
                   final io.flutter.plugin.common.MethodChannel ch =
@@ -879,9 +964,12 @@ jobs:
                   ch.setMethodCallHandler((call, result) -> {
                       if (call.method.equals("isAvailable")) {
                           try {
-                              result.success(android.speech.SpeechRecognizer
+                              boolean ok = android.speech.SpeechRecognizer
                                       .isRecognitionAvailable(
-                                              getApplicationContext()));
+                                              getApplicationContext()) ||
+                                      resolveVoiceComponent(
+                                              getApplicationContext()) != null;
+                              result.success(ok);
                           } catch (Exception e) {
                               result.success(false);
                           }
@@ -891,16 +979,25 @@ jobs:
                                   if (voiceRecognizer != null) voiceRecognizer.destroy();
                               } catch (Exception ignored) {
                               }
-                              if (!android.speech.SpeechRecognizer
-                                      .isRecognitionAvailable(
-                                              getApplicationContext())) {
+                              android.content.ComponentName comp =
+                                      resolveVoiceComponent(
+                                              getApplicationContext());
+                              android.speech.SpeechRecognizer sr;
+                              try {
+                                  if (comp != null) {
+                                      sr = android.speech.SpeechRecognizer
+                                              .createSpeechRecognizer(
+                                                      getApplicationContext(),
+                                                      comp);
+                                  } else {
+                                      sr = android.speech.SpeechRecognizer
+                                              .createSpeechRecognizer(
+                                                      getApplicationContext());
+                                  }
+                              } catch (Exception e) {
                                   result.success(false);
                                   return;
                               }
-                              android.speech.SpeechRecognizer sr =
-                                      android.speech.SpeechRecognizer
-                                              .createSpeechRecognizer(
-                                                      getApplicationContext());
                               voiceRecognizer = sr;
                               sr.setRecognitionListener(
                                       new android.speech.RecognitionListener() {

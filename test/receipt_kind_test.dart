@@ -84,4 +84,18 @@ void main() {
       isNull,
     );
   });
+
+  test('layout kind: fuel pharmacy dining minimarket', () {
+    expect(detectReceiptKind('SPBU PERTAMINA 34'), ReceiptDocKind.fuel);
+    expect(detectReceiptKind('APOTEK K24'), ReceiptDocKind.pharmacy);
+    expect(detectReceiptKind('BURGER BANGOR'), ReceiptDocKind.dining);
+    expect(detectReceiptKind('ALFAMART'), ReceiptDocKind.minimarket);
+    expect(detectReceiptKind('WARUNG BU TINI'), ReceiptDocKind.generic);
+  });
+
+  test('profil template per kind', () {
+    expect(layoutFor(ReceiptDocKind.fuel).pairOrphans, isFalse);
+    expect(layoutFor(ReceiptDocKind.minimarket).priceRight, isTrue);
+    expect(layoutFor(ReceiptDocKind.dining).rowTol, 0.5);
+  });
 }
