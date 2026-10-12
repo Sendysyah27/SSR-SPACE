@@ -478,7 +478,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
           builder: (_) => ReceiptResultSheet(
             data: data,
             mirror: mirrorReceipt(
-              raw!,
+              raw,
               pairOrphans: layoutFor(detectReceiptKind(raw)).pairOrphans,
             ),
             onShowRaw: () => _showRawOcrDialog(raw),
