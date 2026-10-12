@@ -538,6 +538,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
         return tr('rcp_kind_mini');
       case ReceiptDocKind.dining:
         return tr('rcp_kind_food');
+      case ReceiptDocKind.fuel:
+      case ReceiptDocKind.pharmacy:
       case ReceiptDocKind.generic:
         return tr('rcp_scan');
     }
