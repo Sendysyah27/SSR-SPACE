@@ -504,6 +504,32 @@ void main() {
     expect(m, ['INDOMARET', 'Kopi', 'TOTAL :', 'TERIMA KASIH']);
   });
 
+  test('bukti indomaret: total belanja bare + tender sesudah', () {
+    const raw = 'INDOMARET\n'
+        'AMANDA BROWNIES ORI\n'
+        'OREO ORIGINAL 140G\n'
+        '57500\n'
+        'TOTAL BELANJA\n'
+        '157,700\n'
+        'TUNAI 200.000\n'
+        'KEMBALI 42.300';
+    final r = parseReceipt(raw);
+    expect(r.amount, 157700);
+    expect(r.confident, isTrue);
+  });
+
+  test('voucher tak pernah menang atas total', () {
+    const raw = 'TOKO\nVOUCHER 5900\nTOTAL BELANJA\n45700\nTUNAI 50000';
+    expect(parseReceipt(raw).amount, 45700);
+  });
+
+  test('mirror: harga yatim dipasangkan nama di atasnya', () {
+    const raw = 'TOKO\nAMANDA BROWNIES ORI\n57500\nTOTAL 57500';
+    final m = mirrorReceipt(raw);
+    expect(m[1].text, 'AMANDA BROWNIES ORI');
+    expect(m[1].amount, 57500);
+  });
+
   test('struk detail: alamat kasir telp nostruk jam bayar', () {
     const raw = 'KOPI KENANGAN\n'
         'Jl. Merdeka No. 45, Bandung\n'

@@ -167,6 +167,45 @@ double? _lastAmount(String line) {
   return best;
 }
 
+/// Total dari label telanjang: angka murni pertama di ≤3 baris berikut
+/// label TOTAL/GRAND terakhir, WAJIB dikonfirmasi baris tender/bayar
+/// (tunai/kembali/qris/debit/e-money) di ≤3 baris sesudah kandidat.
+/// Grand dicek dulu (menang), lalu total. Tanpa konfirmasi = null.
+double? _labelledTotal(List<String> lines) {
+  for (final grandFirst in [true, false]) {
+    var labelIdx = -1;
+    for (var i = lines.length - 1; i >= 0; i--) {
+      final l = lines[i];
+      final hit = grandFirst
+          ? _grandKey.hasMatch(l)
+          : (_isTotalLine(l) && !_grandKey.hasMatch(l));
+      if (!hit || _countKey.hasMatch(l) || _numRe.hasMatch(l)) continue;
+      labelIdx = i;
+      break;
+    }
+    if (labelIdx < 0) continue;
+    for (var j = labelIdx + 1;
+        j < lines.length && j <= labelIdx + 3;
+        j++) {
+      final c = lines[j];
+      if (!_pureAmount.hasMatch(c) || RegExp(r'^\d+\s+\d').hasMatch(c)) {
+        continue;
+      }
+      final v = _lastAmount(c);
+      if (!_okAmount(v)) continue;
+      for (var k = j + 1; k < lines.length && k <= j + 3; k++) {
+        if (_cashKey.hasMatch(lines[k]) ||
+            _changeKey.hasMatch(lines[k]) ||
+            _payKey.hasMatch(lines[k])) {
+          return v;
+        }
+      }
+      break;
+    }
+  }
+  return null;
+}
+
 /// Urut prioritas: baris kunci TOTAL dulu, abaikan baris pengecoh.
 ReceiptData parseReceipt(String raw) {
   final lines = raw
@@ -203,9 +242,14 @@ ReceiptData parseReceipt(String raw) {
   var seenTotal = false;
   var seenGrandMangled = false;
   // Suara angka nyasar (baris murni angka, bukan pengecoh, bukan "1 25000").
+  // Voucher tak ikut suara (nominal promo bukan belanja).
   final votes = <double, int>{};
   for (final l in lines) {
-    if (_rejectKey.hasMatch(l) || !_pureAmount.hasMatch(l)) continue;
+    if (_rejectKey.hasMatch(l) ||
+        _voucherKey.hasMatch(l) ||
+        !_pureAmount.hasMatch(l)) {
+      continue;
+    }
     if (RegExp(r'^\d+\s+\d').hasMatch(l)) continue;
     final v = _lastAmount(l);
     if (v != null) votes[v] = (votes[v] ?? 0) + 1;
@@ -256,6 +300,10 @@ ReceiptData parseReceipt(String raw) {
   }
   // Grand total menang atas subtotal/total (nominal akhir yang dibayar).
   if (grand != null) amount = grand;
+  // PRIORITAS UTAMA: label TOTAL/GRAND telanjang + angka murni di ≤3
+  // baris berikut + Tender sesudahnya. Label ada tapi tak terkonfirmasi
+  // = tolak (bukan comot) → fallback lama yang putuskan.
+  if (amount == null) amount = _labelledTotal(lines);
   // Struk QRIS: jumlah dibayar = total.
   if (amount == null) {
     for (final l in lines) {
@@ -667,6 +715,9 @@ List<MirrorLine> mirrorReceipt(String raw) {
       .where((l) => l.isNotEmpty)
       .toList();
   final out = <MirrorLine>[];
+  // Antre nama yatim struk 2 kolom (FIFO, display saja, cap 8).
+  final pending = <String>[];
+  var seenNum = false;
   for (var i = 0; i < lines.length; i++) {
     var l = lines[i];
     // Gabung fragmen seperti loop item ("Nama" / "1 25000").
@@ -686,9 +737,11 @@ List<MirrorLine> mirrorReceipt(String raw) {
     if (_ptHead.hasMatch(l) || _codeKey.hasMatch(l)) continue;
     if (_phoneLine(l) && !_telpKey.hasMatch(l)) continue;
     // Konten header/footer polos: merchant, alamat, kontak, no, kasir,
-    // tanggal/jam, ucapan. Merchant Bold.
-    final isMerchant =
-        _knownMerchant.hasMatch(l) || _merchantLine.hasMatch(l);
+    // tanggal/jam, ucapan. Merchant Bold. Baris ber-nominal ≥100 bukan
+    // merchant (gabungan nama+harga) → jatuh ke cabang item.
+    final isMerchant = (_knownMerchant.hasMatch(l) ||
+            _merchantLine.hasMatch(l)) &&
+        !_okAmount(_lastAmount(l));
     final isAddr = _findAddress([l]) != null;
     final isNo = _isNoLine(l);
     final isCashier = _cashierKey.hasMatch(l);
@@ -706,6 +759,34 @@ List<MirrorLine> mirrorReceipt(String raw) {
         isThanks) {
       out.add(MirrorLine(l, centered: true, bold: isMerchant));
       continue;
+    }
+    final hasNums = _numRe.hasMatch(l);
+    if (hasNums) seenNum = true;
+    // Label tender/bayar telanjang: gabung angka murni baris berikut
+    // ("TUNAI :" / "50.000"), atau tampil polos. Jangan jadi nama item.
+    if (!hasNums &&
+        (_cashKey.hasMatch(l) ||
+            _changeKey.hasMatch(l) ||
+            _payKey.hasMatch(l) ||
+            _voucherKey.hasMatch(l))) {
+      if (i + 1 < lines.length) {
+        final nx = lines[i + 1].trim();
+        final nv =
+            _pureAmount.hasMatch(nx) ? _lastAmount(nx) : null;
+        if (_okAmount(nv)) {
+          out.add(MirrorLine(l, amount: nv, bold: false));
+          i++;
+          continue;
+        }
+      }
+      out.add(MirrorLine(l, centered: true));
+      continue;
+    }
+    if (!hasNums &&
+        _isFragment(l) &&
+        (seenNum || !_merchantLine.hasMatch(l))) {
+      if (pending.length >= 8) pending.removeAt(0);
+      pending.add(l);
     }
     final nums = _numRe.allMatches(l).toList();
     final isTotal = _isTotalLine(l);
@@ -731,6 +812,27 @@ List<MirrorLine> mirrorReceipt(String raw) {
       }
       if (v == null && label.isNotEmpty) {
         out.add(MirrorLine(label, bold: isTotal, centered: !isTotal));
+        continue;
+      }
+    }
+    // Pasangan 2 kolom: harga yatim + nama menunggu teratas (FIFO).
+    // Display saja (tak memengaruhi amount): kolom harga OCR sering
+    // turun jadi baris sendiri di bawah namanya.
+    final namePart = l.replaceAll(_numRe, '');
+    final bareNums =
+        RegExp(r'[A-Za-z]').allMatches(namePart).length < 3;
+    if (pending.isNotEmpty &&
+        bareNums &&
+        !_dateRe.hasMatch(l) &&
+        !_phoneLine(l)) {
+      final v = _lastAmount(l);
+      if (_okAmount(v)) {
+        final pname = pending.removeAt(0);
+        final pli = _splitQty(l, pname, v!);
+        out.add(MirrorLine(
+          pli.qty > 1 ? '${pli.name} x${pli.qty}' : pli.name,
+          amount: pli.price,
+        ));
         continue;
       }
     }
