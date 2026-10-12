@@ -132,11 +132,11 @@ class DueNotify {
       for (final e in wanted.entries) {
         try {
           await _plugin.zonedSchedule(
-            e.key,
-            _title(e.value),
-            _body(e.value),
-            _at9(e.value.date),
-            details,
+            id: e.key,
+            title: _title(e.value),
+            body: _body(e.value),
+            scheduledDate: _at9(e.value.date),
+            notificationDetails: details,
             androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           );
         } catch (_) {}
