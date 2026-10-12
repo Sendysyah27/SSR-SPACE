@@ -2203,6 +2203,11 @@ const _t = <String, Map<String, String>>{
     'id': 'Dana darurat sudah aman.',
     'en': 'Emergency fund is safe.',
   },
+  'b_save30_t': {'id': 'Hemat 30 Hari', 'en': '30-Day Saver'},
+  'b_save30_d': {
+    'id': 'Selesaikan tantangan hemat 30 hari.',
+    'en': 'Finish the 30-day saving challenge.',
+  },
   'game_challenges': {'id': 'Tantangan', 'en': 'Challenges'},
   'ch_nospend3_t': {'id': 'Puasa Belanja', 'en': 'No-Spend Days'},
   'ch_nospend3_d': {
@@ -2226,6 +2231,45 @@ const _t = <String, Map<String, String>>{
     'en': 'Failed, try again next week.',
   },
   'ch_progress': {'id': '{p} dari {t}', 'en': '{p} of {t}'},
+  // Tantangan hemat 30 hari (Batch 29, prefs lokal + notif sendiri)
+  'sv30_title': {'id': 'Tantangan 30 Hari', 'en': '30-Day Challenge'},
+  'sv30_sub': {
+    'id': 'Belanja di bawah target, 30 hari.',
+    'en': 'Spend under target for 30 days.',
+  },
+  'sv30_target': {'id': 'Target belanja harian', 'en': 'Daily spending target'},
+  'sv30_start': {'id': 'Mulai tantangan', 'en': 'Start challenge'},
+  'sv30_empty_t': {'id': 'Belum ada tantangan', 'en': 'No challenge yet'},
+  'sv30_empty_s': {
+    'id': 'Tentukan target harian lalu mulai 30 harimu.',
+    'en': 'Set a daily target, then start your 30 days.',
+  },
+  'sv30_day': {'id': 'Hari {n}/30', 'en': 'Day {n}/30'},
+  'sv30_good': {'id': '{n} hari hemat', 'en': '{n} thrifty days'},
+  'sv30_streak': {'id': 'Streak {n} hari', 'en': '{n}-day streak'},
+  'sv30_spent': {'id': 'Belanja {m} dari {t}', 'en': 'Spent {m} of {t}'},
+  'sv30_stop': {'id': 'Berhenti', 'en': 'Stop'},
+  'sv30_stop_body': {
+    'id': 'Berhenti sekarang? Progres tercatat di riwayat.',
+    'en': 'Stop now? Progress goes to history.',
+  },
+  'sv30_suggest': {'id': 'Bisa dihemat', 'en': 'Save here'},
+  'sv30_history': {'id': 'Riwayat', 'en': 'History'},
+  'sv30_success': {'id': 'Berhasil', 'en': 'Success'},
+  'sv30_failed': {'id': 'Belum berhasil', 'en': 'Not yet'},
+  'sv30_mile_t': {'id': 'Milestone hemat!', 'en': 'Saving milestone!'},
+  'sv30_mile': {
+    'id': '{n} hari hemat. Pertahankan!',
+    'en': '{n} thrifty days. Keep going!',
+  },
+  'sv30_remind_t': {
+    'id': 'Tantangan hemat hari {n}',
+    'en': 'Saving challenge day {n}',
+  },
+  'sv30_remind_b': {
+    'id': 'Hari {n}/30 — buka app untuk lihat progres hematmu.',
+    'en': 'Day {n}/30 — open the app to see your saving progress.',
+  },
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

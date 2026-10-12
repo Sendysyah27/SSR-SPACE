@@ -24,6 +24,7 @@ import 'package:ssr_space/services/goal_forecast.dart';
 import 'package:ssr_space/services/goal_store.dart';
 import 'package:ssr_space/services/game_level.dart';
 import 'package:ssr_space/services/game_store.dart';
+import 'package:ssr_space/services/save30_store.dart';
 import 'package:ssr_space/screens/dompet/wallets_screen.dart';
 import 'package:ssr_space/screens/lainnya/arcade_screen.dart';
 import 'package:ssr_space/screens/lainnya/bill_splits_screen.dart';
@@ -488,6 +489,11 @@ class BerandaScreenState extends State<BerandaScreen> {
           for (final c in storedCh) {
             if (c.status == 1) doneCh++;
           }
+          try {
+            doneCh += (await loadSave30History())
+                .where((e) => e.success)
+                .length;
+          } catch (_) {}
         } catch (_) {}
         var goalsHit = 0;
         for (final g in gs) {

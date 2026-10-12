@@ -12,6 +12,8 @@ import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/heartbeat_service.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/reminder_service.dart';
+import 'package:ssr_space/services/save30_notify.dart';
+import 'package:ssr_space/services/save30_store.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -60,6 +62,16 @@ Future<void> main() async {
     await DueNotify.reschedule();
   } catch (e) {
     debugPrint('jadwal ulang jatuh tempo gagal: $e');
+  }
+  // Pengingat harian tantangan hemat (silent, fail-silent).
+  try {
+    final a = await loadSave30Active();
+    await Save30Notify.reschedule(
+      active: a != null,
+      startYmd: a?.startYmd ?? '',
+    );
+  } catch (e) {
+    debugPrint('jadwal ulang save30 gagal: $e');
   }
   // Heartbeat anti-pause (max 1/hari, fail-silent): aktivitas API harian
   // menjaga project free-tier tetap hidup walau semua cron diam.

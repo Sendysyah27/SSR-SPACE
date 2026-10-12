@@ -12,6 +12,7 @@ class GameStats {
   final int goalsReached;
   final bool emergencySafe;
   final int challengesDone;
+  final int save30Done;
   const GameStats({
     this.streakDays = 0,
     this.totalSaved = 0,
@@ -21,6 +22,7 @@ class GameStats {
     this.goalsReached = 0,
     this.emergencySafe = false,
     this.challengesDone = 0,
+    this.save30Done = 0,
   });
 }
 
@@ -29,7 +31,7 @@ class BadgeDef {
   const BadgeDef(this.id);
 }
 
-/// Urutan tampil di koleksi (8 badge).
+/// Urutan tampil di koleksi (9 badge).
 const allBadges = [
   BadgeDef('streak7'),
   BadgeDef('streak30'),
@@ -39,6 +41,7 @@ const allBadges = [
   BadgeDef('goal1'),
   BadgeDef('tx100'),
   BadgeDef('emsafe'),
+  BadgeDef('save30'),
 ];
 
 bool _unlocked(String id, GameStats s) {
@@ -59,6 +62,8 @@ bool _unlocked(String id, GameStats s) {
       return s.txCount >= 100;
     case 'emsafe':
       return s.emergencySafe;
+    case 'save30':
+      return s.save30Done >= 1;
     default:
       return false;
   }

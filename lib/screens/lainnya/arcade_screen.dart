@@ -10,8 +10,11 @@ import 'package:ssr_space/services/goal_store.dart';
 import 'package:ssr_space/services/calm_streak.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/saving.dart';
+import 'package:ssr_space/services/save30_store.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/screens/lainnya/save30_screen.dart';
 import 'package:ssr_space/services/weekly_insight.dart';
+import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
@@ -163,12 +166,18 @@ class ArcadeScreenState extends State<ArcadeScreen> {
         } catch (_) {}
         // Tantangan tersimpan + evaluasi minggu berjalan.
         var doneCount = 0;
+        var save30Wins = 0;
         try {
           final stored = await loadChallenges();
           final weekTxs = await _weekTxs(orgId, now);
           for (final s in stored) {
             if (s.status == 1) doneCount++;
           }
+          try {
+            final hist30 = await loadSave30History();
+            save30Wins = hist30.where((e) => e.success).length;
+            doneCount += save30Wins;
+          } catch (_) {}
           evalMap = {
             for (final t in challengeTemplates)
               t: evalChallenge(
@@ -204,6 +213,7 @@ class ArcadeScreenState extends State<ArcadeScreen> {
           goalsReached: goalsHit,
           emergencySafe: emSafe,
           challengesDone: doneCount,
+          save30Done: save30Wins,
         );
       }
       // Tandai badge terlihat (chip Baru hanya sekali).
@@ -302,6 +312,8 @@ class ArcadeScreenState extends State<ArcadeScreen> {
             stored: stored,
             onJoin: _join,
           ),
+          const SizedBox(height: SsrSpace.md),
+          const _Save30Link(),
         ],
       ),
     );
@@ -589,5 +601,50 @@ class _ChallengeRow extends StatelessWidget {
   String _fmtNum(double v) {
     if (v >= 1000) return amt(v);
     return v % 1 == 0 ? v.toInt().toString() : v.toString();
+  }
+}
+
+/// Pintu tantangan hemat 30 hari dari Arcade.
+class _Save30Link extends StatelessWidget {
+  const _Save30Link();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SectionCard(
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const Save30Screen()),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
+          child: Row(
+            children: [
+              DuoIcon(AppIcons.success, color: theme.colorScheme.primary),
+              const SizedBox(width: SsrSpace.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr('sv30_title'),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      tr('sv30_sub'),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

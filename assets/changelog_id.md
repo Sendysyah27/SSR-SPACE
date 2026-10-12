@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.38.0+115.
+Versi terpasang: 2.39.0+116.
+
+## Yang baru di 2.39.0+116
+
+1. Tantangan 30 Hari: tentukan target belanja harian, kumpulkan 30 hari hemat dengan progress bar + streak + perayaan milestone 7/14/21/30. Pengingat harian jam 8 malam. Selesai = badge baru + 50 XP. Ada saran kategori yang bisa dihemat dari riwayatmu + riwayat tantangan. Menu Profil → Tantangan 30 Hari.
 
 ## Yang baru di 2.38.0+115
 
