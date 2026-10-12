@@ -455,4 +455,47 @@ void main() {
     expect(r.amount, 41250);
     expect(r.items, ['Kopi 25000']);
   });
+
+  test('struk detail: alamat kasir telp nostruk jam bayar', () {
+    const raw = 'KOPI KENANGAN\n'
+        'Jl. Merdeka No. 45, Bandung\n'
+        'Telp 022-1234567\n'
+        'No : TRX-2026-00891\n'
+        'Kasir : Sinta\n'
+        '12/10/2026 14:35\n'
+        'Kopi Mantan 19000\n'
+        'Matcha Latte 2 50000\n'
+        'TOTAL : 69000\n'
+        'QRIS : 69000\n'
+        'TERIMA KASIH';
+    final r = parseReceipt(raw);
+    expect(r.merchant, 'KOPI KENANGAN');
+    expect(r.address, contains('Merdeka'));
+    expect(r.cashier, 'Sinta');
+    expect(r.phone, contains('022'));
+    expect(r.receiptNo, contains('00891'));
+    expect(r.time, '14:35');
+    expect(r.payType, 'QRIS');
+    expect(r.amount, 69000);
+  });
+
+  test('struk rusak: field detail semua null', () {
+    const raw = 'Kopi 25000\nTOTAL 25000';
+    final r = parseReceipt(raw);
+    expect(r.address, isNull);
+    expect(r.cashier, isNull);
+    expect(r.phone, isNull);
+    expect(r.receiptNo, isNull);
+    expect(r.time, isNull);
+  });
+
+  test('lineItems terstruktur nama qty harga', () {
+    const raw = 'TOKO\nMatcha Latte 2 50000\nKopi 25000\nTOTAL 75000';
+    final r = parseReceipt(raw);
+    expect(r.lineItems.length, 2);
+    expect(r.lineItems[0].name, 'Matcha Latte');
+    expect(r.lineItems[0].qty, 2);
+    expect(r.lineItems[0].price, 50000);
+    expect(r.lineItems[1].qty, 1);
+  });
 }

@@ -5,6 +5,7 @@ Versi terpasang: 2.41.0+118.
 ## Yang baru di 2.41.0+118
 
 1. Ikon dompet brand: DANA, OVO, GoPay, BCA, BRI, Mandiri, dan bank/e-wallet lain kini berbadge warna resminya mengikuti nama dompetmu.
+2. Hasil scan struk super detail: nama gerai + alamat + telepon, no struk, tanggal + jam, kasir, tabel belanjaan per item (nama, jumlah, harga), subtotal, diskon, total, dan jenis bayar (QRIS/Tunai/E-Money/dll). Yang tak terbaca disembunyikan, bukan dikarang.
 
 ## Yang baru di 2.40.0+117
 

@@ -27,6 +27,19 @@ class ReceiptResultSheet extends StatelessWidget {
     final warn = !data.confident;
     final total = data.amount ?? 0;
     final date = data.date;
+    final items = data.lineItems.isNotEmpty
+        ? [
+            for (final li in data.lineItems)
+              (name: li.qty > 1 ? '${li.name} x${li.qty}' : li.name,
+               amount: li.price),
+          ]
+        : [for (final raw in data.items) splitReceiptItem(raw)];
+    final dateStr = date == null
+        ? null
+        : '${date.day.toString().padLeft(2, '0')}-'
+            '${date.month.toString().padLeft(2, '0')}-'
+            '${date.year}'
+            '${data.time == null ? '' : ' ${data.time}'}';
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(SsrSpace.lg),
@@ -39,10 +52,42 @@ class ReceiptResultSheet extends StatelessWidget {
               style: theme.textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
+            if (data.address != null || data.phone != null) ...[
+              const SizedBox(height: 4),
+              if (data.address != null)
+                Text(
+                  data.address!,
+                  style: theme.textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              if (data.phone != null)
+                Text(
+                  data.phone!,
+                  style: theme.textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+            ],
             const SizedBox(height: SsrSpace.sm),
             const _DashedLine(),
-            for (final raw in data.items) _ItemRow(raw: raw, money: _idr),
+            _MetaRow(
+              label: tr('rcp_no'),
+              value: data.receiptNo,
+            ),
+            _MetaRow(label: tr('tx_f_date'), value: dateStr),
+            _MetaRow(label: tr('rcp_cashier'), value: data.cashier),
+            if (items.isNotEmpty) ...[
+              const SizedBox(height: SsrSpace.sm),
+              Text(
+                tr('rcp_items'),
+                style: theme.textTheme.titleSmall,
+              ),
+              for (final p in items) _ItemRow(name: p.name, amount: p.amount, money: _idr),
+            ],
             const _DashedLine(),
+            if (data.voucher != null && data.voucher! > 0) ...[
+              _MoneyRow(label: tr('rcp_subtotal'), value: total + data.voucher!),
+              _MoneyRow(label: tr('rcp_discount'), value: -data.voucher!),
+            ],
             Row(
               children: [
                 Expanded(
@@ -63,6 +108,7 @@ class ReceiptResultSheet extends StatelessWidget {
                 ),
               ],
             ),
+            _MetaRow(label: tr('rcp_pay'), value: data.payType),
             if (warn) ...[
               const SizedBox(height: 4),
               Text(
@@ -70,16 +116,6 @@ class ReceiptResultSheet extends StatelessWidget {
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: scheme.error,
                 ),
-              ),
-            ],
-            if (date != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                '${date.day.toString().padLeft(2, '0')}-'
-                '${date.month.toString().padLeft(2, '0')}-'
-                '${date.year}',
-                style: theme.textTheme.bodySmall,
-                textAlign: TextAlign.center,
               ),
             ],
             const SizedBox(height: SsrSpace.md),
@@ -107,23 +143,86 @@ class ReceiptResultSheet extends StatelessWidget {
   }
 }
 
-/// Satu baris produk: nama .... nominal (dot leader).
-class _ItemRow extends StatelessWidget {
-  final String raw;
-  final String Function(double) money;
+/// Baris meta kecil (label kiri, nilai kanan). Null = sembunyi.
+class _MetaRow extends StatelessWidget {
+  final String label;
+  final String? value;
 
-  const _ItemRow({required this.raw, required this.money});
+  const _MetaRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    final p = splitReceiptItem(raw);
+    if (value == null || value!.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          Text(
+            value!,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Baris uang (subtotal/diskon): label kiri, nominal kanan tabular.
+class _MoneyRow extends StatelessWidget {
+  final String label;
+  final double value;
+
+  const _MoneyRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          Text(
+            amt(CurrencyService.toIdr(CurrencyService.convert(value))),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Satu baris produk: nama .... nominal (dot leader).
+class _ItemRow extends StatelessWidget {
+  final String name;
+  final double amount;
+  final String Function(double) money;
+
+  const _ItemRow({required this.name, required this.amount, required this.money});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           Flexible(
             child: Text(
-              p.name,
+              name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium,
@@ -131,7 +230,7 @@ class _ItemRow extends StatelessWidget {
           ),
           const Expanded(child: _DotLeader()),
           Text(
-            money(p.amount),
+            money(amount),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontFeatures: const [FontFeature.tabularFigures()],
             ),

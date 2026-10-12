@@ -5,20 +5,41 @@
 // di TransactionService saat simpan.
 
 /// Hasil urai struk. `confident` true hanya bila total eksplisit ketemu.
+class ReceiptItem {
+  final String name;
+  final int qty;
+  final double price;
+  const ReceiptItem({required this.name, this.qty = 1, required this.price});
+}
+
 class ReceiptData {
   final double? amount;
   final DateTime? date;
   final String? merchant;
   final List<String> items;
+  final List<ReceiptItem> lineItems;
   final double? voucher;
   final bool confident;
+  final String? address;
+  final String? cashier;
+  final String? phone;
+  final String? receiptNo;
+  final String? time;
+  final String? payType;
   const ReceiptData({
     this.amount,
     this.date,
     this.merchant,
     this.items = const [],
+    this.lineItems = const [],
     this.voucher,
     this.confident = false,
+    this.address,
+    this.cashier,
+    this.phone,
+    this.receiptNo,
+    this.time,
+    this.payType,
   });
 }
 
@@ -404,6 +425,7 @@ ReceiptData parseReceipt(String raw) {
   }();
 
   final items = <String>[];
+  final lineItems = <ReceiptItem>[];
   double? voucher;
   for (var i = 0; i < totalIdx; i++) {
     var l = lines[i];
@@ -425,6 +447,8 @@ ReceiptData parseReceipt(String raw) {
     if (_isTotalLine(l) ||
         _rejectKey.hasMatch(l) ||
         _fragKey.hasMatch(l) ||
+        _codeKey.hasMatch(l) ||
+        _isNoLine(l) ||
         _phoneLine(l) ||
         _dateRe.hasMatch(l)) {
       continue;
@@ -441,6 +465,7 @@ ReceiptData parseReceipt(String raw) {
     if (!_okAmount(total)) continue;
     if (items.length >= 8) break;
     items.add('$name ${total!.toInt()}');
+    lineItems.add(_splitQty(l, name, total));
   }
 
   return ReceiptData(
@@ -448,9 +473,148 @@ ReceiptData parseReceipt(String raw) {
     date: date,
     merchant: merchant,
     items: items,
+    lineItems: lineItems,
     voucher: voucher,
     confident: amount != null && amount > 0,
+    address: _findAddress(lines),
+    cashier: _findCashier(lines),
+    phone: _findPhone(lines),
+    receiptNo: _findReceiptNo(lines),
+    time: _findTime(lines),
+    payType: _findPayType(lines),
   );
+}
+
+/// Pecah baris item jadi terstruktur. Qty jujur hanya bila terbukti:
+/// 2 angka [q, total] (q 1..99) atau [.., q, unit, .., total] dengan
+/// unit*q == total. Selain itu qty 1 (tanpa karangan).
+ReceiptItem _splitQty(String line, String name, double total) {
+  final nums = [
+    for (final m in _numRe.allMatches(line)) _toIdr(m.group(0)!),
+  ].whereType<double>().toList();
+  if (nums.length == 2) {
+    final q = nums[0];
+    if (q == q.roundToDouble() &&
+        q >= 1 &&
+        q <= 99 &&
+        (nums[1] - total).abs() < 0.005) {
+      return ReceiptItem(name: name, qty: q.toInt(), price: total);
+    }
+  } else if (nums.length >= 3) {
+    for (var i = 0; i + 1 < nums.length; i++) {
+      final q = nums[i];
+      final unit = nums[i + 1];
+      if (q == q.roundToDouble() &&
+          q >= 1 &&
+          q <= 99 &&
+          (unit * q - total).abs() < 0.005) {
+        return ReceiptItem(name: name, qty: q.toInt(), price: total);
+      }
+    }
+  }
+  return ReceiptItem(name: name, price: total);
+}
+
+/// Alamat: baris jalan/nomor/kecamatan pertama (maks 60 char).
+String? _findAddress(List<String> lines) {
+  final re = RegExp(
+      r'jalan|\bjl\b|kec\.|kel\.|kab\.|kota|no\.\s*\d', caseSensitive: false);
+  for (final l in lines) {
+    if (l.length > 60 || !_numRe.hasMatch(l) && l.length < 8) continue;
+    if (re.hasMatch(l) && !_isTotalLine(l)) {
+      return l.length <= 60 ? l : l.substring(0, 60);
+    }
+  }
+  return null;
+}
+
+/// Kasir: "Kasir/Server/Operator [:] Nama".
+String? _findCashier(List<String> lines) {
+  final re = RegExp(
+      r'(kasir|server|operator|pramuniaga)\s*:?\s*([A-Za-z .]{2,24})',
+      caseSensitive: false);
+  for (final l in lines) {
+    final m = re.firstMatch(l);
+    if (m != null) return m.group(2)!.trim();
+  }
+  return null;
+}
+
+/// Telepon: digit 9-15 tanpa titik (NPWP bertitik tak ikut).
+String? _findPhone(List<String> lines) {
+  for (final l in lines) {
+    final m = RegExp(r'(\+?62|0)8?[0-9][0-9 \-]{6,}').firstMatch(l);
+    if (m == null) continue;
+    final digits = m.group(0)!.replaceAll(RegExp(r'[\s-]'), '');
+    if (RegExp(r'^(\+?62|0)8?\d{7,13}$').hasMatch(digits)) return m.group(0)!.trim();
+  }
+  return null;
+}
+
+/// No struk: "No/Bon/Trx [:] ID" (ID butuh huruf/dash atau ≥4 char
+/// supaya "No. 45" alamat tak ikut).
+String? _findReceiptNo(List<String> lines) {
+  for (final l in lines) {
+    if (_dateRe.hasMatch(l)) continue;
+    final id = _noId(l);
+    if (id == null) continue;
+    if (RegExp(r'[A-Za-z-]').hasMatch(id) || id.length >= 4) return id;
+  }
+  return null;
+}
+
+/// True bila baris adalah penanda nomor struk (bukan item belanja).
+/// "Bonus 10000" aman: butuh batas kata setelah keyword.
+bool _isNoLine(String l) => _noId(l) != null;
+
+String? _noId(String l) {
+  final m = RegExp(
+          r'(^|\s)(no|nomor|bon|struk|trx|transaksi)\b\s*[.:#]?\s*([A-Za-z0-9][A-Za-z0-9-]{1,19})',
+          caseSensitive: false)
+      .firstMatch(l);
+  return m?.group(3);
+}
+
+/// Jam "HH:MM" pertama yang valid.
+String? _findTime(List<String> lines) {
+  for (final l in lines) {
+    final m = RegExp(r'(\d{1,2}):(\d{2})(?::\d{2})?\b').firstMatch(l);
+    if (m == null) continue;
+    final h = int.tryParse(m.group(1)!) ?? 99;
+    final mi = int.tryParse(m.group(2)!) ?? 99;
+    if (h <= 23 && mi <= 59) {
+      return '${h.toString().padLeft(2, '0')}:${mi.toString().padLeft(2, '0')}';
+    }
+  }
+  return null;
+}
+
+/// Jenis bayar dari keyword prioritas (QRIS > Tunai > Debit > E-Money
+/// > Transfer > Kartu Kredit). "NON TUNAI" generik tak dipetakan.
+String? _findPayType(List<String> lines) {
+  bool any(RegExp re) => lines.any((l) => re.hasMatch(l));
+  if (any(RegExp(r'qris', caseSensitive: false))) return 'QRIS';
+  // "NON TUNAI" generik (tanpa metode jelas) bukan Tunai.
+  if (lines.any((l) =>
+      RegExp(r'\btunai\b|cash', caseSensitive: false).hasMatch(l) &&
+      !RegExp(r'non\s+tunai', caseSensitive: false).hasMatch(l))) {
+    return 'Tunai';
+  }
+  if (any(RegExp(r'debit|edc', caseSensitive: false))) return 'Debit';
+  if (any(RegExp(
+      r'e-money|emoney|gopay|ovo|dana|shopeepay|linkaja',
+      caseSensitive: false))) {
+    return 'E-Money';
+  }
+  if (any(RegExp(r'transfer|m-banking|mobile banking',
+      caseSensitive: false))) {
+    return 'Transfer';
+  }
+  if (any(RegExp(r'kartu kredit|credit card|visa|mastercard',
+      caseSensitive: false))) {
+    return 'Kartu Kredit';
+  }
+  return null;
 }
 
 /// Satu baris catatan: merchant + item, maks 200 char.
