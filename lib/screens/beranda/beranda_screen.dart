@@ -27,6 +27,7 @@ import 'package:ssr_space/services/game_store.dart';
 import 'package:ssr_space/screens/dompet/wallets_screen.dart';
 import 'package:ssr_space/screens/lainnya/arcade_screen.dart';
 import 'package:ssr_space/screens/lainnya/bill_splits_screen.dart';
+import 'package:ssr_space/services/debt_store.dart';
 import 'package:ssr_space/screens/lainnya/debts_screen.dart';
 import 'package:ssr_space/screens/lainnya/goals_screen.dart';
 import 'package:ssr_space/screens/lainnya/nfc_cards_screen.dart';
