@@ -492,10 +492,11 @@ class _TxInputSheetState extends State<TxInputSheet> {
           await showModalBottomSheet<void>(
             context: context,
             isScrollControlled: true,
-            builder: (_) => ReceiptResultSheet(
-              data: data,
-              onShowRaw: () => _showRawOcrDialog(raw),
-            ),
+          builder: (_) => ReceiptResultSheet(
+            data: data,
+            mirror: mirrorReceipt(raw),
+            onShowRaw: () => _showRawOcrDialog(raw),
+          ),
           );
         }
       }

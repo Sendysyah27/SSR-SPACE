@@ -8,6 +8,7 @@ Versi terpasang: 2.41.0+118.
 2. Hasil scan struk super detail: nama gerai + alamat + telepon, no struk, tanggal + jam, kasir, tabel belanjaan per item (nama, jumlah, harga), subtotal, diskon, total, dan jenis bayar (QRIS/Tunai/E-Money/dll). Yang tak terbaca disembunyikan, bukan dikarang.
 3. Voice input dibangun ulang native (tanpa plugin lama): kenali layanan suara HP dulu, izin mic eksplisit, hasil langsung mengisi ketik-cepat. Gagal kini berpesan jujur + saran perbaikan.
 4. Konsistensi visual: semua layar kosong kini berilustrasi (tak ada lagi kotak abu), hasil struk bisa disalin teksnya.
+5. Preview struk kini replika thermal: urutan baris sama dengan struk fisik, font monospace, tanpa kartu-kartu.
 
 ## Yang baru di 2.40.0+117
 

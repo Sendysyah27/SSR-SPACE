@@ -456,6 +456,54 @@ void main() {
     expect(r.items, ['Kopi 25000']);
   });
 
+  test('mirror: urutan asli header-item-total', () {
+    const raw = 'KOPI KENANGAN\n'
+        'Jl. Merdeka No. 45, Bandung\n'
+        'Telp 022-1234567\n'
+        'No : TRX-2026-00891\n'
+        'Kasir : Sinta\n'
+        '12/10/2026 14:35\n'
+        'Kopi Mantan 19000\n'
+        'Matcha Latte 2 50000\n'
+        'TOTAL : 69000\n'
+        'QRIS : 69000\n'
+        'TERIMA KASIH';
+    final m = mirrorReceipt(raw).map((e) => e.text).toList();
+    expect(
+      m,
+      [
+        'KOPI KENANGAN',
+        'Jl. Merdeka No. 45, Bandung',
+        'Telp 022-1234567',
+        'No : TRX-2026-00891',
+        'Kasir : Sinta',
+        '12/10/2026 14:35',
+        'Kopi Mantan',
+        'Matcha Latte x2',
+        'TOTAL :',
+        'QRIS :',
+        'TERIMA KASIH',
+      ],
+    );
+    final rows = mirrorReceipt(raw);
+    expect(rows[0].centered, isTrue);
+    expect(rows[0].bold, isTrue);
+    expect(rows[6].amount, 19000);
+    expect(rows[8].amount, 69000);
+    expect(rows[8].bold, isTrue);
+  });
+
+  test('mirror: footer sampah dibuang, item utuh', () {
+    const raw = 'INDOMARET\n'
+        'Kopi 25000\n'
+        'TOTAL : 25000\n'
+        'PT INDOMARCO PRISMATAMA\n'
+        'NPWP 01.234.567.8-901.000\n'
+        'TERIMA KASIH';
+    final m = mirrorReceipt(raw).map((e) => e.text).toList();
+    expect(m, ['INDOMARET', 'Kopi', 'TOTAL :', 'TERIMA KASIH']);
+  });
+
   test('struk detail: alamat kasir telp nostruk jam bayar', () {
     const raw = 'KOPI KENANGAN\n'
         'Jl. Merdeka No. 45, Bandung\n'

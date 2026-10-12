@@ -632,6 +632,125 @@ String receiptNote(ReceiptData d) {  final buf = StringBuffer();
   return s.length <= 200 ? s : s.substring(0, 200);
 }
 
+/// Baris tampil replika thermal: urutan = urutan baris asli.
+class MirrorLine {
+  final String text;
+  final double? amount;
+  final bool bold;
+  final bool centered;
+  const MirrorLine(this.text,
+      {this.amount, this.bold = false, this.centered = false});
+}
+
+final _thanksKey =
+    RegExp(r'terima kasih|thanks|selamat belanja', caseSensitive: false);
+final _telpKey =
+    RegExp(r'telp|telepon|phone|hubungi', caseSensitive: false);
+final _ptHead = RegExp(r'^(pt|cv|ud)\b', caseSensitive: false);
+final _cashierKey = RegExp(
+    r'(kasir|server|operator|pramuniaga)\s*:?\s*([A-Za-z .]{2,24})',
+    caseSensitive: false);
+
+/// Angka pertama baris mengandung digit betulan (bukan titik "Jl.").
+bool _headHasDigit(String l) {
+  final m = _numRe.firstMatch(l);
+  return m != null && RegExp(r'\d').hasMatch(m.group(0)!);
+}
+
+/// Cermin struk fisik: tiap baris OCR diklasifikasi (header/item/total/
+/// polos) dalam URUTAN ASLI; baris sampah dibuang. parseReceipt tak
+/// tersentuh (prefill + 43 test lama aman).
+List<MirrorLine> mirrorReceipt(String raw) {
+  final lines = raw
+      .split('\n')
+      .map((l) => l.trim())
+      .where((l) => l.isNotEmpty)
+      .toList();
+  final out = <MirrorLine>[];
+  for (var i = 0; i < lines.length; i++) {
+    var l = lines[i];
+    // Gabung fragmen seperti loop item ("Nama" / "1 25000").
+    // Baris tanggal tak digabung (tanggal milik header, bukan item).
+    // Syarat digit: titik singkatan ("Jl.", "No.") bukan angka.
+    if (i + 1 < lines.length &&
+        !_numRe.hasMatch(l) &&
+        _isFragment(l) &&
+        _shortHead(lines[i + 1]) &&
+        _headHasDigit(lines[i + 1]) &&
+        !_isTotalLine(lines[i + 1]) &&
+        !_dateRe.hasMatch(lines[i + 1])) {
+      l = '$l ${lines[i + 1]}';
+      i++;
+    }
+    // Sampah pasti: kepala PT/CV/UD, kode, digit-telanjang.
+    if (_ptHead.hasMatch(l) || _codeKey.hasMatch(l)) continue;
+    if (_phoneLine(l) && !_telpKey.hasMatch(l)) continue;
+    // Konten header/footer polos: merchant, alamat, kontak, no, kasir,
+    // tanggal/jam, ucapan. Merchant Bold.
+    final isMerchant =
+        _knownMerchant.hasMatch(l) || _merchantLine.hasMatch(l);
+    final isAddr = _findAddress([l]) != null;
+    final isNo = _isNoLine(l);
+    final isCashier = _cashierKey.hasMatch(l);
+    final isDate = _dateRe.hasMatch(l);
+    final isTime = _findTime([l]) != null;
+    final isTelp = _telpKey.hasMatch(l);
+    final isThanks = _thanksKey.hasMatch(l);
+    if (isMerchant ||
+        isAddr ||
+        isNo ||
+        isCashier ||
+        isDate ||
+        isTime ||
+        isTelp ||
+        isThanks) {
+      out.add(MirrorLine(l, centered: true, bold: isMerchant));
+      continue;
+    }
+    final nums = _numRe.allMatches(l).toList();
+    final isTotal = _isTotalLine(l);
+    final isTender = _payKey.hasMatch(l) ||
+        _cashKey.hasMatch(l) ||
+        _changeKey.hasMatch(l) ||
+        _voucherKey.hasMatch(l);
+    if ((isTotal || isTender) && !_countKey.hasMatch(l)) {
+      var v = _lastAmount(l);
+      var label = l;
+      // Label tanpa angka ("TOTAL :") + angka di baris berikut.
+      if (v == null &&
+          i + 1 < lines.length &&
+          _pureAmount.hasMatch(lines[i + 1].trim())) {
+        v = _lastAmount(lines[i + 1]);
+        i++;
+      } else if (nums.isNotEmpty) {
+        label = l.substring(0, nums.last.start).trim();
+      }
+      if (v != null && _okAmount(v)) {
+        out.add(MirrorLine(label, amount: v, bold: isTotal));
+        continue;
+      }
+      if (v == null && label.isNotEmpty) {
+        out.add(MirrorLine(label, bold: isTotal, centered: !isTotal));
+        continue;
+      }
+    }
+    // Baris item: nama + nominal, qty terbukti.
+    if (_fragKey.hasMatch(l) || _rejectKey.hasMatch(l)) continue;
+    if (nums.isEmpty) continue;
+    final name = l.substring(0, nums.first.start).trim();
+    if (RegExp(r'[A-Za-z]').allMatches(name).length < 3) continue;
+    if (RegExp(r'[a-z][A-Z]').hasMatch(name)) continue;
+    final total = _toIdr(nums.last.group(0)!);
+    if (!_okAmount(total)) continue;
+    final li = _splitQty(l, name, total!);
+    out.add(MirrorLine(
+      li.qty > 1 ? '${li.name} x${li.qty}' : li.name,
+      amount: li.price,
+    ));
+  }
+  return out;
+}
+
 /// Pecah satu item "Nama Produk 25000" menjadi nama + nominal.
 /// Tanpa angka akhir = (teks, 0). Dipakai layout struk hasil scan.
 ({String name, double amount}) splitReceiptItem(String item) {
