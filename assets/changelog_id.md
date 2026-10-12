@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.42.0+119.
+Versi terpasang: 2.43.0+120.
+
+## Yang baru di 2.43.0+120
+
+1. Profil tampil hero: avatar inisial + nama workspace + paket + status pelacakan dalam kartu emerald. Semua seksi Profil & Pengaturan kini berikon.
 
 ## Yang baru di 2.42.0+119
 

@@ -205,6 +205,7 @@ class _LangCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_lang'),
+      icon: AppIcons.menu,
       children: [
         SegmentedButton<String>(
           style: ssrSegmentedStyle(context),
@@ -248,6 +249,7 @@ class _CurrencyCard extends StatelessWidget {
                   .replaceFirst('{d}', '${at.day}-${at.month}-${at.year}'));
     return LabeledSectionCard(
       label: tr('st_currency'),
+      icon: AppIcons.billing,
       children: [
         DropdownButtonFormField<String>(
           initialValue: value,
@@ -283,6 +285,7 @@ class _FontCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_font'),
+      icon: AppIcons.settings,
       children: [
         Text(amt(100000)),
         Slider(
@@ -306,6 +309,7 @@ class _DefaultCurrencyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_def_currency'),
+      icon: AppIcons.billing,
       children: [
         ValueListenableBuilder<String>(
           valueListenable: inputDefaultCurrency,
@@ -334,6 +338,7 @@ class _NumberFormatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_numformat'),
+      icon: AppIcons.reports,
       children: [
         ValueListenableBuilder<String>(
           valueListenable: numberFormat,
@@ -384,6 +389,7 @@ class _DefaultWalletCardState extends State<_DefaultWalletCard> {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_def_wallet'),
+      icon: AppIcons.wallet,
       children: [
         FutureBuilder<List<Wallet>>(
           future: _wallets,
@@ -424,6 +430,7 @@ class _WeekStartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_weekstart'),
+      icon: AppIcons.calendar,
       children: [
         ValueListenableBuilder<int>(
           valueListenable: weekStart,
@@ -463,6 +470,7 @@ class _LockTimeoutCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_lock_timeout'),
+      icon: AppIcons.lock,
       children: [
         ValueListenableBuilder<int>(
           valueListenable: lockTimeoutMinutes,
@@ -507,6 +515,7 @@ class _TopNCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_topn'),
+      icon: AppIcons.reports,
       children: [
         ValueListenableBuilder<bool>(
           valueListenable: reportsTopN,
@@ -531,6 +540,7 @@ class _AnimsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_anims'),
+      icon: AppIcons.menu,
       children: [
         ValueListenableBuilder<bool>(
           valueListenable: uiAnims,
@@ -554,6 +564,7 @@ class _ListStyleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_list_style'),
+      icon: AppIcons.menu,
       children: [
         ValueListenableBuilder<String>(
           valueListenable: uiListStyle,
@@ -593,6 +604,7 @@ class _DateStyleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_date_style'),
+      icon: AppIcons.calendar,
       children: [
         ValueListenableBuilder<String>(
           valueListenable: uiDateStyle,
@@ -621,6 +633,7 @@ class _HeroStyleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_hero_style'),
+      icon: AppIcons.eye,
       children: [
         ValueListenableBuilder<String>(
           valueListenable: uiHeroStyle,
@@ -654,6 +667,7 @@ class _ThemeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_theme'),
+      icon: AppIcons.eye,
       children: [
         SegmentedButton<String>(
           style: ssrSegmentedStyle(context),
@@ -727,6 +741,7 @@ class _ReminderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_reminder_time'),
+      icon: AppIcons.clock,
       children: [
         ValueListenableBuilder<bool>(
           valueListenable: reminderEnabled,
@@ -916,6 +931,7 @@ class _WidgetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_widget_today'),
+      icon: AppIcons.transactions,
       children: [
         ValueListenableBuilder<bool>(
           valueListenable: widgetToday,
@@ -968,6 +984,7 @@ class _BiometricCardState extends State<_BiometricCard> {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('bio_t'),
+      icon: AppIcons.success,
       children: [
         ValueListenableBuilder<bool>(
           valueListenable: biometricEnabled,
@@ -1127,6 +1144,7 @@ class _PinCardState extends State<_PinCard> {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('st_pin'),
+      icon: AppIcons.lock,
       children: [
         _PinFeedback(msg: msg, err: err),
         if (step == 'checkOld') ...[

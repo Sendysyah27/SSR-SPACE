@@ -49,7 +49,6 @@ import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:ssr_space/screens/dompet/wallets_screen.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/nav_tile.dart';
-import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
@@ -619,7 +618,8 @@ class _HubList extends StatelessWidget {
   }
 }
 
-/// HEADER: kartu meta tanpa label (nama org, chip plan, status pelacakan).
+/// HEADER: kartu identitas hero (avatar inisial + nama + chip).
+/// Pola warna ikut hero Beranda: emeraldDeep dua mode, teks adaptif.
 class _HeaderCard extends StatelessWidget {
   final String orgName;
   final String planLabel;
@@ -635,39 +635,66 @@ class _HeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
+    final scheme = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final onHero = dark ? scheme.onSurface : scheme.onPrimary;
+    final initial = orgName.trim().isEmpty
+        ? '?'
+        : String.fromCharCode(orgName.trim().runes.first).toUpperCase();
+    return Container(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(SsrSpace.lg),
+      decoration: const BoxDecoration(
+        color: AppColors.emeraldDeep,
+        borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
+      ),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  orgName,
-                  style: Theme.of(context).textTheme.titleMedium,
+          Container(
+            width: 52,
+            height: 52,
+            decoration: const BoxDecoration(
+              color: AppColors.gold,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                initial,
+                style: TextStyle(
+                  color: AppColors.emeraldDeep,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              StatusChip(
-                label: planLabel,
-                tone: isPro ? StatusTone.accent : StatusTone.neutral,
-              ),
-            ],
+            ),
           ),
-          const Divider(height: SsrSpace.xl),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  tr('o_tracking'),
-                  style: Theme.of(context).textTheme.bodySmall,
+          const SizedBox(width: SsrSpace.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  orgName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: onHero,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              StatusChip(
-                label: tracking ? tr('nt_on') : tr('nt_off'),
-                tone: tracking ? StatusTone.accent : StatusTone.neutral,
-              ),
-            ],
+                const SizedBox(height: SsrSpace.xs),
+                StatusChip(
+                  label: planLabel,
+                  tone: isPro ? StatusTone.ink : StatusTone.neutral,
+                ),
+                const SizedBox(height: SsrSpace.xs),
+                Text(
+                  '${tr('o_tracking')} • ${tr(tracking ? 'nt_on' : 'nt_off')}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: onHero.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -749,6 +776,7 @@ class _DataSectionState extends State<_DataSection> {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('pf_data'),
+      icon: AppIcons.transactions,
       children: [
         NavTile(
           icon: AppIcons.wallet,
@@ -856,6 +884,7 @@ class _TrackingSection extends StatelessWidget {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('pf_tracking'),
+      icon: AppIcons.tracking,
       children: [
         NavTile(
           icon: AppIcons.tracking,
@@ -895,6 +924,7 @@ class _BackupSection extends StatelessWidget {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('pf_backup'),
+      icon: AppIcons.backup,
       children: [
         NavTile(
           icon: AppIcons.backup,
@@ -975,6 +1005,7 @@ class _WorkspaceSection extends StatelessWidget {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('pf_workspace'),
+      icon: AppIcons.workspace,
       children: [
         NavTile(
           icon: AppIcons.invite,
@@ -1038,6 +1069,7 @@ class _AppearanceSection extends StatelessWidget {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('pf_appearance'),
+      icon: AppIcons.eye,
       children: [
         ValueListenableBuilder<bool>(
           valueListenable: maskAmounts,
@@ -1071,6 +1103,7 @@ class _LangMoneySection extends StatelessWidget {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('pf_langmoney'),
+      icon: AppIcons.billing,
       children: [
         NavTile(
           icon: AppIcons.menu,
@@ -1093,6 +1126,7 @@ class _ReminderSection extends StatelessWidget {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('pf_reminder'),
+      icon: AppIcons.clock,
       children: [
         NavTile(
           icon: AppIcons.menu,
@@ -1116,6 +1150,7 @@ class _SecuritySection extends StatelessWidget {
     return LabeledSectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       label: tr('pf_security'),
+      icon: AppIcons.lock,
       children: [
         NavTile(
           icon: AppIcons.lock,
@@ -1165,6 +1200,7 @@ class _AboutSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return LabeledSectionCard(
       label: tr('pf_about'),
+      icon: AppIcons.menu,
       children: [
         NavTile(
           icon: AppIcons.menu,
