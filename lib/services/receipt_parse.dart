@@ -303,7 +303,7 @@ ReceiptData parseReceipt(String raw) {
   // PRIORITAS UTAMA: label TOTAL/GRAND telanjang + angka murni di ≤3
   // baris berikut + Tender sesudahnya. Label ada tapi tak terkonfirmasi
   // = tolak (bukan comot) → fallback lama yang putuskan.
-  if (amount == null) amount = _labelledTotal(lines);
+  amount ??= _labelledTotal(lines);
   // Struk QRIS: jumlah dibayar = total.
   if (amount == null) {
     for (final l in lines) {
