@@ -30,6 +30,8 @@ void main() {
     expect(voiceErrorKey('error_busy'), 'vc_error');
     expect(voiceErrorKey('error_client'), 'vc_error');
     expect(voiceErrorKey(''), 'vc_error');
+    expect(voiceErrorKey('network'), 'vc_offline');
+    expect(voiceErrorKey('error_network_timeout'), 'vc_offline');
   });
 
   test('urutan locale: default dulu, id sebagai retry', () {

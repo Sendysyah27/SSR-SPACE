@@ -800,6 +800,10 @@ jobs:
                                               android.speech.SpeechRecognizer
                                                   .ERROR_INSUFFICIENT_PERMISSIONS ->
                                                   "permission"
+                                              android.speech.SpeechRecognizer
+                                                  .ERROR_NETWORK_TIMEOUT -> "network"
+                                              android.speech.SpeechRecognizer
+                                                  .ERROR_NETWORK -> "network"
                                               else -> "service"
                                           }
                                           ch.invokeMethod("onError", mapOf(
@@ -842,6 +846,8 @@ jobs:
                           "stop" -> {
                               try {
                                   voiceRecognizer?.stopListening()
+                                  voiceRecognizer?.destroy()
+                                  voiceRecognizer = null
                               } catch (e: Exception) {
                               }
                               result.success(true)
@@ -942,6 +948,12 @@ jobs:
                                               .SpeechRecognizer
                                               .ERROR_INSUFFICIENT_PERMISSIONS) {
                                           code = "permission";
+                                      } else if (e == android.speech
+                                              .SpeechRecognizer
+                                              .ERROR_NETWORK_TIMEOUT ||
+                                              e == android.speech.SpeechRecognizer
+                                                      .ERROR_NETWORK) {
+                                          code = "network";
                                       }
                                       java.util.Map<String, Object> m =
                                               new java.util.HashMap<>();
@@ -991,6 +1003,8 @@ jobs:
                       } else if (call.method.equals("stop")) {
                           try {
                               if (voiceRecognizer != null) voiceRecognizer.stopListening();
+                              if (voiceRecognizer != null) voiceRecognizer.destroy();
+                              voiceRecognizer = null;
                           } catch (Exception e) {
                           }
                           result.success(true);

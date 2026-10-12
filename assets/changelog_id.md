@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.41.0+118.
+Versi terpasang: 2.42.0+119.
+
+## Yang baru di 2.42.0+119
+
+1. Voice input native jujur soal jaringan: gagal karena internet kini berpesan "butuh internet", bukan error umum. Recognizer juga dibersihkan tiap berhenti agar tap ulang tak macet. Wajib ada internet + layanan suara Google; coba ucap "makan siang 25 ribu".
 
 ## Yang baru di 2.41.0+118
 

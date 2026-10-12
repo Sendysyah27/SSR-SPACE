@@ -225,6 +225,7 @@ String voiceErrorKey(String code) {  final c = code.toLowerCase();
   if (c.contains('permission') || c.contains('not_allowed')) {
     return 'vc_denied';
   }
+  if (c.contains('network')) return 'vc_offline';
   return 'vc_error';
 }
 
