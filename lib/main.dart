@@ -6,6 +6,7 @@ import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/currency.dart';
+import 'package:ssr_space/services/due_notify.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/heartbeat_service.dart';
@@ -52,6 +53,13 @@ Future<void> main() async {
     }
   } catch (e) {
     debugPrint('jadwal ulang pengingat gagal: $e');
+  }
+  // Pengingat jatuh tempo utang/tagihan (H-3 & H-1): hitung ulang
+  // tiap start, fail-silent seperti pengingat di atas.
+  try {
+    await DueNotify.reschedule();
+  } catch (e) {
+    debugPrint('jadwal ulang jatuh tempo gagal: $e');
   }
   // Heartbeat anti-pause (max 1/hari, fail-silent): aktivitas API harian
   // menjaga project free-tier tetap hidup walau semua cron diam.

@@ -590,6 +590,28 @@ const _t = <String, Map<String, String>>{
     'id': 'Catatan penuh (50). Hapus yang tak dipakai dulu.',
     'en': 'Records are full (50). Delete an unused one first.',
   },
+  // Pengingat jatuh tempo (Batch 27, H-3 & H-1)
+  'due_debt_t': {'id': 'Utang jatuh tempo', 'en': 'Debt due'},
+  'due_debt_b': {
+    'id': 'Bayar ke {n} {m}, tenggat {d}.',
+    'en': 'Pay {n} {m}, due {d}.',
+  },
+  'due_recv_t': {'id': 'Piutang jatuh tempo', 'en': 'Receivable due'},
+  'due_recv_b': {
+    'id': 'Tagih ke {n} {m}, tenggat {d}.',
+    'en': 'Collect from {n} {m}, due {d}.',
+  },
+  'due_bill_t': {'id': 'Tagihan jatuh tempo', 'en': 'Bill due'},
+  'due_bill_b': {
+    'id': '{n} {m}, tenggat {d}.',
+    'en': '{n} {m}, due {d}.',
+  },
+  'due_upcoming': {'id': 'Segera jatuh tempo', 'en': 'Due soon'},
+  'due_in_days': {'id': '{n} hari lagi', 'en': 'in {n} days'},
+  'due_today': {'id': 'Hari ini', 'en': 'Today'},
+  'due_overdue': {'id': 'Terlewat {n} hari', 'en': '{n} days overdue'},
+  'due_deadline': {'id': 'Tenggat (opsional)', 'en': 'Due date (optional)'},
+  'due_no_deadline': {'id': 'Tanpa tenggat', 'en': 'No due date'},
   // Anggota keluarga (Batch 24, ringkasan per anggota)
   'fam_title': {'id': 'Anggota', 'en': 'Members'},
   'fam_sub': {

@@ -1,8 +1,10 @@
-import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/services/debt_store.dart';
 import 'package:ssr_space/services/debt_track.dart';
+import 'package:ssr_space/services/due_notify.dart';
+import 'package:ssr_space/services/due_reminder.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
@@ -12,36 +14,6 @@ import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
-
-/// Kunci prefs daftar utang-piutang (maks [maxDebts]).
-const _kDebts = 'debts';
-
-Future<List<DebtRecord>> loadDebts() async {
-  final prefs = await SharedPreferences.getInstance();
-  final raw = prefs.getString(_kDebts);
-  if (raw == null || raw.isEmpty) return [];
-  try {
-    final list = jsonDecode(raw) as List;
-    final out = <DebtRecord>[];
-    for (final e in list) {
-      final d = DebtRecord.tryParse(e);
-      if (d != null) out.add(d);
-      if (out.length >= maxDebts) break;
-    }
-    return out;
-  } catch (_) {
-    return [];
-  }
-}
-
-Future<void> saveDebts(List<DebtRecord> debts) async {
-  final capped = debts.take(maxDebts).toList();
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(
-    _kDebts,
-    jsonEncode([for (final d in capped) d.toJson()]),
-  );
-}
 
 String _ymd(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-'
@@ -93,12 +65,14 @@ class DebtsScreenState extends State<DebtsScreen> {
     final list = [for (final d in debts) d.id == next.id ? next : d];
     await saveDebts(list);
     if (mounted) setState(() => debts = list);
+    unawaited(DueNotify.reschedule());
   }
 
   Future<void> _remove(String id) async {
     final list = debts.where((d) => d.id != id).toList();
     await saveDebts(list);
     if (mounted) setState(() => debts = list);
+    unawaited(DueNotify.reschedule());
   }
 
   Future<void> _create() async {
@@ -119,6 +93,7 @@ class DebtsScreenState extends State<DebtsScreen> {
     await saveDebts(list);
     if (!mounted) return;
     setState(() => debts = list);
+    unawaited(DueNotify.reschedule());
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(tr('db_saved'))));
@@ -165,14 +140,40 @@ class DebtsScreenState extends State<DebtsScreen> {
       );
     }
     final t = debtTotals(debts);
+    final now = DateTime.now();
+    final upcoming = [
+      for (final d in debtDues(debts, now))
+        if (d.daysLeft <= 7) d,
+    ];
     return ListView.builder(
       padding: const EdgeInsets.all(SsrSpace.lg),
-      itemCount: debts.length + 1,
+      itemCount: debts.length + 1 + (upcoming.isEmpty ? 0 : 1),
       itemBuilder: (_, i) {
         if (i == 0) return _TotalCard(debt: t.debt, receivable: t.receivable);
-        return _DebtTile(record: debts[i - 1], onTap: _openDetail);
+        if (upcoming.isNotEmpty && i == 1) {
+          return _UpcomingCard(
+            dues: upcoming,
+            onTap: _openDetailRecord,
+          );
+        }
+        final idx = i - 1 - (upcoming.isEmpty ? 0 : 1);
+        return _DebtTile(record: debts[idx], onTap: _openDetail);
       },
     );
+  }
+
+  void _openDetailRecord(DebtDue d) {
+    final found = debts.where((x) => x.id == d.record.id);
+    if (found.isNotEmpty) _openDetail(found.first);
+  }
+
+  /// Teks hitung mundur: hari ini / N hari lagi / terlewat.
+  static String dueCountdown(int daysLeft) {
+    if (daysLeft < 0) {
+      return tr('due_overdue').replaceFirst('{n}', '${-daysLeft}');
+    }
+    if (daysLeft == 0) return tr('due_today');
+    return tr('due_in_days').replaceFirst('{n}', '$daysLeft');
   }
 }
 
@@ -208,6 +209,61 @@ class _TotalCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Seksi segera jatuh tempo (deadline ≤7 hari, urut terdekat).
+class _UpcomingCard extends StatelessWidget {
+  final List<DebtDue> dues;
+  final ValueChanged<DebtDue> onTap;
+
+  const _UpcomingCard({required this.dues, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('due_upcoming'),
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: SsrSpace.sm),
+          for (final d in dues)
+            InkWell(
+              onTap: () => onTap(d),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        d.record.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      '${DebtsScreenState.dueCountdown(d.daysLeft)} · '
+                      '${amt(d.record.remaining())}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: d.daysLeft < 0
+                            ? Theme.of(context).colorScheme.error
+                            : null,
+                        fontFeatures: const [
+                          FontFeature.tabularFigures(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -420,6 +476,9 @@ class _DebtDetailSheetState extends State<_DebtDetailSheet> {
   }
 
   Widget _head(BuildContext context) {
+    final dueLeft = debt.dueDate == null
+        ? null
+        : daysUntilDue(debt.dueDate, DateTime.now());
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -451,6 +510,14 @@ class _DebtDetailSheetState extends State<_DebtDetailSheet> {
           debt.date + (debt.note.isEmpty ? '' : ' · ${debt.note}'),
           style: Theme.of(context).textTheme.bodySmall,
         ),
+        if (dueLeft != null)
+          Text(
+            '${tr('due_deadline')}: ${debt.dueDate} · '
+            '${DebtsScreenState.dueCountdown(dueLeft)}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
       ],
     );
   }
@@ -504,6 +571,7 @@ class _DebtEditorState extends State<_DebtEditor> {
   final noteC = TextEditingController();
   String kind = debtKindDebt;
   DateTime date = DateTime.now();
+  DateTime? due;
   String? err;
 
   @override
@@ -524,6 +592,16 @@ class _DebtEditorState extends State<_DebtEditor> {
     if (picked != null && mounted) setState(() => date = picked);
   }
 
+  Future<void> _pickDue() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: due ?? date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+    if (picked != null && mounted) setState(() => due = picked);
+  }
+
   void _submit() {
     final name = nameC.text.trim();
     final amount = double.tryParse(amountC.text.trim());
@@ -539,6 +617,7 @@ class _DebtEditorState extends State<_DebtEditor> {
         name: name.length > 40 ? name.substring(0, 40) : name,
         total: amount,
         date: _ymd(date),
+        dueDate: due == null ? null : _ymd(due!),
         note: noteC.text.trim(),
         payments: const [],
       ),
@@ -583,6 +662,25 @@ class _DebtEditorState extends State<_DebtEditor> {
             ),
             const SizedBox(height: SsrSpace.sm),
             _dateRow(context),
+            const SizedBox(height: SsrSpace.sm),
+            InkWell(
+              onTap: _pickDue,
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: tr('due_deadline'),
+                  suffixIcon: due == null
+                      ? null
+                      : IconButton(
+                          icon: const DuoIcon(AppIcons.close),
+                          tooltip: tr('clear'),
+                          onPressed: () => setState(() => due = null),
+                        ),
+                ),
+                child: Text(
+                  due == null ? tr('due_no_deadline') : _ymd(due!),
+                ),
+              ),
+            ),
             const SizedBox(height: SsrSpace.sm),
             TextField(
               controller: noteC,

@@ -38,6 +38,7 @@ class DebtRecord {
   final String name;
   final double total;
   final String date;
+  final String? dueDate;
   final String note;
   final List<DebtPayment> payments;
 
@@ -47,6 +48,7 @@ class DebtRecord {
     required this.name,
     required this.total,
     required this.date,
+    this.dueDate,
     required this.note,
     required this.payments,
   });
@@ -75,6 +77,7 @@ class DebtRecord {
       name: name,
       total: total,
       date: date,
+      dueDate: dueDate,
       note: note,
       payments: [...payments, DebtPayment(amount: amt, date: p.date)],
     );
@@ -86,6 +89,7 @@ class DebtRecord {
     'name': name,
     'total': total,
     'date': date,
+    if (dueDate != null) 'dueDate': dueDate,
     'note': note,
     'payments': [for (final p in payments) p.toJson()],
   };
@@ -108,6 +112,12 @@ class DebtRecord {
     if (date.length < 10 || DateTime.tryParse(date.substring(0, 10)) == null) {
       return null;
     }
+    // Deadline opsional: absen/rusak = null (entri lama tetap valid).
+    String? dueDate;
+    final rawDue = raw['dueDate']?.toString() ?? '';
+    if (rawDue.length >= 10 && DateTime.tryParse(rawDue.substring(0, 10)) != null) {
+      dueDate = rawDue.substring(0, 10);
+    }
     final payments = <DebtPayment>[];
     final list = raw['payments'];
     if (list is List) {
@@ -123,6 +133,7 @@ class DebtRecord {
       name: name,
       total: total,
       date: date.substring(0, 10),
+      dueDate: dueDate,
       note: (raw['note']?.toString() ?? '').trim(),
       payments: payments,
     );

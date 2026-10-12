@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.36.0+113.
+Versi terpasang: 2.37.0+114.
+
+## Yang baru di 2.37.0+114
+
+1. Pengingat jatuh tempo: utang/piutang ber-tenggat dan tagihan aktif diberi tahu H-3 dan H-1 (jam 9 pagi). Daftar segera-jatuh-tempo tampil di layar Utang & Tagihan. Isi tenggat saat catat utang agar diingatkan.
 
 ## Yang baru di 2.36.0+113
 

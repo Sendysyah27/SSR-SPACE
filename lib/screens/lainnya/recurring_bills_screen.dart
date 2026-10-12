@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ssr_space/models/wallet.dart';
+import 'package:ssr_space/services/due_notify.dart';
+import 'package:ssr_space/services/due_reminder.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -83,6 +87,7 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
     }
     await saveBills(next);
     if (mounted) setState(() => bills = next);
+    unawaited(DueNotify.reschedule());
   }
 
   Future<void> _toggle(RecurringBill bill, bool v) async {
@@ -117,6 +122,7 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
     final next = bills.where((b) => b.id != bill.id).toList();
     await saveBills(next);
     if (mounted) setState(() => bills = next);
+    unawaited(DueNotify.reschedule());
   }
 
   @override
@@ -144,12 +150,86 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
         onAction: () => _openEditor(null),
       );
     }
+    final now = DateTime.now();
+    final upcoming = billDues(
+      [
+        for (final b in bills)
+          DueBillInput(
+            id: b.id,
+            label: b.label,
+            amount: b.amount,
+            nextDue: b.nextDue,
+            active: b.active,
+          ),
+      ],
+      now,
+    ).where((e) => e.daysLeft <= 7).toList();
     return ListView.builder(
       padding: const EdgeInsets.all(SsrSpace.lg),
-      itemCount: bills.length,
-      itemBuilder: (_, i) => _billTile(bills[i]),
+      itemCount: bills.length + (upcoming.isEmpty ? 0 : 1),
+      itemBuilder: (_, i) {
+        if (upcoming.isNotEmpty && i == 0) {
+          return _upcomingCard(upcoming);
+        }
+        final idx = i - (upcoming.isEmpty ? 0 : 1);
+        return _billTile(bills[idx]);
+      },
     );
   }
+
+  /// Countdown jujur: hari ini / N hari lagi / terlewat.
+  static String dueCountdown(int daysLeft) {
+    if (daysLeft < 0) {
+      return tr('due_overdue').replaceFirst('{n}', '${-daysLeft}');
+    }
+    if (daysLeft == 0) return tr('due_today');
+    return tr('due_in_days').replaceFirst('{n}', '$daysLeft');
+  }
+
+  /// Seksi tagihan aktif yang segera/lewat jatuh tempo (≤7 hari).
+  Widget _upcomingCard(List<BillDue> dues) {
+    return SectionCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('due_upcoming'),
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: SsrSpace.sm),
+          for (final d in dues)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      d.input.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    '${dueCountdown(d.daysLeft)} · '
+                    '${amt(d.input.amount)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: d.daysLeft < 0
+                          ? Theme.of(context).colorScheme.error
+                          : null,
+                      fontFeatures: const [
+                        FontFeature.tabularFigures(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _billTile(RecurringBill bill) {
     final period = bill.period == 'weekly' ? tr('rb_weekly') : tr('rb_monthly');
