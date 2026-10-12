@@ -2255,6 +2255,10 @@ const _t = <String, Map<String, String>>{
   },
   'sv30_suggest': {'id': 'Bisa dihemat', 'en': 'Save here'},
   'sv30_history': {'id': 'Riwayat', 'en': 'History'},
+  'sv30_hist_empty': {
+    'id': 'Belum ada yang selesai. Riwayat muncul di sini.',
+    'en': 'Nothing finished yet. History shows up here.',
+  },
   'sv30_success': {'id': 'Berhasil', 'en': 'Success'},
   'sv30_failed': {'id': 'Belum berhasil', 'en': 'Not yet'},
   'sv30_mile_t': {'id': 'Milestone hemat!', 'en': 'Saving milestone!'},
@@ -2273,3 +2277,6 @@ const _t = <String, Map<String, String>>{
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;
+
+// Tabel publik khusus test parity (bukan untuk UI).
+Map<String, Map<String, String>> get stringTable => _t;

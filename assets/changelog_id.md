@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.39.0+116.
+Versi terpasang: 2.40.0+117.
+
+## Yang baru di 2.40.0+117
+
+1. Polish rilis: teks riwayat tantangan diperjelas, kode tak terpakai dibersihkan, dan seluruh teks aplikasi kini dikunci test dua bahasa (tak ada yang kelewat tanpa Inggris).
+2. Layar Tentang otomatis menampilkan versi terbaru. Ikon & splash custom ditunda ke batch tersendiri (butuh aset + cek device).
 
 ## Yang baru di 2.39.0+116
 

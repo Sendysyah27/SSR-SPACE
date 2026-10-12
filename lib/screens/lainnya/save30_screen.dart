@@ -264,11 +264,7 @@ class Save30ScreenState extends State<Save30Screen> {
         if (a == null || p == null) ...[
           _StartCard(controller: _targetC, onStart: _start),
         ] else ...[
-          _ProgressCard(
-            active: a,
-            progress: p,
-            onStop: _stop,
-          ),
+          _ProgressCard(progress: p, onStop: _stop),
           const SizedBox(height: SsrSpace.md),
           _SuggestCard(cuts: cuts, amounts: spentByCat),
         ],
@@ -321,15 +317,10 @@ class _StartCard extends StatelessWidget {
 
 /// Kartu progres: bar N/30 + streak + milestone + pemakaian.
 class _ProgressCard extends StatelessWidget {
-  final Save30Active active;
   final Save30Progress progress;
   final VoidCallback onStop;
 
-  const _ProgressCard({
-    required this.active,
-    required this.progress,
-    required this.onStop,
-  });
+  const _ProgressCard({required this.progress, required this.onStop});
 
   @override
   Widget build(BuildContext context) {
@@ -467,7 +458,7 @@ class _HistoryCard extends StatelessWidget {
           Text(tr('sv30_history'), style: theme.textTheme.titleSmall),
           const SizedBox(height: SsrSpace.sm),
           if (history.isEmpty)
-            Text(tr('sv30_empty_s'), style: theme.textTheme.bodySmall)
+            Text(tr('sv30_hist_empty'), style: theme.textTheme.bodySmall)
           else
             for (final h in history)
               Padding(
