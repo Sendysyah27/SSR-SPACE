@@ -36,7 +36,7 @@ WalletBrand? brandForWallet(String? name) {
   if (n.isEmpty) return null;
   for (final b in _brands) {
     final kw = b[0] as String;
-    final re = RegExp('(^|[^a-z])' + RegExp.escape(kw) + r'([^a-z]|$)');
+    final re = RegExp('(^|[^a-z])${RegExp.escape(kw)}([^a-z]|\$)');
     if (re.hasMatch(n)) {
       return WalletBrand(b[1] as String, b[2] as int);
     }
