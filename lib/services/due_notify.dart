@@ -116,7 +116,7 @@ class DueNotify {
         final id = int.tryParse(raw);
         if (id == null || !wanted.containsKey(id)) {
           try {
-            if (id != null) await _plugin.cancel(id);
+            if (id != null) await _plugin.cancel(id: id);
           } catch (_) {}
         }
       }
