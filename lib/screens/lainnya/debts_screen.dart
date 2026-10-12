@@ -133,6 +133,7 @@ class DebtsScreenState extends State<DebtsScreen> {
     if (debts.isEmpty) {
       return EmptyView(
         icon: AppIcons.billing,
+        illustration: 'assets/illustrations/empty_dompet.svg',
         title: tr('db_empty_t'),
         subtitle: tr('db_empty_s'),
         actionLabel: tr('db_new'),

@@ -248,6 +248,7 @@ class Save30ScreenState extends State<Save30Screen> {
     if (noOrg) {
       return EmptyView(
         icon: AppIcons.success,
+        illustration: 'assets/illustrations/empty_undangan.svg',
         title: tr('tx_no_org_t'),
         subtitle: tr('tx_no_org_s'),
         actionLabel: tr('reload'),

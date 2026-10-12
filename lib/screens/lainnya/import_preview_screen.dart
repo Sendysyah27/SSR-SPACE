@@ -298,6 +298,7 @@ class _EmptyHint extends StatelessWidget {
   Widget build(BuildContext context) {
     return EmptyView(
       icon: AppIcons.arrowDown,
+      illustration: 'assets/illustrations/empty_laporan.svg',
       title: tr('imp_title'),
       subtitle: _kCsvHint,
       actionLabel: tr('imp_preview'),

@@ -281,6 +281,7 @@ class _OrgPickerBody extends StatelessWidget {
         if (orgs.isEmpty)
           EmptyView(
             icon: AppIcons.workspace,
+            illustration: 'assets/illustrations/empty_undangan.svg',
             title: tr('org_empty_t'),
             subtitle: tr('org_empty_s'),
             actionLabel: tr('org_empty_a'),

@@ -209,6 +209,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
       return _WalletsScaffold(
         EmptyView(
           icon: AppIcons.workspace,
+          illustration: 'assets/illustrations/empty_undangan.svg',
           title: tr('w_noorg_t'),
           subtitle: tr('w_noorg_s'),
           actionLabel: tr('reload'),

@@ -144,6 +144,7 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
     if (bills.isEmpty) {
       return EmptyView(
         icon: AppIcons.bills,
+        illustration: 'assets/illustrations/empty_budget.svg',
         title: tr('rb_empty_t'),
         subtitle: tr('rb_empty_s'),
         actionLabel: tr('rb_add'),

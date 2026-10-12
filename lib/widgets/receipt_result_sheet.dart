@@ -41,12 +41,13 @@ class ReceiptResultSheet extends StatelessWidget {
             '${date.year}'
             '${data.time == null ? '' : ' ${data.time}'}';
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(SsrSpace.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      child: SelectionArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(SsrSpace.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Text(
               data.merchant ?? tr('rcp_scan'),
               style: theme.textTheme.headlineSmall,
@@ -138,6 +139,7 @@ class ReceiptResultSheet extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -123,6 +123,7 @@ class NetWorthScreenState extends State<NetWorthScreen> {
     if (w == null || !w.hasData) {
       return EmptyView(
         icon: AppIcons.billing,
+        illustration: 'assets/illustrations/savings.svg',
         title: tr('tx_empty_t'),
         actionLabel: tr('reload'),
         onAction: _load,

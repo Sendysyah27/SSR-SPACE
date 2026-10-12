@@ -327,6 +327,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         onAdd: _openAdd,
         body: EmptyView(
           icon: AppIcons.workspace,
+          illustration: 'assets/illustrations/empty_undangan.svg',
           title: tr('tx_no_org_t'),
           subtitle: tr('tx_no_org_s'),
           actionLabel: tr('reload'),

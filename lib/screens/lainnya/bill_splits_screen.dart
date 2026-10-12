@@ -172,6 +172,7 @@ class BillSplitsScreenState extends State<BillSplitsScreen> {
     if (noOrg) {
       return EmptyView(
         icon: AppIcons.workspace,
+        illustration: 'assets/illustrations/empty_undangan.svg',
         title: tr('tx_no_org_t'),
         subtitle: tr('tx_no_org_s'),
         actionLabel: tr('reload'),
@@ -184,6 +185,7 @@ class BillSplitsScreenState extends State<BillSplitsScreen> {
     if (splits.isEmpty) {
       return EmptyView(
         icon: AppIcons.transfer,
+        illustration: 'assets/illustrations/empty_transaksi.svg',
         title: tr('bs_empty_t'),
         subtitle: tr('bs_empty_s'),
         actionLabel: tr('bs_new'),

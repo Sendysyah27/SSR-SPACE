@@ -192,6 +192,7 @@ class _InviteScreenState extends State<InviteScreen> {
           : orgId.isEmpty
           ? EmptyView(
               icon: AppIcons.workspace,
+              illustration: 'assets/illustrations/empty_undangan.svg',
               title: tr('iv_noorg_t'),
               subtitle: tr('iv_noorg_s'),
               actionLabel: tr('reload'),
@@ -200,6 +201,7 @@ class _InviteScreenState extends State<InviteScreen> {
           : !isAdmin
           ? EmptyView(
               icon: AppIcons.lock,
+              illustration: 'assets/illustrations/empty_undangan.svg',
               title: tr('iv_notadmin_t'),
               subtitle: tr('iv_notadmin_s'),
               actionLabel: tr('reload'),

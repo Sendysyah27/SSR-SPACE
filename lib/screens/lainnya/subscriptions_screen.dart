@@ -193,6 +193,7 @@ class SubscriptionsScreenState extends State<SubscriptionsScreen> {
     if (noOrg) {
       return EmptyView(
         icon: AppIcons.workspace,
+        illustration: 'assets/illustrations/empty_undangan.svg',
         title: tr('tx_no_org_t'),
         subtitle: tr('tx_no_org_s'),
         actionLabel: tr('reload'),
@@ -206,6 +207,7 @@ class SubscriptionsScreenState extends State<SubscriptionsScreen> {
     if (rows.isEmpty && _hidden.isEmpty) {
       return EmptyView(
         icon: AppIcons.calendar,
+        illustration: 'assets/illustrations/empty_laporan.svg',
         title: tr('sub_empty_t'),
         subtitle: tr('sub_empty_s'),
         actionLabel: tr('reload'),

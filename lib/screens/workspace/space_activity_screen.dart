@@ -116,6 +116,7 @@ class _SpaceActivityState extends State<SpaceActivityScreen> {
     if (_rows.isEmpty) {
       return EmptyView(
         icon: AppIcons.history,
+        illustration: 'assets/illustrations/empty_riwayat.svg',
         title: tr('sp_activity'),
         subtitle: tr('sp_mode_desc'),
         actionLabel: tr('reload'),
