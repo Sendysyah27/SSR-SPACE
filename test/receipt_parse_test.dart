@@ -538,6 +538,25 @@ void main() {
     expect(off.any((e) => e.text == 'Toko' && e.amount == 25000), isFalse);
   });
 
+  test('kenangan: varian gabung ke produk induk', () {
+    const raw = 'KOPI KENANGAN\nKOPI KENANGAN MANTAN\nNormal Ice\n25000\n'
+        'MATCHA LATTE\nBlend Less Sugar\n34000\nTOTAL 59000';
+    final r = parseReceipt(raw);
+    expect(r.items, [
+      'KOPI KENANGAN MANTAN Normal Ice 25000',
+      'MATCHA LATTE Blend Less Sugar 34000',
+    ]);
+    expect(r.amount, 59000);
+  });
+
+  test('bangor: sub-item pilihan kepisah', () {
+    const raw = 'BURGER BANGOR\nBurgetang 4 45000\nPilihan Nugget\n12000\n'
+        'TOTAL 57000';
+    final r = parseReceipt(raw);
+    expect(r.items, ['Burgetang 45000', 'Pilihan Nugget 12000']);
+    expect(r.amount, 57000);
+  });
+
   test('struk detail: alamat kasir telp nostruk jam bayar', () {
     const raw = 'KOPI KENANGAN\n'
         'Jl. Merdeka No. 45, Bandung\n'

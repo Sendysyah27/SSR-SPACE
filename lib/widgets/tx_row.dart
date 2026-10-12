@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
@@ -9,6 +10,7 @@ import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/cool_icons.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
@@ -135,19 +137,7 @@ class TxRow extends StatelessWidget {
                     if (tx.note != null && tx.note!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       GestureDetector(
-                        onTap: () => showDialog<void>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: Text(tr('tx_f_note')),
-                            content: SelectableText(tx.note!),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: Text(tr('rcp_raw_close')),
-                              ),
-                            ],
-                          ),
-                        ),
+                        onTap: () => showNoteDialog(context, tx.note!),
                         child: Text(tx.note!, style: theme.textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
                       ),
                     ],
@@ -216,4 +206,59 @@ class _TxBadge extends StatelessWidget {
       },
     );
   }
+}
+
+/// Dialog catatan distinctive: ikon dokumen + teks selektif + salin.
+/// Dipakai baris transaksi dan sheet catat (satu desain, dua pintu).
+Future<void> showNoteDialog(BuildContext context, String note) {
+  final scheme = Theme.of(context).colorScheme;
+  return showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(SsrRadius.tile),
+            ),
+            child: Center(
+              child: SvgPicture.asset(
+                CoolSvg.document,
+                width: 22,
+                height: 22,
+                colorFilter: ColorFilter.mode(
+                  scheme.primary,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              tr('tx_f_note'),
+              style: Theme.of(ctx).textTheme.titleLarge,
+            ),
+          ),
+        ],
+      ),
+      content: SelectableText(note),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: note));
+            Navigator.pop(ctx);
+          },
+          child: Text(tr('iv_copy')),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(tr('rcp_raw_close')),
+        ),
+      ],
+    ),
+  );
 }

@@ -206,13 +206,61 @@ double? _labelledTotal(List<String> lines) {
   return null;
 }
 
+/// Kata varian produk (topping/level/suhu): baris khusus ini BUKAN item
+/// sendiri, melainkan ekor nama produk di baris sebelumnya. Daftar
+/// sengaja sempit (kata produk seperti "es"/"susu"/"dingin" DIKECUALIKAN
+/// supaya "ES TEH MANIS" tak tertelan).
+final _variantKey = RegExp(
+    r'\b(ice|hot|regular|large|medium|small|blend|milk|sugar|less|more|'
+    r'normal|sweet|panas|manis|topping|extra|level|pedas)\b',
+    caseSensitive: false);
+
+/// Penanda sub-item pilihan: tak pernah gabung mundur ke induk
+/// ("Pilihan Nugget" tetap baris sendiri, harga ikut maju).
+final _choiceKey = RegExp(
+    r'\b(pilihan|pilih|paket|upgrade|add on|tambah)\b',
+    caseSensitive: false);
+
+/// Gabung baris varian ke nama produk sebelumnya. Syarat ketat: baris
+/// tanpa angka + varian + bukan pilihan + baris sebelumnya juga tanpa
+/// angka, minimal 2 kata (gerai 1 kata seperti "TOKO" tak ditempeli),
+/// dan bukan total/tender/konten-header (kasir/no/telp/tanggal).
+List<String> _mergeVariants(List<String> lines) {
+  final out = <String>[];
+  for (final l in lines) {
+    final prev = out.isEmpty ? null : out.last;
+    final prevWords =
+        prev == null ? 0 : prev.trim().split(RegExp(r'\s+')).length;
+    if (prev != null &&
+        !_numRe.hasMatch(l) &&
+        _variantKey.hasMatch(l) &&
+        !_choiceKey.hasMatch(l) &&
+        !_numRe.hasMatch(prev) &&
+        prevWords >= 2 &&
+        !_isTotalLine(prev) &&
+        !_cashKey.hasMatch(prev) &&
+        !_changeKey.hasMatch(prev) &&
+        !_payKey.hasMatch(prev) &&
+        !_voucherKey.hasMatch(prev) &&
+        !_cashierKey.hasMatch(prev) &&
+        _noId(prev) == null &&
+        !_telpKey.hasMatch(prev) &&
+        !_dateRe.hasMatch(prev)) {
+      out[out.length - 1] = '$prev $l';
+    } else {
+      out.add(l);
+    }
+  }
+  return out;
+}
+
 /// Urut prioritas: baris kunci TOTAL dulu, abaikan baris pengecoh.
 ReceiptData parseReceipt(String raw) {
-  final lines = raw
+  final lines = _mergeVariants(raw
       .split('\n')
       .map((l) => l.trim())
       .where((l) => l.isNotEmpty)
-      .toList();
+      .toList());
   if (lines.isEmpty) return const ReceiptData();
 
   // Batas item vs footer: baris total pertama yang berangka, atau
@@ -710,11 +758,11 @@ bool _headHasDigit(String l) {
 /// tersentuh (prefill + 43 test lama aman). [pairOrphans]=false untuk
 /// layout BBM (harga satuan tak dipasangkan).
 List<MirrorLine> mirrorReceipt(String raw, {bool pairOrphans = true}) {
-  final lines = raw
+  final lines = _mergeVariants(raw
       .split('\n')
       .map((l) => l.trim())
       .where((l) => l.isNotEmpty)
-      .toList();
+      .toList());
   final out = <MirrorLine>[];
   // Antre nama yatim struk 2 kolom (FIFO, display saja, cap 8).
   final pending = <String>[];

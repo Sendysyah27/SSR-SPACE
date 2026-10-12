@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.45.0+122.
+Versi terpasang: 2.45.0+123.
+
+## Yang baru di 2.45.0+123
+
+1. Struk Kopi Kenangan & Bangor: baris varian (Normal Ice, Blend, dsb) kini gabung ke nama produk induknya; sub-item pilihan (Pilihan Nugget) tampil pisah dengan harganya.
+2. Dialog catatan baru: ikon dokumen + teks bisa disalin + tombol Salin; dibuka dari ketuk catatan maupun ikon mata di kolom catatan saat mencatat.
+3. List transaksi Beranda kini kartu rounded per hari.
 
 ## Yang baru di 2.45.0+122
 

@@ -1024,11 +1024,19 @@ class BerandaScreenState extends State<BerandaScreen> {
           )
         else
           for (final b in buckets.take(7)) ...[
-            DayHeader(dateKey: b.key, count: b.items.length),
-            for (final t in b.items.take(5)) ...[
-              TxRow(tx: t),
-              const Divider(height: 1),
-            ],
+            SectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DayHeader(dateKey: b.key, count: b.items.length),
+                  for (var i = 0; i < b.items.take(5).length; i++) ...[
+                    if (i > 0) const Divider(height: 1),
+                    TxRow(tx: b.items[i]),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: SsrSpace.md),
           ],
       ],
     );

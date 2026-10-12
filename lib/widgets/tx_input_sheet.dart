@@ -38,6 +38,7 @@ import 'package:ssr_space/widgets/receipt_result_sheet.dart';
 import 'package:ssr_space/widgets/scan_overlay.dart';
 import 'package:ssr_space/widgets/success_lottie.dart';
 import 'package:ssr_space/widgets/tx_numpad.dart';
+import 'package:ssr_space/widgets/tx_row.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -1485,7 +1486,19 @@ class _MetaSection extends StatelessWidget {
         const SizedBox(height: SsrSpace.md),
         TextField(
           controller: noteC,
-          decoration: InputDecoration(labelText: tr('tx_f_note')),
+          decoration: InputDecoration(
+            labelText: tr('tx_f_note'),
+            suffixIcon: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: noteC,
+              builder: (_, v, __) => IconButton(
+                onPressed: v.text.trim().isEmpty
+                    ? null
+                    : () => showNoteDialog(context, v.text.trim()),
+                icon: const DuoIcon(AppIcons.eye),
+                tooltip: tr('tx_f_note'),
+              ),
+            ),
+          ),
         ),
       ],
     );
