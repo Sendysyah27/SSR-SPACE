@@ -23,7 +23,7 @@ import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/tx_validation.dart';
-import 'package:ssr_space/services/voice_input.dart';
+import 'package:ssr_space/services/voice_native.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/wallet_usage.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -187,16 +187,14 @@ class _TxInputSheetState extends State<TxInputSheet> {
   String? _quickStatus;
   bool _showSub = false;
   String? _scanOrigin;
-  // Voice input: dengar -> tulis ke quickC -> pipeline ketik-cepat.
-  // Recognizer disiapkan SEKALI saat sheet dibuka (bukan tiap tap mic)
-  // agar tak ada race init-vs-listen; tap hanya dengar/berhenti.
-  final _voice = VoiceInput();
+  // Voice input native: dengar -> tulis ke quickC -> pipeline ketik-cepat.
+  // Ketersediaan dicek SEKALI saat sheet dibuka (tanpa race); tap hanya
+  // dengar/berhenti. Tanpa plugin (channel ssr_space/voice).
+  final _voice = VoiceNative();
   bool _listening = false;
   bool _voiceReady = false;
-  bool _voiceLookup = false;
   Future<void>? _voiceInitFuture;
-  int _voiceLocaleCount = 0;
-  String? _voiceLocale;
+  String? _voiceErr;
   // Wizard: 0 = jenis+kategori, 1 = form. Mode edit langsung ke form.
   int _step = 0;
   String? _selCat;
@@ -317,52 +315,16 @@ class _TxInputSheetState extends State<TxInputSheet> {
     });
   }
 
-  /// Siapkan recognizer sekali (diagnosa jumlah locale ikut disimpan
-  /// sebagai bukti bila init gagal di device). [lookup] = ulangi dengan
-  /// intent-lookup bila start gagal padahal init lolos.
-  Future<void> _initVoiceOnce({bool lookup = false}) async {
+  /// Cek ketersediaan recognizer sekali (tanpa dialog, tanpa dengar).
+  Future<void> _initVoiceOnce() async {
     bool ok = false;
-    var count = 0;
-    String? indo;
     try {
-      ok = await _voice.init(
-        intentLookup: lookup,
-        onStatus: (s) {
-          if (!mounted) return;
-          if (s == 'done' || s == 'notListening') {
-            setState(() {
-              _listening = false;
-              if (quickC.text.trim().isEmpty) {
-                _quickStatus = tr('vc_hear');
-              }
-            });
-          }
-        },
-        onError: (code) {
-          if (!mounted) return;
-          setState(() {
-            _listening = false;
-            _quickStatus = tr(voiceErrorKey(code));
-          });
-        },
-      );
-      final ids = await _voice.localeIds();
-      count = ids.length;
-      for (final id in ids) {
-        if (id.toLowerCase().startsWith('id')) {
-          indo = id;
-          break;
-        }
-      }
+      ok = await _voice.isAvailable();
     } catch (_) {
       ok = false;
     }
     if (!mounted) return;
-    setState(() {
-      _voiceReady = ok;
-      _voiceLocaleCount = count;
-      _voiceLocale = indo;
-    });
+    setState(() => _voiceReady = ok);
   }
 
   /// Mic voice input: hasil dengar ditulis ke kolom ketik-cepat lalu
@@ -378,11 +340,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
     await _voiceInitFuture;
     if (!mounted) return;
     if (!_voiceReady) {
-      setState(
-        () => _quickStatus = tr(
-          'vc_init_fail',
-        ).replaceFirst('{n}', '$_voiceLocaleCount'),
-      );
+      setState(() => _quickStatus = tr('vc_error'));
       return;
     }
     // Recognizer sistem butuh internet (kecuali paket on-device).
@@ -414,37 +372,38 @@ class _TxInputSheetState extends State<TxInputSheet> {
       if (finalResult) setState(() => _listening = false);
     }
 
-    // Default sistem dulu; id-ID hanya sebagai retry (locale eksplisit
+    // Default sistem dulu; id-ID sebagai retry (locale eksplisit
     // yang tak terinstall bisa menggagalkan start).
     var started = false;
-    for (final attempt in voiceLocaleAttempts(_voiceLocale)) {
+    for (final attempt in voiceLocaleAttempts('id-ID')) {
       if (!mounted) break;
-      started = await _voice.listen(
+      started = await _voice.start(
         localeId: attempt,
         onResult: onVoiceResult,
+        onError: (code) {
+          _voiceErr = code;
+          if (!mounted) return;
+          setState(() {
+            _listening = false;
+            _quickStatus = tr(voiceErrorKey(code));
+          });
+        },
+        onStatus: (s) {
+          if (!mounted) return;
+          if (s == 'done') {
+            setState(() {
+              _listening = false;
+              if (quickC.text.trim().isEmpty) {
+                _quickStatus = tr('vc_hear');
+              }
+            });
+          }
+        },
       );
       if (started) break;
     }
-    // Fallback terakhir: sebagian build Android tak mendaftarkan intent
-    // recognizer default (init lolos, start gagal) → init ulang sekali
-    // dengan intent lookup lalu coba dengar lagi.
-    if (!started && !_voiceLookup && mounted) {
-      _voiceLookup = true;
-      await _initVoiceOnce(lookup: true);
-      if (!mounted) return;
-      if (_voiceReady) {
-        for (final attempt in voiceLocaleAttempts(_voiceLocale)) {
-          if (!mounted) break;
-          started = await _voice.listen(
-            localeId: attempt,
-            onResult: onVoiceResult,
-          );
-          if (started) break;
-        }
-      }
-    }
     if (!started && mounted) {
-      final diag = _voice.diagnostic();
+      final diag = formatMicDiagnostic(_voiceErr, null);
       setState(() {
         _listening = false;
         _quickStatus = tr('vc_error_detail').replaceFirst('{d}', diag);

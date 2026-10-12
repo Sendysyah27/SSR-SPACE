@@ -232,8 +232,20 @@ jobs:
                   '</manifest>',
                   '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n</manifest>',
               )
+          # Voice native butuh visibility layanan recognizer (SDK 30+):
+          # tanpa queries ini startListening gagal walau init lolos.
+          if 'android.speech.RecognitionService' not in s:
+              s = s.replace(
+                  '</manifest>',
+                  '    <queries>\n'
+                  '        <intent>\n'
+                  '            <action android:name="android.speech.RecognitionService" />\n'
+                  '        </intent>\n'
+                  '    </queries>\n</manifest>',
+              )
           m.write_text(s)
           assert 'android.permission.RECORD_AUDIO' in m.read_text()
+          assert 'android.speech.RecognitionService' in m.read_text()
           if 'android.hardware.nfc' not in s:
               s = s.replace(
                   '</manifest>',
@@ -698,6 +710,302 @@ jobs:
           p.write_text(s)
           assert 'ssr_space/widget' in p.read_text(), 'channel hilang'
           print('widget channel ok')
+          EOF
+      - run: |
+          python3 - <<'EOF'
+          import glob, pathlib
+          # Channel 'ssr_space/voice' -> SpeechRecognizer Android langsung
+          # (tanpa plugin). Diregistrasi lewat registerVoiceChannel yang
+          # dipanggil dari configureFlutterEngine milik channel widget
+          # (step sebelumnya, dua template Kotlin/Java). Gagal = assert
+          # merah di sini, bukan mic diam di HP user.
+          mains = glob.glob('android/app/src/main/kotlin/**/MainActivity.*',
+                              recursive=True)
+          mains += glob.glob('android/app/src/main/java/**/MainActivity.*',
+                               recursive=True)
+          assert len(mains) == 1, f'MainActivity tak ketemu: {mains}'
+          p = pathlib.Path(mains[0])
+          s = p.read_text()
+          assert 'ssr_space/voice' not in s, 'voice channel ganda'
+          if p.suffix == '.kt':
+              assert 'super.configureFlutterEngine(flutterEngine)' in s, \
+                  'configureFlutterEngine tak ada (widget step?)'
+              s = s.replace(
+                  'super.configureFlutterEngine(flutterEngine)',
+                  'super.configureFlutterEngine(flutterEngine)\n'
+                  '                  registerVoiceChannel(flutterEngine)',
+                  1,
+              )
+              assert s.rstrip().endswith('}'), 'body MainActivity aneh'
+              s = s.rstrip()[:-1] + '''
+              private var voiceRecognizer: android.speech.SpeechRecognizer? = null
+
+              private fun registerVoiceChannel(flutterEngine: FlutterEngine) {
+                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
+                          "ssr_space/voice").setMethodCallHandler { call, result ->
+                      when (call.method) {
+                          "isAvailable" -> {
+                              try {
+                                  result.success(android.speech.SpeechRecognizer
+                                      .isRecognitionAvailable(applicationContext))
+                              } catch (e: Exception) {
+                                  result.success(false)
+                              }
+                          }
+                          "start" -> {
+                              try {
+                                  try {
+                                      voiceRecognizer?.destroy()
+                                  } catch (e: Exception) {
+                                  }
+                                  if (!android.speech.SpeechRecognizer
+                                          .isRecognitionAvailable(applicationContext)) {
+                                      result.success(false)
+                                      return@setMethodCallHandler
+                                  }
+                                  val sr = android.speech.SpeechRecognizer
+                                      .createSpeechRecognizer(applicationContext)
+                                  voiceRecognizer = sr
+                                  val ch = MethodChannel(
+                                          flutterEngine.dartExecutor.binaryMessenger,
+                                          "ssr_space/voice")
+                                  sr.setRecognitionListener(object :
+                                          android.speech.RecognitionListener {
+                                      override fun onResults(r: android.os.Bundle?) {
+                                          val list = r?.getStringArrayList(
+                                              android.speech.SpeechRecognizer
+                                                  .RESULTS_RECOGNITION)
+                                          ch.invokeMethod("onResult", mapOf(
+                                              "words" to (list?.firstOrNull() ?: ""),
+                                              "final" to true))
+                                          ch.invokeMethod("onStatus", mapOf(
+                                              "status" to "done"))
+                                      }
+                                      override fun onPartialResults(
+                                              p: android.os.Bundle?) {
+                                          val list = p?.getStringArrayList(
+                                              android.speech.SpeechRecognizer
+                                                  .RESULTS_RECOGNITION)
+                                          ch.invokeMethod("onResult", mapOf(
+                                              "words" to (list?.firstOrNull() ?: ""),
+                                              "final" to false))
+                                      }
+                                      override fun onError(e: Int) {
+                                          val code = when (e) {
+                                              android.speech.SpeechRecognizer
+                                                  .ERROR_NO_MATCH -> "no_match"
+                                              android.speech.SpeechRecognizer
+                                                  .ERROR_SPEECH_TIMEOUT ->
+                                                  "speech_timeout"
+                                              android.speech.SpeechRecognizer
+                                                  .ERROR_INSUFFICIENT_PERMISSIONS ->
+                                                  "permission"
+                                              else -> "service"
+                                          }
+                                          ch.invokeMethod("onError", mapOf(
+                                              "code" to code))
+                                      }
+                                      override fun onReadyForSpeech(
+                                              p: android.os.Bundle?) {
+                                          ch.invokeMethod("onStatus", mapOf(
+                                              "status" to "listening"))
+                                      }
+                                      override fun onBeginningOfSpeech() {}
+                                      override fun onEndOfSpeech() {}
+                                      override fun onBufferReceived(
+                                              b: ByteArray?) {}
+                                      override fun onEvent(t: Int,
+                                              p: android.os.Bundle?) {}
+                                      override fun onRmsChanged(r: Float) {}
+                                  })
+                                  val intent = android.content.Intent(
+                                      android.speech.RecognizerIntent
+                                          .ACTION_RECOGNIZE_SPEECH)
+                                  intent.putExtra(android.speech.RecognizerIntent
+                                      .EXTRA_LANGUAGE_MODEL, android.speech
+                                      .RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                  val locale = call.argument<String>("locale")
+                                  if (locale != null) {
+                                      intent.putExtra(android.speech
+                                          .RecognizerIntent.EXTRA_LANGUAGE, locale)
+                                  }
+                                  intent.putExtra(android.speech.RecognizerIntent
+                                      .EXTRA_PARTIAL_RESULTS, true)
+                                  intent.putExtra(android.speech.RecognizerIntent
+                                      .EXTRA_MAX_RESULTS, 3)
+                                  sr.startListening(intent)
+                                  result.success(true)
+                              } catch (e: Exception) {
+                                  result.success(false)
+                              }
+                          }
+                          "stop" -> {
+                              try {
+                                  voiceRecognizer?.stopListening()
+                              } catch (e: Exception) {
+                              }
+                              result.success(true)
+                          }
+                          else -> result.notImplemented()
+                      }
+                  }
+              }
+          ''' + '\n}\n'
+          elif p.suffix == '.java':
+              assert 'super.configureFlutterEngine(flutterEngine);' in s, \
+                  'configureFlutterEngine tak ada (widget step?)'
+              s = s.replace(
+                  'super.configureFlutterEngine(flutterEngine);',
+                  'super.configureFlutterEngine(flutterEngine);\n'
+                  '                  registerVoiceChannel(flutterEngine);',
+                  1,
+              )
+              assert s.rstrip().endswith('}'), 'body MainActivity aneh'
+              s = s.rstrip()[:-1] + '''
+              private android.speech.SpeechRecognizer voiceRecognizer;
+
+              private void registerVoiceChannel(
+                      io.flutter.embedding.engine.FlutterEngine flutterEngine) {
+                  final io.flutter.plugin.common.MethodChannel ch =
+                          new io.flutter.plugin.common.MethodChannel(
+                                  flutterEngine.getDartExecutor().getBinaryMessenger(),
+                                  "ssr_space/voice");
+                  ch.setMethodCallHandler((call, result) -> {
+                      if (call.method.equals("isAvailable")) {
+                          try {
+                              result.success(android.speech.SpeechRecognizer
+                                      .isRecognitionAvailable(
+                                              getApplicationContext()));
+                          } catch (Exception e) {
+                              result.success(false);
+                          }
+                      } else if (call.method.equals("start")) {
+                          try {
+                              try {
+                                  if (voiceRecognizer != null) voiceRecognizer.destroy();
+                              } catch (Exception ignored) {
+                              }
+                              if (!android.speech.SpeechRecognizer
+                                      .isRecognitionAvailable(
+                                              getApplicationContext())) {
+                                  result.success(false);
+                                  return;
+                              }
+                              android.speech.SpeechRecognizer sr =
+                                      android.speech.SpeechRecognizer
+                                              .createSpeechRecognizer(
+                                                      getApplicationContext());
+                              voiceRecognizer = sr;
+                              sr.setRecognitionListener(
+                                      new android.speech.RecognitionListener() {
+                                  @Override
+                                  public void onResults(android.os.Bundle r) {
+                                      java.util.List<String> list =
+                                              r.getStringArrayList(android.speech
+                                                      .SpeechRecognizer
+                                                      .RESULTS_RECOGNITION);
+                                      java.util.Map<String, Object> m =
+                                              new java.util.HashMap<>();
+                                      m.put("words", list == null || list.isEmpty()
+                                              ? "" : list.get(0));
+                                      m.put("final", true);
+                                      ch.invokeMethod("onResult", m);
+                                      java.util.Map<String, Object> st =
+                                              new java.util.HashMap<>();
+                                      st.put("status", "done");
+                                      ch.invokeMethod("onStatus", st);
+                                  }
+                                  @Override
+                                  public void onPartialResults(
+                                          android.os.Bundle p) {
+                                      java.util.List<String> list =
+                                              p.getStringArrayList(android.speech
+                                                      .SpeechRecognizer
+                                                      .RESULTS_RECOGNITION);
+                                      java.util.Map<String, Object> m =
+                                              new java.util.HashMap<>();
+                                      m.put("words", list == null || list.isEmpty()
+                                              ? "" : list.get(0));
+                                      m.put("final", false);
+                                      ch.invokeMethod("onResult", m);
+                                  }
+                                  @Override
+                                  public void onError(int e) {
+                                      String code = "service";
+                                      if (e == android.speech.SpeechRecognizer
+                                              .ERROR_NO_MATCH) {
+                                          code = "no_match";
+                                      } else if (e == android.speech
+                                              .SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                                          code = "speech_timeout";
+                                      } else if (e == android.speech
+                                              .SpeechRecognizer
+                                              .ERROR_INSUFFICIENT_PERMISSIONS) {
+                                          code = "permission";
+                                      }
+                                      java.util.Map<String, Object> m =
+                                              new java.util.HashMap<>();
+                                      m.put("code", code);
+                                      ch.invokeMethod("onError", m);
+                                  }
+                                  @Override
+                                  public void onReadyForSpeech(
+                                          android.os.Bundle p) {
+                                      java.util.Map<String, Object> m =
+                                              new java.util.HashMap<>();
+                                      m.put("status", "listening");
+                                      ch.invokeMethod("onStatus", m);
+                                  }
+                                  @Override
+                                  public void onBeginningOfSpeech() {}
+                                  @Override
+                                  public void onEndOfSpeech() {}
+                                  @Override
+                                  public void onBufferReceived(byte[] b) {}
+                                  @Override
+                                  public void onEvent(int t, android.os.Bundle p) {}
+                                  @Override
+                                  public void onRmsChanged(float r) {}
+                              });
+                              android.content.Intent intent =
+                                      new android.content.Intent(android.speech
+                                              .RecognizerIntent
+                                              .ACTION_RECOGNIZE_SPEECH);
+                              intent.putExtra(android.speech.RecognizerIntent
+                                      .EXTRA_LANGUAGE_MODEL, android.speech
+                                      .RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                              String locale = call.argument("locale");
+                              if (locale != null) {
+                                  intent.putExtra(android.speech.RecognizerIntent
+                                          .EXTRA_LANGUAGE, locale);
+                              }
+                              intent.putExtra(android.speech.RecognizerIntent
+                                      .EXTRA_PARTIAL_RESULTS, true);
+                              intent.putExtra(android.speech.RecognizerIntent
+                                      .EXTRA_MAX_RESULTS, 3);
+                              sr.startListening(intent);
+                              result.success(true);
+                          } catch (Exception e) {
+                              result.success(false);
+                          }
+                      } else if (call.method.equals("stop")) {
+                          try {
+                              if (voiceRecognizer != null) voiceRecognizer.stopListening();
+                          } catch (Exception e) {
+                          }
+                          result.success(true);
+                      } else {
+                          result.notImplemented();
+                      }
+                  });
+              }
+          ''' + '\n}\n'
+          else:
+              raise SystemExit(f'ekstensi aneh: {p.suffix}')
+          p.write_text(s)
+          assert 'ssr_space/voice' in p.read_text(), 'voice channel hilang'
+          assert 'registerVoiceChannel' in p.read_text(), 'voice register hilang'
+          print('voice channel ok')
           EOF
       - name: Setup release signing
         env:
