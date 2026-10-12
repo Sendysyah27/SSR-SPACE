@@ -2280,6 +2280,41 @@ const _t = <String, Map<String, String>>{
     'id': 'Hari {n}/30 — buka app untuk lihat progres hematmu.',
     'en': 'Day {n}/30 — open the app to see your saving progress.',
   },
+  // AI Parser struk (fallback bila rule tak yakin; kunci di Keystore)
+  'ai_title': {'id': 'AI Parser', 'en': 'AI Parser'},
+  'ai_sub': {
+    'id': 'Cadangan cerdas bila struk tak terbaca aturan biasa.',
+    'en': 'Smart fallback when rules cannot read a receipt.',
+  },
+  'ai_enable': {'id': 'Nyalakan AI Parser', 'en': 'Enable AI Parser'},
+  'ai_key_hint': {'id': 'Tempel kunci API Zen', 'en': 'Paste Zen API key'},
+  'ai_save': {'id': 'Simpan kunci', 'en': 'Save key'},
+  'ai_clear': {'id': 'Hapus kunci', 'en': 'Delete key'},
+  'ai_saved': {'id': 'Kunci tersimpan aman.', 'en': 'Key stored securely.'},
+  'ai_cleared': {'id': 'Kunci dihapus.', 'en': 'Key deleted.'},
+  'ai_need_key': {
+    'id': 'Isi kunci API dulu di kartu ini.',
+    'en': 'Enter an API key in this card first.',
+  },
+  'ai_working': {'id': 'Meminta AI...', 'en': 'Asking AI...'},
+  'ai_fail': {
+    'id': 'AI gagal. Isi manual seperti biasa.',
+    'en': 'AI failed. Fill in manually as usual.',
+  },
+  'ai_bad_key': {
+    'id': 'Kunci API ditolak. Periksa lagi.',
+    'en': 'API key rejected. Check it again.',
+  },
+  'ai_retry': {'id': 'Coba AI', 'en': 'Try AI'},
+  'ai_review_t': {'id': 'Review draft AI', 'en': 'Review AI draft'},
+  'ai_use': {'id': 'Pakai draft', 'en': 'Use draft'},
+  'ai_discard': {'id': 'Buang', 'en': 'Discard'},
+  'ai_merchant': {'id': 'Gerai', 'en': 'Merchant'},
+  'ai_date': {'id': 'Tanggal (TTTT-BB-HH)', 'en': 'Date (YYYY-MM-DD)'},
+  'ai_items': {'id': 'Belanjaan', 'en': 'Items'},
+  'ai_add_item': {'id': 'Tambah baris', 'en': 'Add row'},
+  'ai_payment': {'id': 'Bayar', 'en': 'Payment'},
+  'ai_tax': {'id': 'Pajak', 'en': 'Tax'},
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

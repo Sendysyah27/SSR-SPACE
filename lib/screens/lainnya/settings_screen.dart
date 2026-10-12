@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/biometric_auth.dart';
 import 'package:ssr_space/services/currency.dart';
@@ -173,6 +174,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(key: _reminderKey, child: const _ReminderCard()),
           const SizedBox(height: SsrSpace.md),
           Container(key: _widgetKey, child: const _WidgetCard()),
+          const SizedBox(height: SsrSpace.md),
+          const _AiCard(),
           const SizedBox(height: SsrSpace.md),
           Container(key: _pinKey, child: const _PinCard()),
           const SizedBox(height: SsrSpace.md),
@@ -943,6 +946,140 @@ class _WidgetCard extends StatelessWidget {
             onChanged: _toggle,
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// AI Parser struk: sakelar + kunci API Zen (Keystore, bukan prefs).
+/// Dipakai fallback bila rule tak confident. Tanpa kunci = mati diam.
+class _AiCard extends StatefulWidget {
+  const _AiCard();
+
+  @override
+  State<_AiCard> createState() => _AiCardState();
+}
+
+class _AiCardState extends State<_AiCard> {
+  bool _on = false;
+  bool _hasKey = false;
+  bool _busy = false;
+  String? _msg;
+  final _keyC = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  @override
+  void dispose() {
+    _keyC.dispose();
+    super.dispose();
+  }
+
+  Future<void> _refresh() async {
+    final on = await readAiOn();
+    final key = await readAiKey();
+    if (!mounted) return;
+    setState(() {
+      _on = on;
+      _hasKey = key != null;
+    });
+  }
+
+  Future<void> _toggle(bool v) async {
+    if (v && !await _keyReady()) {
+      if (!mounted) return;
+      setState(() => _msg = tr('ai_need_key'));
+      return;
+    }
+    setState(() => _busy = true);
+    await writeAiOn(v);
+    await _refresh();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = null;
+    });
+  }
+
+  Future<bool> _keyReady() async => await readAiKey() != null;
+
+  Future<void> _save() async {
+    setState(() => _busy = true);
+    await writeAiKey(_keyC.text);
+    _keyC.clear();
+    await _refresh();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = tr('ai_saved');
+    });
+  }
+
+  Future<void> _clear() async {
+    setState(() => _busy = true);
+    await clearAiKey();
+    await writeAiOn(false);
+    await _refresh();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = tr('ai_cleared');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('ai_title'),
+      icon: AppIcons.autoBadge,
+      children: [
+        Text(tr('ai_sub'), style: Theme.of(context).textTheme.bodySmall),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(tr('ai_enable')),
+          subtitle: Text(
+            _hasKey ? tr('ai_saved') : tr('ai_need_key'),
+          ),
+          value: _on,
+          onChanged: _busy ? null : _toggle,
+        ),
+        TextField(
+          controller: _keyC,
+          obscureText: true,
+          enableSuggestions: false,
+          autocorrect: false,
+          decoration: InputDecoration(
+            hintText: tr('ai_key_hint'),
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _busy ? null : _save,
+                child: Text(tr('ai_save')),
+              ),
+            ),
+            const SizedBox(width: SsrSpace.sm),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _busy ? null : _clear,
+                child: Text(tr('ai_clear')),
+              ),
+            ),
+          ],
+        ),
+        if (_msg != null) ...[
+          const SizedBox(height: SsrSpace.xs),
+          Text(_msg!, style: Theme.of(context).textTheme.bodySmall),
+        ],
       ],
     );
   }

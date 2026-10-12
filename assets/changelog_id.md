@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.45.0+123.
+Versi terpasang: 2.46.0+124.
+
+## Yang baru di 2.46.0+124
+
+1. AI Parser struk (hybrid): bila aturan biasa tak yakin, AI membaca teks struk jadi draft terstruktur. Hasil masuk layar review — koreksi tiap field dulu baru pakai. Gagal = isi manual seperti biasa. Kunci API di Pengaturan → AI Parser (tersimpan aman di HP).
 
 ## Yang baru di 2.45.0+123
 

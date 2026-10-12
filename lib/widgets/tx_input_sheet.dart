@@ -7,6 +7,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
+import 'package:ssr_space/screens/lainnya/ai_draft_screen.dart';
+import 'package:ssr_space/services/ai_client.dart';
+import 'package:ssr_space/services/ai_draft.dart';
+import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/budget_alert_notify.dart';
@@ -450,59 +454,38 @@ class _TxInputSheetState extends State<TxInputSheet> {
       final r = await scanReceipt(src);
       if (!mounted) return;
       final raw = lastRawOcrText;
-      setState(() {
-        _scanning = false;
+      setState(() => _scanning = false);
+      if (r == null || raw == null) {
         if (r == null) return;
-        if (r.amount != null && r.amount! > 0) {
-          type = 'out';
-          digits.value = digitsFromMajor(
-            CurrencyService.convert(r.amount!),
-            dec: _dec,
+      }
+      var data = r!;
+      // Fallback AI bila rule tak confident (hybrid, gagal = manual).
+      if (!data.confident) {
+        final ai = await _tryAiDraft(raw!);
+        if (!mounted) return;
+        if (ai != null) {
+          final edited = await Navigator.of(context).push<ReceiptData>(
+            MaterialPageRoute(builder: (_) => AiDraftScreen(initial: ai)),
           );
+          if (!mounted) return;
+          if (edited != null) data = edited;
         }
-        if (r.date != null) day = r.date!;
-        noteC.text = receiptNote(r);
-        if (_selCat == null || _selCat!.trim().isEmpty) {
-          final cats = appCategories.value;
-          _selCat = cats.contains('Belanja')
-              ? 'Belanja'
-              : (cats.isEmpty ? 'Belanja' : cats.first);
-        }
-        catC.text = _selCat!.trim();
-        final sug = suggestReceiptCategory(
-          merchant: r.merchant,
-          items: r.items,
-          raw: lastRawOcrText,
-          categories: appCategories.value,
-        );
-        if (sug != null) {
-          _selCat = sug;
-          catC.text = sug;
-        }
-        _scanOrigin = _scanOriginText(r);
-        if (!r.confident) formErr = tr('rcp_partial');
-        _step = 1;
-      });
-      if (raw != null && mounted) {
-        final data = r;
-        if (data == null) {
-          await _showRawOcrDialog(raw);
-        } else {
-          // Hasil ala layout struk (prefill sudah diterapkan di atas);
-          // teks mentah tetap sekali ketuk via tombolnya.
-          await showModalBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
+      }
+      if (!mounted) return;
+      _applyReceiptPrefill(data);
+      if (mounted) {
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
           builder: (_) => ReceiptResultSheet(
             data: data,
             mirror: mirrorReceipt(
-              raw,
+              raw!,
               pairOrphans: layoutFor(detectReceiptKind(raw)).pairOrphans,
             ),
             onShowRaw: () => _showRawOcrDialog(raw),
           ),
-          );
-        }
+        );
       }
     } on ReceiptScanException catch (e) {
       if (!mounted) return;
@@ -514,6 +497,75 @@ class _TxInputSheetState extends State<TxInputSheet> {
             : '${tr(e.trKey)}\n${e.detail}';
       });
       if (raw != null) await _showRawOcrDialog(raw);
+    }
+  }
+
+  /// Prefill form dari hasil struk (rule maupun draft AI yang diedit).
+  void _applyReceiptPrefill(ReceiptData r) {
+    setState(() {
+      if (r.amount != null && r.amount! > 0) {
+        type = 'out';
+        digits.value = digitsFromMajor(
+          CurrencyService.convert(r.amount!),
+          dec: _dec,
+        );
+      }
+      if (r.date != null) day = r.date!;
+      noteC.text = receiptNote(r);
+      if (_selCat == null || _selCat!.trim().isEmpty) {
+        final cats = appCategories.value;
+        _selCat = cats.contains('Belanja')
+            ? 'Belanja'
+            : (cats.isEmpty ? 'Belanja' : cats.first);
+      }
+      catC.text = _selCat!.trim();
+      final sug = suggestReceiptCategory(
+        merchant: r.merchant,
+        items: r.items,
+        raw: lastRawOcrText,
+        categories: appCategories.value,
+      );
+      if (sug != null) {
+        _selCat = sug;
+        catC.text = sug;
+      }
+      _scanOrigin = _scanOriginText(r);
+      if (!r.confident) formErr = tr('rcp_partial');
+      _step = 1;
+    });
+  }
+
+  /// Fallback AI: teks OCR -> draft, gagal jujur (null = manual).
+  Future<AiDraft?> _tryAiDraft(String raw) async {
+    if (!await readAiOn()) return null;
+    final key = await readAiKey();
+    if (!mounted || key == null) return null;
+    setState(() {
+      _scanning = true;
+      _scanErr = tr('ai_working');
+    });
+    try {
+      final draft = await parseReceiptAi(apiKey: key, ocrText: raw);
+      if (!mounted) return null;
+      setState(() {
+        _scanning = false;
+        _scanErr = null;
+      });
+      return draft;
+    } on AiFailure catch (e) {
+      if (!mounted) return null;
+      setState(() {
+        _scanning = false;
+        _scanErr = tr(e.code == 'denied' ? 'ai_bad_key' : 'ai_fail');
+      });
+      return null;
+    } catch (_) {
+      if (!mounted) return null;
+      setState(() {
+        _scanning = false;
+        _scanErr = tr('ai_fail');
+      });
+      return null;
     }
   }
 
