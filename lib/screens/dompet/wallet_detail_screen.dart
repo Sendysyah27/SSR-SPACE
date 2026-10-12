@@ -265,6 +265,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _SummaryCard(
+                  name: widget.wallet.name,
                   type: widget.wallet.type,
                   typeLabel: widget.typeLabel,
                   balanceText: widget.balanceText,
@@ -379,12 +380,14 @@ class _DeleteSection extends StatelessWidget {
 
 /// Kop: jenis + saldo akhir + jumlah transaksi pembentuk.
 class _SummaryCard extends StatelessWidget {
+  final String name;
   final String type;
   final String typeLabel;
   final String balanceText;
   final int count;
 
   const _SummaryCard({
+    required this.name,
     required this.type,
     required this.typeLabel,
     required this.balanceText,
@@ -408,7 +411,7 @@ class _SummaryCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(SsrRadius.tile),
                   border: Border.all(color: scheme.outline),
                 ),
-                child: Center(child: WalletArt(type)),
+                child: Center(child: WalletArt(type, name: name)),
               ),
               const SizedBox(width: SsrSpace.md),
               Expanded(child: StatusChip(label: typeLabel)),

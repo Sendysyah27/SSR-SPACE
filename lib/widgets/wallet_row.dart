@@ -38,7 +38,7 @@ class WalletRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(SsrRadius.tile),
               border: Border.all(color: scheme.outline),
             ),
-            child: Center(child: WalletArt(type)),
+            child: Center(child: WalletArt(type, name: name)),
           ),
           const SizedBox(width: SsrSpace.md),
           Expanded(

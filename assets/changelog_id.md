@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.40.0+117.
+Versi terpasang: 2.41.0+118.
+
+## Yang baru di 2.41.0+118
+
+1. Ikon dompet brand: DANA, OVO, GoPay, BCA, BRI, Mandiri, dan bank/e-wallet lain kini berbadge warna resminya mengikuti nama dompetmu.
 
 ## Yang baru di 2.40.0+117
 
