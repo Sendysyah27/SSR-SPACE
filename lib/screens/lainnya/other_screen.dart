@@ -660,7 +660,7 @@ class _HeaderCard extends StatelessWidget {
             child: Center(
               child: Text(
                 initial,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.emeraldDeep,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
