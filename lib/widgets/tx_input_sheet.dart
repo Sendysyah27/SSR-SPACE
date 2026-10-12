@@ -455,13 +455,11 @@ class _TxInputSheetState extends State<TxInputSheet> {
       if (!mounted) return;
       final raw = lastRawOcrText;
       setState(() => _scanning = false);
-      if (r == null || raw == null) {
-        if (r == null) return;
-      }
-      var data = r!;
+      if (r == null || raw == null) return;
+      var data = r;
       // Fallback AI bila rule tak confident (hybrid, gagal = manual).
       if (!data.confident) {
-        final ai = await _tryAiDraft(raw!);
+        final ai = await _tryAiDraft(raw);
         if (!mounted) return;
         if (ai != null) {
           final edited = await Navigator.of(context).push<ReceiptData>(
