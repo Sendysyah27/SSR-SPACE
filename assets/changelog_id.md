@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.43.0+120.
+Versi terpasang: 2.44.0+121.
+
+## Yang baru di 2.44.0+121
+
+1. Scan struk makin paham layout: posisi teks di foto kini dipakai untuk menyusun baris (nama + harga yang terpisah kolom digabung lagi), bukan cuma teks mentah. Akurasi total & item naik khusus struk 2 kolom seperti Indomaret.
 
 ## Yang baru di 2.43.0+120
 

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/receipt_layout.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 
 /// Gagal scan struk; [trKey] kunci strings (`rcp_fail` / `rcp_empty`).
@@ -41,11 +42,35 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
     try {
       final out = await recognizer.processImage(input);
-      lastRawOcrText = out.text;
-      if (out.text.trim().isEmpty) {
+      // Susun spasial dari boundingBox bila ada (struk 2 kolom kembali
+      // sebaris); tanpa geometri = teks datar. Null-safe: box null =
+      // baris dilewati, bukan crash (riset: pola opensource + review !).
+      final boxes = <OcrBox>[];
+      try {
+        for (final block in out.blocks) {
+          for (final line in block.lines) {
+            final text = line.text.trim();
+            final box = line.boundingBox;
+            if (text.isEmpty || box == null) continue;
+            boxes.add(
+              OcrBox(
+                text,
+                box.left.round(),
+                box.top.round(),
+                box.right.round(),
+                box.bottom.round(),
+              ),
+            );
+          }
+        }
+      } catch (_) {}
+      final seen =
+          boxes.isEmpty ? out.text : spatialLines(boxes).join('\n');
+      lastRawOcrText = seen;
+      if (seen.trim().isEmpty) {
         throw const ReceiptScanException('rcp_empty');
       }
-      return parseReceipt(out.text);
+      return parseReceipt(seen);
     } finally {
       await recognizer.close();
     }
