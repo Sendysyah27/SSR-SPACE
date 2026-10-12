@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.37.0+114.
+Versi terpasang: 2.38.0+115.
+
+## Yang baru di 2.38.0+115
+
+1. Pencarian & filter Transaksi: kolom cari (kategori, catatan, kode) + lembar saring (jenis, kategori, rentang tanggal, rentang nominal). Filter favorit bisa disimpan (maks 10) dan dipakai ulang sekali ketuk. Saringan dihitung dari data yang sudah termuat — keterangannya jujur ("disaring dari N") bila bulan ramai belum termuat semua.
 
 ## Yang baru di 2.37.0+114
 
