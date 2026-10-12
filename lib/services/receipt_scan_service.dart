@@ -50,8 +50,8 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
         for (final block in out.blocks) {
           for (final line in block.lines) {
             final text = line.text.trim();
+            if (text.isEmpty) continue;
             final box = line.boundingBox;
-            if (text.isEmpty || box == null) continue;
             boxes.add(
               OcrBox(
                 text,
