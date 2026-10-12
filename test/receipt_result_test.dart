@@ -4,8 +4,10 @@ import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/receipt_result_sheet.dart';
 
-Widget _wrap(ReceiptData data) => MaterialApp(
-  home: Scaffold(body: ReceiptResultSheet(data: data, onShowRaw: () {})),
+Widget _wrap(ReceiptData data, List<MirrorLine> mirror) => MaterialApp(
+  home: Scaffold(
+    body: ReceiptResultSheet(data: data, mirror: mirror, onShowRaw: () {}),
+  ),
 );
 
 void main() {
@@ -18,11 +20,17 @@ void main() {
           amount: 40000,
           confident: true,
         ),
+        const [
+          MirrorLine('TOKO KOPI', centered: true, bold: true),
+          MirrorLine('Kopi', amount: 25000),
+          MirrorLine('Roti', amount: 15000),
+          MirrorLine('TOTAL :', amount: 40000, bold: true),
+        ],
       ),
     );
     expect(find.text('TOKO KOPI'), findsOneWidget);
     expect(find.textContaining('Kopi'), findsOneWidget);
-    expect(find.text(tr('rcp_total')), findsOneWidget);
+    expect(find.text('TOTAL :'), findsOneWidget);
     expect(find.text(tr('rcp_check')), findsNothing);
   });
 
@@ -34,6 +42,9 @@ void main() {
           amount: 10000,
           confident: false,
         ),
+        const [
+          MirrorLine('Barang', amount: 10000),
+        ],
       ),
     );
     expect(find.text(tr('rcp_check')), findsOneWidget);
