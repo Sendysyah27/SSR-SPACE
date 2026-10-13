@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.52.0+144.
+Versi terpasang: 2.52.0+145.
+
+## Yang baru di 2.52.0+145
+
+1. Pesan error AI kini pendek & ramah (sibuk/kuota/kunci salah) — tanpa kode mentah; detail teknis tetap di log. Tombol Scan berubah jadi "Scan ulang" saat gagal.
 
 ## Yang baru di 2.52.0+144
 

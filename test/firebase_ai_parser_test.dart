@@ -174,8 +174,7 @@ void main() {
     expect(parseRestText('string'), isNull);
   });
 
-  test('reachReport: status apapun = hidup, error = buntu', () {
-    expect(reachReport(status: 404), 'NET: host hidup (HTTP 404)');
+  test('reachReport: status apapun = hidup, error = buntu', () {    expect(reachReport(status: 404), 'NET: host hidup (HTTP 404)');
     expect(reachReport(status: 200), 'NET: host hidup (HTTP 200)');
     expect(
       reachReport(error: 'TimeoutException after 10s'),
@@ -238,5 +237,14 @@ void main() {
     )!;
     expect(e.code, 'quota');
     expect(pickAiError(hasKey: true), isNull);
+  });
+
+  test('aiMessageKey: pendek ramah tanpa kode teknis', () {
+    expect(aiMessageKey('server'), 'ai_busy');
+    expect(aiMessageKey('denied'), 'ai_key_invalid');
+    expect(aiMessageKey('timeout'), 'ai_fail');
+    expect(aiMessageKey('network'), 'ai_fail');
+    expect(aiMessageKey('empty'), 'ai_fail');
+    expect(aiMessageKey('app_check'), 'ai_fail');
   });
 }

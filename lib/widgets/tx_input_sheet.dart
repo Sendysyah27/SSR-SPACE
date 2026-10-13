@@ -631,6 +631,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
       firebase: fbErr,
       hasKey: (gkey != null && useGemini) || (okey != null && useOr),
     );
+    // Log lengkap (kode + pesan asli) — user hanya lihat yang ramah.
+    if (e != null) debugPrint('ai scan gagal: $e');
     setState(() {
       _scanning = false;
       if (e == null) {
@@ -640,9 +642,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
         _scanErr = quotaWaitLine(e.detail);
         _aiErrDetail = 'AI (quota) ${e.detail ?? ''}';
       } else {
-        final detail = '(${e.code})${e.detail == null ? '' : ' ${e.detail}'}';
-        _scanErr = '${tr(aiFailureTrKey(e.code, loggedIn: true))} $detail';
-        _aiErrDetail = 'AI $detail';
+        _scanErr = tr(aiMessageKey(e.code));
+        _aiErrDetail = 'AI (${e.code}) ${e.detail ?? ''}';
       }
     });
     return null;
@@ -1240,7 +1241,7 @@ class _ScanRow extends StatelessWidget {
             icon: const DuoIcon(AppIcons.scan, size: 20),
             label: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text(tr('rcp_scan')),
+              child: Text(error != null ? tr('ai_rescan') : tr('rcp_scan')),
             ),
           ),
           if (scanning) ...[

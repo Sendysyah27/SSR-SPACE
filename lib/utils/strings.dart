@@ -2337,6 +2337,11 @@ const _t = <String, Map<String, String>>{
   'ai_test': {'id': 'Tes AI', 'en': 'Test AI'},
   'ai_on': {'id': 'Aktif', 'en': 'On'},
   'ai_off': {'id': 'Mati', 'en': 'Off'},
+  'ai_key_invalid': {
+    'id': 'Kunci API tidak valid, cek di Pengaturan.',
+    'en': 'API key is invalid, check Settings.',
+  },
+  'ai_rescan': {'id': 'Scan ulang', 'en': 'Rescan'},
   'ai_scan_title': {'id': 'AI Struk', 'en': 'AI Receipt'},
   'ai_no_net': {
     'id': 'Tidak bisa konek ke server Google AI. Cek DNS/firewall/ISP atau VPN, lalu coba lagi.',

@@ -58,6 +58,20 @@ class AiAppCheck implements Exception {
 /// Satu pemanggilan model: prompt -> teks JSON mentah (null = kosong).
 typedef AiGenerate = Future<String?> Function(String prompt);
 
+/// Kunci strings untuk [AiFailure.code]: pendek & ramah, tanpa kode
+/// teknis/JSON (detail mentah tetap di log + dialog diagnosis).
+/// 'quota' khusus (quotaWaitLine, ada waktu tunggu).
+String aiMessageKey(String code) {
+  switch (code) {
+    case 'server':
+      return 'ai_busy';
+    case 'denied':
+      return 'ai_key_invalid';
+    default:
+      return 'ai_fail';
+  }
+}
+
 /// Kunci strings untuk [AiFailure.code]. `denied` hanya berarti
 /// "belum login" bila tanpa sesi; dengan sesi hidup = ditolak/kuota
 /// (pesan gagal umum yang jujur, bukan tuduhan belum login).
