@@ -62,4 +62,40 @@ void main() {
     expect(await parseReceiptOr(apiKey: ' ', ocrText: 'x'), isNull);
     expect(await parseReceiptOr(apiKey: 'k', ocrText: ' '), isNull);
   });
+
+  test('404 rotasi ke model berikut + lapor nama', () async {
+    final seen = <String>[];
+    final client = MockClient((req) async {
+      final m = jsonDecode(req.body)['model'] as String;
+      seen.add(m);
+      if (seen.length == 1) {
+        return http.Response('{"error":{"message":"No endpoints found"}}', 404);
+      }
+      return http.Response(_ok('Halo!'), 200);
+    });
+    String? used;
+    final t = await orChatRaw(
+      apiKey: 'k',
+      prompt: 'Halo',
+      client: client,
+      onModel: (m) => used = m,
+    );
+    expect(t, 'Halo!');
+    expect(seen.length, 2);
+    expect(seen.first, aiOrModel);
+    expect(used, seen.last);
+  });
+
+  test('404 semua model = server + cuplikan', () async {
+    final client = MockClient(
+        (_) async => http.Response('{"error":{"code":404}}', 404));
+    try {
+      await orChatRaw(apiKey: 'k', prompt: 'Halo', client: client);
+      fail('harus lempar');
+    } on AiFailure catch (e) {
+      expect(e.code, 'server');
+      expect(e.detail, contains('404'));
+      expect(e.detail, contains('code'));
+    }
+  });
 }

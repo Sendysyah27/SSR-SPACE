@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.51.0+142.
+Versi terpasang: 2.51.0+143.
+
+## Yang baru di 2.51.0+143
+
+1. Perbaikan OpenRouter 404: model lama pensiun — daftar model dicek live, rotasi otomatis ke model free yang tersedia; semua error kini bawa cuplikan pesan asli.
 
 ## Yang baru di 2.51.0+142
 

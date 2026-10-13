@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import 'ai_draft.dart';
 import 'firebase_ai_parser.dart';
 
@@ -11,9 +12,15 @@ import 'firebase_ai_parser.dart';
 // [OpenRouter] agar sumber error jelas di diagnosis.
 const aiOrEndpoint = 'https://openrouter.ai/api/v1/chat/completions';
 
-// Model free pilihan user. Ganti 1 const ini bila pensiun/diganti.
-// Kandidat stabil lain (contoh): google/gemma-2-9b-it:free.
-const aiOrModel = 'meta-llama/llama-3.1-8b-instruct:free';
+// Model free terverifikasi LIVE via GET /api/v1/models (2026-10-13):
+// llama-3.1-8b:free, gemma-2-9b-it:free, qwen-2.5-7b:free SUDAH PENSIUN
+// (itulah 404 kemarin). Rotasi otomatis bila 404/model tak tersedia.
+const aiOrModels = [
+  'google/gemma-4-31b-it:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'cohere/north-mini-code:free',
+];
+const aiOrModel = 'google/gemma-4-31b-it:free';
 const aiOrTimeout = Duration(seconds: 60);
 const aiOrReferer = 'https://github.com/Sendysyah27/SSR-SPACE';
 const aiOrTitle = 'SSR SPACE';
@@ -37,21 +44,26 @@ Future<AiDraft?> parseReceiptOr({
 }
 
 /// Chat mentah ke OpenRouter (untuk Tes AI): prompt bebas -> teks mentah.
-/// Throw [AiFailure] jujur.
+/// Throw [AiFailure] jujur (selalu bawa cuplikan body bila ada).
+/// [model]: paksa satu model; kosong = rotasi [aiOrModels] saat 404.
+/// [onModel]: nama model yang menjawab (untuk label Tes AI).
 Future<String> orChatRaw({
   required String apiKey,
   required String prompt,
   String? model,
   http.Client? client,
+  void Function(String model)? onModel,
 }) async {
   if (apiKey.trim().isEmpty || prompt.trim().isEmpty) {
     throw const AiFailure('empty', '[OpenRouter] kunci/prompt kosong');
   }
-  final name = (model ?? '').trim().isNotEmpty ? model!.trim() : aiOrModel;
+  final names = (model ?? '').trim().isNotEmpty ? [model!.trim()] : aiOrModels;
   final httpClient = client ?? http.Client();
   final owned = client == null;
+  String? lastDetail;
   try {
-    for (var attempt = 0; attempt < 2; attempt++) {
+    for (var mi = 0; mi < names.length; mi++) {
+      final name = names[mi];
       try {
         final res = await httpClient
             .post(
@@ -73,16 +85,31 @@ Future<String> orChatRaw({
             )
             .timeout(aiOrTimeout);
         if (res.statusCode == 401 || res.statusCode == 403) {
-          throw const AiFailure('denied', '[OpenRouter] kunci ditolak');
+          var snippet = res.body;
+          if (snippet.length > 300) snippet = snippet.substring(0, 300);
+          throw AiFailure('denied', '[OpenRouter] $snippet');
         }
         if (res.statusCode == 429) {
           var snippet = res.body;
           if (snippet.length > 300) snippet = snippet.substring(0, 300);
           throw AiFailure('quota', '[OpenRouter] $snippet');
         }
+        if (res.statusCode == 404) {
+          var snippet = res.body;
+          if (snippet.length > 300) snippet = snippet.substring(0, 300);
+          debugPrint('openrouter 404 ($name): $snippet');
+          lastDetail = '[OpenRouter] HTTP 404 ($name) $snippet';
+          continue;
+        }
         if (res.statusCode < 200 || res.statusCode >= 300) {
-          if (res.statusCode >= 500 && attempt == 0) continue;
-          throw AiFailure('server', '[OpenRouter] HTTP ${res.statusCode}');
+          var snippet = res.body;
+          if (snippet.length > 300) snippet = snippet.substring(0, 300);
+          if (res.statusCode >= 500) {
+            lastDetail = '[OpenRouter] HTTP ${res.statusCode} ($name) $snippet';
+            continue;
+          }
+          throw AiFailure(
+              'server', '[OpenRouter] HTTP ${res.statusCode} ($name) $snippet');
         }
         dynamic body;
         try {
@@ -92,21 +119,20 @@ Future<String> orChatRaw({
         }
         final content = openAiContentFromBody(body);
         if (content == null) {
-          if (attempt == 0) continue;
-          throw const AiFailure('empty', '[OpenRouter]');
+          throw const AiFailure('empty', '[OpenRouter] tanpa teks');
         }
+        onModel?.call(name);
         return content;
       } on AiFailure {
         rethrow;
       } on TimeoutException catch (e) {
-        if (attempt == 0) continue;
-        throw AiFailure('timeout', '[OpenRouter] $e');
+        throw AiFailure('timeout', '[OpenRouter] ($name) $e');
       } catch (e) {
-        if (attempt == 0) continue;
-        throw AiFailure('network', '[OpenRouter] $e');
+        throw AiFailure('network', '[OpenRouter] ($name) $e');
       }
     }
-    throw const AiFailure('network', '[OpenRouter] percobaan habis');
+    throw AiFailure(
+        'server', lastDetail ?? '[OpenRouter] semua model tak tersedia');
   } finally {
     if (owned) httpClient.close();
   }

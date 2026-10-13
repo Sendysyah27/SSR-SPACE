@@ -1159,9 +1159,11 @@ class _AiCardState extends State<_AiCard> {
     if (!mounted) return;
     if (orKey != null) {
       try {
-        final res = await orChatRaw(apiKey: orKey, prompt: 'Halo')
+        String? used;
+        final res = await orChatRaw(
+                apiKey: orKey, prompt: 'Halo', onModel: (m) => used = m)
             .timeout(const Duration(seconds: 60));
-        parts.add('[OpenRouter: $aiOrModel]\n'
+        parts.add('[OpenRouter${used == null ? '' : ': $used'}]\n'
             '${res.trim().isEmpty ? 'AI: (kosong)' : res}');
       } on AiFailure catch (e) {
         if (e.code == 'quota') await noteQuotaHit();
