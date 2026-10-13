@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.47.0+125.
+Versi terpasang: 2.48.0+126.
+
+## Yang baru di 2.48.0+126
+
+1. AI Parser struk kini via Firebase: tanpa tempel kunci API lagi — otomatis aktif bila kamu masuk dengan Google. Belum login Google = AI mati diam, aturan biasa tetap jalan.
+2. Kartu AI di Pengaturan jadi status (Aktif / Minta login Google), bukan form kunci.
 
 ## Yang baru di 2.47.0+125
 
