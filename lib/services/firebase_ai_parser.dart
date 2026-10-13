@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'ai_draft.dart';
 
@@ -198,6 +199,113 @@ bool isBusyMessage(String m) {
 String reachReport({int? status, String? error}) {
   if (status != null) return 'NET: host hidup (HTTP $status)';
   return 'NET: BUNTU (${error ?? 'tak dikenal'})';
+}
+
+// --- Helper murni mimic CLI OpenCode (untuk Zen langsung) ---
+
+const zenUserAgent =
+    'opencode/1.18.31 ai-sdk/provider-utils/4.0.40 runtime/bun/1.3.14';
+
+const _hex = '0123456789abcdef';
+const _b62 =
+    '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+String _randFrom(String alphabet, int n, Random r) =>
+    List.generate(n, (_) => alphabet[r.nextInt(alphabet.length)]).join();
+
+/// ses_[12 hex][14 base62] — format sesi CLI OpenCode. Murni (Random
+/// injeksi) agar testable.
+String zenSessionId([Random? random]) {
+  final r = random ?? Random.secure();
+  return 'ses_${_randFrom(_hex, 12, r)}${_randFrom(_b62, 14, r)}';
+}
+
+/// msg_[12 hex][14 base62] — fresh per request.
+String zenRequestId([Random? random]) {
+  final r = random ?? Random.secure();
+  return 'msg_${_randFrom(_hex, 12, r)}${_randFrom(_b62, 14, r)}';
+}
+
+/// Header mimic CLI. [session] tetap antar request; [request] fresh.
+Map<String, String> zenHeaders(String session, String request) => {
+      'User-Agent': zenUserAgent,
+      'x-opencode-client': 'cli',
+      'x-opencode-project': 'global',
+      'x-opencode-session': session,
+      'x-opencode-request': request,
+      'Content-Type': 'application/json',
+    };
+
+/// Tools yang diiklankan ke model (eksekusi TETAP di server,
+/// app hanya menerima teks). Bentuk function minimal OpenAI.
+List<Map<String, Object?>> zenTools() => [
+      {
+        'type': 'function',
+        'name': 'bash',
+        'description': 'Run a bash command',
+        'parameters': {'type': 'object', 'properties': {}},
+      },
+      {
+        'type': 'function',
+        'name': 'read',
+        'description': 'Read a file',
+        'parameters': {'type': 'object', 'properties': {}},
+      },
+    ];
+
+/// Kumpulkan teks dari baris-baris SSE `data: ...` (tanpa prefix).
+/// Mengerti delta chat (choices[0].delta.content), teks responses
+/// (delta langsung / output_text), dan respons JSON biasa.
+/// [DONE] diabaikan. Murni agar testable.
+String zenSseText(Iterable<String> dataLines) {
+  final out = StringBuffer();
+  for (final line in dataLines) {
+    final t = line.trim();
+    if (t.isEmpty || t == '[DONE]') continue;
+    dynamic ev;
+    try {
+      ev = jsonDecode(t);
+    } catch (_) {
+      continue;
+    }
+    if (ev is! Map) continue;
+    final type = ev['type'];
+    if (type is String) {
+      // Responses API: response.output_text.delta {delta: "..."}.
+      if (type.contains('output_text') || type.contains('delta')) {
+        final d = ev['delta'];
+        if (d is String) {
+          out.write(d);
+          continue;
+        }
+      }
+      // Event selesai/error: lewati (error HTTP sudah ditangani).
+      if (type.contains('completed') ||
+          type.contains('failed') ||
+          type.contains('error')) {
+        continue;
+      }
+    }
+    // Chat completions: choices[0].delta.content / message.content.
+    final choices = ev['choices'];
+    if (choices is List && choices.isNotEmpty && choices.first is Map) {
+      final first = choices.first as Map;
+      final delta = first['delta'];
+      if (delta is Map && delta['content'] is String) {
+        out.write(delta['content']);
+        continue;
+      }
+      final msg = first['message'];
+      if (msg is Map && msg['content'] is String) {
+        out.write(msg['content']);
+        continue;
+      }
+    }
+    // Bentuk langsung: {text: "..."} / {output: "..."}.
+    final direct = ev['text'] ?? ev['output'];
+    if (direct is String) out.write(direct);
+  }
+  return out.toString();
 }
 
 /// Hasil urai respons proxy Zen: {ok, data, provider} atau

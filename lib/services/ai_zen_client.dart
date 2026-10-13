@@ -5,166 +5,214 @@ import 'package:http/http.dart' as http;
 import 'ai_draft.dart';
 import 'firebase_ai_parser.dart';
 
-// Provider KEEMPAT: OpenCode Zen via proxy VPS (muse-spark-1.3).
-// Proxy memimik header OpenCode; app cukup POST {ocr_text, api_key}.
-// Urutan: Gemini -> OpenRouter -> Zen -> Firebase. Timeout 60 dtk,
-// retry 1x khusus timeout/jaringan. Prefix [Zen] untuk diagnosis.
-const zenProxyDefault = 'http://104.29.194.57:8766/zen-parse';
+// OpenCode Zen LANGSUNG dari app (tanpa proxy VPS).
+// Primer: POST /v1/responses untuk muse-spark-1.3-contributor-free.
+// Cadangan: POST /v1/chat/completions untuk model free lain.
+// Header memimik CLI OpenCode; API key user via Bearer.
+// stream:true → respons SSE (parse manual); bila server jawab JSON
+// biasa, parsing JSON dipakai. Prefix [Zen] untuk diagnosis.
+// Helper murni (ID sesi/request, header, tools, SSE) tinggal di
+// firebase_ai_parser.dart agar testable via `dart`.
+const zenResponsesEndpoint = 'https://opencode.ai/zen/v1/responses';
+const zenChatEndpoint = 'https://opencode.ai/zen/v1/chat/completions';
+const zenModelSpark = 'muse-spark-1.3-contributor-free';
+const zenModelFree = 'kimi-k2.5-free';
 const aiZenTimeout = Duration(seconds: 60);
-const _zenReachTimeout = Duration(seconds: 10);
 
-/// Tes koneksi ke proxy: GET URL (10 dtk). Status HTTP APAPUN = hidup
-/// (endpoint ini POST-only, jadi 404/405 pun bukti reachable).
-/// Return baris laporan + latensi. Tak pernah throw.
-Future<String> checkZenReachability(String url) async {
-  final u = url.trim().isEmpty ? zenProxyDefault : url.trim();
-  final client = http.Client();
-  final t0 = DateTime.now();
-  try {
-    final res =
-        await client.get(Uri.parse(u)).timeout(_zenReachTimeout);
-    final ms = DateTime.now().difference(t0).inMilliseconds;
-    return '${reachReport(status: res.statusCode)} (${ms}ms)\n$u';
-  } catch (e) {
-    return '${reachReport(error: '$e')}\n$u';
-  } finally {
-    client.close();
-  }
-}
-
-/// Hasil urai respons proxy ada di ai_draft.dart (murni, testable):
-/// zenParseResponse. Klien ini hanya transport HTTP.
-
-/// Teks OCR -> [AiDraft] via proxy Zen. Null = tak bisa dipakai
-/// (pemanggil lanjut ke Firebase). Melempar [AiFailure] jujur.
-Future<AiDraft?> parseReceiptZen({
+/// POST Zen + baca respons (SSE atau JSON). Return teks gabungan.
+/// Throw [AiFailure] jujur (tag = label diagnosis, mis. [Zen]).
+Future<String> _zenPost({
   required String apiKey,
-  required String ocrText,
-  String? url,
+  required String endpoint,
+  required Map<String, Object?> body,
+  required String tag,
+  required String session,
   http.Client? client,
 }) async {
-  if (apiKey.trim().isEmpty || ocrText.trim().isEmpty) return null;
-  final endpoint =
-      (url ?? '').trim().isNotEmpty ? url!.trim() : zenProxyDefault;
   final httpClient = client ?? http.Client();
   final owned = client == null;
   try {
-    for (var attempt = 0; attempt < 2; attempt++) {
+    final req = http.Request('POST', Uri.parse(endpoint));
+    req.headers.addAll(zenHeaders(session, zenRequestId()));
+    req.headers['Authorization'] = 'Bearer ${apiKey.trim()}';
+    req.body = jsonEncode(body);
+    final streamed =
+        await httpClient.send(req).timeout(aiZenTimeout);
+    if (streamed.statusCode == 401 || streamed.statusCode == 403) {
+      throw AiFailure('denied', '[$tag] kunci ditolak');
+    }
+    if (streamed.statusCode == 429) {
+      final snippet = await _readSnippet(streamed);
+      throw AiFailure('quota', '[$tag] $snippet');
+    }
+    if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
+      final snippet = await _readSnippet(streamed);
+      throw AiFailure(
+          'server', '[$tag] HTTP ${streamed.statusCode} $snippet');
+    }
+    final ctype = streamed.headers['content-type'] ?? '';
+    String text;
+    if (ctype.contains('text/event-stream')) {
+      final lines = <String>[];
+      await for (final chunk in streamed.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())) {
+        final t = chunk.trim();
+        if (t.startsWith('data:')) {
+          lines.add(t.substring(5).trim());
+        } else if (t.isNotEmpty && !t.startsWith(':')) {
+          lines.add(t);
+        }
+      }
+      text = zenSseText(lines);
+    } else {
+      final raw = await streamed.stream.transform(utf8.decoder).join();
+      dynamic decoded;
       try {
-        final res = await httpClient
-            .post(
-              Uri.parse(endpoint),
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode(
-                  {'ocr_text': ocrText, 'api_key': apiKey.trim()}),
-            )
-            .timeout(aiZenTimeout);
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          if (res.statusCode >= 500 && attempt == 0) continue;
-          var snippet = res.body;
-          if (snippet.length > 300) snippet = snippet.substring(0, 300);
-          throw AiFailure(
-              'server', '[Zen] HTTP ${res.statusCode} $snippet');
-        }
-        dynamic body;
-        try {
-          body = jsonDecode(res.body);
-        } catch (_) {
-          if (attempt == 0) continue;
-          throw const AiFailure('server', '[Zen] body bukan JSON');
-        }
-        return zenParseResponse(body).draft;
-      } on AiFailure {
-        rethrow;
-      } on TimeoutException catch (e) {
-        if (attempt == 0) continue;
-        throw AiFailure('timeout', '[Zen] $e');
-      } catch (e) {
-        if (attempt == 0) continue;
-        throw AiFailure('network', '[Zen] $e');
+        decoded = jsonDecode(raw);
+      } catch (_) {
+        throw AiFailure('server', '[$tag] body bukan JSON');
+      }
+      if (decoded is Map &&
+          decoded['choices'] is List &&
+          (decoded['choices'] as List).isNotEmpty) {
+        text = zenSseText([
+          jsonEncode({
+            'choices': decoded['choices'],
+          })
+        ]);
+      } else {
+        text = decoded is String ? decoded : '';
       }
     }
-    throw const AiFailure('network', '[Zen] percobaan habis');
+    if (text.trim().isEmpty) throw AiFailure('empty', '[$tag] tanpa teks');
+    return text;
+  } on AiFailure {
+    rethrow;
+  } on TimeoutException catch (e) {
+    throw AiFailure('timeout', '[$tag] $e');
+  } catch (e) {
+    throw AiFailure('network', '[$tag] $e');
   } finally {
     if (owned) httpClient.close();
   }
 }
 
-/// Chat mentah ke proxy Zen (untuk Tes AI): prompt bebas -> (teks, provider).
-/// Throw [AiFailure] jujur.
+/// Baca ≤300 char pertama stream (untuk cuplikan error).
+Future<String> _readSnippet(http.StreamedResponse res) async {
+  try {
+    final s =
+        await res.stream.transform(utf8.decoder).join().timeout(
+              const Duration(seconds: 10),
+            );
+    return s.length <= 300 ? s : s.substring(0, 300);
+  } catch (_) {
+    return '';
+  }
+}
+
+/// Teks OCR -> [AiDraft] via Zen langsung. Null = tak bisa dipakai
+/// (pemanggil lanjut ke Firebase). Melempar [AiFailure] jujur.
+Future<AiDraft?> parseReceiptZen({
+  required String apiKey,
+  required String ocrText,
+  http.Client? client,
+}) async {
+  if (apiKey.trim().isEmpty || ocrText.trim().isEmpty) return null;
+  final session = zenSessionId();
+  AiFailure? lastBusy;
+  // 1) Primer: spark via /responses.
+  try {
+    final text = await _zenPost(
+      apiKey: apiKey,
+      endpoint: zenResponsesEndpoint,
+      body: {
+        'model': zenModelSpark,
+        'input': aiReceiptPrompt(ocrText),
+        'stream': true,
+        'tools': zenTools(),
+      },
+      tag: 'Zen:$zenModelSpark',
+      session: session,
+      client: client,
+    );
+    return parseAiDraft(text);
+  } on AiFailure catch (e) {
+    if (e.code == 'denied' || e.code == 'quota') rethrow;
+    lastBusy = e;
+  }
+  // 2) Cadangan: model free via /chat/completions.
+  try {
+    final text = await _zenPost(
+      apiKey: apiKey,
+      endpoint: zenChatEndpoint,
+      body: {
+        'model': zenModelFree,
+        'stream': true,
+        'temperature': 0.1,
+        'max_tokens': 1500,
+        'messages': [
+          {'role': 'user', 'content': aiReceiptPrompt(ocrText)},
+        ],
+        'tools': zenTools(),
+      },
+      tag: 'Zen:$zenModelFree',
+      session: session,
+      client: client,
+    );
+    return parseAiDraft(text);
+  } on AiFailure {
+    rethrow;
+  }
+  throw lastBusy ?? const AiFailure('network', '[Zen] percobaan habis');
+}
+
+/// Chat mentah ke Zen langsung (untuk Tes AI): prompt bebas ->
+/// (teks, provider). Throw [AiFailure] jujur.
 Future<({String text, String provider})> zenChatRaw({
   required String apiKey,
   required String prompt,
-  String? url,
   http.Client? client,
 }) async {
   if (apiKey.trim().isEmpty || prompt.trim().isEmpty) {
     throw const AiFailure('empty', '[Zen] kunci/prompt kosong');
   }
-  // Kirim sebagai "struk" satu baris; proxy teruskan ke model apa adanya.
-  // Respons data Map -> encode lagi; String -> pakai langsung.
-  final endpoint =
-      (url ?? '').trim().isNotEmpty ? url!.trim() : zenProxyDefault;
-  final httpClient = client ?? http.Client();
-  final owned = client == null;
+  final session = zenSessionId();
   try {
-    for (var attempt = 0; attempt < 2; attempt++) {
-      try {
-        final res = await httpClient
-            .post(
-              Uri.parse(endpoint),
-              headers: {'Content-Type': 'application/json'},
-              body:
-                  jsonEncode({'ocr_text': prompt, 'api_key': apiKey.trim()}),
-            )
-            .timeout(aiZenTimeout);
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          if (res.statusCode >= 500 && attempt == 0) continue;
-          var snippet = res.body;
-          if (snippet.length > 300) snippet = snippet.substring(0, 300);
-          throw AiFailure(
-              'server', '[Zen] HTTP ${res.statusCode} $snippet');
-        }
-        dynamic body;
-        try {
-          body = jsonDecode(res.body);
-        } catch (_) {
-          if (attempt == 0) continue;
-          throw const AiFailure('server', '[Zen] body bukan JSON');
-        }
-        if (body is! Map) {
-          throw const AiFailure('server', '[Zen] body bukan Map');
-        }
-        final provider = body['provider'] is String
-            ? body['provider'] as String
-            : 'zen';
-        if (body['ok'] != true) {
-          // Pakai ulang klasifikasi error yang sama.
-          zenParseResponse(body);
-          throw const AiFailure('server', '[Zen] proxy gagal');
-        }
-        final data = body['data'];
-        final text = data is String
-            ? data
-            : data is Map
-                ? jsonEncode(data)
-                : '';
-        if (text.trim().isEmpty) {
-          throw const AiFailure('empty', '[Zen] tanpa teks');
-        }
-        return (text: text, provider: provider);
-      } on AiFailure {
-        rethrow;
-      } on TimeoutException catch (e) {
-        if (attempt == 0) continue;
-        throw AiFailure('timeout', '[Zen] $e');
-      } catch (e) {
-        if (attempt == 0) continue;
-        throw AiFailure('network', '[Zen] $e');
-      }
-    }
-    throw const AiFailure('network', '[Zen] percobaan habis');
-  } finally {
-    if (owned) httpClient.close();
+    final text = await _zenPost(
+      apiKey: apiKey,
+      endpoint: zenResponsesEndpoint,
+      body: {
+        'model': zenModelSpark,
+        'input': prompt,
+        'stream': true,
+        'tools': zenTools(),
+      },
+      tag: 'Zen:$zenModelSpark',
+      session: session,
+      client: client,
+    );
+    return (text: text, provider: zenModelSpark);
+  } on AiFailure catch (e) {
+    if (e.code == 'denied' || e.code == 'quota') rethrow;
+    // Cadangan chat/completions, provider = model cadangan.
+    final text = await _zenPost(
+      apiKey: apiKey,
+      endpoint: zenChatEndpoint,
+      body: {
+        'model': zenModelFree,
+        'stream': true,
+        'temperature': 0.1,
+        'max_tokens': 1500,
+        'messages': [
+          {'role': 'user', 'content': prompt},
+        ],
+        'tools': zenTools(),
+      },
+      tag: 'Zen:$zenModelFree',
+      session: session,
+      client: client,
+    );
+    return (text: text, provider: zenModelFree);
   }
 }

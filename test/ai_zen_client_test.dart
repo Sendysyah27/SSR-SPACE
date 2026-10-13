@@ -7,68 +7,76 @@ import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 
 void main() {
-  test('sukses proxy jadi draft + provider', () async {
+  test('SSE spark jadi teks + provider', () async {
     final client = MockClient((req) async {
-      expect(req.url.toString(), zenProxyDefault);
-      final b = jsonDecode(req.body) as Map;
-      expect(b['api_key'], 'kunci');
-      expect(b['ocr_text'], contains('TOTAL'));
+      expect(req.url.toString(), zenResponsesEndpoint);
+      expect(req.headers['Authorization'], startsWith('Bearer '));
+      expect(req.headers['User-Agent'], contains('opencode/1.18.31'));
+      expect(req.headers['x-opencode-client'], 'cli');
+      expect(req.headers['x-opencode-session'], startsWith('ses_'));
+      expect(req.headers['x-opencode-request'], startsWith('msg_'));
+      expect(jsonDecode(req.body)['model'], zenModelSpark);
       return http.Response(
-          jsonEncode({
-            'ok': true,
-            'data': {'merchant': 'TOKO', 'total': 5000},
-            'provider': 'muse-spark-1.3',
-          }),
-          200);
+        'data: {"choices":[{"delta":{"content":"Halo"}}]}\n'
+        'data: {"choices":[{"delta":{"content":"!"}}]}\n'
+        'data: [DONE]\n',
+        200,
+        headers: {'content-type': 'text/event-stream'},
+      );
     });
-    final d = await parseReceiptZen(
-      apiKey: 'kunci',
-      ocrText: 'TOKO\nTOTAL 5000',
-      client: client,
-    );
-    expect(d, isNotNull);
-    expect(d!.merchant, 'TOKO');
-    expect(d.total, 5000);
+    final r = await zenChatRaw(apiKey: 'k', prompt: 'Halo', client: client);
+    expect(r.text, 'Halo!');
+    expect(r.provider, zenModelSpark);
   });
 
-  test('chat mentah lapor provider', () async {
+  test('JSON biasa non-stream ikut terbaca', () async {
     final client = MockClient((_) async => http.Response(
-        jsonEncode(
-            {'ok': true, 'data': 'Halo juga!', 'provider': 'muse-spark'}),
-        200));
-    final r = await zenChatRaw(
-        apiKey: 'k', prompt: 'Halo', client: client);
-    expect(r.text, 'Halo juga!');
-    expect(r.provider, 'muse-spark');
+        jsonEncode({
+          'choices': [
+            {
+              'message': {'content': 'Hai'}
+            }
+          ],
+        }),
+        200,
+        headers: {'content-type': 'application/json'}));
+    final r =
+        await zenChatRaw(apiKey: 'k', prompt: 'Halo', client: client);
+    expect(r.text, 'Hai');
   });
 
-  test('custom URL dipakai', () async {
-    var host = '';
-    final client = MockClient((req) async {
-      host = req.url.host;
-      return http.Response(
-          jsonEncode({'ok': true, 'data': '{"total":1}'}), 200);
-    });
-    await zenChatRaw(
-      apiKey: 'k',
-      prompt: 'Halo',
-      url: 'http://contoh:9999/x',
-      client: client,
-    );
-    expect(host, 'contoh');
-  });
-
-  test('ok:false kuota + kunci/ocr kosong', () async {
-    final client = MockClient((_) async => http.Response(
-        jsonEncode(
-            {'ok': false, 'error': 'quota exceeded retry in 2h'}),
-        200));
+  test('401 jadi denied + kunci kosong', () async {
+    final client =
+        MockClient((_) async => http.Response('no', 401));
     try {
-      await zenChatRaw(apiKey: 'k', prompt: 'Halo', client: client);
+      await zenChatRaw(apiKey: 'salah', prompt: 'Halo', client: client);
       fail('harus lempar');
     } on AiFailure catch (e) {
-      expect(e.code, 'quota');
+      expect(e.code, 'denied');
     }
     expect(await parseReceiptZen(apiKey: ' ', ocrText: 'x'), isNull);
+  });
+
+  test('spark gagal -> cadangan chat', () async {
+    final urls = <String>[];
+    final client = MockClient((req) async {
+      urls.add(req.url.toString());
+      if (urls.length == 1) {
+        return http.Response('sibuk', 500);
+      }
+      return http.Response(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {'content': '{"total":9}'}
+              }
+            ],
+          }),
+          200,
+          headers: {'content-type': 'application/json'});
+    });
+    final r = await zenChatRaw(apiKey: 'k', prompt: 'Halo', client: client);
+    expect(urls, [zenResponsesEndpoint, zenChatEndpoint]);
+    expect(r.provider, zenModelFree);
   });
 }

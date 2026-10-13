@@ -563,7 +563,6 @@ class _TxInputSheetState extends State<TxInputSheet> {
     final gkey = await readGeminiKey();
     final okey = await readOrKey();
     final zkey = await readZenKey();
-    final zurl = await readZenUrl(zenProxyDefault);
     final useGemini = await aiProviderOn(aiProvGemini);
     final useOr = await aiProviderOn(aiProvOr);
     final useZen = await aiProviderOn(aiProvZen);
@@ -607,13 +606,12 @@ class _TxInputSheetState extends State<TxInputSheet> {
         orErr = AiFailure('network', '[OpenRouter] $e');
       }
     }
-    // 3) KETIGA: proxy OpenCode Zen (bila ada kunci).
+    // 3) KETIGA: OpenCode Zen langsung (bila ada kunci).
     if (mounted && zkey != null && useZen) {
       try {
         final draft = await parseReceiptZen(
           apiKey: zkey,
           ocrText: raw,
-          url: zurl,
         );
         if (!mounted) return null;
         if (draft != null) {

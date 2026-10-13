@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.53.0+148.
+Versi terpasang: 2.54.0+149.
+
+## Yang baru di 2.54.0+149
+
+1. Zen tanpa perantara VPS: app bicara langsung ke OpenCode (muse-spark utama, model free cadangan), dengan header CLI + tools bash/read. Field URL proxy dihapus.
 
 ## Yang baru di 2.53.0+148
 

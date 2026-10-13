@@ -976,7 +976,6 @@ class _AiCardState extends State<_AiCard> {
   bool _hasKey = false;
   bool _hasOrKey = false;
   bool _hasZenKey = false;
-  String _zenUrl = zenProxyDefault;
   final Map<String, bool> _prov = {
     aiProvGemini: true,
     aiProvOr: true,
@@ -986,7 +985,6 @@ class _AiCardState extends State<_AiCard> {
   final _keyC = TextEditingController();
   final _orKeyC = TextEditingController();
   final _zenKeyC = TextEditingController();
-  final _zenUrlC = TextEditingController();
 
   @override
   void initState() {
@@ -999,7 +997,6 @@ class _AiCardState extends State<_AiCard> {
     _keyC.dispose();
     _orKeyC.dispose();
     _zenKeyC.dispose();
-    _zenUrlC.dispose();
     super.dispose();
   }
 
@@ -1010,7 +1007,6 @@ class _AiCardState extends State<_AiCard> {
     final key = await readGeminiKey();
     final orKey = await readOrKey();
     final zenKey = await readZenKey();
-    final zenUrl = await readZenUrl(zenProxyDefault);
     final prov = <String, bool>{
       aiProvGemini: await aiProviderOn(aiProvGemini),
       aiProvOr: await aiProviderOn(aiProvOr),
@@ -1025,7 +1021,6 @@ class _AiCardState extends State<_AiCard> {
       _hasKey = key != null;
       _hasOrKey = orKey != null;
       _hasZenKey = zenKey != null;
-      _zenUrl = zenUrl;
       _prov
         ..clear()
         ..addAll(prov);
@@ -1167,52 +1162,6 @@ class _AiCardState extends State<_AiCard> {
     });
   }
 
-  Future<void> _saveZenUrl() async {
-    setState(() => _busy = true);
-    await writeZenUrl(_zenUrlC.text);
-    _zenUrlC.clear();
-    await _refresh();
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _msg = tr('ai_saved');
-    });
-  }
-
-  /// Tes Koneksi: GET URL proxy saat ini (10 dtk), tampilkan hidup/
-  /// buntu + latensi. Untuk ganti IP VPS dinamis tanpa update app.
-  Future<void> _testZenUrl() async {
-    setState(() {
-      _busy = true;
-      _msg = tr('ai_working');
-    });
-    final url = await readZenUrl(zenProxyDefault);
-    final rep = await checkZenReachability(url);
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _msg = null;
-    });
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(tr('ai_zen_test')),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: SelectableText(rep),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(tr('rcp_raw_close')),
-          ),
-        ],
-      ),
-    );
-  }
-
   String _providerSubtitle() {
     final ps = <String>[];
     if (_hasKey) ps.add('Gemini');
@@ -1325,17 +1274,14 @@ class _AiCardState extends State<_AiCard> {
     } else {
       parts.add('[OpenRouter] (${tr('ai_need_orkey')})');
     }
-    // KETIGA: Zen via proxy (bila ada kunci).
+    // KETIGA: Zen langsung (bila ada kunci).
     final zenKey = await readZenKey();
     if (!mounted) return;
     if (!useZen) {
       parts.add('[Zen] (${tr('ai_off')})');
     } else if (zenKey != null) {
-      final zurl = await readZenUrl(zenProxyDefault);
-      if (!mounted) return;
       try {
-        final r = await zenChatRaw(
-                apiKey: zenKey, prompt: 'Halo', url: zurl)
+        final r = await zenChatRaw(apiKey: zenKey, prompt: 'Halo')
             .timeout(const Duration(seconds: 60));
         parts.add('[Zen: ${r.provider}]\n'
             '${r.text.trim().isEmpty ? 'AI: (kosong)' : r.text}');
@@ -1557,40 +1503,6 @@ class _AiCardState extends State<_AiCard> {
               child: OutlinedButton(
                 onPressed: _busy ? null : _clearZenKey,
                 child: Text(tr('ai_clear')),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: SsrSpace.xs),
-        Text(
-          tr('ai_zen_url_label'),
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(height: SsrSpace.xs),
-        TextField(
-          controller: _zenUrlC,
-          enableSuggestions: false,
-          autocorrect: false,
-          decoration: InputDecoration(
-            hintText: _zenUrl,
-            border: const OutlineInputBorder(),
-            isDense: true,
-          ),
-        ),
-        const SizedBox(height: SsrSpace.sm),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _busy ? null : _saveZenUrl,
-                child: Text(tr('ai_save')),
-              ),
-            ),
-            const SizedBox(width: SsrSpace.sm),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _busy ? null : _testZenUrl,
-                child: Text(tr('ai_zen_test')),
               ),
             ),
           ],
