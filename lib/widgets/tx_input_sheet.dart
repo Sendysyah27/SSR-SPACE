@@ -206,6 +206,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
   bool _scanning = false;
   String? _scanErr;
 
+  /// Sebab jujur kegagalan AI terakhir (kode + pesan asli), tampil di
+  /// dialog diagnosis teks mentah. Reset tiap scan baru.
+  String? _aiErrDetail;
+
   int get _dec => kCurrencyDecimals(currencyCode.value);
   bool get _isEdit => widget.editing != null;
 
@@ -547,6 +551,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
     setState(() {
       _scanning = true;
       _scanErr = tr('ai_working');
+      _aiErrDetail = null;
     });
     try {
       final draft = await parseReceiptFirebase(ocrText: raw, generate: gen);
@@ -558,18 +563,21 @@ class _TxInputSheetState extends State<TxInputSheet> {
       return draft;
     } on AiFailure catch (e) {
       if (!mounted) return null;
+      final detail = '(${e.code})${e.detail == null ? '' : ' ${e.detail}'}';
       setState(() {
         _scanning = false;
         // gen != null = sesi Firebase hidup saat dipanggil, jadi denied
         // di sini artinya ditolak/kuota, bukan belum login.
-        _scanErr = tr(aiFailureTrKey(e.code, loggedIn: true));
+        _scanErr = '${tr(aiFailureTrKey(e.code, loggedIn: true))} $detail';
+        _aiErrDetail = 'AI $detail';
       });
       return null;
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return null;
       setState(() {
         _scanning = false;
         _scanErr = tr('ai_fail');
+        _aiErrDetail = 'AI (tak dikenal) $e';
       });
       return null;
     }
@@ -607,7 +615,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
   /// Diagnosis scan: tampilkan teks OCR mentah agar bisa di-screenshot
   /// dan dilapor. Hanya di layar, tak diupload ke mana pun.
   Future<void> _showRawOcrDialog(String raw) async {
-    final body = raw.trim().isEmpty ? tr('rcp_raw_empty') : raw;
+    final ocr = raw.trim().isEmpty ? tr('rcp_raw_empty') : raw;
+    final err = _aiErrDetail;
+    final body = err == null ? ocr : '$err\n\n---\n\n$ocr';
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(

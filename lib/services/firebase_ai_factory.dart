@@ -1,5 +1,6 @@
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_ai_parser.dart';
@@ -70,13 +71,15 @@ Future<AiGenerate?> firebaseAiGenerate() async {
         final res = await model.generateContent([Content.text(prompt)]);
         return res.text;
       } catch (e) {
+        // Log lengkap untuk diagnosis via `adb logcat` (tak diupload).
+        debugPrint('firebase ai gagal: $e');
         final m = e.toString().toLowerCase();
         if (m.contains('permission-denied') ||
             m.contains('unauthenticated') ||
             m.contains('quota') ||
             m.contains('403') ||
             m.contains('api key')) {
-          throw const AiDenied();
+          throw AiDenied(e.toString());
         }
         rethrow;
       }

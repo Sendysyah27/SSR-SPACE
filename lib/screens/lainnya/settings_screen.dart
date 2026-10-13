@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import 'package:ssr_space/services/firebase_ai_factory.dart';
+import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/biometric_auth.dart';
 import 'package:ssr_space/services/currency.dart';
@@ -999,6 +1001,59 @@ class _AiCardState extends State<_AiCard> {
     });
   }
 
+  /// Diagnosis jujur: panggil model dengan prompt "Halo", tampilkan
+  /// hasil mentah atau sebab gagal mentah (kode + pesan asli).
+  /// Hanya di layar, untuk screenshot/laporan — tak diupload.
+  Future<void> _testAi() async {
+    setState(() {
+      _busy = true;
+      _msg = tr('ai_working');
+    });
+    final gen = await firebaseAiGenerate();
+    if (!mounted) return;
+    if (gen == null) {
+      setState(() {
+        _busy = false;
+        _msg = tr('ai_need_google');
+      });
+      return;
+    }
+    String out;
+    try {
+      final res = await gen('Halo').timeout(const Duration(seconds: 30));
+      out = (res == null || res.trim().isEmpty) ? 'AI: (kosong)' : res;
+    } on AiFailure catch (e) {
+      out = 'AI gagal (${e.code})${e.detail == null ? '' : '\n${e.detail}'}';
+    } on TimeoutException catch (e) {
+      out = 'AI gagal (timeout)\n$e';
+    } catch (e) {
+      out = 'AI gagal (tak dikenal)\n$e';
+    }
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = null;
+    });
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('ai_test')),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: SelectableText(out),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(tr('rcp_raw_close')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return LabeledSectionCard(
@@ -1014,6 +1069,14 @@ class _AiCardState extends State<_AiCard> {
           ),
           value: _on && _ready,
           onChanged: _busy ? null : _toggle,
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: _busy ? null : _testAi,
+            child: Text(tr('ai_test')),
+          ),
         ),
         if (_msg != null) ...[
           const SizedBox(height: SsrSpace.xs),

@@ -46,6 +46,7 @@ void main() {
       fail('harus lempar');
     } on AiFailure catch (e) {
       expect(e.code, 'timeout');
+      expect(e.detail, contains('lelet'));
     }
     expect(calls, 2);
   });
@@ -106,5 +107,28 @@ void main() {
     expect(aiFailureTrKey('denied', loggedIn: false), 'ai_need_google');
     expect(aiFailureTrKey('denied', loggedIn: true), 'ai_fail');
     expect(aiFailureTrKey('timeout', loggedIn: true), 'ai_fail');
+  });
+
+  test('detail error asli terbawa (timeout/network/denied)', () async {
+    try {
+      await parseReceiptFirebase(
+        ocrText: 'TOTAL 100',
+        generate: (prompt) async => throw Exception('jaringan putus'),
+      );
+      fail('harus lempar');
+    } on AiFailure catch (e) {
+      expect(e.code, 'network');
+      expect(e.detail, contains('putus'));
+    }
+    try {
+      await parseReceiptFirebase(
+        ocrText: 'TOTAL 100',
+        generate: (prompt) async => throw AiDenied('quota habis'),
+      );
+      fail('harus lempar');
+    } on AiFailure catch (e) {
+      expect(e.code, 'denied');
+      expect(e.detail, 'quota habis');
+    }
   });
 }

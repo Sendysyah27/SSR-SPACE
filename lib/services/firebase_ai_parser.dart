@@ -14,13 +14,20 @@ const firebaseAiTimeout = Duration(seconds: 30);
 class AiFailure implements Exception {
   // timeout | network | denied | server | empty
   final String code;
-  const AiFailure(this.code);
+
+  /// Pesan error asli (diagnosis jujur di UI, tak diupload).
+  final String? detail;
+  const AiFailure(this.code, [this.detail]);
+
+  @override
+  String toString() => 'AiFailure($code)${detail == null ? '' : ': $detail'}';
 }
 
 /// Penanda dari factory: model menolak (belum login / quota / 403).
 /// Dipetakan jadi [AiFailure] `denied` tanpa retry.
 class AiDenied implements Exception {
-  const AiDenied();
+  final String? detail;
+  const AiDenied([this.detail]);
 }
 
 /// Satu pemanggilan model: prompt -> teks JSON mentah (null = kosong).
@@ -50,16 +57,16 @@ Future<AiDraft?> parseReceiptFirebase({
       final draft = parseAiDraft(text);
       if (draft == null && attempt == 0) continue;
       return draft;
-    } on AiDenied {
-      throw const AiFailure('denied');
+    } on AiDenied catch (e) {
+      throw AiFailure('denied', e.detail);
     } on AiFailure {
       rethrow;
-    } on TimeoutException {
+    } on TimeoutException catch (e) {
       if (attempt == 0) continue;
-      throw const AiFailure('timeout');
-    } catch (_) {
+      throw AiFailure('timeout', '$e');
+    } catch (e) {
       if (attempt == 0) continue;
-      throw const AiFailure('network');
+      throw AiFailure('network', '$e');
     }
   }
   throw const AiFailure('network');

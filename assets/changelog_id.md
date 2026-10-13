@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.48.0+128.
+Versi terpasang: 2.48.0+129.
+
+## Yang baru di 2.48.0+129
+
+1. Diagnosis AI jujur: tiap kegagalan kini tampil kodenya (timeout/network/denied/server/empty) + pesan asli di dialog teks mentah, bukan cuma "AI gagal".
+2. Tombol Tes AI di Pengaturan → AI Parser: panggil model dengan "Halo", tampilkan hasil/error mentah untuk laporan.
 
 ## Yang baru di 2.48.0+128
 

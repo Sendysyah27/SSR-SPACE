@@ -2296,6 +2296,7 @@ const _t = <String, Map<String, String>>{
     'id': 'Masuk dengan Google untuk menyalakan AI.',
     'en': 'Sign in with Google to enable AI.',
   },
+  'ai_test': {'id': 'Tes AI', 'en': 'Test AI'},
   'ai_working': {'id': 'Meminta AI...', 'en': 'Asking AI...'},
   'ai_fail': {
     'id': 'AI gagal. Isi manual seperti biasa.',
