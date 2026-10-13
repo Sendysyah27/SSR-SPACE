@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import 'ai_draft.dart';
 import 'firebase_ai_parser.dart';
 
@@ -75,7 +76,7 @@ Future<String> _zenPost({
         throw AiFailure('network', '[$tag] $e');
       }
     }
-    throw lastDenied ?? const AiFailure('denied', '[$tag] ditolak');
+    throw lastDenied ?? AiFailure('denied', '[$tag] ditolak');
   } finally {
     if (owned) httpClient.close();
   }
