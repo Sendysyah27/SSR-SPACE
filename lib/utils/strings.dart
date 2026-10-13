@@ -2301,6 +2301,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Tidak bisa konek ke server Google AI. Cek DNS/firewall/ISP atau VPN, lalu coba lagi.',
     'en': 'Cannot reach the Google AI server. Check DNS/firewall/ISP or VPN, then retry.',
   },
+  'ai_busy': {
+    'id': 'Model AI lagi sibuk, coba lagi sebentar.',
+    'en': 'The AI model is busy, retry in a moment.',
+  },
   'ai_working': {'id': 'Meminta AI...', 'en': 'Asking AI...'},
   'ai_fail': {
     'id': 'AI gagal. Isi manual seperti biasa.',

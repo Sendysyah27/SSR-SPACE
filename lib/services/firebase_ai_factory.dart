@@ -8,9 +8,10 @@ import 'dart:convert';
 
 import 'firebase_ai_parser.dart';
 
-// Model parser struk: alias stabil resmi Firebase AI Logic — selalu ikut
-// flash stabil terbaru (tanpa ganti kode tiap rilis model).
-// Docs: agent-skills flutter_setup.md + pola versi Gemini API.
+// Daftar fallback model: utama dulu, lalu stabil cadangan.
+// SENGAJA tanpa gemini-2.0/1.5-flash: keduanya mati 2026
+// (request = 404 pasti). Cadangan = 3.5-flash (stabil ≥2027-05-19).
+const firebaseAiModels = ['gemini-flash-latest', 'gemini-3.5-flash'];
 const firebaseAiModel = 'gemini-flash-latest';
 
 // Kunci API Android dari google-services.json (disuntik CI via
@@ -44,14 +45,14 @@ Future<String> checkGoogleAiReachability() async {
 /// Plan B: POST langsung ke Gemini Developer API bila SDK hang.
 /// Return teks, atau null (gagal = pemanggil tentukan vonis).
 /// Tak pernah throw.
-Future<String?> _restGenerate(String prompt) async {
+Future<String?> _restGenerate(String prompt, {String? model}) async {
   if (googleApiKey.isEmpty) return null;
   final client = http.Client();
   try {
     final res = await client
         .post(
           Uri.parse(
-              'https://generativelanguage.googleapis.com/v1beta/models/$firebaseAiModel:generateContent'),
+              'https://generativelanguage.googleapis.com/v1beta/models/${model ?? firebaseAiModel}:generateContent'),
           headers: {
             'x-goog-api-key': googleApiKey,
             'Content-Type': 'application/json',
@@ -129,45 +130,56 @@ Future<bool> ensureFirebaseSession({
 Future<AiGenerate?> firebaseAiGenerate() async {
   try {
     if (FirebaseAuth.instance.currentUser == null) return null;
-    final model = FirebaseAI.googleAI().generativeModel(
-      model: firebaseAiModel,
-    );
     return (prompt) async {
-      try {
-        debugPrint('firebase ai sdk generateContent mulai...');
-        // Timeout di DALAM closure agar on TimeoutException di bawah
-        // (→ REST) yang menang, bukan timeout luar parser.
-        final res = await model
-            .generateContent([Content.text(prompt)])
-            .timeout(firebaseAiTimeout);
-        debugPrint('firebase ai sdk generateContent selesai.');
-        return res.text;
-      } on TimeoutException {
-        // SDK hang: Plan B REST langsung (30 dtk). Sukses = pakai;
-        // gagal = vonis timeout jujur (tanpa retry ganda pemanggil).
-        debugPrint('firebase ai sdk hang, coba REST...');
-        final t = await _restGenerate(prompt);
-        if (t != null && t.trim().isNotEmpty) return t;
-        throw const AiFailure('timeout', 'sdk hang + rest gagal');
-      } catch (e) {
-        // Log lengkap untuk diagnosis via `adb logcat` (tak diupload).
-        debugPrint('firebase ai gagal: $e');
-        final m = e.toString().toLowerCase();
-        if (m.contains('app check') ||
-            m.contains('appcheck') ||
-            m.contains('app_check') ||
-            m.contains('integrity')) {
-          throw AiAppCheck(e.toString());
+      String? lastDetail;
+      for (var mi = 0; mi < firebaseAiModels.length; mi++) {
+        final name = firebaseAiModels[mi];
+        try {
+          debugPrint('firebase ai sdk mulai ($name)...');
+          final model = FirebaseAI.googleAI().generativeModel(model: name);
+          // Timeout di DALAM closure agar on TimeoutException di bawah
+          // (→ REST) yang menang, bukan timeout luar parser.
+          final res = await model
+              .generateContent([Content.text(prompt)])
+              .timeout(firebaseAiTimeout);
+          debugPrint('firebase ai sdk selesai ($name).');
+          return res.text;
+        } on TimeoutException {
+          // SDK hang: Plan B REST langsung (30 dtk). Sukses = pakai;
+          // gagal = vonis timeout jujur (tanpa retry ganda pemanggil).
+          debugPrint('firebase ai sdk hang ($name), coba REST...');
+          final t = await _restGenerate(prompt, model: name);
+          if (t != null && t.trim().isNotEmpty) return t;
+          throw const AiFailure('timeout', 'sdk hang + rest gagal');
+        } catch (e) {
+          // Log lengkap untuk diagnosis via `adb logcat` (tak diupload).
+          debugPrint('firebase ai gagal ($name): $e');
+          final m = e.toString().toLowerCase();
+          if (m.contains('app check') ||
+              m.contains('appcheck') ||
+              m.contains('app_check') ||
+              m.contains('integrity')) {
+            throw AiAppCheck(e.toString());
+          }
+          if (m.contains('permission-denied') ||
+              m.contains('unauthenticated') ||
+              m.contains('403') ||
+              m.contains('api key')) {
+            throw AiDenied(e.toString());
+          }
+          if (isBusyMessage(m)) {
+            // 500/quota/penuh: jeda 3 dtk lalu coba model cadangan.
+            lastDetail = e.toString();
+            if (mi < firebaseAiModels.length - 1) {
+              debugPrint('firebase ai sibuk, jeda 3 dtk ganti model...');
+              await Future.delayed(const Duration(seconds: 3));
+            }
+            continue;
+          }
+          rethrow;
         }
-        if (m.contains('permission-denied') ||
-            m.contains('unauthenticated') ||
-            m.contains('quota') ||
-            m.contains('403') ||
-            m.contains('api key')) {
-          throw AiDenied(e.toString());
-        }
-        rethrow;
       }
+      throw AiFailure('server', lastDetail ?? 'semua model sibuk');
     };
   } catch (_) {
     return null;

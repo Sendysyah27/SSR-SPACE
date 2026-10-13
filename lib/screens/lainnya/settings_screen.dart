@@ -1030,6 +1030,13 @@ class _AiCardState extends State<_AiCard> {
               onPressed: () => Navigator.pop(ctx),
               child: Text(tr('rcp_raw_close')),
             ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                unawaited(_testAi());
+              },
+              child: Text(tr('ai_retry')),
+            ),
           ],
         ),
       );
@@ -1080,6 +1087,13 @@ class _AiCardState extends State<_AiCard> {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(tr('rcp_raw_close')),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              unawaited(_testAi());
+            },
+            child: Text(tr('ai_retry')),
           ),
         ],
       ),

@@ -61,8 +61,25 @@ typedef AiGenerate = Future<String?> Function(String prompt);
 /// Kunci strings untuk [AiFailure.code]. `denied` hanya berarti
 /// "belum login" bila tanpa sesi; dengan sesi hidup = ditolak/kuota
 /// (pesan gagal umum yang jujur, bukan tuduhan belum login).
-String aiFailureTrKey(String code, {required bool loggedIn}) =>
-    (code == 'denied' && !loggedIn) ? 'ai_need_google' : 'ai_fail';
+/// `server` = model sibuk (500/penuh) → pesan ramah + tombol Coba Lagi.
+String aiFailureTrKey(String code, {required bool loggedIn}) {
+  if (code == 'server') return 'ai_busy';
+  return (code == 'denied' && !loggedIn) ? 'ai_need_google' : 'ai_fail';
+}
+
+/// Pesan error model-sibuk? (500/quota/penuh) → pantas retry + ganti
+/// model. Murni agar testable; pencocokan case-insensitive.
+bool isBusyMessage(String m) {
+  final t = m.toLowerCase();
+  return t.contains('500') ||
+      t.contains('high demand') ||
+      t.contains('overloaded') ||
+      t.contains('resource-exhausted') ||
+      t.contains('resource exhausted') ||
+      t.contains('429') ||
+      t.contains('quota') ||
+      t.contains('exhausted');
+}
 
 /// Baris laporan keterjangkauan server (murni, testable).
 /// Status HTTP APAPUN = host hidup (root memang 404, itu buktinya).

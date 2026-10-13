@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.48.0+135.
+Versi terpasang: 2.49.0+136.
+
+## Yang baru di 2.49.0+136
+
+1. Hasil struk lebih rapi: nama produk tampil penuh (tidak kepotong), nominal sejajar kanan, plus kotak ringkasan Subtotal + Diskon + Total.
+2. Bila model AI sibuk (500/penuh): otomatis jeda 3 detik lalu coba model cadangan; pesan ramah + tombol Coba Lagi di Tes AI.
 
 ## Yang baru di 2.48.0+135
 

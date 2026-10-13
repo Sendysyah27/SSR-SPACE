@@ -31,6 +31,16 @@ class ReceiptResultSheet extends StatelessWidget {
     final warn = !data.confident;
     final firstItem = mirror.indexWhere((e) => e.amount != null && !e.bold);
     final firstTotal = mirror.indexWhere((e) => e.bold && e.amount != null);
+    final items =
+        mirror.where((e) => e.amount != null && !e.bold).toList();
+    final subtotal =
+        items.where((e) => e.amount! > 0).fold(0.0, (s, e) => s + e.amount!);
+    final potongan = items
+            .where((e) => e.amount! < 0)
+            .fold(0.0, (s, e) => s - e.amount!) +
+        (data.voucher ?? 0);
+    final total = data.amount ?? (subtotal - potongan);
+    final showSummary = items.isNotEmpty || data.amount != null;
     return SafeArea(
       child: SelectionArea(
         child: SingleChildScrollView(
@@ -58,6 +68,15 @@ class ReceiptResultSheet extends StatelessWidget {
                         color: scheme.error,
                       ),
                       textAlign: TextAlign.center,
+                    ),
+                  ],
+                  if (showSummary) ...[
+                    const SizedBox(height: SsrSpace.sm),
+                    _SummaryBox(
+                      subtotal: subtotal,
+                      potongan: potongan,
+                      total: total,
+                      money: _idr,
                     ),
                   ],
                   const SizedBox(height: SsrSpace.md),
@@ -88,7 +107,8 @@ class ReceiptResultSheet extends StatelessWidget {
   }
 }
 
-/// Satu baris replika: polos tengah, atau nama .... nominal monospace.
+/// Satu baris replika: polos tengah, atau nama (wrap penuh) + nominal
+/// monospace tabular rata kanan.
 class _MirrorRow extends StatelessWidget {
   final MirrorLine line;
   final String Function(double) money;
@@ -117,20 +137,23 @@ class _MirrorRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Flexible(
+          // Nama produk wrap penuh (tak dipotong) + nominal rata kanan
+          // sejajar tabular. Tanpa dot leader: rusak bila nama 2 baris.
+          Expanded(
             child: Text(
               line.text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
               style: line.bold
                   ? base?.copyWith(fontWeight: FontWeight.w700)
                   : base,
             ),
           ),
-          const Expanded(child: _DotLeader()),
+          const SizedBox(width: 12),
           Text(
             money(line.amount!),
+            textAlign: TextAlign.right,
+            softWrap: false,
             style: (line.bold
                     ? base?.copyWith(fontWeight: FontWeight.w700)
                     : base)
@@ -143,27 +166,91 @@ class _MirrorRow extends StatelessWidget {
     );
   }
 }
-/// Deret titik pengisi lebar sisa (dot leader struk).
-class _DotLeader extends StatelessWidget {
-  const _DotLeader();
+
+/// Ringkasan M3: subtotal item + potongan (diskon/voucher/void) + total.
+/// Angka tabular rata kanan; total tegas warna primer.
+class _SummaryBox extends StatelessWidget {
+  final double subtotal;
+  final double potongan;
+  final double total;
+  final String Function(double) money;
+
+  const _SummaryBox({
+    required this.subtotal,
+    required this.potongan,
+    required this.total,
+    required this.money,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (_, c) {
-        final w = c.maxWidth.isFinite ? c.maxWidth : 200.0;
-        final n = (w ~/ 7).clamp(2, 80);
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Text(
-            List.filled(n, '·').join(),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
-              fontFamily: 'monospace',
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final num = theme.textTheme.bodyMedium?.copyWith(
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: SsrSpace.md,
+        vertical: SsrSpace.sm,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          _sumRow(context, tr('rcp_subtotal'), money(subtotal), num),
+          if (potongan > 0) _sumRow(context, tr('rcp_discount'), money(potongan), num),
+          const Divider(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  tr('rcp_total'),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                money(total),
+                textAlign: TextAlign.right,
+                softWrap: false,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: scheme.primary,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sumRow(
+    BuildContext context,
+    String label,
+    String value,
+    TextStyle? num,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
-        );
-      },
+          const SizedBox(width: 12),
+          Text(value, textAlign: TextAlign.right, softWrap: false, style: num),
+        ],
+      ),
     );
   }
 }

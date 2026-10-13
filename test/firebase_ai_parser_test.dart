@@ -182,4 +182,18 @@ void main() {
       'NET: BUNTU (TimeoutException after 10s)',
     );
   });
+
+  test('isBusyMessage + server = ai_busy ramah', () {
+    expect(
+      isBusyMessage(
+          'Server Error 500 This model is currently experiencing high demand'),
+      isTrue,
+    );
+    expect(isBusyMessage('429 resource exhausted'), isTrue);
+    expect(isBusyMessage('quota exceeded'), isTrue);
+    expect(isBusyMessage('model overloaded'), isTrue);
+    expect(isBusyMessage('permission denied'), isFalse);
+    expect(isBusyMessage('timeout'), isFalse);
+    expect(aiFailureTrKey('server', loggedIn: true), 'ai_busy');
+  });
 }
