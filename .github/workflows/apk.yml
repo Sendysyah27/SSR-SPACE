@@ -353,26 +353,61 @@ jobs:
               roots = [pathlib.Path('android/build.gradle.kts'),
                        pathlib.Path('android/build.gradle')]
               root = next((p for p in roots if p.exists()), None)
-              assert root is not None, 'root build gradle tak ketemu'
-              s = root.read_text()
-              if 'google-services' not in s:
-                  if root.suffix == '.kts':
-                      pat = re.compile(
-                          r'classpath\("org\.jetbrains\.kotlin:kotlin-gradle-plugin:[^"]+"\)')
-                      assert len(pat.findall(s)) == 1, 'anchor kotlin KTS tak ketemu'
-                      s = pat.sub(
-                          lambda m: m.group(0) +
-                          f'\n        classpath("com.google.gms:google-services:{ver}")',
-                          s, count=1)
-                  else:
-                      pat = re.compile(
-                          r'classpath\s+"org\.jetbrains\.kotlin:kotlin-gradle-plugin:[^"]+"')
-                      assert len(pat.findall(s)) == 1, 'anchor kotlin groovy tak ketemu'
-                      s = pat.sub(
-                          lambda m: m.group(0) +
-                          f'\n        classpath "com.google.gms:google-services:{ver}"',
-                          s, count=1)
-                  root.write_text(s)
+              settings = pathlib.Path('android/settings.gradle.kts')
+              if not settings.exists():
+                  settings = pathlib.Path('android/settings.gradle')
+
+              def show(p):
+                  print(f'--- {p} ---')
+                  print(pathlib.Path(p).read_text()[:1500])
+
+              def add_after_line(text, pattern, newline):
+                  m = re.search(r'(?m)^[ \t]*' + pattern + r'[^\n]*$', text)
+                  if m is None:
+                      return None
+                  return text[:m.end()] + '\n' + newline + text[m.end():]
+
+              if root is not None:
+                  # Template lama: classpath di root build.gradle.
+                  s = root.read_text()
+                  if 'google-services' not in s:
+                      if root.suffix == '.kts':
+                          pat = re.compile(r'classpath[(]"org[.]jetbrains[.]kotlin:kotlin-gradle-plugin:[^"]+"[)]')
+                          if len(pat.findall(s)) != 1:
+                              show(root)
+                              raise SystemExit('anchor kotlin KTS tak ketemu')
+                          s = pat.sub(
+                              lambda m: m.group(0) +
+                              '\n        classpath("com.google.gms:google-services:' + ver + '")',
+                              s, count=1)
+                      else:
+                          pat = re.compile(r'classpath\s+"org[.]jetbrains[.]kotlin:kotlin-gradle-plugin:[^"]+"')
+                          if len(pat.findall(s)) != 1:
+                              show(root)
+                              raise SystemExit('anchor kotlin groovy tak ketemu')
+                          s = pat.sub(
+                              lambda m: m.group(0) +
+                              '\n        classpath "com.google.gms:google-services:' + ver + '"',
+                              s, count=1)
+                      root.write_text(s)
+                  rooted = root
+              elif settings.exists():
+                  # Template modern (tanpa root build.gradle): plugins DSL
+                  # di settings (apply false) + dipakai di app.
+                  g = settings.read_text()
+                  if 'google-services' not in g:
+                      g2 = add_after_line(g, r'id[(]"org[.]jetbrains[.]kotlin[.]android"[)]',
+                          '    id("com.google.gms.google-services") version "' + ver + '" apply false')
+                      if g2 is None:
+                          g2 = add_after_line(g, r'id[(]"com[.]android[.]application"[)]',
+                              '    id("com.google.gms.google-services") version "' + ver + '" apply false')
+                      if g2 is None:
+                          show(settings)
+                          raise SystemExit('anchor plugins settings tak ketemu')
+                      settings.write_text(g2)
+                  rooted = settings
+              else:
+                  raise SystemExit('root build gradle + settings tak ketemu')
               apps = [pathlib.Path('android/app/build.gradle.kts'),
                       pathlib.Path('android/app/build.gradle')]
               app = next((p for p in apps if p.exists()), None)
@@ -380,22 +415,22 @@ jobs:
               a = app.read_text()
               if 'google-services' not in a:
                   if app.suffix == '.kts':
-                      anchor = 'id("com.android.application")'
-                      assert anchor in a, 'anchor plugins KTS tak ketemu'
-                      a = a.replace(
-                          anchor,
-                          anchor + '\n    id("com.google.gms.google-services")', 1)
+                      a2 = add_after_line(a, r'id[(]"com[.]android[.]application"[)]',
+                          '    id("com.google.gms.google-services")')
+                      if a2 is None:
+                          show(app)
+                          raise SystemExit('anchor plugins KTS tak ketemu')
+                      app.write_text(a2)
                   else:
-                      anchor = "apply plugin: 'com.android.application'"
-                      assert anchor in a, 'anchor apply groovy tak ketemu'
-                      a = a.replace(
-                          anchor,
-                          anchor + "\napply plugin: 'com.google.gms.google-services'",
-                          1)
-                  app.write_text(a)
-              assert 'google-services' in root.read_text(), 'classpath hilang'
-              assert 'google-services' in app.read_text(), 'apply hilang'
-              print(f'google-services plugin {ver} ok:', root, app)
+                      a2 = add_after_line(a, r"apply plugin: 'com[.]android[.]application'",
+                          "apply plugin: 'com.google.gms.google-services'")
+                      if a2 is None:
+                          show(app)
+                          raise SystemExit('anchor apply groovy tak ketemu')
+                      app.write_text(a2)
+              assert 'google-services' in rooted.read_text(), 'daftar hilang'
+              assert 'google-services' in app.read_text(), 'pakai hilang'
+              print(f'google-services plugin {ver} ok:', rooted, app)
           EOF
       - run: |
           python3 - <<'EOF'
