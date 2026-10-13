@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.53.0+147.
+Versi terpasang: 2.53.0+148.
+
+## Yang baru di 2.53.0+148
+
+1. Proxy Zen ikut pindah IP (default baru). URL custom tersimpan tak ikut berubah — perbarui via field URL + Tes Koneksi.
 
 ## Yang baru di 2.53.0+147
 

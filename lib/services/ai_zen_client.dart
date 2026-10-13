@@ -9,7 +9,7 @@ import 'firebase_ai_parser.dart';
 // Proxy memimik header OpenCode; app cukup POST {ocr_text, api_key}.
 // Urutan: Gemini -> OpenRouter -> Zen -> Firebase. Timeout 60 dtk,
 // retry 1x khusus timeout/jaringan. Prefix [Zen] untuk diagnosis.
-const zenProxyDefault = 'http://87.81.226.126:8766/zen-parse';
+const zenProxyDefault = 'http://104.29.194.57:8766/zen-parse';
 const aiZenTimeout = Duration(seconds: 60);
 const _zenReachTimeout = Duration(seconds: 10);
 
