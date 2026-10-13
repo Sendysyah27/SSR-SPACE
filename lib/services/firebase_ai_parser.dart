@@ -122,6 +122,32 @@ String quotaWaitLine(String? detail) {
   return 'Kuota AI habis. ${quotaWaitText(w)}';
 }
 
+/// Pilih error AI mana yang ditampilkan ke user.
+/// Aturan: pesan kuota Firebase DITEKAN bila kunci Gemini tersimpan
+/// (fallback tak boleh menutupi status primer); kuota tampil hanya
+/// bila SEMUA path yang dicoba habis (pakai tunggu terlama).
+/// Null = dua-dua tak jalan.
+AiFailure? pickAiError({
+  AiFailure? gemini,
+  AiFailure? firebase,
+  required bool hasKey,
+}) {
+  final gq = gemini?.code == 'quota';
+  final fq = firebase?.code == 'quota';
+  if (gq && fq) {
+    final gd = gemini!.detail;
+    final fd = firebase!.detail;
+    final gw = parseQuotaRetry(gd);
+    final fw = parseQuotaRetry(fd);
+    final pick = (gw != null && fw != null)
+        ? (gw >= fw ? gd : fd)
+        : (gd ?? fd);
+    return AiFailure('quota', pick);
+  }
+  if (fq && hasKey) return gemini;
+  return firebase ?? gemini;
+}
+
 /// Pesan error model-sibuk? (500/quota/penuh) → pantas retry + ganti
 /// model, KECUALI kuota murni (ditangani isQuotaMessage duluan).
 /// Murni agar testable; pencocokan case-insensitive.

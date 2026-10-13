@@ -217,4 +217,26 @@ void main() {
     );
     expect(quotaWaitLine('x'), 'Kuota AI habis. Coba lagi nanti.');
   });
+
+  test('pickAiError: tekan kuota firebase bila kunci ada', () {
+    var e = pickAiError(
+      gemini: const AiFailure('quota', 'quota, retry in 2h'),
+      firebase: const AiFailure('quota', 'quota, retry in 10h'),
+      hasKey: true,
+    )!;
+    expect(e.code, 'quota');
+    expect(e.detail, contains('10h'));
+    e = pickAiError(
+      gemini: const AiFailure('timeout', 'hang'),
+      firebase: const AiFailure('quota', 'retry in 10h'),
+      hasKey: true,
+    )!;
+    expect(e.code, 'timeout');
+    e = pickAiError(
+      firebase: const AiFailure('quota', 'x'),
+      hasKey: false,
+    )!;
+    expect(e.code, 'quota');
+    expect(pickAiError(hasKey: true), isNull);
+  });
 }

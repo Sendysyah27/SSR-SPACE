@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.50.0+140.
+Versi terpasang: 2.50.0+141.
+
+## Yang baru di 2.50.0+141
+
+1. Perbaikan pesan kuota nyasar: bila kunci Gemini tersimpan, pesan kuota Firebase tak lagi menutupi layar scan. Kuota tampil hanya bila semua jalur habis (pakai waktu tunggu terlama).
 
 ## Yang baru di 2.50.0+140
 

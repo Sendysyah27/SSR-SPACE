@@ -543,9 +543,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
     });
   }
 
-  /// Fallback AI: PRIMER Zen (bila ada kunci), CADANGAN Firebase.
-  /// Teks OCR -> draft, gagal jujur (null = manual). Error terakhir
-  /// yang tampil (salah satu / keduanya dicoba).
+  /// Fallback AI: PRIMER Gemini (bila ada kunci), CADANGAN Firebase.
+  /// Teks OCR -> draft, gagal jujur (null = manual). Yang tampil dipilih
+  /// via pickAiError: kuota Firebase ditekan bila kunci Gemini ada.
   Future<AiDraft?> _tryAiDraft(String raw) async {
     if (!await aiEnabled()) return null;
     setState(() {
@@ -553,7 +553,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
       _scanErr = tr('ai_working');
       _aiErrDetail = null;
     });
-    AiFailure? lastErr;
+    AiFailure? gemErr;
+    AiFailure? fbErr;
     // PRIMER: kunci Gemini user → REST langsung (bypass kuota Firebase).
     final gkey = await readGeminiKey();
     if (mounted && gkey != null) {
@@ -571,12 +572,12 @@ class _TxInputSheetState extends State<TxInputSheet> {
         }
       } on AiFailure catch (e) {
         if (e.code == 'quota') await noteQuotaHit();
-        lastErr = e;
+        gemErr = e;
       } catch (e) {
-        lastErr = AiFailure('network', '[Gemini] $e');
+        gemErr = AiFailure('network', '[Gemini] $e');
       }
     }
-    // Cadangan: Firebase (termasuk bila Zen kuota-habis: pool beda).
+    // Cadangan: Firebase (pool kuota beda dari kunci user).
     if (mounted) {
       try {
         final gen = await firebaseAiGenerate();
@@ -593,13 +594,17 @@ class _TxInputSheetState extends State<TxInputSheet> {
           }
         }
       } on AiFailure catch (e) {
-        lastErr = e;
+        fbErr = e;
       } catch (e) {
-        lastErr = AiFailure('network', '$e');
+        fbErr = AiFailure('network', '$e');
       }
     }
     if (!mounted) return null;
-    final e = lastErr;
+    final e = pickAiError(
+      gemini: gemErr,
+      firebase: fbErr,
+      hasKey: gkey != null,
+    );
     setState(() {
       _scanning = false;
       if (e == null) {
