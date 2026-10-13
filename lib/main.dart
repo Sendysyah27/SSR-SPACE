@@ -40,7 +40,7 @@ Future<void> main() async {
   if (firebaseOk) {
     try {
       await FirebaseAppCheck.instance.activate(
-        androidProvider: AndroidProvider.playIntegrity,
+        providerAndroid: AndroidProvider.playIntegrity,
       );
     } catch (e) {
       debugPrint('app check gagal (AI tanpa App Check): $e');

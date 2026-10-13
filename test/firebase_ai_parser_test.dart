@@ -123,7 +123,7 @@ void main() {
     try {
       await parseReceiptFirebase(
         ocrText: 'TOTAL 100',
-        generate: (prompt) async => throw AiDenied('quota habis'),
+        generate: (prompt) async => throw const AiDenied('quota habis'),
       );
       fail('harus lempar');
     } on AiFailure catch (e) {
@@ -139,7 +139,7 @@ void main() {
         ocrText: 'TOTAL 100',
         generate: (prompt) async {
           calls++;
-          throw AiAppCheck('Firebase App Check token is invalid');
+          throw const AiAppCheck('Firebase App Check token is invalid');
         },
       );
       fail('harus lempar');
