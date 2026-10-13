@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.46.0+124.
+Versi terpasang: 2.47.0+125.
+
+## Yang baru di 2.47.0+125
+
+1. Perbaikan total struk: baris void (mis. 304.000 lalu -304.000) diabaikan, total diambil dari Jumlah terakhir sebelum Tunai, merek seperti TotalProtect tak lagi dikira baris total.
+2. AI Parser kini juga aktif bila jumlah item tak cocok dengan total struk.
 
 ## Yang baru di 2.46.0+124
 
