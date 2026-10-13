@@ -39,9 +39,8 @@ Future<void> main() async {
   // jangan matikan app. Sideload/debug tanpa Play = kasus wajar.
   if (firebaseOk) {
     try {
-      await FirebaseAppCheck.instance.activate(
-        providerAndroid: AndroidProvider.playIntegrity,
-      );
+      // Default providerAndroid = Play Integrity (tanpa argumen).
+      await FirebaseAppCheck.instance.activate();
     } catch (e) {
       debugPrint('app check gagal (AI tanpa App Check): $e');
     }
