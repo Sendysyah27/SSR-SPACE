@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.53.0+146.
+Versi terpasang: 2.53.0+147.
+
+## Yang baru di 2.53.0+147
+
+1. Proxy Zen pindah IP (default baru). URL proxy bisa diganti sendiri di Pengaturan + tombol Tes Koneksi (tampil hidup/mati + latensi) — IP dinamis tak perlu update app.
 
 ## Yang baru di 2.53.0+146
 

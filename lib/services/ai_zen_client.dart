@@ -9,8 +9,28 @@ import 'firebase_ai_parser.dart';
 // Proxy memimik header OpenCode; app cukup POST {ocr_text, api_key}.
 // Urutan: Gemini -> OpenRouter -> Zen -> Firebase. Timeout 60 dtk,
 // retry 1x khusus timeout/jaringan. Prefix [Zen] untuk diagnosis.
-const zenProxyDefault = 'http://87.81.230.71:8766/zen-parse';
+const zenProxyDefault = 'http://87.81.226.126:8766/zen-parse';
 const aiZenTimeout = Duration(seconds: 60);
+const _zenReachTimeout = Duration(seconds: 10);
+
+/// Tes koneksi ke proxy: GET URL (10 dtk). Status HTTP APAPUN = hidup
+/// (endpoint ini POST-only, jadi 404/405 pun bukti reachable).
+/// Return baris laporan + latensi. Tak pernah throw.
+Future<String> checkZenReachability(String url) async {
+  final u = url.trim().isEmpty ? zenProxyDefault : url.trim();
+  final client = http.Client();
+  final t0 = DateTime.now();
+  try {
+    final res =
+        await client.get(Uri.parse(u)).timeout(_zenReachTimeout);
+    final ms = DateTime.now().difference(t0).inMilliseconds;
+    return '${reachReport(status: res.statusCode)} (${ms}ms)\n$u';
+  } catch (e) {
+    return '${reachReport(error: '$e')}\n$u';
+  } finally {
+    client.close();
+  }
+}
 
 /// Hasil urai respons proxy ada di ai_draft.dart (murni, testable):
 /// zenParseResponse. Klien ini hanya transport HTTP.

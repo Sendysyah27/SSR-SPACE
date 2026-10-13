@@ -2329,6 +2329,7 @@ const _t = <String, Map<String, String>>{
     'id': 'URL proxy Zen (advanced, kosongkan = default).',
     'en': 'Zen proxy URL (advanced, empty = default).',
   },
+  'ai_zen_test': {'id': 'Tes Koneksi', 'en': 'Test Connection'},
   'ai_need_zenkey': {
     'id': 'Belum ada kunci Zen.',
     'en': 'No Zen key yet.',

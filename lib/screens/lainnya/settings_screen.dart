@@ -1179,6 +1179,40 @@ class _AiCardState extends State<_AiCard> {
     });
   }
 
+  /// Tes Koneksi: GET URL proxy saat ini (10 dtk), tampilkan hidup/
+  /// buntu + latensi. Untuk ganti IP VPS dinamis tanpa update app.
+  Future<void> _testZenUrl() async {
+    setState(() {
+      _busy = true;
+      _msg = tr('ai_working');
+    });
+    final url = await readZenUrl(zenProxyDefault);
+    final rep = await checkZenReachability(url);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = null;
+    });
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('ai_zen_test')),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: SelectableText(rep),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(tr('rcp_raw_close')),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _providerSubtitle() {
     final ps = <String>[];
     if (_hasKey) ps.add('Gemini');
@@ -1544,12 +1578,22 @@ class _AiCardState extends State<_AiCard> {
           ),
         ),
         const SizedBox(height: SsrSpace.sm),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: _busy ? null : _saveZenUrl,
-            child: Text(tr('ai_save')),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _busy ? null : _saveZenUrl,
+                child: Text(tr('ai_save')),
+              ),
+            ),
+            const SizedBox(width: SsrSpace.sm),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _busy ? null : _testZenUrl,
+                child: Text(tr('ai_zen_test')),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: SsrSpace.xs),
         Text(
