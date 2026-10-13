@@ -123,7 +123,7 @@ void main() {
     try {
       await parseReceiptFirebase(
         ocrText: 'TOTAL 100',
-        generate: (prompt) async => throw AiDenied('quota habis'),
+        generate: (prompt) async => throw const AiDenied('quota habis'),
       );
       fail('harus lempar');
     } on AiFailure catch (e) {
