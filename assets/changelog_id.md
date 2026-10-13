@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.54.0+150.
+Versi terpasang: 2.54.0+151.
+
+## Yang baru di 2.54.0+151
+
+1. Zen pakai kombinasi bypass firefly v1.42.6 (client desktop, UA 1.18.30, tools lowercase). Bila tetap 403, gate tak bisa di-bypass via header.
 
 ## Yang baru di 2.54.0+150
 

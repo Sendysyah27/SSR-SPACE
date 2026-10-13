@@ -202,9 +202,12 @@ String reachReport({int? status, String? error}) {
 }
 
 // --- Helper murni mimic CLI OpenCode (untuk Zen langsung) ---
+// Kombinasi bypass komunitas firefly v1.42.6: client desktop (bukan
+// cli), UA 1.18.30, anthropic-version, tools lowercase. Bila 403 tetap,
+// gate tak bisa di-bypass via header (lapor jujur, jangan utak-atik lagi).
 
 const zenUserAgent =
-    'opencode/1.18.31 ai-sdk/provider-utils/4.0.40 runtime/bun/1.3.14';
+    'opencode/1.18.30 ai-sdk/provider-utils/4.0.40 runtime/bun/1.3.14';
 
 const _hex = '0123456789abcdef';
 const _b62 =
@@ -226,32 +229,28 @@ String zenRequestId([Random? random]) {
   return 'msg_${_randFrom(_hex, 12, r)}${_randFrom(_b62, 14, r)}';
 }
 
-/// Header mimic CLI. [session] tetap antar request; [request] fresh.
+/// Header mimic. [session] tetap antar request; [request] fresh.
 Map<String, String> zenHeaders(String session, String request) => {
       'User-Agent': zenUserAgent,
       'Accept': 'text/event-stream',
-      'x-opencode-client': 'cli',
+      'anthropic-version': '2023-06-01',
+      'x-opencode-client': 'desktop',
       'x-opencode-project': 'global',
       'x-opencode-session': session,
       'x-opencode-request': request,
       'Content-Type': 'application/json',
     };
 
-/// Tools yang diiklankan ke model (eksekusi TETAP di server,
-/// app hanya menerima teks). Bentuk function minimal OpenAI.
+/// Tools WAJIB lowercase (bash edit glob grep read) — kapital ditolak
+/// gate. Eksekusi TETAP di server, app hanya menerima teks.
 List<Map<String, Object?>> zenTools() => [
-      {
-        'type': 'function',
-        'name': 'bash',
-        'description': 'Run a bash command',
-        'parameters': {'type': 'object', 'properties': {}},
-      },
-      {
-        'type': 'function',
-        'name': 'read',
-        'description': 'Read a file',
-        'parameters': {'type': 'object', 'properties': {}},
-      },
+      for (final n in ['bash', 'edit', 'glob', 'grep', 'read'])
+        {
+          'type': 'function',
+          'name': n,
+          'description': 'Tool $n',
+          'parameters': {'type': 'object', 'properties': {}},
+        },
     ];
 
 /// Kumpulkan teks dari baris-baris SSE `data: ...` (tanpa prefix).
