@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ssr_space/services/ai_key_store.dart';
+import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/biometric_auth.dart';
 import 'package:ssr_space/services/currency.dart';
@@ -951,8 +951,8 @@ class _WidgetCard extends StatelessWidget {
   }
 }
 
-/// AI Parser struk: sakelar + kunci API Zen (Keystore, bukan prefs).
-/// Dipakai fallback bila rule tak confident. Tanpa kunci = mati diam.
+/// AI Parser struk via Firebase: aktif otomatis bila login Google,
+/// tanpa input kunci. Mati diam bila belum login (jujur di subtitle).
 class _AiCard extends StatefulWidget {
   const _AiCard();
 
@@ -961,11 +961,10 @@ class _AiCard extends StatefulWidget {
 }
 
 class _AiCardState extends State<_AiCard> {
-  bool _on = false;
-  bool _hasKey = false;
-  bool _busy = false;
+  bool _on = true;
+  bool _ready = false;
+  bool _busy = true;
   String? _msg;
-  final _keyC = TextEditingController();
 
   @override
   void initState() {
@@ -973,61 +972,30 @@ class _AiCardState extends State<_AiCard> {
     _refresh();
   }
 
-  @override
-  void dispose() {
-    _keyC.dispose();
-    super.dispose();
-  }
-
   Future<void> _refresh() async {
-    final on = await readAiOn();
-    final key = await readAiKey();
+    final gen = await firebaseAiGenerate();
+    final on = await aiEnabled();
     if (!mounted) return;
     setState(() {
+      _ready = gen != null;
       _on = on;
-      _hasKey = key != null;
+      _busy = false;
     });
   }
 
   Future<void> _toggle(bool v) async {
-    if (v && !await _keyReady()) {
+    if (v && !_ready) {
       if (!mounted) return;
-      setState(() => _msg = tr('ai_need_key'));
+      setState(() => _msg = tr('ai_need_google'));
       return;
     }
     setState(() => _busy = true);
-    await writeAiOn(v);
+    await setAiEnabled(v);
     await _refresh();
     if (!mounted) return;
     setState(() {
       _busy = false;
       _msg = null;
-    });
-  }
-
-  Future<bool> _keyReady() async => await readAiKey() != null;
-
-  Future<void> _save() async {
-    setState(() => _busy = true);
-    await writeAiKey(_keyC.text);
-    _keyC.clear();
-    await _refresh();
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _msg = tr('ai_saved');
-    });
-  }
-
-  Future<void> _clear() async {
-    setState(() => _busy = true);
-    await clearAiKey();
-    await writeAiOn(false);
-    await _refresh();
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _msg = tr('ai_cleared');
     });
   }
 
@@ -1038,45 +1006,14 @@ class _AiCardState extends State<_AiCard> {
       icon: AppIcons.autoBadge,
       children: [
         Text(tr('ai_sub'), style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(height: SsrSpace.xs),
-        Text(tr('ai_where'), style: Theme.of(context).textTheme.bodySmall),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(tr('ai_enable')),
           subtitle: Text(
-            _hasKey ? tr('ai_saved') : tr('ai_need_key'),
+            _ready ? tr('ai_active') : tr('ai_need_google'),
           ),
-          value: _on,
+          value: _on && _ready,
           onChanged: _busy ? null : _toggle,
-        ),
-        TextField(
-          controller: _keyC,
-          obscureText: true,
-          enableSuggestions: false,
-          autocorrect: false,
-          decoration: InputDecoration(
-            hintText: tr('ai_key_hint'),
-            border: const OutlineInputBorder(),
-            isDense: true,
-          ),
-        ),
-        const SizedBox(height: SsrSpace.sm),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _busy ? null : _save,
-                child: Text(tr('ai_save')),
-              ),
-            ),
-            const SizedBox(width: SsrSpace.sm),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _busy ? null : _clear,
-                child: Text(tr('ai_clear')),
-              ),
-            ),
-          ],
         ),
         if (_msg != null) ...[
           const SizedBox(height: SsrSpace.xs),

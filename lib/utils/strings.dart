@@ -2280,34 +2280,26 @@ const _t = <String, Map<String, String>>{
     'id': 'Hari {n}/30 — buka app untuk lihat progres hematmu.',
     'en': 'Day {n}/30 — open the app to see your saving progress.',
   },
-  // AI Parser struk (fallback bila rule tak yakin; kunci di Keystore)
+  // AI Parser struk (fallback bila rule tak yakin; via Firebase,
+  // aktif bila login Google, tanpa kunci manual)
   'ai_title': {'id': 'AI Parser', 'en': 'AI Parser'},
   'ai_sub': {
     'id': 'Cadangan cerdas bila struk tak terbaca aturan biasa.',
     'en': 'Smart fallback when rules cannot read a receipt.',
   },
-  'ai_where': {
-    'id': 'Kunci gratis: buka opencode.ai → Zen → Create API Key, lalu tempel di sini.',
-    'en': 'Free key: open opencode.ai → Zen → Create API Key, then paste here.',
-  },
   'ai_enable': {'id': 'Nyalakan AI Parser', 'en': 'Enable AI Parser'},
-  'ai_key_hint': {'id': 'Tempel kunci API Zen', 'en': 'Paste Zen API key'},
-  'ai_save': {'id': 'Simpan kunci', 'en': 'Save key'},
-  'ai_clear': {'id': 'Hapus kunci', 'en': 'Delete key'},
-  'ai_saved': {'id': 'Kunci tersimpan aman.', 'en': 'Key stored securely.'},
-  'ai_cleared': {'id': 'Kunci dihapus.', 'en': 'Key deleted.'},
-  'ai_need_key': {
-    'id': 'Isi kunci API dulu di kartu ini.',
-    'en': 'Enter an API key in this card first.',
+  'ai_active': {
+    'id': 'AI aktif via login Google.',
+    'en': 'AI active via Google sign-in.',
+  },
+  'ai_need_google': {
+    'id': 'Masuk dengan Google untuk menyalakan AI.',
+    'en': 'Sign in with Google to enable AI.',
   },
   'ai_working': {'id': 'Meminta AI...', 'en': 'Asking AI...'},
   'ai_fail': {
     'id': 'AI gagal. Isi manual seperti biasa.',
     'en': 'AI failed. Fill in manually as usual.',
-  },
-  'ai_bad_key': {
-    'id': 'Kunci API ditolak. Periksa lagi.',
-    'en': 'API key rejected. Check it again.',
   },
   'ai_retry': {'id': 'Coba AI', 'en': 'Try AI'},
   'ai_review_t': {'id': 'Review draft AI', 'en': 'Review AI draft'},

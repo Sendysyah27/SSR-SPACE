@@ -541,6 +541,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
   /// Fallback AI via Firebase (aktif bila login Google):
   /// teks OCR -> draft, gagal jujur (null = manual).
   Future<AiDraft?> _tryAiDraft(String raw) async {
+    if (!await aiEnabled()) return null;
     final gen = await firebaseAiGenerate();
     if (!mounted || gen == null) return null;
     setState(() {
