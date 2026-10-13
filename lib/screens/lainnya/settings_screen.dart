@@ -1004,12 +1004,6 @@ class _AiCardState extends State<_AiCard> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _refresh();
-  }
-
   static String _ymd(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')}';

@@ -616,7 +616,6 @@ class _TxInputSheetState extends State<TxInputSheet> {
     });
     return null;
   }
-  }
 
   /// Ringkasan asal prefill struk: nominal + tanggal + kategori.
   String _scanOriginText(ReceiptData r) {
