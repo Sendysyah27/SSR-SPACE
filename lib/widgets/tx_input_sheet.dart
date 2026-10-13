@@ -8,9 +8,9 @@ import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/screens/lainnya/ai_draft_screen.dart';
-import 'package:ssr_space/services/ai_client.dart';
 import 'package:ssr_space/services/ai_draft.dart';
-import 'package:ssr_space/services/ai_key_store.dart';
+import 'package:ssr_space/services/firebase_ai_factory.dart';
+import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/budget_alert_notify.dart';
@@ -538,17 +538,17 @@ class _TxInputSheetState extends State<TxInputSheet> {
     });
   }
 
-  /// Fallback AI: teks OCR -> draft, gagal jujur (null = manual).
+  /// Fallback AI via Firebase (aktif bila login Google):
+  /// teks OCR -> draft, gagal jujur (null = manual).
   Future<AiDraft?> _tryAiDraft(String raw) async {
-    if (!await readAiOn()) return null;
-    final key = await readAiKey();
-    if (!mounted || key == null) return null;
+    final gen = await firebaseAiGenerate();
+    if (!mounted || gen == null) return null;
     setState(() {
       _scanning = true;
       _scanErr = tr('ai_working');
     });
     try {
-      final draft = await parseReceiptAi(apiKey: key, ocrText: raw);
+      final draft = await parseReceiptFirebase(ocrText: raw, generate: gen);
       if (!mounted) return null;
       setState(() {
         _scanning = false;
@@ -559,7 +559,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
       if (!mounted) return null;
       setState(() {
         _scanning = false;
-        _scanErr = tr(e.code == 'denied' ? 'ai_bad_key' : 'ai_fail');
+        _scanErr = tr(e.code == 'denied' ? 'ai_need_google' : 'ai_fail');
       });
       return null;
     } catch (_) {
