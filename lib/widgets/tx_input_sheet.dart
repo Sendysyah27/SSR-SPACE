@@ -10,6 +10,7 @@ import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/screens/lainnya/ai_draft_screen.dart';
 import 'package:ssr_space/services/ai_draft.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
+import 'package:ssr_space/services/ai_openrouter_client.dart';
 import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/app_categories.dart';
@@ -543,9 +544,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
     });
   }
 
-  /// Fallback AI: PRIMER Gemini (bila ada kunci), CADANGAN Firebase.
+  /// Fallback AI: Gemini -> OpenRouter -> Firebase.
   /// Teks OCR -> draft, gagal jujur (null = manual). Yang tampil dipilih
-  /// via pickAiError: kuota Firebase ditekan bila kunci Gemini ada.
+  /// via pickAiError: kuota Firebase ditekan bila ada kunci user.
   Future<AiDraft?> _tryAiDraft(String raw) async {
     if (!await aiEnabled()) return null;
     setState(() {
@@ -554,9 +555,11 @@ class _TxInputSheetState extends State<TxInputSheet> {
       _aiErrDetail = null;
     });
     AiFailure? gemErr;
+    AiFailure? orErr;
     AiFailure? fbErr;
-    // PRIMER: kunci Gemini user → REST langsung (bypass kuota Firebase).
+    // 1) PRIMER: kunci Gemini user → REST langsung.
     final gkey = await readGeminiKey();
+    final okey = await readOrKey();
     if (mounted && gkey != null) {
       try {
         final t = await restGenerate(aiReceiptPrompt(raw), apiKey: gkey)
@@ -577,7 +580,26 @@ class _TxInputSheetState extends State<TxInputSheet> {
         gemErr = AiFailure('network', '[Gemini] $e');
       }
     }
-    // Cadangan: Firebase (pool kuota beda dari kunci user).
+    // 2) KEDUA: kunci OpenRouter user (free tier).
+    if (mounted && okey != null) {
+      try {
+        final draft = await parseReceiptOr(apiKey: okey, ocrText: raw);
+        if (!mounted) return null;
+        if (draft != null) {
+          setState(() {
+            _scanning = false;
+            _scanErr = null;
+          });
+          return draft;
+        }
+      } on AiFailure catch (e) {
+        if (e.code == 'quota') await noteQuotaHit();
+        orErr = e;
+      } catch (e) {
+        orErr = AiFailure('network', '[OpenRouter] $e');
+      }
+    }
+    // 3) CADANGAN: Firebase (pool kuota beda dari kunci user).
     if (mounted) {
       try {
         final gen = await firebaseAiGenerate();
@@ -602,8 +624,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
     if (!mounted) return null;
     final e = pickAiError(
       gemini: gemErr,
+      openRouter: orErr,
       firebase: fbErr,
-      hasKey: gkey != null,
+      hasKey: gkey != null || okey != null,
     );
     setState(() {
       _scanning = false;

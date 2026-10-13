@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
+import 'package:ssr_space/services/ai_openrouter_client.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/biometric_auth.dart';
 import 'package:ssr_space/services/currency.dart';
@@ -971,7 +972,9 @@ class _AiCardState extends State<_AiCard> {
   String? _msg;
   String? _quotaInfo;
   bool _hasKey = false;
+  bool _hasOrKey = false;
   final _keyC = TextEditingController();
+  final _orKeyC = TextEditingController();
 
   @override
   void initState() {
@@ -982,6 +985,7 @@ class _AiCardState extends State<_AiCard> {
   @override
   void dispose() {
     _keyC.dispose();
+    _orKeyC.dispose();
     super.dispose();
   }
 
@@ -990,12 +994,14 @@ class _AiCardState extends State<_AiCard> {
     final on = await aiEnabled();
     final hit = await lastQuotaHit();
     final key = await readGeminiKey();
+    final orKey = await readOrKey();
     if (!mounted) return;
     setState(() {
       _ready = gen != null;
       _on = on;
       _busy = false;
       _hasKey = key != null;
+      _hasOrKey = orKey != null;
       _quotaInfo = hit == null
           ? null
           : '${dayLabel(_ymd(hit))} '
@@ -1009,7 +1015,7 @@ class _AiCardState extends State<_AiCard> {
       '${d.day.toString().padLeft(2, '0')}';
 
   Future<void> _toggle(bool v) async {
-    if (v && !_hasKey && !_ready) {
+    if (v && !_hasKey && !_hasOrKey && !_ready) {
       if (!mounted) return;
       setState(() => _msg = tr('ai_need_either'));
       return;
@@ -1045,6 +1051,38 @@ class _AiCardState extends State<_AiCard> {
       _busy = false;
       _msg = tr('ai_cleared');
     });
+  }
+
+  Future<void> _saveOrKey() async {
+    setState(() => _busy = true);
+    await writeOrKey(_orKeyC.text);
+    _orKeyC.clear();
+    await _refresh();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = tr('ai_saved');
+    });
+  }
+
+  Future<void> _clearOrKey() async {
+    setState(() => _busy = true);
+    await clearOrKey();
+    await _refresh();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = tr('ai_cleared');
+    });
+  }
+
+  String _providerSubtitle() {
+    final ps = <String>[];
+    if (_hasKey) ps.add('Gemini');
+    if (_hasOrKey) ps.add('OpenRouter');
+    if (_ready) ps.add('Firebase');
+    if (ps.isEmpty) return tr('ai_need_either');
+    return '${tr('ai_active_pre')}${ps.join(' + ')}.';
   }
 
   /// Diagnosis jujur: panggil model dengan prompt "Halo", tampilkan
@@ -1116,6 +1154,29 @@ class _AiCardState extends State<_AiCard> {
     } else {
       parts.add('[Gemini] (${tr('ai_need_key')})');
     }
+    // KEDUA: OpenRouter (bila ada kunci).
+    final orKey = await readOrKey();
+    if (!mounted) return;
+    if (orKey != null) {
+      try {
+        final res = await orChatRaw(apiKey: orKey, prompt: 'Halo')
+            .timeout(const Duration(seconds: 60));
+        parts.add('[OpenRouter: $aiOrModel]\n'
+            '${res.trim().isEmpty ? 'AI: (kosong)' : res}');
+      } on AiFailure catch (e) {
+        if (e.code == 'quota') await noteQuotaHit();
+        parts.add(e.code == 'quota'
+            ? '[OpenRouter] ${quotaWaitLine(e.detail)}'
+            : '[OpenRouter] AI gagal (${e.code})'
+                '${e.detail == null ? '' : '\n${e.detail}'}');
+      } on TimeoutException catch (e) {
+        parts.add('[OpenRouter] AI gagal (timeout)\n$e');
+      } catch (e) {
+        parts.add('[OpenRouter] AI gagal (tak dikenal)\n$e');
+      }
+    } else {
+      parts.add('[OpenRouter] (${tr('ai_need_orkey')})');
+    }
     if (gen == null) {
       parts.add('[Firebase] (${tr('ai_need_google')})');
     } else {
@@ -1183,16 +1244,8 @@ class _AiCardState extends State<_AiCard> {
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(tr('ai_enable')),
-          subtitle: Text(
-            _hasKey && _ready
-                ? tr('ai_dual')
-                : _hasKey
-                    ? tr('ai_gemini_only')
-                    : _ready
-                        ? tr('ai_active')
-                        : tr('ai_need_either'),
-          ),
-          value: _on && (_hasKey || _ready),
+          subtitle: Text(_providerSubtitle()),
+          value: _on && (_hasKey || _hasOrKey || _ready),
           onChanged: _busy ? null : _toggle,
         ),
         const SizedBox(height: SsrSpace.xs),
@@ -1233,6 +1286,49 @@ class _AiCardState extends State<_AiCard> {
             Expanded(
               child: OutlinedButton(
                 onPressed: _busy ? null : _clearKey,
+                child: Text(tr('ai_clear')),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        // Kunci OpenRouter (provider ketiga) — sama amannya (***).
+        Text(
+          _hasOrKey ? tr('ai_or_saved') : tr('ai_or_hint'),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: SsrSpace.xs),
+        SelectableText(
+          tr('ai_or_where'),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+        ),
+        const SizedBox(height: SsrSpace.xs),
+        TextField(
+          controller: _orKeyC,
+          obscureText: true,
+          enableSuggestions: false,
+          autocorrect: false,
+          decoration: InputDecoration(
+            hintText: tr('ai_or_hint'),
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _busy ? null : _saveOrKey,
+                child: Text(tr('ai_save')),
+              ),
+            ),
+            const SizedBox(width: SsrSpace.sm),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _busy ? null : _clearOrKey,
                 child: Text(tr('ai_clear')),
               ),
             ),

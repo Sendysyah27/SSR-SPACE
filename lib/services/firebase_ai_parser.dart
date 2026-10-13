@@ -123,29 +123,42 @@ String quotaWaitLine(String? detail) {
 }
 
 /// Pilih error AI mana yang ditampilkan ke user.
-/// Aturan: pesan kuota Firebase DITEKAN bila kunci Gemini tersimpan
-/// (fallback tak boleh menutupi status primer); kuota tampil hanya
-/// bila SEMUA path yang dicoba habis (pakai tunggu terlama).
-/// Null = dua-dua tak jalan.
+/// Aturan: pesan kuota Firebase DITEKAN bila ada kunci user (Gemini /
+/// OpenRouter) — fallback tak boleh menutupi status primer; kuota tampil
+/// hanya bila SEMUA path yang dicoba habis (pakai tunggu terlama).
+/// Null = semua tak jalan.
 AiFailure? pickAiError({
   AiFailure? gemini,
+  AiFailure? openRouter,
   AiFailure? firebase,
   required bool hasKey,
 }) {
-  final gq = gemini?.code == 'quota';
-  final fq = firebase?.code == 'quota';
-  if (gq && fq) {
-    final gd = gemini!.detail;
-    final fd = firebase!.detail;
-    final gw = parseQuotaRetry(gd);
-    final fw = parseQuotaRetry(fd);
-    final pick = (gw != null && fw != null)
-        ? (gw >= fw ? gd : fd)
-        : (gd ?? fd);
-    return AiFailure('quota', pick);
+  AiFailure quotaMax(AiFailure a, AiFailure b) {
+    final da = parseQuotaRetry(a.detail);
+    final db = parseQuotaRetry(b.detail);
+    if (da != null && db != null) {
+      return AiFailure('quota', da >= db ? a.detail : b.detail);
+    }
+    return AiFailure('quota', a.detail ?? b.detail);
   }
-  if (fq && hasKey) return gemini;
-  return firebase ?? gemini;
+
+  final gq = gemini?.code == 'quota';
+  final oq = openRouter?.code == 'quota';
+  final fq = firebase?.code == 'quota';
+  final nQuota = (gq ? 1 : 0) + (oq ? 1 : 0) + (fq ? 1 : 0);
+  final nTried = (gemini != null ? 1 : 0) +
+      (openRouter != null ? 1 : 0) +
+      (firebase != null ? 1 : 0);
+  if (nQuota > 0 && nQuota == nTried && nTried > 0) {
+    var acc = gemini ?? openRouter ?? firebase!;
+    for (final e in [gemini, openRouter, firebase]) {
+      final q = e;
+      if (q != null && q.code == 'quota') acc = quotaMax(acc, q);
+    }
+    return acc;
+  }
+  if (fq && hasKey) return openRouter ?? gemini;
+  return firebase ?? openRouter ?? gemini;
 }
 
 /// Pesan error model-sibuk? (500/quota/penuh) → pantas retry + ganti

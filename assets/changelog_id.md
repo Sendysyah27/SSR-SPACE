@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.50.0+141.
+Versi terpasang: 2.51.0+142.
+
+## Yang baru di 2.51.0+142
+
+1. Provider AI ketiga: OpenRouter (free tier). Tempel kunci di Pengaturan → AI Parser; urutan Gemini → OpenRouter → Firebase. Tes AI tulis provider + model yang menjawab.
 
 ## Yang baru di 2.50.0+141
 

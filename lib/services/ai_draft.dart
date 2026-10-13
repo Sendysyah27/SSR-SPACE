@@ -135,6 +135,24 @@ AiDraft? parseAiDraft(String raw) {
   return draft;
 }
 
+/// Isi choices[0].message.content dari body JSON OpenAI-compatible
+/// (Zen/OpenRouter), atau null. Murni (tanpa http) agar testable via `dart`.
+String? openAiContentFromBody(dynamic body) {
+  try {
+    final choices = body is Map ? body['choices'] : null;
+    if (choices is! List || choices.isEmpty) return null;
+    final first = choices.first;
+    if (first is! Map) return null;
+    final msg = first['message'];
+    if (msg is! Map) return null;
+    final content = msg['content'];
+    if (content is! String || content.trim().isEmpty) return null;
+    return content;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Prompt ekstraksi struk: teks OCR mentah -> JSON terstruktur.
 /// Varian multi-baris wajib gabung ke produk induk (konvensi parser lokal).
 String aiReceiptPrompt(String ocrText) {

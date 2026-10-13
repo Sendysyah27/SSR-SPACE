@@ -2296,17 +2296,26 @@ const _t = <String, Map<String, String>>{
     'id': 'Masuk dengan Google untuk menyalakan AI.',
     'en': 'Sign in with Google to enable AI.',
   },
-  'ai_dual': {
-    'id': 'Aktif: kunci Gemini + Firebase cadangan.',
-    'en': 'Active: Gemini key + Firebase fallback.',
+  'ai_active_pre': {'id': 'Aktif: ', 'en': 'Active: '},
+  'ai_or_hint': {
+    'id': 'Tempel kunci OpenRouter API',
+    'en': 'Paste OpenRouter API key',
   },
-  'ai_gemini_only': {
-    'id': 'Aktif via kunci Gemini.',
-    'en': 'Active via Gemini key.',
+  'ai_or_saved': {
+    'id': 'Kunci OpenRouter tersimpan aman (***).',
+    'en': 'OpenRouter key stored securely (***).',
+  },
+  'ai_or_where': {
+    'id': 'Ambil gratis di https://openrouter.ai/settings/keys',
+    'en': 'Get it free at https://openrouter.ai/settings/keys',
+  },
+  'ai_need_orkey': {
+    'id': 'Belum ada kunci OpenRouter.',
+    'en': 'No OpenRouter key yet.',
   },
   'ai_need_either': {
-    'id': 'Tempel kunci Gemini atau masuk Google untuk menyalakan AI.',
-    'en': 'Paste a Gemini key or sign in with Google to enable AI.',
+    'id': 'Tempel kunci Gemini/OpenRouter atau masuk Google untuk AI.',
+    'en': 'Paste a Gemini/OpenRouter key or sign in with Google for AI.',
   },
   'ai_key_hint': {'id': 'Tempel kunci Gemini API', 'en': 'Paste Gemini API key'},
   'ai_key_saved': {
