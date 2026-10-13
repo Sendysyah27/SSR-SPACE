@@ -68,7 +68,9 @@ Future<AiGenerate?> firebaseAiGenerate() async {
     );
     return (prompt) async {
       try {
+        debugPrint('firebase ai sdk generateContent mulai...');
         final res = await model.generateContent([Content.text(prompt)]);
+        debugPrint('firebase ai sdk generateContent selesai.');
         return res.text;
       } catch (e) {
         // Log lengkap untuk diagnosis via `adb logcat` (tak diupload).

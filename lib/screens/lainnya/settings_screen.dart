@@ -1020,7 +1020,7 @@ class _AiCardState extends State<_AiCard> {
     }
     String out;
     try {
-      final res = await gen('Halo').timeout(const Duration(seconds: 30));
+      final res = await gen('Halo').timeout(const Duration(seconds: 60));
       out = (res == null || res.trim().isEmpty) ? 'AI: (kosong)' : res;
     } on AiFailure catch (e) {
       out = 'AI gagal (${e.code})${e.detail == null ? '' : '\n${e.detail}'}';

@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.48.0+132.
+Versi terpasang: 2.48.0+133.
+
+## Yang baru di 2.48.0+133
+
+1. Diagnosis hang AI: timeout naik ke 60 detik + retry tetap 1x, dan tiap pemanggilan kini catat waktu kirim/jawab di log (baca via `adb logcat`, cari "firebase ai") agar ketahuan hang di mana.
 
 ## Yang baru di 2.48.0+132
 

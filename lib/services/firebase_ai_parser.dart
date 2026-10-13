@@ -7,9 +7,12 @@ import 'ai_draft.dart';
 // via `dart` murni (pola ai_draft.dart). Factory model Firebase yang
 // butuh plugin tinggal di `firebase_ai_factory.dart`.
 // Rule-based tetap utama; fungsi ini hanya dipanggil bila rule tak
-// confident. Tanpa upload foto (teks OCR saja), timeout 30 dtk,
+// confident. Tanpa upload foto (teks OCR saja), timeout 60 dtk,
 // retry 1x khusus timeout/jaringan. Selain itu gagal jujur.
-const firebaseAiTimeout = Duration(seconds: 30);
+// Pakai print (bukan debugPrint) agar tetap jalan di `dart` murni
+// dan tampil di logcat rilis; yang di-log hanya durasi + panjang
+// teks, BUKAN isi struk user.
+const firebaseAiTimeout = Duration(seconds: 60);
 
 class AiFailure implements Exception {
   // timeout | network | denied | server | empty
@@ -62,9 +65,12 @@ Future<AiDraft?> parseReceiptFirebase({
   if (ocrText.trim().isEmpty) return null;
   for (var attempt = 0; attempt < 2; attempt++) {
     try {
+      final t0 = DateTime.now();
+      print('firebase ai kirim (attempt $attempt, ${ocrText.length} chr)...');
       final text = await generate(
         aiReceiptPrompt(ocrText),
       ).timeout(firebaseAiTimeout);
+      print('firebase ai jawab ${DateTime.now().difference(t0).inMilliseconds}ms');
       if (text == null || text.trim().isEmpty) {
         throw const AiFailure('empty');
       }
