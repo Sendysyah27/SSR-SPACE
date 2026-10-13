@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.48.0+127.
+Versi terpasang: 2.48.0+128.
+
+## Yang baru di 2.48.0+128
+
+1. Perbaikan AI gagal: model parser ganti ke alias stabil resmi (`gemini-flash-latest`) yang selalu ikut flash terbaru — tak lagi terkunci ke versi spesifik.
 
 ## Yang baru di 2.48.0+127
 

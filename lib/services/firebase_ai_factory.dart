@@ -4,10 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_ai_parser.dart';
 
-// Model parser struk: flash-tier hemat, stabil, hidup >= 2027-05-19.
-// (gemini-2.0-flash mati 2026-06-01.) Ganti 1 const ini bila perlu.
-// API terverifikasi docs Firebase AI Logic + firebase_ai 4.0.0.
-const firebaseAiModel = 'gemini-3.5-flash';
+// Model parser struk: alias stabil resmi Firebase AI Logic — selalu ikut
+// flash stabil terbaru (tanpa ganti kode tiap rilis model).
+// Docs: agent-skills flutter_setup.md + pola versi Gemini API.
+const firebaseAiModel = 'gemini-flash-latest';
 
 // Sakelar AI Parser (prefs biasa, default ON — tanpa kunci = langsung
 // jalan bila login Google). Tanpa prefs (error) = ON (fail-open).
