@@ -14,6 +14,14 @@ import 'ai_draft.dart';
 // teks, BUKAN isi struk user.
 const firebaseAiTimeout = Duration(seconds: 60);
 
+/// Log diagnosis (durasi + panjang teks, bukan isi struk). Sengaja print
+/// mentah: file ini harus tetap jalan di `dart` murni tanpa Flutter,
+/// jadi tak bisa pakai debugPrint/logging framework.
+void _aiLog(String s) {
+  // ignore: avoid_print
+  print(s);
+}
+
 class AiFailure implements Exception {
   // timeout | network | denied | server | empty
   final String code;
@@ -66,11 +74,11 @@ Future<AiDraft?> parseReceiptFirebase({
   for (var attempt = 0; attempt < 2; attempt++) {
     try {
       final t0 = DateTime.now();
-      print('firebase ai kirim (attempt $attempt, ${ocrText.length} chr)...');
+      _aiLog('firebase ai kirim (attempt $attempt, ${ocrText.length} chr)...');
       final text = await generate(
         aiReceiptPrompt(ocrText),
       ).timeout(firebaseAiTimeout);
-      print('firebase ai jawab ${DateTime.now().difference(t0).inMilliseconds}ms');
+      _aiLog('firebase ai jawab ${DateTime.now().difference(t0).inMilliseconds}ms');
       if (text == null || text.trim().isEmpty) {
         throw const AiFailure('empty');
       }
