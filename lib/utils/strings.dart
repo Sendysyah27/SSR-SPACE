@@ -2280,8 +2280,8 @@ const _t = <String, Map<String, String>>{
     'id': 'Hari {n}/30 — buka app untuk lihat progres hematmu.',
     'en': 'Day {n}/30 — open the app to see your saving progress.',
   },
-  // AI Parser struk (fallback bila rule tak yakin; via Firebase,
-  // aktif bila login Google, tanpa kunci manual)
+  // AI Parser struk: PRIMER kunci Gemini (REST langsung, bypass kuota
+  // Firebase), CADANGAN Firebase (perlu login). Kunci di Keystore.
   'ai_title': {'id': 'AI Parser', 'en': 'AI Parser'},
   'ai_sub': {
     'id': 'Cadangan cerdas bila struk tak terbaca aturan biasa.',
@@ -2295,6 +2295,35 @@ const _t = <String, Map<String, String>>{
   'ai_need_google': {
     'id': 'Masuk dengan Google untuk menyalakan AI.',
     'en': 'Sign in with Google to enable AI.',
+  },
+  'ai_dual': {
+    'id': 'Aktif: kunci Gemini + Firebase cadangan.',
+    'en': 'Active: Gemini key + Firebase fallback.',
+  },
+  'ai_gemini_only': {
+    'id': 'Aktif via kunci Gemini.',
+    'en': 'Active via Gemini key.',
+  },
+  'ai_need_either': {
+    'id': 'Tempel kunci Gemini atau masuk Google untuk menyalakan AI.',
+    'en': 'Paste a Gemini key or sign in with Google to enable AI.',
+  },
+  'ai_key_hint': {'id': 'Tempel kunci Gemini API', 'en': 'Paste Gemini API key'},
+  'ai_key_saved': {
+    'id': 'Kunci Gemini tersimpan aman (***).',
+    'en': 'Gemini key stored securely (***).',
+  },
+  'ai_key_where': {
+    'id': 'Ambil gratis di https://aistudio.google.com/apikey',
+    'en': 'Get it free at https://aistudio.google.com/apikey',
+  },
+  'ai_save': {'id': 'Simpan kunci', 'en': 'Save key'},
+  'ai_clear': {'id': 'Hapus kunci', 'en': 'Delete key'},
+  'ai_saved': {'id': 'Kunci tersimpan aman.', 'en': 'Key stored securely.'},
+  'ai_cleared': {'id': 'Kunci dihapus.', 'en': 'Key deleted.'},
+  'ai_need_key': {
+    'id': 'Belum ada kunci Gemini.',
+    'en': 'No Gemini key yet.',
   },
   'ai_test': {'id': 'Tes AI', 'en': 'Test AI'},
   'ai_no_net': {

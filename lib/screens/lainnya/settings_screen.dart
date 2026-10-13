@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
+import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/biometric_auth.dart';
 import 'package:ssr_space/services/currency.dart';
@@ -969,6 +970,8 @@ class _AiCardState extends State<_AiCard> {
   bool _busy = true;
   String? _msg;
   String? _quotaInfo;
+  bool _hasKey = false;
+  final _keyC = TextEditingController();
 
   @override
   void initState() {
@@ -976,15 +979,23 @@ class _AiCardState extends State<_AiCard> {
     _refresh();
   }
 
+  @override
+  void dispose() {
+    _keyC.dispose();
+    super.dispose();
+  }
+
   Future<void> _refresh() async {
     final gen = await firebaseAiGenerate();
     final on = await aiEnabled();
     final hit = await lastQuotaHit();
+    final key = await readGeminiKey();
     if (!mounted) return;
     setState(() {
       _ready = gen != null;
       _on = on;
       _busy = false;
+      _hasKey = key != null;
       _quotaInfo = hit == null
           ? null
           : '${dayLabel(_ymd(hit))} '
@@ -993,14 +1004,20 @@ class _AiCardState extends State<_AiCard> {
     });
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
   static String _ymd(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')}';
 
   Future<void> _toggle(bool v) async {
-    if (v && !_ready) {
+    if (v && !_hasKey && !_ready) {
       if (!mounted) return;
-      setState(() => _msg = tr('ai_need_google'));
+      setState(() => _msg = tr('ai_need_either'));
       return;
     }
     setState(() => _busy = true);
@@ -1010,6 +1027,29 @@ class _AiCardState extends State<_AiCard> {
     setState(() {
       _busy = false;
       _msg = null;
+    });
+  }
+
+  Future<void> _saveKey() async {
+    setState(() => _busy = true);
+    await writeGeminiKey(_keyC.text);
+    _keyC.clear();
+    await _refresh();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = tr('ai_saved');
+    });
+  }
+
+  Future<void> _clearKey() async {
+    setState(() => _busy = true);
+    await clearGeminiKey();
+    await _refresh();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = tr('ai_cleared');
     });
   }
 
@@ -1056,37 +1096,60 @@ class _AiCardState extends State<_AiCard> {
     }
     final gen = await firebaseAiGenerate();
     if (!mounted) return;
-    if (gen == null) {
-      setState(() {
-        _busy = false;
-        _msg = tr('ai_need_google');
-      });
-      return;
+    final parts = <String>[];
+    // PRIMER: kunci Gemini user → REST langsung (bypass kuota Firebase).
+    final key = await readGeminiKey();
+    if (!mounted) return;
+    if (key != null) {
+      try {
+        final t = await restGenerate('Halo', apiKey: key)
+            .timeout(const Duration(seconds: 45));
+        parts.add('[Gemini]\n'
+            '${(t == null || t.trim().isEmpty) ? 'AI: (kosong)' : t}');
+      } on AiFailure catch (e) {
+        if (e.code == 'quota') await noteQuotaHit();
+        parts.add(e.code == 'quota'
+            ? '[Gemini] ${quotaWaitLine(e.detail)}'
+            : '[Gemini] AI gagal (${e.code})'
+                '${e.detail == null ? '' : '\n${e.detail}'}');
+      } on TimeoutException catch (e) {
+        parts.add('[Gemini] AI gagal (timeout)\n$e');
+      } catch (e) {
+        parts.add('[Gemini] AI gagal (tak dikenal)\n$e');
+      }
+    } else {
+      parts.add('[Gemini] (${tr('ai_need_key')})');
     }
-    String out;
-    try {
-      final res = await gen('Halo').timeout(const Duration(seconds: 60));
-      out = (res == null || res.trim().isEmpty) ? 'AI: (kosong)' : res;
-    } on AiFailure catch (e) {
-      out = e.code == 'quota'
-          ? quotaWaitLine(e.detail)
-          : 'AI gagal (${e.code})${e.detail == null ? '' : '\n${e.detail}'}';
-    } on AiDenied catch (e) {
-      // gen langsung (tanpa parser) melempar penanda mentah — tampilkan
-      // pesannya, jangan nama class.
-      out = 'AI gagal (denied)${e.detail == null ? '' : '\n${e.detail}'}';
-    } on AiAppCheck catch (e) {
-      out = 'AI gagal (app_check)${e.detail == null ? '' : '\n${e.detail}'}';
-    } on TimeoutException catch (e) {
-      out = 'AI gagal (timeout)\n$e';
-    } catch (e) {
-      out = 'AI gagal (tak dikenal)\n$e';
+    if (gen == null) {
+      parts.add('[Firebase] (${tr('ai_need_google')})');
+    } else {
+      try {
+        final res = await gen('Halo').timeout(const Duration(seconds: 60));
+        parts.add('[Firebase]\n'
+            '${(res == null || res.trim().isEmpty) ? 'AI: (kosong)' : res}');
+      } on AiFailure catch (e) {
+        parts.add(e.code == 'quota'
+            ? '[Firebase] ${quotaWaitLine(e.detail)}'
+            : '[Firebase] AI gagal (${e.code})'
+                '${e.detail == null ? '' : '\n${e.detail}'}');
+      } on AiDenied catch (e) {
+        parts.add('[Firebase] AI gagal (denied)'
+            '${e.detail == null ? '' : '\n${e.detail}'}');
+      } on AiAppCheck catch (e) {
+        parts.add('[Firebase] AI gagal (app_check)'
+            '${e.detail == null ? '' : '\n${e.detail}'}');
+      } on TimeoutException catch (e) {
+        parts.add('[Firebase] AI gagal (timeout)\n$e');
+      } catch (e) {
+        parts.add('[Firebase] AI gagal (tak dikenal)\n$e');
+      }
     }
     if (!mounted) return;
     setState(() {
       _busy = false;
       _msg = null;
     });
+    final out = parts.join('\n\n');
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1125,10 +1188,59 @@ class _AiCardState extends State<_AiCard> {
           contentPadding: EdgeInsets.zero,
           title: Text(tr('ai_enable')),
           subtitle: Text(
-            _ready ? tr('ai_active') : tr('ai_need_google'),
+            _hasKey && _ready
+                ? tr('ai_dual')
+                : _hasKey
+                    ? tr('ai_gemini_only')
+                    : _ready
+                        ? tr('ai_active')
+                        : tr('ai_need_either'),
           ),
-          value: _on && _ready,
+          value: _on && (_hasKey || _ready),
           onChanged: _busy ? null : _toggle,
+        ),
+        const SizedBox(height: SsrSpace.xs),
+        // Kunci Gemini tak pernah tampil mentah: hanya status ***.
+        Text(
+          _hasKey ? tr('ai_key_saved') : tr('ai_key_hint'),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: SsrSpace.xs),
+        SelectableText(
+          tr('ai_key_where'),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+        ),
+        const SizedBox(height: SsrSpace.xs),
+        TextField(
+          controller: _keyC,
+          obscureText: true,
+          enableSuggestions: false,
+          autocorrect: false,
+          decoration: InputDecoration(
+            hintText: tr('ai_key_hint'),
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _busy ? null : _saveKey,
+                child: Text(tr('ai_save')),
+              ),
+            ),
+            const SizedBox(width: SsrSpace.sm),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _busy ? null : _clearKey,
+                child: Text(tr('ai_clear')),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: SsrSpace.xs),
         Text(

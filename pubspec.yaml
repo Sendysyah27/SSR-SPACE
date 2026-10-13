@@ -1,7 +1,7 @@
 name: ssr_space
 description: SSR SPACE - Simple. Secure. Reliable. Your Finance Space. Pencatatan keuangan multi-dompet dengan workspace bersama dan auto-track notifikasi bank.
 publish_to: 'none'
-version: 2.49.0+137
+version: 2.50.0+138
 environment:
   sdk: '>=3.11.0 <4.0.0'
 dependencies:
@@ -46,6 +46,8 @@ dependencies:
   firebase_ai: ^4.0.0
   # HTTP murni HANYA untuk Plan B REST fallback AI (tanpa SDK).
   http: ^1.2.2
+  # Keystore kunci API Zen (bukan prefs) — kembali dipakai 2.50.0.
+  flutter_secure_storage: ^9.2.4
   # Dipin exact: 13.x menarik permission_handler_android 14 (butuh
   # compileSdk 37, app 36) → build merah checkReleaseAarMetadata.
   # 12.0.3 = android 13.0.1 (compileSdk 35), API Dart yang dipakai stabil.

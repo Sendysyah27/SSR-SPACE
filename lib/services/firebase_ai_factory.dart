@@ -46,8 +46,13 @@ Future<String> checkGoogleAiReachability() async {
 /// Return teks, atau null (gagal biasa = pemanggil tentukan vonis).
 /// Kuota via REST (429 + pesan kuota) langsung throw [AiFailure]
 /// 'quota' (jangan disamarkan jadi timeout). Selain itu tak throw.
-Future<String?> _restGenerate(String prompt, {String? model}) async {
-  if (googleApiKey.isEmpty) return null;
+/// [apiKey]: kunci user (primer); kosong = kunci build; dua-dua
+/// kosong = null langsung (tanpa request).
+Future<String?> restGenerate(String prompt,
+    {String? model, String? apiKey}) async {
+  final key =
+      (apiKey ?? '').trim().isNotEmpty ? apiKey!.trim() : googleApiKey;
+  if (key.isEmpty) return null;
   final client = http.Client();
   try {
     final res = await client
@@ -55,7 +60,7 @@ Future<String?> _restGenerate(String prompt, {String? model}) async {
           Uri.parse(
               'https://generativelanguage.googleapis.com/v1beta/models/${model ?? firebaseAiModel}:generateContent'),
           headers: {
-            'x-goog-api-key': googleApiKey,
+            'x-goog-api-key': key,
             'Content-Type': 'application/json',
           },
           body: jsonEncode(restPromptBody(prompt)),
@@ -179,7 +184,7 @@ Future<AiGenerate?> firebaseAiGenerate() async {
           // SDK hang: Plan B REST langsung (30 dtk). Sukses = pakai;
           // gagal = vonis timeout jujur (tanpa retry ganda pemanggil).
           debugPrint('firebase ai sdk hang ($name), coba REST...');
-          final t = await _restGenerate(prompt, model: name);
+          final t = await restGenerate(prompt, model: name);
           if (t != null && t.trim().isNotEmpty) return t;
           throw const AiFailure('timeout', 'sdk hang + rest gagal');
         } catch (e) {

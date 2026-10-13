@@ -9,6 +9,7 @@ import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/screens/lainnya/ai_draft_screen.dart';
 import 'package:ssr_space/services/ai_draft.dart';
+import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/app_categories.dart';
@@ -542,48 +543,79 @@ class _TxInputSheetState extends State<TxInputSheet> {
     });
   }
 
-  /// Fallback AI via Firebase (aktif bila login Google):
-  /// teks OCR -> draft, gagal jujur (null = manual).
+  /// Fallback AI: PRIMER Zen (bila ada kunci), CADANGAN Firebase.
+  /// Teks OCR -> draft, gagal jujur (null = manual). Error terakhir
+  /// yang tampil (salah satu / keduanya dicoba).
   Future<AiDraft?> _tryAiDraft(String raw) async {
     if (!await aiEnabled()) return null;
-    final gen = await firebaseAiGenerate();
-    if (!mounted || gen == null) return null;
     setState(() {
       _scanning = true;
       _scanErr = tr('ai_working');
       _aiErrDetail = null;
     });
-    try {
-      final draft = await parseReceiptFirebase(ocrText: raw, generate: gen);
-      if (!mounted) return null;
-      setState(() {
-        _scanning = false;
-        _scanErr = null;
-      });
-      return draft;
-    } on AiFailure catch (e) {
-      if (!mounted) return null;
-      final detail = '(${e.code})${e.detail == null ? '' : ' ${e.detail}'}';
-      setState(() {
-        _scanning = false;
-        // gen != null = sesi Firebase hidup saat dipanggil, jadi denied
-        // di sini artinya ditolak/kuota, bukan belum login.
-        // Kuota: tanpa kode generik — tampilkan waktu tunggu ramah.
-        _scanErr = e.code == 'quota'
-            ? quotaWaitLine(e.detail)
-            : '${tr(aiFailureTrKey(e.code, loggedIn: true))} $detail';
-        _aiErrDetail = 'AI $detail';
-      });
-      return null;
-    } catch (e) {
-      if (!mounted) return null;
-      setState(() {
-        _scanning = false;
-        _scanErr = tr('ai_fail');
-        _aiErrDetail = 'AI (tak dikenal) $e';
-      });
-      return null;
+    AiFailure? lastErr;
+    // PRIMER: kunci Gemini user → REST langsung (bypass kuota Firebase).
+    final gkey = await readGeminiKey();
+    if (mounted && gkey != null) {
+      try {
+        final t = await restGenerate(aiReceiptPrompt(raw), apiKey: gkey)
+            .timeout(const Duration(seconds: 45));
+        final draft = t == null ? null : parseAiDraft(t);
+        if (draft != null) {
+          if (!mounted) return null;
+          setState(() {
+            _scanning = false;
+            _scanErr = null;
+          });
+          return draft;
+        }
+      } on AiFailure catch (e) {
+        if (e.code == 'quota') await noteQuotaHit();
+        lastErr = e;
+      } catch (e) {
+        lastErr = AiFailure('network', '[Gemini] $e');
+      }
     }
+    // Cadangan: Firebase (termasuk bila Zen kuota-habis: pool beda).
+    if (mounted) {
+      try {
+        final gen = await firebaseAiGenerate();
+        if (gen != null) {
+          final draft =
+              await parseReceiptFirebase(ocrText: raw, generate: gen);
+          if (!mounted) return null;
+          if (draft != null) {
+            setState(() {
+              _scanning = false;
+              _scanErr = null;
+            });
+            return draft;
+          }
+        }
+      } on AiFailure catch (e) {
+        lastErr = e;
+      } catch (e) {
+        lastErr = AiFailure('network', '$e');
+      }
+    }
+    if (!mounted) return null;
+    final e = lastErr;
+    setState(() {
+      _scanning = false;
+      if (e == null) {
+        _scanErr = tr('ai_fail');
+        _aiErrDetail = null;
+      } else if (e.code == 'quota') {
+        _scanErr = quotaWaitLine(e.detail);
+        _aiErrDetail = 'AI (quota) ${e.detail ?? ''}';
+      } else {
+        final detail = '(${e.code})${e.detail == null ? '' : ' ${e.detail}'}';
+        _scanErr = '${tr(aiFailureTrKey(e.code, loggedIn: true))} $detail';
+        _aiErrDetail = 'AI $detail';
+      }
+    });
+    return null;
+  }
   }
 
   /// Ringkasan asal prefill struk: nominal + tanggal + kategori.

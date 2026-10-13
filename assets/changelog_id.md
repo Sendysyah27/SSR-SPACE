@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.49.0+137.
+Versi terpasang: 2.50.0+138.
+
+## Yang baru di 2.50.0+138
+
+1. AI pakai kunci Gemini langsung (AI Studio, gratis): tempel kunci di Pengaturan → AI Parser — jadi jalur utama, bypass kuota Firebase. Firebase tetap cadangan bila kunci kosong. Kunci tersimpan aman, tak pernah tampil mentah.
 
 ## Yang baru di 2.49.0+137
 
