@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.50.0+139.
+Versi terpasang: 2.50.0+140.
+
+## Yang baru di 2.50.0+140
+
+1. Bila model utama sibuk (503/penuh): otomatis jeda 3 detik lalu coba model cadangan; Tes AI tulis model mana yang menjawab.
 
 ## Yang baru di 2.50.0+139
 

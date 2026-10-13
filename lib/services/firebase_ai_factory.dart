@@ -42,58 +42,90 @@ Future<String> checkGoogleAiReachability() async {
   }
 }
 
+/// Urutan coba model REST: alias terbaru dulu, lalu stabil pin.
+/// SENGAJA tanpa gemini-2.0/1.5-flash: keduanya mati 2026
+/// (request = 404 pasti, bukan fallback).
+const geminiRestModels = ['gemini-flash-latest', 'gemini-3.5-flash'];
+
 /// Plan B: POST langsung ke Gemini Developer API bila SDK hang.
-/// Kuota via REST (429 + pesan kuota) langsung throw [AiFailure]
-/// 'quota'. HTTP non-200 lain / body rusak / 200-tanpa-teks juga throw
+/// Model sibuk (503/penuh, bukan kuota) → jeda 3 dtk + model berikut.
+/// Kuota → throw 'quota' langsung (tanpa rotasi, pool sama).
+/// HTTP non-200 lain / body rusak / 200-tanpa-teks juga throw
 /// (server/empty) — jangan disamarkan jadi null/"kosong".
 /// Format kunci APAPUN dikirim apa adanya (tak ada validasi prefix).
 /// [apiKey]: kunci user (primer); kosong = kunci build; dua-dua
 /// kosong = null langsung (tanpa request).
+/// [onModel]: dipanggil dengan nama model yang menjawab sukses.
 Future<String?> restGenerate(String prompt,
-    {String? model, String? apiKey, http.Client? client}) async {
+    {String? model,
+    String? apiKey,
+    http.Client? client,
+    void Function(String model)? onModel}) async {
   final key =
       (apiKey ?? '').trim().isNotEmpty ? apiKey!.trim() : googleApiKey;
   if (key.isEmpty) return null;
+  final names = model != null ? [model] : geminiRestModels;
   final httpClient = client ?? http.Client();
   final owned = client == null;
+  String? lastDetail;
   try {
-    final res = await httpClient
-        .post(
-          Uri.parse(
-              'https://generativelanguage.googleapis.com/v1beta/models/${model ?? firebaseAiModel}:generateContent'),
-          headers: {
-            'x-goog-api-key': key,
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode(restPromptBody(prompt)),
-        )
-        .timeout(_restTimeout);
-    debugPrint('firebase ai rest status ${res.statusCode}');
-    if (res.statusCode != 200) {
-      var snippet = res.body;
-      if (snippet.length > 300) snippet = snippet.substring(0, 300);
-      debugPrint('firebase ai rest gagal ${res.statusCode}: $snippet');
-      if (isQuotaMessage(snippet)) {
-        await noteQuotaHit();
-        throw AiFailure('quota', snippet);
+    for (var mi = 0; mi < names.length; mi++) {
+      final name = names[mi];
+      try {
+        final res = await httpClient
+            .post(
+              Uri.parse(
+                  'https://generativelanguage.googleapis.com/v1beta/models/$name:generateContent'),
+              headers: {
+                'x-goog-api-key': key,
+                'Content-Type': 'application/json',
+              },
+              body: jsonEncode(restPromptBody(prompt)),
+            )
+            .timeout(_restTimeout);
+        debugPrint('firebase ai rest $name status ${res.statusCode}');
+        if (res.statusCode != 200) {
+          var snippet = res.body;
+          if (snippet.length > 300) snippet = snippet.substring(0, 300);
+          debugPrint('firebase ai rest $name gagal ${res.statusCode}: $snippet');
+          if (isQuotaMessage(snippet)) {
+            await noteQuotaHit();
+            throw AiFailure('quota', snippet);
+          }
+          if (res.statusCode == 503 || isBusyMessage(snippet)) {
+            lastDetail = 'HTTP ${res.statusCode} $snippet';
+            if (mi < names.length - 1) {
+              debugPrint('firebase ai rest sibuk, jeda 3 dtk ganti model...');
+              await Future.delayed(const Duration(seconds: 3));
+            }
+            continue;
+          }
+          throw AiFailure(
+              'server', '[Gemini] HTTP ${res.statusCode} $snippet');
+        }
+        dynamic body;
+        try {
+          body = jsonDecode(res.body);
+        } catch (_) {
+          throw const AiFailure('server', '[Gemini] body bukan JSON');
+        }
+        final text = parseRestText(body);
+        if (text == null || text.trim().isEmpty) {
+          throw const AiFailure('empty', '[Gemini] 200 tanpa teks');
+        }
+        onModel?.call(name);
+        return text;
+      } on AiFailure {
+        rethrow;
+      } on TimeoutException {
+        debugPrint('firebase ai rest $name timeout');
+        return null;
+      } catch (e) {
+        debugPrint('firebase ai rest $name gagal: $e');
+        return null;
       }
-      throw AiFailure('server', '[Gemini] HTTP ${res.statusCode} $snippet');
     }
-    dynamic body;
-    try {
-      body = jsonDecode(res.body);
-    } catch (_) {
-      throw const AiFailure('server', '[Gemini] body bukan JSON');
-    }
-    final text = parseRestText(body);
-    if (text == null || text.trim().isEmpty) {
-      throw const AiFailure('empty', '[Gemini] 200 tanpa teks');
-    }
-    return text;
-  } catch (e) {
-    if (e is AiFailure) rethrow;
-    debugPrint('firebase ai rest gagal: $e');
-    return null;
+    throw AiFailure('server', '[Gemini] semua model sibuk $lastDetail');
   } finally {
     if (owned) httpClient.close();
   }

@@ -128,6 +128,8 @@ String quotaWaitLine(String? detail) {
 bool isBusyMessage(String m) {
   final t = m.toLowerCase();
   return t.contains('500') ||
+      t.contains('503') ||
+      t.contains('unavailable') ||
       t.contains('high demand') ||
       t.contains('overloaded') ||
       t.contains('resource-exhausted') ||

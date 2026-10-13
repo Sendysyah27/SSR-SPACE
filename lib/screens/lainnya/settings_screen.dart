@@ -1096,9 +1096,11 @@ class _AiCardState extends State<_AiCard> {
     if (!mounted) return;
     if (key != null) {
       try {
-        final t = await restGenerate('Halo', apiKey: key)
+        String? used;
+        final t = await restGenerate('Halo',
+                apiKey: key, onModel: (m) => used = m)
             .timeout(const Duration(seconds: 45));
-        parts.add('[Gemini]\n'
+        parts.add('[Gemini${used == null ? '' : ': $used'}]\n'
             '${(t == null || t.trim().isEmpty) ? 'AI: (kosong)' : t}');
       } on AiFailure catch (e) {
         if (e.code == 'quota') await noteQuotaHit();
