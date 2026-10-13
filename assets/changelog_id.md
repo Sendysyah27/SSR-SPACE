@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.54.0+151.
+Versi terpasang: 2.54.0+152.
+
+## Yang baru di 2.54.0+152
+
+1. Zen ikut patch PR 4786: UA 1.19.0 + session ID timestamp-inverted ala CLI resmi. Bila tetap 403, gate tak bisa di-bypass via header.
 
 ## Yang baru di 2.54.0+151
 

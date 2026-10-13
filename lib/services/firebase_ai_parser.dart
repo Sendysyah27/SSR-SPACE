@@ -202,32 +202,50 @@ String reachReport({int? status, String? error}) {
 }
 
 // --- Helper murni mimic CLI OpenCode (untuk Zen langsung) ---
-// Kombinasi bypass komunitas firefly v1.42.6: client desktop (bukan
-// cli), UA 1.18.30, anthropic-version, tools lowercase. Bila 403 tetap,
-// gate tak bisa di-bypass via header (lapor jujur, jangan utak-atik lagi).
+// Kombinasi bypass komunitas firefly v1.42.6 + patch PR 4786 (via
+// Threads @zdnilh): client desktop, UA 1.19.0, anthropic-version,
+// tools lowercase, session/request ID ala Identifier.create opencode:
+// 12 hex = (timestamp_ms * 0x1000 + counter) di-NOT untuk descending,
+// 14 base62 acak. Bila 403 tetap, gate tak bisa di-bypass via header.
 
-const zenUserAgent =
-    'opencode/1.18.30 ai-sdk/provider-utils/4.0.40 runtime/bun/1.3.14';
+const zenUserAgent = 'opencode/1.19.0';
 
-const _hex = '0123456789abcdef';
 const _b62 =
     '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+const _idMask48 = 0xffffffffffff;
 
-String _randFrom(String alphabet, int n, Random r) =>
-    List.generate(n, (_) => alphabet[r.nextInt(alphabet.length)]).join();
+// Counter pola Identifier.create: reset tiap milidetik berubah.
+int _zenLastTs = 0;
+int _zenCount = 0;
 
-/// ses_[12 hex][14 base62] — format sesi CLI OpenCode. Murni (Random
-/// injeksi) agar testable.
-String zenSessionId([Random? random]) {
-  final r = random ?? Random.secure();
-  return 'ses_${_randFrom(_hex, 12, r)}${_randFrom(_b62, 14, r)}';
+String _zenId26(bool descending, Random r, int nowMs) {
+  if (nowMs != _zenLastTs) {
+    _zenLastTs = nowMs;
+    _zenCount = 0;
+  }
+  var time =
+      BigInt.from(nowMs) * BigInt.from(0x1000) + BigInt.from(_zenCount++);
+  final v = descending ? (~time & BigInt.from(_idMask48)) : time;
+  var id = v.toRadixString(16).padLeft(12, '0');
+  for (var i = 0; i < 14; i++) {
+    id += _b62[r.nextInt(_b62.length)];
+  }
+  return id;
 }
 
-/// msg_[12 hex][14 base62] — fresh per request.
-String zenRequestId([Random? random]) {
-  final r = random ?? Random.secure();
-  return 'msg_${_randFrom(_hex, 12, r)}${_randFrom(_b62, 14, r)}';
-}
+/// ses_ + 26 char descending (timestamp inverted ala opencode).
+String zenSessionId([Random? random, int? nowMs]) => 'ses_${_zenId26(
+      true,
+      random ?? Random.secure(),
+      nowMs ?? DateTime.now().millisecondsSinceEpoch,
+    )}';
+
+/// msg_ + 26 char ascending. fresh per request.
+String zenRequestId([Random? random, int? nowMs]) => 'msg_${_zenId26(
+      false,
+      random ?? Random.secure(),
+      nowMs ?? DateTime.now().millisecondsSinceEpoch,
+    )}';
 
 /// Header mimic. [session] tetap antar request; [request] fresh.
 Map<String, String> zenHeaders(String session, String request) => {

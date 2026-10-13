@@ -11,7 +11,7 @@ void main() {
     final client = MockClient((req) async {
       expect(req.url.toString(), zenResponsesEndpoint);
       expect(req.headers['Authorization'], startsWith('Bearer '));
-      expect(req.headers['User-Agent'], contains('opencode/1.18.30'));
+      expect(req.headers['User-Agent'], contains('opencode/1.19.0'));
       expect(req.headers['x-opencode-client'], 'desktop');
       expect(req.headers['anthropic-version'], '2023-06-01');
       expect(req.headers['x-opencode-session'], startsWith('ses_'));
