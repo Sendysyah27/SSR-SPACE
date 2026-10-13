@@ -367,7 +367,29 @@ jobs:
                       return None
                   return text[:m.end()] + '\n' + newline + text[m.end():]
 
-              if root is not None:
+              gsettings = ''
+              if settings.exists():
+                  gsettings = settings.read_text()
+              use_dsl = ('org.jetbrains.kotlin.android' in gsettings or
+                         'com.android.application' in gsettings)
+              if use_dsl:
+                  # Template modern: plugins DSL di settings (apply false)
+                  # + dipakai di app. Root build.gradle.kts yang ada hanya
+                  # berisi allprojects/buildDir (tanpa plugins) — bukan
+                  # tempat classpath. (Fakta dump CI 2026-10-13.)
+                  g = gsettings
+                  if 'google-services' not in g:
+                      g2 = add_after_line(g, r'id[(]"org[.]jetbrains[.]kotlin[.]android"[)]',
+                          '    id("com.google.gms.google-services") version "' + ver + '" apply false')
+                      if g2 is None:
+                          g2 = add_after_line(g, r'id[(]"com[.]android[.]application"[)]',
+                              '    id("com.google.gms.google-services") version "' + ver + '" apply false')
+                      if g2 is None:
+                          show(settings)
+                          raise SystemExit('anchor plugins settings tak ketemu')
+                      settings.write_text(g2)
+                  rooted = settings
+              elif root is not None:
                   # Template lama: classpath di root build.gradle.
                   s = root.read_text()
                   if 'google-services' not in s:
@@ -391,21 +413,6 @@ jobs:
                               s, count=1)
                       root.write_text(s)
                   rooted = root
-              elif settings.exists():
-                  # Template modern (tanpa root build.gradle): plugins DSL
-                  # di settings (apply false) + dipakai di app.
-                  g = settings.read_text()
-                  if 'google-services' not in g:
-                      g2 = add_after_line(g, r'id[(]"org[.]jetbrains[.]kotlin[.]android"[)]',
-                          '    id("com.google.gms.google-services") version "' + ver + '" apply false')
-                      if g2 is None:
-                          g2 = add_after_line(g, r'id[(]"com[.]android[.]application"[)]',
-                              '    id("com.google.gms.google-services") version "' + ver + '" apply false')
-                      if g2 is None:
-                          show(settings)
-                          raise SystemExit('anchor plugins settings tak ketemu')
-                      settings.write_text(g2)
-                  rooted = settings
               else:
                   raise SystemExit('root build gradle + settings tak ketemu')
               apps = [pathlib.Path('android/app/build.gradle.kts'),
