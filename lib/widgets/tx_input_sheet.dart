@@ -568,7 +568,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
         _scanning = false;
         // gen != null = sesi Firebase hidup saat dipanggil, jadi denied
         // di sini artinya ditolak/kuota, bukan belum login.
-        _scanErr = '${tr(aiFailureTrKey(e.code, loggedIn: true))} $detail';
+        // Kuota: tanpa kode generik — tampilkan waktu tunggu ramah.
+        _scanErr = e.code == 'quota'
+            ? quotaWaitLine(e.detail)
+            : '${tr(aiFailureTrKey(e.code, loggedIn: true))} $detail';
         _aiErrDetail = 'AI $detail';
       });
       return null;

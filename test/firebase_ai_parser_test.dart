@@ -196,4 +196,25 @@ void main() {
     expect(isBusyMessage('timeout'), isFalse);
     expect(aiFailureTrKey('server', loggedIn: true), 'ai_busy');
   });
+
+  test('kuota: parse waktu + baris ramah', () {
+    expect(isQuotaMessage('quota exceeded, limit 20'), isTrue);
+    expect(isQuotaMessage('429 resource exhausted'), isTrue);
+    expect(isQuotaMessage('Server Error 500'), isFalse);
+    expect(
+      parseQuotaRetry('quota exceeded, please retry in 12h'),
+      const Duration(hours: 12),
+    );
+    expect(parseQuotaRetry('retry in 30m'), const Duration(minutes: 30));
+    expect(
+      parseQuotaRetry('{"retryDelay": "3600s"}'),
+      const Duration(hours: 1),
+    );
+    expect(parseQuotaRetry('quota habis'), isNull);
+    expect(
+      quotaWaitLine('retry in 12h'),
+      'Kuota AI habis. Coba lagi dalam 12 jam.',
+    );
+    expect(quotaWaitLine('x'), 'Kuota AI habis. Coba lagi nanti.');
+  });
 }

@@ -17,6 +17,7 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
@@ -967,6 +968,7 @@ class _AiCardState extends State<_AiCard> {
   bool _ready = false;
   bool _busy = true;
   String? _msg;
+  String? _quotaInfo;
 
   @override
   void initState() {
@@ -977,13 +979,23 @@ class _AiCardState extends State<_AiCard> {
   Future<void> _refresh() async {
     final gen = await firebaseAiGenerate();
     final on = await aiEnabled();
+    final hit = await lastQuotaHit();
     if (!mounted) return;
     setState(() {
       _ready = gen != null;
       _on = on;
       _busy = false;
+      _quotaInfo = hit == null
+          ? null
+          : '${dayLabel(_ymd(hit))} '
+              '${hit.hour.toString().padLeft(2, '0')}:'
+              '${hit.minute.toString().padLeft(2, '0')}';
     });
   }
+
+  static String _ymd(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
 
   Future<void> _toggle(bool v) async {
     if (v && !_ready) {
@@ -1056,7 +1068,9 @@ class _AiCardState extends State<_AiCard> {
       final res = await gen('Halo').timeout(const Duration(seconds: 60));
       out = (res == null || res.trim().isEmpty) ? 'AI: (kosong)' : res;
     } on AiFailure catch (e) {
-      out = 'AI gagal (${e.code})${e.detail == null ? '' : '\n${e.detail}'}';
+      out = e.code == 'quota'
+          ? quotaWaitLine(e.detail)
+          : 'AI gagal (${e.code})${e.detail == null ? '' : '\n${e.detail}'}';
     } on AiDenied catch (e) {
       // gen langsung (tanpa parser) melempar penanda mentah — tampilkan
       // pesannya, jangan nama class.
@@ -1116,6 +1130,18 @@ class _AiCardState extends State<_AiCard> {
           value: _on && _ready,
           onChanged: _busy ? null : _toggle,
         ),
+        const SizedBox(height: SsrSpace.xs),
+        Text(
+          tr('ai_quota_info'),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        if (_quotaInfo != null)
+          Text(
+            '${tr('ai_quota_last')} $_quotaInfo',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+          ),
         const SizedBox(height: SsrSpace.sm),
         SizedBox(
           width: double.infinity,

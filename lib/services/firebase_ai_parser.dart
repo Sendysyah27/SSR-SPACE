@@ -67,8 +67,64 @@ String aiFailureTrKey(String code, {required bool loggedIn}) {
   return (code == 'denied' && !loggedIn) ? 'ai_need_google' : 'ai_fail';
 }
 
+/// Pesan error kuota? (habis/batas/429) → jangan retry/rotasi,
+/// langsung vonis jujur. Murni agar testable.
+bool isQuotaMessage(String m) {
+  final t = m.toLowerCase();
+  return t.contains('quota') ||
+      t.contains('exhausted') ||
+      t.contains('429') ||
+      t.contains('rate limit') ||
+      t.contains('rate-limit') ||
+      t.contains('ratelimit');
+}
+
+/// Ambil waktu tunggu dari pesan kuota, atau null bila tak disebut.
+/// Pola: "retry in 12h/30m/45s", "retryDelay: 3600s", "try again in 2 hours".
+Duration? parseQuotaRetry(String? detail) {
+  if (detail == null) return null;
+  final t = detail.toLowerCase();
+  final rd = RegExp(r'retrydelay"?\s*:?\s*"?(\d+(?:\.\d+)?)s')
+      .firstMatch(t);
+  if (rd != null) {
+    final v = double.tryParse(rd.group(1)!) ?? 0;
+    if (v > 0) return Duration(seconds: v.round());
+  }
+  var m = RegExp(r'retry\s+in\s+(\d+(?:\.\d+)?)\s*(h|hour|m|min|s|sec)')
+      .firstMatch(t);
+  m ??= RegExp(r'try again in\s+(\d+(?:\.\d+)?)\s*(hour|minute|second)')
+      .firstMatch(t);
+  if (m == null) return null;
+  final v = double.tryParse(m.group(1)!) ?? 0;
+  if (v <= 0) return null;
+  final u = m.group(2)!;
+  if (u.startsWith('h')) return Duration(seconds: (v * 3600).round());
+  if (u.startsWith('m')) return Duration(seconds: (v * 60).round());
+  return Duration(seconds: v.round());
+}
+
+/// "Coba lagi dalam 12 jam." (Bahasa Indonesia tetap — diagnosis teknis,
+/// seperti reachReport.)
+String quotaWaitText(Duration d) {
+  final s = d.inSeconds;
+  if (s < 60) return 'Coba lagi dalam $s detik.';
+  final h = s ~/ 3600, m = (s % 3600) ~/ 60;
+  if (h > 0 && m > 0) return 'Coba lagi dalam $h jam $m menit.';
+  if (h > 0) return 'Coba lagi dalam $h jam.';
+  return 'Coba lagi dalam $m menit.';
+}
+
+/// Baris utuh untuk UI: "Kuota AI habis. Coba lagi dalam 12 jam."
+/// Tanpa info waktu di pesan = ajakan coba nanti.
+String quotaWaitLine(String? detail) {
+  final w = parseQuotaRetry(detail);
+  if (w == null) return 'Kuota AI habis. Coba lagi nanti.';
+  return 'Kuota AI habis. ${quotaWaitText(w)}';
+}
+
 /// Pesan error model-sibuk? (500/quota/penuh) → pantas retry + ganti
-/// model. Murni agar testable; pencocokan case-insensitive.
+/// model, KECUALI kuota murni (ditangani isQuotaMessage duluan).
+/// Murni agar testable; pencocokan case-insensitive.
 bool isBusyMessage(String m) {
   final t = m.toLowerCase();
   return t.contains('500') ||

@@ -43,8 +43,9 @@ Future<String> checkGoogleAiReachability() async {
 }
 
 /// Plan B: POST langsung ke Gemini Developer API bila SDK hang.
-/// Return teks, atau null (gagal = pemanggil tentukan vonis).
-/// Tak pernah throw.
+/// Return teks, atau null (gagal biasa = pemanggil tentukan vonis).
+/// Kuota via REST (429 + pesan kuota) langsung throw [AiFailure]
+/// 'quota' (jangan disamarkan jadi timeout). Selain itu tak throw.
 Future<String?> _restGenerate(String prompt, {String? model}) async {
   if (googleApiKey.isEmpty) return null;
   final client = http.Client();
@@ -61,7 +62,15 @@ Future<String?> _restGenerate(String prompt, {String? model}) async {
         )
         .timeout(_restTimeout);
     debugPrint('firebase ai rest status ${res.statusCode}');
-    if (res.statusCode != 200) return null;
+    if (res.statusCode != 200) {
+      var snippet = res.body;
+      if (snippet.length > 300) snippet = snippet.substring(0, 300);
+      if (isQuotaMessage(snippet)) {
+        await noteQuotaHit();
+        throw AiFailure('quota', snippet);
+      }
+      return null;
+    }
     dynamic body;
     try {
       body = jsonDecode(res.body);
@@ -80,6 +89,28 @@ Future<String?> _restGenerate(String prompt, {String? model}) async {
 // Sakelar AI Parser (prefs biasa, default ON — tanpa kunci = langsung
 // jalan bila login Google). Tanpa prefs (error) = ON (fail-open).
 const _kAiEnabled = 'ai_enabled';
+
+// Cap waktu terakhir kuota habis (ISO, prefs biasa). Dibaca Settings
+// untuk info jujur "terakhir kehabisan".
+const _kQuotaHit = 'ai_quota_hit';
+
+Future<void> noteQuotaHit() async {
+  try {
+    await (await SharedPreferences.getInstance())
+        .setString(_kQuotaHit, DateTime.now().toIso8601String());
+  } catch (_) {}
+}
+
+Future<DateTime?> lastQuotaHit() async {
+  try {
+    final v =
+        (await SharedPreferences.getInstance()).getString(_kQuotaHit);
+    if (v == null || v.isEmpty) return null;
+    return DateTime.tryParse(v);
+  } catch (_) {
+    return null;
+  }
+}
 
 Future<bool> aiEnabled() async {
   try {
@@ -166,6 +197,12 @@ Future<AiGenerate?> firebaseAiGenerate() async {
               m.contains('403') ||
               m.contains('api key')) {
             throw AiDenied(e.toString());
+          }
+          if (isQuotaMessage(m)) {
+            // Kuota habis: retry/rotasi PERCUMA (batas per project).
+            // Catat waktu + vonis langsung dengan pesan asli.
+            await noteQuotaHit();
+            throw AiFailure('quota', e.toString());
           }
           if (isBusyMessage(m)) {
             // 500/quota/penuh: jeda 3 dtk lalu coba model cadangan.

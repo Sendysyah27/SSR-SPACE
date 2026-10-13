@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.49.0+136.
+Versi terpasang: 2.49.0+137.
+
+## Yang baru di 2.49.0+137
+
+1. Kuota AI habis kini jelas: tampil "Coba lagi dalam X jam Y menit" (waktu diambil dari pesan server), tanpa retry percuma. Info batas gratis + terakhir kehabisan tampil di Pengaturan → AI Parser.
 
 ## Yang baru di 2.49.0+136
 

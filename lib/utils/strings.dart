@@ -2305,6 +2305,14 @@ const _t = <String, Map<String, String>>{
     'id': 'Model AI lagi sibuk, coba lagi sebentar.',
     'en': 'The AI model is busy, retry in a moment.',
   },
+  'ai_quota_info': {
+    'id': 'Paket gratis AI terbatas (±20 permintaan); hemat dengan scan seperlunya.',
+    'en': 'Free AI quota is limited (±20 requests); scan only as needed.',
+  },
+  'ai_quota_last': {
+    'id': 'Terakhir kehabisan kuota:',
+    'en': 'Quota last exhausted:',
+  },
   'ai_working': {'id': 'Meminta AI...', 'en': 'Asking AI...'},
   'ai_fail': {
     'id': 'AI gagal. Isi manual seperti biasa.',
