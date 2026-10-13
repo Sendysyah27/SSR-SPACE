@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/supabase_config.dart';
@@ -34,7 +35,12 @@ class AuthService {
   Future<AuthResponse> signIn(String email, String password) =>
       _c.auth.signInWithPassword(email: email, password: password);
 
-  Future<void> signOut() => _c.auth.signOut();
+  Future<void> signOut() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+    } catch (_) {}
+    await _c.auth.signOut();
+  }
 
   Future<void> resendVerification(String email) =>
       _c.auth.resend(type: OtpType.signup, email: email);
@@ -71,6 +77,18 @@ class AuthService {
         idToken: idToken,
         accessToken: gauth.accessToken,
       );
+      // Link sesi Firebase untuk AI parser struk (fail-open: gagal
+      // link = AI mati, sesi Supabase tetap sumber kebenaran).
+      try {
+        await FirebaseAuth.instance.signInWithCredential(
+          GoogleAuthProvider.credential(
+            idToken: idToken,
+            accessToken: gauth.accessToken,
+          ),
+        );
+      } catch (e) {
+        debugPrint('firebase link gagal (AI mati): $e');
+      }
       return res.session != null;
     } on GoogleSignInCancelled {
       rethrow;

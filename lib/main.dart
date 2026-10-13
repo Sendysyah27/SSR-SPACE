@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/category_meta.dart';
@@ -22,6 +23,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Firebase untuk AI parser struk: gagal init = AI mati, app tetap
+  // jalan (tanpa google-services.json di device lama / build lokal).
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('firebase init gagal (AI mati): $e');
+  }
   ErrorReporter.init();
   await SupabaseConfig.init();
   ForegroundTrack.initOnce();
