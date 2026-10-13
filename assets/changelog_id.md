@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.50.0+138.
+Versi terpasang: 2.50.0+139.
+
+## Yang baru di 2.50.0+139
+
+1. Tes AI kini jujur bila kunci ditolak: status HTTP + pesan asli (mis. 400 API key not valid) tampil di dialog, bukan "(kosong)". Format kunci apapun dikirim apa adanya.
 
 ## Yang baru di 2.50.0+138
 

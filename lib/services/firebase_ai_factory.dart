@@ -43,19 +43,21 @@ Future<String> checkGoogleAiReachability() async {
 }
 
 /// Plan B: POST langsung ke Gemini Developer API bila SDK hang.
-/// Return teks, atau null (gagal biasa = pemanggil tentukan vonis).
 /// Kuota via REST (429 + pesan kuota) langsung throw [AiFailure]
-/// 'quota' (jangan disamarkan jadi timeout). Selain itu tak throw.
+/// 'quota'. HTTP non-200 lain / body rusak / 200-tanpa-teks juga throw
+/// (server/empty) — jangan disamarkan jadi null/"kosong".
+/// Format kunci APAPUN dikirim apa adanya (tak ada validasi prefix).
 /// [apiKey]: kunci user (primer); kosong = kunci build; dua-dua
 /// kosong = null langsung (tanpa request).
 Future<String?> restGenerate(String prompt,
-    {String? model, String? apiKey}) async {
+    {String? model, String? apiKey, http.Client? client}) async {
   final key =
       (apiKey ?? '').trim().isNotEmpty ? apiKey!.trim() : googleApiKey;
   if (key.isEmpty) return null;
-  final client = http.Client();
+  final httpClient = client ?? http.Client();
+  final owned = client == null;
   try {
-    final res = await client
+    final res = await httpClient
         .post(
           Uri.parse(
               'https://generativelanguage.googleapis.com/v1beta/models/${model ?? firebaseAiModel}:generateContent'),
@@ -70,24 +72,30 @@ Future<String?> restGenerate(String prompt,
     if (res.statusCode != 200) {
       var snippet = res.body;
       if (snippet.length > 300) snippet = snippet.substring(0, 300);
+      debugPrint('firebase ai rest gagal ${res.statusCode}: $snippet');
       if (isQuotaMessage(snippet)) {
         await noteQuotaHit();
         throw AiFailure('quota', snippet);
       }
-      return null;
+      throw AiFailure('server', '[Gemini] HTTP ${res.statusCode} $snippet');
     }
     dynamic body;
     try {
       body = jsonDecode(res.body);
     } catch (_) {
-      return null;
+      throw const AiFailure('server', '[Gemini] body bukan JSON');
     }
-    return parseRestText(body);
+    final text = parseRestText(body);
+    if (text == null || text.trim().isEmpty) {
+      throw const AiFailure('empty', '[Gemini] 200 tanpa teks');
+    }
+    return text;
   } catch (e) {
+    if (e is AiFailure) rethrow;
     debugPrint('firebase ai rest gagal: $e');
     return null;
   } finally {
-    client.close();
+    if (owned) httpClient.close();
   }
 }
 
