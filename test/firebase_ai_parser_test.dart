@@ -57,7 +57,7 @@ void main() {
         ocrText: 'TOTAL 10000',
         generate: (prompt) async {
           calls++;
-          throw AiDenied();
+          throw const AiDenied();
         },
       );
       fail('harus lempar');
