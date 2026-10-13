@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.48.0+126.
+Versi terpasang: 2.48.0+127.
+
+## Yang baru di 2.48.0+127
+
+1. Perbaikan AI Parser: toggle kini bisa dinyalakan untuk semua cara login (Google maupun email) — sesi Firebase dilengkapi otomatis saat masuk dan saat app dibuka. Sebelumnya user yang sudah login tetap diminta login Google.
+2. Prasyarat: Anonymous login harus aktif di Firebase console agar AI hidup untuk login email.
 
 ## Yang baru di 2.48.0+126
 

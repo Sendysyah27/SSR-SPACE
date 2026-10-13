@@ -28,8 +28,36 @@ Future<void> setAiEnabled(bool v) async {
   } catch (_) {}
 }
 
+/// Pastikan ada sesi Firebase Auth (syarat AI parser), untuk SEMUA cara
+/// login Supabase — bukan cuma Google. Urutan: sesi ada → true;
+/// ada idToken Google → link credential; selain itu → anonim.
+/// Tak pernah throw (false = AI mati, app tetap jalan).
+/// Catatan: anonim butuh provider Anonymous ON di Firebase console;
+/// bila mati = false (fail-open, bukan crash).
+Future<bool> ensureFirebaseSession({
+  String? idToken,
+  String? accessToken,
+}) async {
+  try {
+    if (FirebaseAuth.instance.currentUser != null) return true;
+    if (idToken != null && idToken.isNotEmpty) {
+      await FirebaseAuth.instance.signInWithCredential(
+        GoogleAuthProvider.credential(
+          idToken: idToken,
+          accessToken: accessToken,
+        ),
+      );
+    } else {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+    return FirebaseAuth.instance.currentUser != null;
+  } catch (_) {
+    return false;
+  }
+}
+
 /// Bangun [AiGenerate] dari model Firebase, atau null bila AI tak bisa
-/// dipakai (Firebase belum init / user belum login Google / error apa
+/// dipakai (Firebase belum init / tanpa sesi Firebase / error apa
 /// pun). Tak pernah throw — pemanggil diam bila null.
 Future<AiGenerate?> firebaseAiGenerate() async {
   try {
