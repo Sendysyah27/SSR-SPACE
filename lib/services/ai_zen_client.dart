@@ -120,8 +120,6 @@ Future<AiDraft?> parseReceiptZen({
 }) async {
   if (apiKey.trim().isEmpty || ocrText.trim().isEmpty) return null;
   final session = zenSessionId();
-  AiFailure? lastBusy;
-  // 1) Primer: spark via /responses.
   try {
     final text = await _zenPost(
       apiKey: apiKey,
@@ -139,32 +137,27 @@ Future<AiDraft?> parseReceiptZen({
     return parseAiDraft(text);
   } on AiFailure catch (e) {
     if (e.code == 'denied' || e.code == 'quota') rethrow;
-    lastBusy = e;
   }
   // 2) Cadangan: model free via /chat/completions.
-  try {
-    final text = await _zenPost(
-      apiKey: apiKey,
-      endpoint: zenChatEndpoint,
-      body: {
-        'model': zenModelFree,
-        'stream': true,
-        'temperature': 0.1,
-        'max_tokens': 1500,
-        'messages': [
-          {'role': 'user', 'content': aiReceiptPrompt(ocrText)},
-        ],
-        'tools': zenTools(),
-      },
-      tag: 'Zen:$zenModelFree',
-      session: session,
-      client: client,
-    );
-    return parseAiDraft(text);
-  } on AiFailure {
-    rethrow;
-  }
-  throw lastBusy ?? const AiFailure('network', '[Zen] percobaan habis');
+  // (_zenPost hanya melempar AiFailure → teruskan apa adanya.)
+  final text = await _zenPost(
+    apiKey: apiKey,
+    endpoint: zenChatEndpoint,
+    body: {
+      'model': zenModelFree,
+      'stream': true,
+      'temperature': 0.1,
+      'max_tokens': 1500,
+      'messages': [
+        {'role': 'user', 'content': aiReceiptPrompt(ocrText)},
+      ],
+      'tools': zenTools(),
+    },
+    tag: 'Zen:$zenModelFree',
+    session: session,
+    client: client,
+  );
+  return parseAiDraft(text);
 }
 
 /// Chat mentah ke Zen langsung (untuk Tes AI): prompt bebas ->
