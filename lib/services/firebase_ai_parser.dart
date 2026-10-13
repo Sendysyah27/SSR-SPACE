@@ -26,6 +26,12 @@ class AiDenied implements Exception {
 /// Satu pemanggilan model: prompt -> teks JSON mentah (null = kosong).
 typedef AiGenerate = Future<String?> Function(String prompt);
 
+/// Kunci strings untuk [AiFailure.code]. `denied` hanya berarti
+/// "belum login" bila tanpa sesi; dengan sesi hidup = ditolak/kuota
+/// (pesan gagal umum yang jujur, bukan tuduhan belum login).
+String aiFailureTrKey(String code, {required bool loggedIn}) =>
+    (code == 'denied' && !loggedIn) ? 'ai_need_google' : 'ai_fail';
+
 /// Teks OCR -> [AiDraft]. Null = AI tak bisa dipakai (pemanggil fallback
 /// manual). Melempar [AiFailure] dengan sebab jujur.
 Future<AiDraft?> parseReceiptFirebase({

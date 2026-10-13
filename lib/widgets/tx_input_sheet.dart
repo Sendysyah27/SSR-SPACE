@@ -560,7 +560,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
       if (!mounted) return null;
       setState(() {
         _scanning = false;
-        _scanErr = tr(e.code == 'denied' ? 'ai_need_google' : 'ai_fail');
+        // gen != null = sesi Firebase hidup saat dipanggil, jadi denied
+        // di sini artinya ditolak/kuota, bukan belum login.
+        _scanErr = tr(aiFailureTrKey(e.code, loggedIn: true));
       });
       return null;
     } catch (_) {

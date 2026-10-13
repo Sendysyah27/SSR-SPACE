@@ -101,4 +101,10 @@ void main() {
       expect(e.code, 'empty');
     }
   });
+
+  test('denied tanpa sesi = minta login, dengan sesi = gagal umum', () {
+    expect(aiFailureTrKey('denied', loggedIn: false), 'ai_need_google');
+    expect(aiFailureTrKey('denied', loggedIn: true), 'ai_fail');
+    expect(aiFailureTrKey('timeout', loggedIn: true), 'ai_fail');
+  });
 }
