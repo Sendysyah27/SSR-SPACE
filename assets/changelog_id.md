@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.48.0+131.
+Versi terpasang: 2.48.0+132.
+
+## Yang baru di 2.48.0+132
+
+1. Perbaikan 403 "App attestation failed": App Check sengaja tidak diaktifkan sama sekali — tanpa token menempel, request lolos saat console Unenforced.
 
 ## Yang baru di 2.48.0+131
 

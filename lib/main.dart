@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/utils/mask.dart';
@@ -27,24 +26,16 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Firebase untuk AI parser struk: gagal init = AI mati, app tetap
   // jalan (tanpa google-services.json di device lama / build lokal).
-  var firebaseOk = false;
   try {
     await Firebase.initializeApp();
-    firebaseOk = true;
   } catch (e) {
     debugPrint('firebase init gagal (AI mati): $e');
   }
-  // App Check (Play Integrity) untuk Firebase AI Logic: gagal/tak
-  // tersedia = AI tetap coba jalan tanpa App Check (fail-open),
-  // jangan matikan app. Sideload/debug tanpa Play = kasus wajar.
-  if (firebaseOk) {
-    try {
-      // Default providerAndroid = Play Integrity (tanpa argumen).
-      await FirebaseAppCheck.instance.activate();
-    } catch (e) {
-      debugPrint('app check gagal (AI tanpa App Check): $e');
-    }
-  }
+  // SENGAJA tanpa Firebase App Check: token invalid yang menempel
+  // justru bikin 403 "App attestation failed" walau console Unenforced
+  // (token invalid != tanpa token). Tanpa activate = tanpa token =
+  // lolos saat unenforced. Jangan tambah activate() lagi kecuali
+  // console di-enforce.
   ErrorReporter.init();
   await SupabaseConfig.init();
   // Perbaiki sesi lama / fallback browser: ada sesi Supabase tapi tanpa
