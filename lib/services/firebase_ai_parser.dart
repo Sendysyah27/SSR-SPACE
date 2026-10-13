@@ -30,6 +30,14 @@ class AiDenied implements Exception {
   const AiDenied([this.detail]);
 }
 
+/// Penanda dari factory: token App Check invalid/gagal.
+/// Dipetakan jadi [AiFailure] `app_check` tanpa retry (bukan denied,
+/// bukan network — sebabnya spesifik dan butuh aksi berbeda).
+class AiAppCheck implements Exception {
+  final String? detail;
+  const AiAppCheck([this.detail]);
+}
+
 /// Satu pemanggilan model: prompt -> teks JSON mentah (null = kosong).
 typedef AiGenerate = Future<String?> Function(String prompt);
 
@@ -59,6 +67,8 @@ Future<AiDraft?> parseReceiptFirebase({
       return draft;
     } on AiDenied catch (e) {
       throw AiFailure('denied', e.detail);
+    } on AiAppCheck catch (e) {
+      throw AiFailure('app_check', e.detail);
     } on AiFailure {
       rethrow;
     } on TimeoutException catch (e) {

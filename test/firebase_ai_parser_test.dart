@@ -109,8 +109,7 @@ void main() {
     expect(aiFailureTrKey('timeout', loggedIn: true), 'ai_fail');
   });
 
-  test('detail error asli terbawa (timeout/network/denied)', () async {
-    try {
+  test('detail error asli terbawa (timeout/network/denied)', () async {    try {
       await parseReceiptFirebase(
         ocrText: 'TOTAL 100',
         generate: (prompt) async => throw Exception('jaringan putus'),
@@ -123,12 +122,32 @@ void main() {
     try {
       await parseReceiptFirebase(
         ocrText: 'TOTAL 100',
-        generate: (prompt) async => throw const AiDenied('quota habis'),
+        generate: (prompt) async => throw AiDenied('quota habis'),
       );
       fail('harus lempar');
     } on AiFailure catch (e) {
       expect(e.code, 'denied');
       expect(e.detail, 'quota habis');
     }
+  });
+
+  test('app check invalid = kode app_check spesifik tanpa retry', () async {
+    var calls = 0;
+    try {
+      await parseReceiptFirebase(
+        ocrText: 'TOTAL 100',
+        generate: (prompt) async {
+          calls++;
+          throw AiAppCheck('Firebase App Check token is invalid');
+        },
+      );
+      fail('harus lempar');
+    } on AiFailure catch (e) {
+      expect(e.code, 'app_check');
+      expect(e.detail, contains('invalid'));
+    }
+    expect(calls, 1);
+  });
+}
   });
 }

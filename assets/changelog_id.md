@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.48.0+129.
+Versi terpasang: 2.48.0+130.
+
+## Yang baru di 2.48.0+130
+
+1. Perbaikan "App Check token is invalid": app kini aktifkan Play Integrity saat start (fail-open bila gagal), dan error App Check tampil dengan kode khusus `app_check` + pesan asli di Tes AI.
 
 ## Yang baru di 2.48.0+129
 

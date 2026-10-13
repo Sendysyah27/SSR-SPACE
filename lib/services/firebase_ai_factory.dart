@@ -74,6 +74,12 @@ Future<AiGenerate?> firebaseAiGenerate() async {
         // Log lengkap untuk diagnosis via `adb logcat` (tak diupload).
         debugPrint('firebase ai gagal: $e');
         final m = e.toString().toLowerCase();
+        if (m.contains('app check') ||
+            m.contains('appcheck') ||
+            m.contains('app_check') ||
+            m.contains('integrity')) {
+          throw AiAppCheck(e.toString());
+        }
         if (m.contains('permission-denied') ||
             m.contains('unauthenticated') ||
             m.contains('quota') ||
