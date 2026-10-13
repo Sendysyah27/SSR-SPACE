@@ -109,7 +109,8 @@ void main() {
     expect(aiFailureTrKey('timeout', loggedIn: true), 'ai_fail');
   });
 
-  test('detail error asli terbawa (timeout/network/denied)', () async {    try {
+  test('detail error asli terbawa (timeout/network/denied)', () async {
+    try {
       await parseReceiptFirebase(
         ocrText: 'TOTAL 100',
         generate: (prompt) async => throw Exception('jaringan putus'),
@@ -147,7 +148,5 @@ void main() {
       expect(e.detail, contains('invalid'));
     }
     expect(calls, 1);
-  });
-}
   });
 }
