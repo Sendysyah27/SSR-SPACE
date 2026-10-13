@@ -229,6 +229,7 @@ String zenRequestId([Random? random]) {
 /// Header mimic CLI. [session] tetap antar request; [request] fresh.
 Map<String, String> zenHeaders(String session, String request) => {
       'User-Agent': zenUserAgent,
+      'Accept': 'text/event-stream',
       'x-opencode-client': 'cli',
       'x-opencode-project': 'global',
       'x-opencode-session': session,

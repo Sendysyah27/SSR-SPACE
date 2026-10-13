@@ -54,7 +54,41 @@ void main() {
     } on AiFailure catch (e) {
       expect(e.code, 'denied');
     }
-    expect(await parseReceiptZen(apiKey: ' ', ocrText: 'x'), isNull);
+    expect(await parseReceiptZen(ocrText: ' '), isNull);
+  });
+
+  test('anonim: tanpa header Authorization', () async {
+    final client = MockClient((req) async {
+      expect(req.headers.containsKey('Authorization'), isFalse);
+      expect(req.headers['Accept'], 'text/event-stream');
+      return http.Response(
+        'data: {"choices":[{"delta":{"content":"Bebas!"}}]}\n'
+        'data: [DONE]\n',
+        200,
+        headers: {'content-type': 'text/event-stream'},
+      );
+    });
+    final r = await zenChatRaw(prompt: 'Halo', client: client);
+    expect(r.text, 'Bebas!');
+  });
+
+  test('kunci ditolak -> coba anonim lalu sukses', () async {
+    final authed = <bool?>[];
+    final client = MockClient((req) async {
+      final hasAuth = req.headers.containsKey('Authorization');
+      authed.add(hasAuth);
+      if (hasAuth) return http.Response('ditolak', 401);
+      return http.Response(
+        'data: {"choices":[{"delta":{"content":"OK"}}]}\n'
+        'data: [DONE]\n',
+        200,
+        headers: {'content-type': 'text/event-stream'},
+      );
+    });
+    final r =
+        await zenChatRaw(apiKey: 'salah', prompt: 'Halo', client: client);
+    expect(authed, [true, false]);
+    expect(r.text, 'OK');
   });
 
   test('spark gagal -> cadangan chat', () async {

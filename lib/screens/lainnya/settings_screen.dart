@@ -1274,12 +1274,12 @@ class _AiCardState extends State<_AiCard> {
     } else {
       parts.add('[OpenRouter] (${tr('ai_need_orkey')})');
     }
-    // KETIGA: Zen langsung (bila ada kunci).
+    // KETIGA: Zen langsung (anonim bila tanpa kunci).
     final zenKey = await readZenKey();
     if (!mounted) return;
     if (!useZen) {
       parts.add('[Zen] (${tr('ai_off')})');
-    } else if (zenKey != null) {
+    } else {
       try {
         final r = await zenChatRaw(apiKey: zenKey, prompt: 'Halo')
             .timeout(const Duration(seconds: 60));
@@ -1296,8 +1296,6 @@ class _AiCardState extends State<_AiCard> {
       } catch (e) {
         parts.add('[Zen] AI gagal (tak dikenal)\n$e');
       }
-    } else {
-      parts.add('[Zen] (${tr('ai_need_zenkey')})');
     }
     if (!useFb) {
       parts.add('[Firebase] (${tr('ai_off')})');

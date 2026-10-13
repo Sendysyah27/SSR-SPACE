@@ -21,81 +21,105 @@ const aiZenTimeout = Duration(seconds: 60);
 
 /// POST Zen + baca respons (SSE atau JSON). Return teks gabungan.
 /// Throw [AiFailure] jujur (tag = label diagnosis, mis. [Zen]).
+/// [apiKey] kosong = ANONIM (tanpa header Authorization): free tier
+/// bisa jalan tanpa kunci. Kunci ditolak (401/403) -> coba anonim
+/// sekali sebelum menyerah.
 Future<String> _zenPost({
-  required String apiKey,
+  String? apiKey,
   required String endpoint,
-  required Map<String, Object?> body,
+  required Map<String, Object?> Function() bodyOf,
   required String tag,
   required String session,
   http.Client? client,
 }) async {
+  final key = (apiKey ?? '').trim();
+  // Urutan coba: kunci dulu (bila ada), lalu anonim.
+  final modes = key.isNotEmpty ? [key, null] : [null];
   final httpClient = client ?? http.Client();
   final owned = client == null;
+  AiFailure? lastDenied;
   try {
-    final req = http.Request('POST', Uri.parse(endpoint));
-    req.headers.addAll(zenHeaders(session, zenRequestId()));
-    req.headers['Authorization'] = 'Bearer ${apiKey.trim()}';
-    req.body = jsonEncode(body);
-    final streamed =
-        await httpClient.send(req).timeout(aiZenTimeout);
-    if (streamed.statusCode == 401 || streamed.statusCode == 403) {
-      throw AiFailure('denied', '[$tag] kunci ditolak');
-    }
-    if (streamed.statusCode == 429) {
-      final snippet = await _readSnippet(streamed);
-      throw AiFailure('quota', '[$tag] $snippet');
-    }
-    if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
-      final snippet = await _readSnippet(streamed);
-      throw AiFailure(
-          'server', '[$tag] HTTP ${streamed.statusCode} $snippet');
-    }
-    final ctype = streamed.headers['content-type'] ?? '';
-    String text;
-    if (ctype.contains('text/event-stream')) {
-      final lines = <String>[];
-      await for (final chunk in streamed.stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())) {
-        final t = chunk.trim();
-        if (t.startsWith('data:')) {
-          lines.add(t.substring(5).trim());
-        } else if (t.isNotEmpty && !t.startsWith(':')) {
-          lines.add(t);
-        }
-      }
-      text = zenSseText(lines);
-    } else {
-      final raw = await streamed.stream.transform(utf8.decoder).join();
-      dynamic decoded;
+    for (final mode in modes) {
       try {
-        decoded = jsonDecode(raw);
-      } catch (_) {
-        throw AiFailure('server', '[$tag] body bukan JSON');
-      }
-      if (decoded is Map &&
-          decoded['choices'] is List &&
-          (decoded['choices'] as List).isNotEmpty) {
-        text = zenSseText([
-          jsonEncode({
-            'choices': decoded['choices'],
-          })
-        ]);
-      } else {
-        text = decoded is String ? decoded : '';
+        final req = http.Request('POST', Uri.parse(endpoint));
+        req.headers.addAll(zenHeaders(session, zenRequestId()));
+        if (mode != null) {
+          req.headers['Authorization'] = 'Bearer $mode';
+        }
+        req.body = jsonEncode(bodyOf());
+        final streamed =
+            await httpClient.send(req).timeout(aiZenTimeout);
+        if (streamed.statusCode == 401 || streamed.statusCode == 403) {
+          final snippet = await _readSnippet(streamed);
+          lastDenied = AiFailure(
+              'denied', '[$tag] kunci ditolak $snippet');
+          debugPrint('zen ${mode == null ? 'anonim' : 'kunci'} ditolak, '
+              '${mode == null ? 'menyerah' : 'coba anonim'}...');
+          continue;
+        }
+        if (streamed.statusCode == 429) {
+          final snippet = await _readSnippet(streamed);
+          throw AiFailure('quota', '[$tag] $snippet');
+        }
+        if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
+          final snippet = await _readSnippet(streamed);
+          throw AiFailure(
+              'server', '[$tag] HTTP ${streamed.statusCode} $snippet');
+        }
+        return await _readText(streamed, tag);
+      } on AiFailure {
+        rethrow;
+      } on TimeoutException catch (e) {
+        throw AiFailure('timeout', '[$tag] $e');
+      } catch (e) {
+        throw AiFailure('network', '[$tag] $e');
       }
     }
-    if (text.trim().isEmpty) throw AiFailure('empty', '[$tag] tanpa teks');
-    return text;
-  } on AiFailure {
-    rethrow;
-  } on TimeoutException catch (e) {
-    throw AiFailure('timeout', '[$tag] $e');
-  } catch (e) {
-    throw AiFailure('network', '[$tag] $e');
+    throw lastDenied ?? const AiFailure('denied', '[$tag] ditolak');
   } finally {
     if (owned) httpClient.close();
   }
+}
+
+/// Baca teks gabungan dari respons sukses (SSE atau JSON).
+Future<String> _readText(http.StreamedResponse streamed, String tag) async {
+  final ctype = streamed.headers['content-type'] ?? '';
+  String text;
+  if (ctype.contains('text/event-stream')) {
+    final lines = <String>[];
+    await for (final chunk in streamed.stream
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())) {
+      final t = chunk.trim();
+      if (t.startsWith('data:')) {
+        lines.add(t.substring(5).trim());
+      } else if (t.isNotEmpty && !t.startsWith(':')) {
+        lines.add(t);
+      }
+    }
+    text = zenSseText(lines);
+  } else {
+    final raw = await streamed.stream.transform(utf8.decoder).join();
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(raw);
+    } catch (_) {
+      throw AiFailure('server', '[$tag] body bukan JSON');
+    }
+    if (decoded is Map &&
+        decoded['choices'] is List &&
+        (decoded['choices'] as List).isNotEmpty) {
+      text = zenSseText([
+        jsonEncode({
+          'choices': decoded['choices'],
+        })
+      ]);
+    } else {
+      text = decoded is String ? decoded : '';
+    }
+  }
+  if (text.trim().isEmpty) throw AiFailure('empty', '[$tag] tanpa teks');
+  return text;
 }
 
 /// Baca ≤300 char pertama stream (untuk cuplikan error).
@@ -113,21 +137,24 @@ Future<String> _readSnippet(http.StreamedResponse res) async {
 
 /// Teks OCR -> [AiDraft] via Zen langsung. Null = tak bisa dipakai
 /// (pemanggil lanjut ke Firebase). Melempar [AiFailure] jujur.
+/// Tanpa kunci = ANONIM (free tier bisa jalan tanpa key).
 Future<AiDraft?> parseReceiptZen({
-  required String apiKey,
+  String? apiKey,
   required String ocrText,
   http.Client? client,
 }) async {
-  if (apiKey.trim().isEmpty || ocrText.trim().isEmpty) return null;
+  if (ocrText.trim().isEmpty) return null;
   final session = zenSessionId();
   try {
     final text = await _zenPost(
       apiKey: apiKey,
       endpoint: zenResponsesEndpoint,
-      body: {
+      bodyOf: () => {
         'model': zenModelSpark,
         'input': aiReceiptPrompt(ocrText),
         'stream': true,
+        'tool_choice': 'auto',
+        'store': false,
         'tools': zenTools(),
       },
       tag: 'Zen:$zenModelSpark',
@@ -143,7 +170,7 @@ Future<AiDraft?> parseReceiptZen({
   final text = await _zenPost(
     apiKey: apiKey,
     endpoint: zenChatEndpoint,
-    body: {
+    bodyOf: () => {
       'model': zenModelFree,
       'stream': true,
       'temperature': 0.1,
@@ -161,24 +188,26 @@ Future<AiDraft?> parseReceiptZen({
 }
 
 /// Chat mentah ke Zen langsung (untuk Tes AI): prompt bebas ->
-/// (teks, provider). Throw [AiFailure] jujur.
+/// (teks, provider). Throw [AiFailure] jujur. Tanpa kunci = ANONIM.
 Future<({String text, String provider})> zenChatRaw({
-  required String apiKey,
+  String? apiKey,
   required String prompt,
   http.Client? client,
 }) async {
-  if (apiKey.trim().isEmpty || prompt.trim().isEmpty) {
-    throw const AiFailure('empty', '[Zen] kunci/prompt kosong');
+  if (prompt.trim().isEmpty) {
+    throw const AiFailure('empty', '[Zen] prompt kosong');
   }
   final session = zenSessionId();
   try {
     final text = await _zenPost(
       apiKey: apiKey,
       endpoint: zenResponsesEndpoint,
-      body: {
+      bodyOf: () => {
         'model': zenModelSpark,
         'input': prompt,
         'stream': true,
+        'tool_choice': 'auto',
+        'store': false,
         'tools': zenTools(),
       },
       tag: 'Zen:$zenModelSpark',
@@ -192,7 +221,7 @@ Future<({String text, String provider})> zenChatRaw({
     final text = await _zenPost(
       apiKey: apiKey,
       endpoint: zenChatEndpoint,
-      body: {
+      bodyOf: () => {
         'model': zenModelFree,
         'stream': true,
         'temperature': 0.1,

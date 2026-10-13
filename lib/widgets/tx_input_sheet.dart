@@ -606,8 +606,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
         orErr = AiFailure('network', '[OpenRouter] $e');
       }
     }
-    // 3) KETIGA: OpenCode Zen langsung (bila ada kunci).
-    if (mounted && zkey != null && useZen) {
+    // 3) KETIGA: OpenCode Zen langsung (anonim bila tanpa kunci).
+    if (mounted && useZen) {
       try {
         final draft = await parseReceiptZen(
           apiKey: zkey,

@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.54.0+149.
+Versi terpasang: 2.54.0+150.
+
+## Yang baru di 2.54.0+150
+
+1. Zen bisa jalan tanpa kunci (mode anonim free tier): tanpa kunci = request tanpa header auth; kunci ditolak = otomatis coba anonim. Header Accept + tool_choice/store ikut dikirim.
 
 ## Yang baru di 2.54.0+149
 
