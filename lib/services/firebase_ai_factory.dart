@@ -1,7 +1,10 @@
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
+import 'dart:convert';
 
 import 'firebase_ai_parser.dart';
 
@@ -9,6 +12,49 @@ import 'firebase_ai_parser.dart';
 // flash stabil terbaru (tanpa ganti kode tiap rilis model).
 // Docs: agent-skills flutter_setup.md + pola versi Gemini API.
 const firebaseAiModel = 'gemini-flash-latest';
+
+// Kunci API Android dari google-services.json (disuntik CI via
+// dart-define GOOGLE_API_KEY; kosong = tanpa REST fallback).
+// Dipakai HANYA untuk Plan B REST langsung ke Gemini Developer API.
+const googleApiKey = String.fromEnvironment('GOOGLE_API_KEY',
+    defaultValue: '');
+
+const _restTimeout = Duration(seconds: 30);
+
+/// Plan B: POST langsung ke Gemini Developer API bila SDK hang.
+/// Return teks, atau null (gagal = pemanggil tentukan vonis).
+/// Tak pernah throw.
+Future<String?> _restGenerate(String prompt) async {
+  if (googleApiKey.isEmpty) return null;
+  final client = http.Client();
+  try {
+    final res = await client
+        .post(
+          Uri.parse(
+              'https://generativelanguage.googleapis.com/v1beta/models/$firebaseAiModel:generateContent'),
+          headers: {
+            'x-goog-api-key': googleApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(restPromptBody(prompt)),
+        )
+        .timeout(_restTimeout);
+    debugPrint('firebase ai rest status ${res.statusCode}');
+    if (res.statusCode != 200) return null;
+    dynamic body;
+    try {
+      body = jsonDecode(res.body);
+    } catch (_) {
+      return null;
+    }
+    return parseRestText(body);
+  } catch (e) {
+    debugPrint('firebase ai rest gagal: $e');
+    return null;
+  } finally {
+    client.close();
+  }
+}
 
 // Sakelar AI Parser (prefs biasa, default ON — tanpa kunci = langsung
 // jalan bila login Google). Tanpa prefs (error) = ON (fail-open).
@@ -69,9 +115,20 @@ Future<AiGenerate?> firebaseAiGenerate() async {
     return (prompt) async {
       try {
         debugPrint('firebase ai sdk generateContent mulai...');
-        final res = await model.generateContent([Content.text(prompt)]);
+        // Timeout di DALAM closure agar on TimeoutException di bawah
+        // (→ REST) yang menang, bukan timeout luar parser.
+        final res = await model
+            .generateContent([Content.text(prompt)])
+            .timeout(firebaseAiTimeout);
         debugPrint('firebase ai sdk generateContent selesai.');
         return res.text;
+      } on TimeoutException {
+        // SDK hang: Plan B REST langsung (30 dtk). Sukses = pakai;
+        // gagal = vonis timeout jujur (tanpa retry ganda pemanggil).
+        debugPrint('firebase ai sdk hang, coba REST...');
+        final t = await _restGenerate(prompt);
+        if (t != null && t.trim().isNotEmpty) return t;
+        throw const AiFailure('timeout', 'sdk hang + rest gagal');
       } catch (e) {
         // Log lengkap untuk diagnosis via `adb logcat` (tak diupload).
         debugPrint('firebase ai gagal: $e');

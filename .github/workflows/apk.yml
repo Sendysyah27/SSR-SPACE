@@ -335,6 +335,9 @@ jobs:
           if [ -n "$SSR_GOOGLE_SERVICES_JSON" ]; then
             echo "$SSR_GOOGLE_SERVICES_JSON" > android/app/google-services.json
             echo 'google-services.json ok (native Google login aktif)'
+            KEY=$(python3 -c "import json;print(json.load(open('android/app/google-services.json'))['client'][0]['api_key'][0]['current_key'])")
+            echo "GOOGLE_API_KEY=$KEY" >> "$GITHUB_ENV"
+            echo 'api key Plan B REST ok (tak ditampilkan)'
           else
             echo 'tanpa google-services.json (native gagal, fallback browser OAuth)'
           fi
@@ -1432,12 +1435,12 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-      - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+      - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }} --dart-define=GOOGLE_API_KEY=${{ env.GOOGLE_API_KEY }}
         env:
           SSR_KEYSTORE_PASS: ${{ secrets.SSR_KEYSTORE_PASS }}
           SSR_KEY_ALIAS: ${{ secrets.SSR_KEY_ALIAS }}
           SSR_KEY_PASS: ${{ secrets.SSR_KEY_PASS }}
-      - run: flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+      - run: flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }} --dart-define=GOOGLE_API_KEY=${{ env.GOOGLE_API_KEY }}
         env:
           SSR_KEYSTORE_PASS: ${{ secrets.SSR_KEYSTORE_PASS }}
           SSR_KEY_ALIAS: ${{ secrets.SSR_KEY_ALIAS }}

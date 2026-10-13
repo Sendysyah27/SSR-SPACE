@@ -132,8 +132,7 @@ void main() {
     }
   });
 
-  test('app check invalid = kode app_check spesifik tanpa retry', () async {
-    var calls = 0;
+  test('app check invalid = kode app_check spesifik tanpa retry', () async {    var calls = 0;
     try {
       await parseReceiptFirebase(
         ocrText: 'TOTAL 100',
@@ -148,5 +147,29 @@ void main() {
       expect(e.detail, contains('invalid'));
     }
     expect(calls, 1);
+  });
+
+  test('helper REST: body + parse valid/rusak', () {
+    final b = restPromptBody('Halo');
+    final parts =
+        ((b['contents'] as List).first as Map)['parts'] as List;
+    expect((parts.first as Map)['text'], 'Halo');
+    expect(
+      parseRestText({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': 'Hai!'}
+              ]
+            }
+          }
+        ]
+      }),
+      'Hai!',
+    );
+    expect(parseRestText({'candidates': []}), isNull);
+    expect(parseRestText({'nope': 1}), isNull);
+    expect(parseRestText('string'), isNull);
   });
 }

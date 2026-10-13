@@ -1,7 +1,7 @@
 name: ssr_space
 description: SSR SPACE - Simple. Secure. Reliable. Your Finance Space. Pencatatan keuangan multi-dompet dengan workspace bersama dan auto-track notifikasi bank.
 publish_to: 'none'
-version: 2.48.0+133
+version: 2.48.0+134
 environment:
   sdk: '>=3.11.0 <4.0.0'
 dependencies:
@@ -44,6 +44,8 @@ dependencies:
   firebase_core: ^4.14.0
   firebase_auth: ^6.6.0
   firebase_ai: ^4.0.0
+  # HTTP murni HANYA untuk Plan B REST fallback AI (tanpa SDK).
+  http: ^1.2.2
   # Dipin exact: 13.x menarik permission_handler_android 14 (butuh
   # compileSdk 37, app 36) → build merah checkReleaseAarMetadata.
   # 12.0.3 = android 13.0.1 (compileSdk 35), API Dart yang dipakai stabil.

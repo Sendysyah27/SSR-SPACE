@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.48.0+133.
+Versi terpasang: 2.48.0+134.
+
+## Yang baru di 2.48.0+134
+
+1. Plan B bila AI hang: bila SDK tak jawab dalam 60 detik, app coba jalur REST langsung (30 detik) dengan kunci dari konfigurasi build. Gagal dua-duanya = pesan timeout jujur + isi manual.
 
 ## Yang baru di 2.48.0+133
 

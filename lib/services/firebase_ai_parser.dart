@@ -64,6 +64,37 @@ typedef AiGenerate = Future<String?> Function(String prompt);
 String aiFailureTrKey(String code, {required bool loggedIn}) =>
     (code == 'denied' && !loggedIn) ? 'ai_need_google' : 'ai_fail';
 
+/// Body REST fallback Gemini Developer API (Plan B bila SDK hang).
+/// Murni (tanpa import plugin) agar testable via `dart`.
+Map<String, Object?> restPromptBody(String prompt) => {
+      'contents': [
+        {
+          'parts': [
+            {'text': prompt}
+          ]
+        }
+      ],
+    };
+
+/// Respons JSON REST -> teks pertama, atau null bila struktur tak pas.
+/// Tak pernah throw (body rusak = null, bukan crash).
+String? parseRestText(dynamic body) {
+  try {
+    if (body is! Map) return null;
+    final cands = body['candidates'];
+    if (cands is! List || cands.isEmpty || cands.first is! Map) return null;
+    final content = (cands.first as Map)['content'];
+    if (content is! Map) return null;
+    final parts = content['parts'];
+    if (parts is! List || parts.isEmpty || parts.first is! Map) return null;
+    final text = (parts.first as Map)['text'];
+    if (text is! String || text.trim().isEmpty) return null;
+    return text;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Teks OCR -> [AiDraft]. Null = AI tak bisa dipakai (pemanggil fallback
 /// manual). Melempar [AiFailure] dengan sebab jujur.
 Future<AiDraft?> parseReceiptFirebase({
