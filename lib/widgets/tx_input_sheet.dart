@@ -560,7 +560,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
     // 1) PRIMER: kunci Gemini user → REST langsung.
     final gkey = await readGeminiKey();
     final okey = await readOrKey();
-    if (mounted && gkey != null) {
+    final useGemini = await aiProviderOn(aiProvGemini);
+    final useOr = await aiProviderOn(aiProvOr);
+    final useFb = await aiProviderOn(aiProvFb);
+    if (mounted && gkey != null && useGemini) {
       try {
         final t = await restGenerate(aiReceiptPrompt(raw), apiKey: gkey)
             .timeout(const Duration(seconds: 45));
@@ -581,7 +584,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
       }
     }
     // 2) KEDUA: kunci OpenRouter user (free tier).
-    if (mounted && okey != null) {
+    if (mounted && okey != null && useOr) {
       try {
         final draft = await parseReceiptOr(apiKey: okey, ocrText: raw);
         if (!mounted) return null;
@@ -600,7 +603,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
       }
     }
     // 3) CADANGAN: Firebase (pool kuota beda dari kunci user).
-    if (mounted) {
+    if (mounted && useFb) {
       try {
         final gen = await firebaseAiGenerate();
         if (gen != null) {
@@ -626,7 +629,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
       gemini: gemErr,
       openRouter: orErr,
       firebase: fbErr,
-      hasKey: gkey != null || okey != null,
+      hasKey: (gkey != null && useGemini) || (okey != null && useOr),
     );
     setState(() {
       _scanning = false;
@@ -1184,7 +1187,8 @@ class _CatCell extends StatelessWidget {
   }
 }
 
-/// Baris scan struk: tombol + hint + state scanning/gagal (R-27).
+/// Section AI struk: kartu sendiri yang lega — judul + tombol scan
+/// besar + status terbaca. M3: container tonal, sudut 16, spacing lega.
 class _ScanRow extends StatelessWidget {
   final bool scanning;
   final String? error;
@@ -1199,41 +1203,68 @@ class _ScanRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        OutlinedButton.icon(
-          onPressed: onScan,
-          icon: const DuoIcon(AppIcons.scan, size: 20),
-          label: Text(tr('rcp_scan')),
-        ),
-        Text(
-          tr('rcp_scan_hint'),
-          style: theme.textTheme.bodySmall,
-          textAlign: TextAlign.center,
-        ),
-        if (scanning) ...[
-          const SizedBox(height: SsrSpace.sm),
-          const LinearProgressIndicator(),
-          const SizedBox(height: SsrSpace.xs),
-          Text(
-            tr('rcp_scanning'),
-            style: theme.textTheme.bodySmall,
-            textAlign: TextAlign.center,
+    final scheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(SsrSpace.md),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              DuoIcon(AppIcons.scan, size: 22, color: scheme.primary),
+              const SizedBox(width: SsrSpace.sm),
+              Expanded(
+                child: Text(
+                  tr('ai_scan_title'),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-        if (error != null) ...[
           const SizedBox(height: SsrSpace.xs),
           Text(
-            error!,
-            style: TextStyle(
-              color: theme.colorScheme.error,
-              fontSize: 13,
+            tr('rcp_scan_hint'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
             ),
-            textAlign: TextAlign.center,
           ),
+          const SizedBox(height: SsrSpace.md),
+          FilledButton.icon(
+            onPressed: onScan,
+            icon: const DuoIcon(AppIcons.scan, size: 20),
+            label: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text(tr('rcp_scan')),
+            ),
+          ),
+          if (scanning) ...[
+            const SizedBox(height: SsrSpace.md),
+            const LinearProgressIndicator(),
+            const SizedBox(height: SsrSpace.sm),
+            Text(
+              tr('rcp_scanning'),
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+          if (error != null) ...[
+            const SizedBox(height: SsrSpace.md),
+            Text(
+              error!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.error,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

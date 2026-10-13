@@ -172,6 +172,30 @@ Future<void> setAiEnabled(bool v) async {
   } catch (_) {}
 }
 
+// Sakelar per provider (default ON semua). Nama: gemini/openrouter/
+// firebase. Dipakai sheet + Tes AI agar user bisa matikan per jalur.
+const aiProvGemini = 'gemini';
+const aiProvOr = 'openrouter';
+const aiProvFb = 'firebase';
+
+String _provKey(String name) => 'ai_prov_$name';
+
+Future<bool> aiProviderOn(String name) async {
+  try {
+    final p = await SharedPreferences.getInstance();
+    return p.getBool(_provKey(name)) ?? true;
+  } catch (_) {
+    return true;
+  }
+}
+
+Future<void> setAiProviderOn(String name, bool v) async {
+  try {
+    await (await SharedPreferences.getInstance())
+        .setBool(_provKey(name), v);
+  } catch (_) {}
+}
+
 /// Pastikan ada sesi Firebase Auth (syarat AI parser), untuk SEMUA cara
 /// login Supabase — bukan cuma Google. Urutan: sesi ada → true;
 /// ada idToken Google → link credential; selain itu → anonim.

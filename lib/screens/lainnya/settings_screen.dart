@@ -22,6 +22,7 @@ import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
+import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/pin_pad.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
@@ -973,6 +974,11 @@ class _AiCardState extends State<_AiCard> {
   String? _quotaInfo;
   bool _hasKey = false;
   bool _hasOrKey = false;
+  final Map<String, bool> _prov = {
+    aiProvGemini: true,
+    aiProvOr: true,
+    aiProvFb: true,
+  };
   final _keyC = TextEditingController();
   final _orKeyC = TextEditingController();
 
@@ -995,6 +1001,11 @@ class _AiCardState extends State<_AiCard> {
     final hit = await lastQuotaHit();
     final key = await readGeminiKey();
     final orKey = await readOrKey();
+    final prov = <String, bool>{
+      aiProvGemini: await aiProviderOn(aiProvGemini),
+      aiProvOr: await aiProviderOn(aiProvOr),
+      aiProvFb: await aiProviderOn(aiProvFb),
+    };
     if (!mounted) return;
     setState(() {
       _ready = gen != null;
@@ -1002,6 +1013,9 @@ class _AiCardState extends State<_AiCard> {
       _busy = false;
       _hasKey = key != null;
       _hasOrKey = orKey != null;
+      _prov
+        ..clear()
+        ..addAll(prov);
       _quotaInfo = hit == null
           ? null
           : '${dayLabel(_ymd(hit))} '
@@ -1028,6 +1042,47 @@ class _AiCardState extends State<_AiCard> {
       _busy = false;
       _msg = null;
     });
+  }
+
+  Future<void> _toggleProv(String name, bool v) async {
+    setState(() => _busy = true);
+    await setAiProviderOn(name, v);
+    final on = await aiProviderOn(name);
+    if (!mounted) return;
+    setState(() {
+      _prov[name] = on;
+      _busy = false;
+    });
+  }
+
+  /// Baris provider: nama + chip status + switch sendiri.
+  Widget _provRow(
+    BuildContext context,
+    String name,
+    String label,
+    bool configured,
+  ) {
+    final on = _prov[name] ?? true;
+    final active = on && configured;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: Theme.of(context).textTheme.titleSmall),
+          ),
+          StatusChip(
+            label: active ? tr('ai_on') : tr('ai_off'),
+            tone: active ? StatusTone.accent : StatusTone.neutral,
+          ),
+          const SizedBox(width: SsrSpace.sm),
+          Switch(
+            value: on,
+            onChanged: _busy ? null : (v) => _toggleProv(name, v),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _saveKey() async {
@@ -1129,10 +1184,15 @@ class _AiCardState extends State<_AiCard> {
     final gen = await firebaseAiGenerate();
     if (!mounted) return;
     final parts = <String>[];
+    final useGemini = await aiProviderOn(aiProvGemini);
+    final useOr = await aiProviderOn(aiProvOr);
+    final useFb = await aiProviderOn(aiProvFb);
     // PRIMER: kunci Gemini user → REST langsung (bypass kuota Firebase).
     final key = await readGeminiKey();
     if (!mounted) return;
-    if (key != null) {
+    if (!useGemini) {
+      parts.add('[Gemini] (${tr('ai_off')})');
+    } else if (key != null) {
       try {
         String? used;
         final t = await restGenerate('Halo',
@@ -1157,7 +1217,9 @@ class _AiCardState extends State<_AiCard> {
     // KEDUA: OpenRouter (bila ada kunci).
     final orKey = await readOrKey();
     if (!mounted) return;
-    if (orKey != null) {
+    if (!useOr) {
+      parts.add('[OpenRouter] (${tr('ai_off')})');
+    } else if (orKey != null) {
       try {
         String? used;
         final res = await orChatRaw(
@@ -1179,7 +1241,9 @@ class _AiCardState extends State<_AiCard> {
     } else {
       parts.add('[OpenRouter] (${tr('ai_need_orkey')})');
     }
-    if (gen == null) {
+    if (!useFb) {
+      parts.add('[Firebase] (${tr('ai_off')})');
+    } else if (gen == null) {
       parts.add('[Firebase] (${tr('ai_need_google')})');
     } else {
       try {
@@ -1250,6 +1314,11 @@ class _AiCardState extends State<_AiCard> {
           value: _on && (_hasKey || _hasOrKey || _ready),
           onChanged: _busy ? null : _toggle,
         ),
+        const Divider(height: SsrSpace.md),
+        _provRow(context, aiProvGemini, 'Gemini', _hasKey),
+        _provRow(context, aiProvOr, 'OpenRouter', _hasOrKey),
+        _provRow(context, aiProvFb, 'Firebase', _ready),
+        const Divider(height: SsrSpace.md),
         const SizedBox(height: SsrSpace.xs),
         // Kunci Gemini tak pernah tampil mentah: hanya status ***.
         Text(

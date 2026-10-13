@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.51.0+143.
+Versi terpasang: 2.52.0+144.
+
+## Yang baru di 2.52.0+144
+
+1. Tiap provider AI (Gemini/OpenRouter/Firebase) kini punya sakelar sendiri + chip status Aktif/Mati di Pengaturan.
+2. Bagian AI di layar catat dirapikan: kartu sendiri, tombol Scan struk besar, status jelas terbaca.
 
 ## Yang baru di 2.51.0+143
 
