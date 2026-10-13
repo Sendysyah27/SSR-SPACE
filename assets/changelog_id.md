@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.52.0+145.
+Versi terpasang: 2.53.0+146.
+
+## Yang baru di 2.53.0+146
+
+1. Provider AI keempat: OpenCode Zen via proxy (muse-spark). Tempel kunci + atur URL proxy di Pengaturan → AI Parser; urutan Gemini → OpenRouter → Zen → Firebase. Tes AI tulis model yang menjawab.
 
 ## Yang baru di 2.52.0+145
 

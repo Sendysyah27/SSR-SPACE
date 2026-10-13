@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'ai_draft.dart';
 
@@ -144,6 +145,7 @@ String quotaWaitLine(String? detail) {
 AiFailure? pickAiError({
   AiFailure? gemini,
   AiFailure? openRouter,
+  AiFailure? zen,
   AiFailure? firebase,
   required bool hasKey,
 }) {
@@ -156,23 +158,22 @@ AiFailure? pickAiError({
     return AiFailure('quota', a.detail ?? b.detail);
   }
 
-  final gq = gemini?.code == 'quota';
-  final oq = openRouter?.code == 'quota';
-  final fq = firebase?.code == 'quota';
-  final nQuota = (gq ? 1 : 0) + (oq ? 1 : 0) + (fq ? 1 : 0);
-  final nTried = (gemini != null ? 1 : 0) +
-      (openRouter != null ? 1 : 0) +
-      (firebase != null ? 1 : 0);
-  if (nQuota > 0 && nQuota == nTried && nTried > 0) {
-    var acc = gemini ?? openRouter ?? firebase!;
-    for (final e in [gemini, openRouter, firebase]) {
-      final q = e;
-      if (q != null && q.code == 'quota') acc = quotaMax(acc, q);
+  final qs = [gemini, openRouter, zen, firebase]
+      .where((e) => e?.code == 'quota')
+      .toList();
+  final tried = [gemini, openRouter, zen, firebase]
+      .where((e) => e != null)
+      .toList();
+  if (qs.isNotEmpty && qs.length == tried.length && tried.isNotEmpty) {
+    var acc = qs.first!;
+    for (var i = 1; i < qs.length; i++) {
+      acc = quotaMax(acc, qs[i]!);
     }
     return acc;
   }
-  if (fq && hasKey) return openRouter ?? gemini;
-  return firebase ?? openRouter ?? gemini;
+  final fq = firebase?.code == 'quota';
+  if (fq && hasKey) return zen ?? openRouter ?? gemini;
+  return firebase ?? zen ?? openRouter ?? gemini;
 }
 
 /// Pesan error model-sibuk? (500/quota/penuh) → pantas retry + ganti
@@ -197,6 +198,47 @@ bool isBusyMessage(String m) {
 String reachReport({int? status, String? error}) {
   if (status != null) return 'NET: host hidup (HTTP $status)';
   return 'NET: BUNTU (${error ?? 'tak dikenal'})';
+}
+
+/// Hasil urai respons proxy Zen: {ok, data, provider} atau
+/// {ok:false, error, details}. Murni (tanpa http/plugin) agar testable
+/// via `dart`. Return (draft, provider) atau throw [AiFailure] jujur.
+({AiDraft? draft, String provider}) zenParseResponse(dynamic body) {
+  if (body is! Map) throw const AiFailure('server', '[Zen] body bukan Map');
+  final provider = body['provider'] is String
+      ? body['provider'] as String
+      : 'zen';
+  if (body['ok'] != true) {
+    final err = '${body['error'] ?? ''} ${body['details'] ?? ''}'.trim();
+    final m = err.toLowerCase();
+    if (m.contains('quota') ||
+        m.contains('exhausted') ||
+        m.contains('429') ||
+        m.contains('rate limit')) {
+      throw AiFailure('quota', '[Zen] $err');
+    }
+    if (m.contains('denied') ||
+        m.contains('unauthorized') ||
+        m.contains('401') ||
+        m.contains('403') ||
+        m.contains('api key') ||
+        m.contains('apikey')) {
+      throw AiFailure('denied', '[Zen] $err');
+    }
+    throw AiFailure(
+        'server', '[Zen] ${err.isEmpty ? 'proxy gagal' : err}');
+  }
+  final data = body['data'];
+  return (draft: _zenDataToDraft(data), provider: provider);
+}
+
+/// data proxy (Map/String) -> [AiDraft] atau null. Tak pernah throw.
+AiDraft? _zenDataToDraft(dynamic data) {
+  try {
+    if (data is Map) return parseAiDraft(jsonEncode(data));
+    if (data is String) return parseAiDraft(data);
+  } catch (_) {}
+  return null;
 }
 
 /// Body REST fallback Gemini Developer API (Plan B bila SDK hang).

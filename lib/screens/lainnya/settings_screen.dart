@@ -5,6 +5,7 @@ import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_openrouter_client.dart';
+import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/biometric_auth.dart';
 import 'package:ssr_space/services/currency.dart';
@@ -974,13 +975,18 @@ class _AiCardState extends State<_AiCard> {
   String? _quotaInfo;
   bool _hasKey = false;
   bool _hasOrKey = false;
+  bool _hasZenKey = false;
+  String _zenUrl = zenProxyDefault;
   final Map<String, bool> _prov = {
     aiProvGemini: true,
     aiProvOr: true,
+    aiProvZen: true,
     aiProvFb: true,
   };
   final _keyC = TextEditingController();
   final _orKeyC = TextEditingController();
+  final _zenKeyC = TextEditingController();
+  final _zenUrlC = TextEditingController();
 
   @override
   void initState() {
@@ -992,6 +998,8 @@ class _AiCardState extends State<_AiCard> {
   void dispose() {
     _keyC.dispose();
     _orKeyC.dispose();
+    _zenKeyC.dispose();
+    _zenUrlC.dispose();
     super.dispose();
   }
 
@@ -1001,9 +1009,12 @@ class _AiCardState extends State<_AiCard> {
     final hit = await lastQuotaHit();
     final key = await readGeminiKey();
     final orKey = await readOrKey();
+    final zenKey = await readZenKey();
+    final zenUrl = await readZenUrl(zenProxyDefault);
     final prov = <String, bool>{
       aiProvGemini: await aiProviderOn(aiProvGemini),
       aiProvOr: await aiProviderOn(aiProvOr),
+      aiProvZen: await aiProviderOn(aiProvZen),
       aiProvFb: await aiProviderOn(aiProvFb),
     };
     if (!mounted) return;
@@ -1013,6 +1024,8 @@ class _AiCardState extends State<_AiCard> {
       _busy = false;
       _hasKey = key != null;
       _hasOrKey = orKey != null;
+      _hasZenKey = zenKey != null;
+      _zenUrl = zenUrl;
       _prov
         ..clear()
         ..addAll(prov);
@@ -1029,7 +1042,7 @@ class _AiCardState extends State<_AiCard> {
       '${d.day.toString().padLeft(2, '0')}';
 
   Future<void> _toggle(bool v) async {
-    if (v && !_hasKey && !_hasOrKey && !_ready) {
+    if (v && !_hasKey && !_hasOrKey && !_hasZenKey && !_ready) {
       if (!mounted) return;
       setState(() => _msg = tr('ai_need_either'));
       return;
@@ -1131,10 +1144,46 @@ class _AiCardState extends State<_AiCard> {
     });
   }
 
+  Future<void> _saveZenKey() async {
+    setState(() => _busy = true);
+    await writeZenKey(_zenKeyC.text);
+    _zenKeyC.clear();
+    await _refresh();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = tr('ai_saved');
+    });
+  }
+
+  Future<void> _clearZenKey() async {
+    setState(() => _busy = true);
+    await clearZenKey();
+    await _refresh();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = tr('ai_cleared');
+    });
+  }
+
+  Future<void> _saveZenUrl() async {
+    setState(() => _busy = true);
+    await writeZenUrl(_zenUrlC.text);
+    _zenUrlC.clear();
+    await _refresh();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = tr('ai_saved');
+    });
+  }
+
   String _providerSubtitle() {
     final ps = <String>[];
     if (_hasKey) ps.add('Gemini');
     if (_hasOrKey) ps.add('OpenRouter');
+    if (_hasZenKey) ps.add('Zen');
     if (_ready) ps.add('Firebase');
     if (ps.isEmpty) return tr('ai_need_either');
     return '${tr('ai_active_pre')}${ps.join(' + ')}.';
@@ -1186,6 +1235,7 @@ class _AiCardState extends State<_AiCard> {
     final parts = <String>[];
     final useGemini = await aiProviderOn(aiProvGemini);
     final useOr = await aiProviderOn(aiProvOr);
+    final useZen = await aiProviderOn(aiProvZen);
     final useFb = await aiProviderOn(aiProvFb);
     // PRIMER: kunci Gemini user → REST langsung (bypass kuota Firebase).
     final key = await readGeminiKey();
@@ -1240,6 +1290,34 @@ class _AiCardState extends State<_AiCard> {
       }
     } else {
       parts.add('[OpenRouter] (${tr('ai_need_orkey')})');
+    }
+    // KETIGA: Zen via proxy (bila ada kunci).
+    final zenKey = await readZenKey();
+    if (!mounted) return;
+    if (!useZen) {
+      parts.add('[Zen] (${tr('ai_off')})');
+    } else if (zenKey != null) {
+      final zurl = await readZenUrl(zenProxyDefault);
+      if (!mounted) return;
+      try {
+        final r = await zenChatRaw(
+                apiKey: zenKey, prompt: 'Halo', url: zurl)
+            .timeout(const Duration(seconds: 60));
+        parts.add('[Zen: ${r.provider}]\n'
+            '${r.text.trim().isEmpty ? 'AI: (kosong)' : r.text}');
+      } on AiFailure catch (e) {
+        if (e.code == 'quota') await noteQuotaHit();
+        parts.add(e.code == 'quota'
+            ? '[Zen] ${quotaWaitLine(e.detail)}'
+            : '[Zen] AI gagal (${e.code})'
+                '${e.detail == null ? '' : '\n${e.detail}'}');
+      } on TimeoutException catch (e) {
+        parts.add('[Zen] AI gagal (timeout)\n$e');
+      } catch (e) {
+        parts.add('[Zen] AI gagal (tak dikenal)\n$e');
+      }
+    } else {
+      parts.add('[Zen] (${tr('ai_need_zenkey')})');
     }
     if (!useFb) {
       parts.add('[Firebase] (${tr('ai_off')})');
@@ -1311,12 +1389,13 @@ class _AiCardState extends State<_AiCard> {
           contentPadding: EdgeInsets.zero,
           title: Text(tr('ai_enable')),
           subtitle: Text(_providerSubtitle()),
-          value: _on && (_hasKey || _hasOrKey || _ready),
+          value: _on && (_hasKey || _hasOrKey || _hasZenKey || _ready),
           onChanged: _busy ? null : _toggle,
         ),
         const Divider(height: SsrSpace.md),
         _provRow(context, aiProvGemini, 'Gemini', _hasKey),
         _provRow(context, aiProvOr, 'OpenRouter', _hasOrKey),
+        _provRow(context, aiProvZen, 'Zen', _hasZenKey),
         _provRow(context, aiProvFb, 'Firebase', _ready),
         const Divider(height: SsrSpace.md),
         const SizedBox(height: SsrSpace.xs),
@@ -1404,6 +1483,73 @@ class _AiCardState extends State<_AiCard> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        // Kunci OpenCode Zen (provider keempat, via proxy VPS).
+        Text(
+          _hasZenKey ? tr('ai_zen_saved') : tr('ai_zen_hint'),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: SsrSpace.xs),
+        SelectableText(
+          tr('ai_zen_where'),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+        ),
+        const SizedBox(height: SsrSpace.xs),
+        TextField(
+          controller: _zenKeyC,
+          obscureText: true,
+          enableSuggestions: false,
+          autocorrect: false,
+          decoration: InputDecoration(
+            hintText: tr('ai_zen_hint'),
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _busy ? null : _saveZenKey,
+                child: Text(tr('ai_save')),
+              ),
+            ),
+            const SizedBox(width: SsrSpace.sm),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _busy ? null : _clearZenKey,
+                child: Text(tr('ai_clear')),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: SsrSpace.xs),
+        Text(
+          tr('ai_zen_url_label'),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: SsrSpace.xs),
+        TextField(
+          controller: _zenUrlC,
+          enableSuggestions: false,
+          autocorrect: false,
+          decoration: InputDecoration(
+            hintText: _zenUrl,
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: _busy ? null : _saveZenUrl,
+            child: Text(tr('ai_save')),
+          ),
         ),
         const SizedBox(height: SsrSpace.xs),
         Text(

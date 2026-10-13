@@ -176,6 +176,7 @@ Future<void> setAiEnabled(bool v) async {
 // firebase. Dipakai sheet + Tes AI agar user bisa matikan per jalur.
 const aiProvGemini = 'gemini';
 const aiProvOr = 'openrouter';
+const aiProvZen = 'zen';
 const aiProvFb = 'firebase';
 
 String _provKey(String name) => 'ai_prov_$name';

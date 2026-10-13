@@ -2313,9 +2313,29 @@ const _t = <String, Map<String, String>>{
     'id': 'Belum ada kunci OpenRouter.',
     'en': 'No OpenRouter key yet.',
   },
+  'ai_zen_hint': {
+    'id': 'Tempel kunci OpenCode API',
+    'en': 'Paste OpenCode API key',
+  },
+  'ai_zen_saved': {
+    'id': 'Kunci Zen tersimpan aman (***).',
+    'en': 'Zen key stored securely (***).',
+  },
+  'ai_zen_where': {
+    'id': 'Ambil di https://opencode.ai/settings',
+    'en': 'Get it at https://opencode.ai/settings',
+  },
+  'ai_zen_url_label': {
+    'id': 'URL proxy Zen (advanced, kosongkan = default).',
+    'en': 'Zen proxy URL (advanced, empty = default).',
+  },
+  'ai_need_zenkey': {
+    'id': 'Belum ada kunci Zen.',
+    'en': 'No Zen key yet.',
+  },
   'ai_need_either': {
-    'id': 'Tempel kunci Gemini/OpenRouter atau masuk Google untuk AI.',
-    'en': 'Paste a Gemini/OpenRouter key or sign in with Google for AI.',
+    'id': 'Tempel kunci Gemini/OpenRouter/Zen atau masuk Google untuk AI.',
+    'en': 'Paste a Gemini/OpenRouter/Zen key or sign in with Google for AI.',
   },
   'ai_key_hint': {'id': 'Tempel kunci Gemini API', 'en': 'Paste Gemini API key'},
   'ai_key_saved': {

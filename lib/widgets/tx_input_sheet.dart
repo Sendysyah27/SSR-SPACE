@@ -11,6 +11,7 @@ import 'package:ssr_space/screens/lainnya/ai_draft_screen.dart';
 import 'package:ssr_space/services/ai_draft.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_openrouter_client.dart';
+import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/app_categories.dart';
@@ -544,7 +545,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
     });
   }
 
-  /// Fallback AI: Gemini -> OpenRouter -> Firebase.
+  /// Fallback AI: Gemini -> OpenRouter -> Zen -> Firebase.
   /// Teks OCR -> draft, gagal jujur (null = manual). Yang tampil dipilih
   /// via pickAiError: kuota Firebase ditekan bila ada kunci user.
   Future<AiDraft?> _tryAiDraft(String raw) async {
@@ -556,12 +557,16 @@ class _TxInputSheetState extends State<TxInputSheet> {
     });
     AiFailure? gemErr;
     AiFailure? orErr;
+    AiFailure? zenErr;
     AiFailure? fbErr;
     // 1) PRIMER: kunci Gemini user → REST langsung.
     final gkey = await readGeminiKey();
     final okey = await readOrKey();
+    final zkey = await readZenKey();
+    final zurl = await readZenUrl(zenProxyDefault);
     final useGemini = await aiProviderOn(aiProvGemini);
     final useOr = await aiProviderOn(aiProvOr);
+    final useZen = await aiProviderOn(aiProvZen);
     final useFb = await aiProviderOn(aiProvFb);
     if (mounted && gkey != null && useGemini) {
       try {
@@ -602,7 +607,30 @@ class _TxInputSheetState extends State<TxInputSheet> {
         orErr = AiFailure('network', '[OpenRouter] $e');
       }
     }
-    // 3) CADANGAN: Firebase (pool kuota beda dari kunci user).
+    // 3) KETIGA: proxy OpenCode Zen (bila ada kunci).
+    if (mounted && zkey != null && useZen) {
+      try {
+        final draft = await parseReceiptZen(
+          apiKey: zkey,
+          ocrText: raw,
+          url: zurl,
+        );
+        if (!mounted) return null;
+        if (draft != null) {
+          setState(() {
+            _scanning = false;
+            _scanErr = null;
+          });
+          return draft;
+        }
+      } on AiFailure catch (e) {
+        if (e.code == 'quota') await noteQuotaHit();
+        zenErr = e;
+      } catch (e) {
+        zenErr = AiFailure('network', '[Zen] $e');
+      }
+    }
+    // 4) CADANGAN: Firebase (pool kuota beda dari kunci user).
     if (mounted && useFb) {
       try {
         final gen = await firebaseAiGenerate();
@@ -628,8 +656,11 @@ class _TxInputSheetState extends State<TxInputSheet> {
     final e = pickAiError(
       gemini: gemErr,
       openRouter: orErr,
+      zen: zenErr,
       firebase: fbErr,
-      hasKey: (gkey != null && useGemini) || (okey != null && useOr),
+      hasKey: (gkey != null && useGemini) ||
+          (okey != null && useOr) ||
+          (zkey != null && useZen),
     );
     // Log lengkap (kode + pesan asli) — user hanya lihat yang ramah.
     if (e != null) debugPrint('ai scan gagal: $e');
