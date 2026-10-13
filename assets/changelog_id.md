@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.48.0+134.
+Versi terpasang: 2.48.0+135.
+
+## Yang baru di 2.48.0+135
+
+1. Tes AI kini cek jaringan dulu (10 detik): bila server Google AI tak bisa dijangkau, langsung vonis DNS/firewall/ISP tanpa menunggu 90 detik. Hasil cek ikut tampil di dialog.
 
 ## Yang baru di 2.48.0+134
 

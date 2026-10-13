@@ -2297,6 +2297,10 @@ const _t = <String, Map<String, String>>{
     'en': 'Sign in with Google to enable AI.',
   },
   'ai_test': {'id': 'Tes AI', 'en': 'Test AI'},
+  'ai_no_net': {
+    'id': 'Tidak bisa konek ke server Google AI. Cek DNS/firewall/ISP atau VPN, lalu coba lagi.',
+    'en': 'Cannot reach the Google AI server. Check DNS/firewall/ISP or VPN, then retry.',
+  },
   'ai_working': {'id': 'Meminta AI...', 'en': 'Asking AI...'},
   'ai_fail': {
     'id': 'AI gagal. Isi manual seperti biasa.',

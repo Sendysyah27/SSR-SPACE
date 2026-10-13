@@ -20,6 +20,26 @@ const googleApiKey = String.fromEnvironment('GOOGLE_API_KEY',
     defaultValue: '');
 
 const _restTimeout = Duration(seconds: 30);
+const _reachTimeout = Duration(seconds: 10);
+const _reachUrl = 'https://generativelanguage.googleapis.com';
+
+/// GET root server Google AI (10 dtk). Status berapa pun = bisa reach;
+/// timeout/DNS/TLS = buntu. Tak pernah throw (lapor string selalu ada).
+Future<String> checkGoogleAiReachability() async {
+  final client = http.Client();
+  try {
+    final res = await client
+        .get(Uri.parse(_reachUrl))
+        .timeout(_reachTimeout);
+    debugPrint('firebase ai reach: HTTP ${res.statusCode}');
+    return reachReport(status: res.statusCode);
+  } catch (e) {
+    debugPrint('firebase ai reach gagal: $e');
+    return reachReport(error: '$e');
+  } finally {
+    client.close();
+  }
+}
 
 /// Plan B: POST langsung ke Gemini Developer API bila SDK hang.
 /// Return teks, atau null (gagal = pemanggil tentukan vonis).

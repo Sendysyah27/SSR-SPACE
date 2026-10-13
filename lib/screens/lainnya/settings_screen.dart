@@ -1009,6 +1009,32 @@ class _AiCardState extends State<_AiCard> {
       _busy = true;
       _msg = tr('ai_working');
     });
+    // Diagnosis network dulu (10 dtk): buntu = hemat 90 detik tunggu AI,
+    // langsung vonis DNS/firewall/ISP.
+    final net = await checkGoogleAiReachability();
+    if (!mounted) return;
+    if (net.contains('BUNTU')) {
+      setState(() => _busy = false);
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(tr('ai_test')),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: SelectableText('$net\n\n${tr('ai_no_net')}'),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(tr('rcp_raw_close')),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     final gen = await firebaseAiGenerate();
     if (!mounted) return;
     if (gen == null) {
@@ -1047,7 +1073,7 @@ class _AiCardState extends State<_AiCard> {
         content: SizedBox(
           width: double.maxFinite,
           child: SingleChildScrollView(
-            child: SelectableText(out),
+            child: SelectableText('$net\n\n$out'),
           ),
         ),
         actions: [

@@ -132,7 +132,8 @@ void main() {
     }
   });
 
-  test('app check invalid = kode app_check spesifik tanpa retry', () async {    var calls = 0;
+  test('app check invalid = kode app_check spesifik tanpa retry', () async {
+    var calls = 0;
     try {
       await parseReceiptFirebase(
         ocrText: 'TOTAL 100',
@@ -171,5 +172,14 @@ void main() {
     expect(parseRestText({'candidates': []}), isNull);
     expect(parseRestText({'nope': 1}), isNull);
     expect(parseRestText('string'), isNull);
+  });
+
+  test('reachReport: status apapun = hidup, error = buntu', () {
+    expect(reachReport(status: 404), 'NET: host hidup (HTTP 404)');
+    expect(reachReport(status: 200), 'NET: host hidup (HTTP 200)');
+    expect(
+      reachReport(error: 'TimeoutException after 10s'),
+      'NET: BUNTU (TimeoutException after 10s)',
+    );
   });
 }

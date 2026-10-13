@@ -64,6 +64,13 @@ typedef AiGenerate = Future<String?> Function(String prompt);
 String aiFailureTrKey(String code, {required bool loggedIn}) =>
     (code == 'denied' && !loggedIn) ? 'ai_need_google' : 'ai_fail';
 
+/// Baris laporan keterjangkauan server (murni, testable).
+/// Status HTTP APAPUN = host hidup (root memang 404, itu buktinya).
+String reachReport({int? status, String? error}) {
+  if (status != null) return 'NET: host hidup (HTTP $status)';
+  return 'NET: BUNTU (${error ?? 'tak dikenal'})';
+}
+
 /// Body REST fallback Gemini Developer API (Plan B bila SDK hang).
 /// Murni (tanpa import plugin) agar testable via `dart`.
 Map<String, Object?> restPromptBody(String prompt) => {
