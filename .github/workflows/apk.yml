@@ -340,6 +340,65 @@ jobs:
           fi
       - run: |
           python3 - <<'EOF'
+          import pathlib, re
+          # Firebase AI Logic butuh plugin gradle google-services agar
+          # Firebase.initializeApp() baca google-services.json.
+          # Tanpa json (secret kosong) = lewati jujur, app tetap build
+          # dengan AI mati (fail-open di Dart). android/ di-generate CI.
+          js = pathlib.Path('android/app/google-services.json')
+          if not js.exists():
+              print('tanpa google-services.json, plugin dilewati (AI mati)')
+          else:
+              ver = '4.5.0'
+              roots = [pathlib.Path('android/build.gradle.kts'),
+                       pathlib.Path('android/build.gradle')]
+              root = next((p for p in roots if p.exists()), None)
+              assert root is not None, 'root build gradle tak ketemu'
+              s = root.read_text()
+              if 'google-services' not in s:
+                  if root.suffix == '.kts':
+                      pat = re.compile(
+                          r'classpath\("org\.jetbrains\.kotlin:kotlin-gradle-plugin:[^"]+"\)')
+                      assert len(pat.findall(s)) == 1, 'anchor kotlin KTS tak ketemu'
+                      s = pat.sub(
+                          lambda m: m.group(0) +
+                          f'\n        classpath("com.google.gms:google-services:{ver}")',
+                          s, count=1)
+                  else:
+                      pat = re.compile(
+                          r'classpath\s+"org\.jetbrains\.kotlin:kotlin-gradle-plugin:[^"]+"')
+                      assert len(pat.findall(s)) == 1, 'anchor kotlin groovy tak ketemu'
+                      s = pat.sub(
+                          lambda m: m.group(0) +
+                          f'\n        classpath "com.google.gms:google-services:{ver}"',
+                          s, count=1)
+                  root.write_text(s)
+              apps = [pathlib.Path('android/app/build.gradle.kts'),
+                      pathlib.Path('android/app/build.gradle')]
+              app = next((p for p in apps if p.exists()), None)
+              assert app is not None, 'app build gradle tak ketemu'
+              a = app.read_text()
+              if 'google-services' not in a:
+                  if app.suffix == '.kts':
+                      anchor = 'id("com.android.application")'
+                      assert anchor in a, 'anchor plugins KTS tak ketemu'
+                      a = a.replace(
+                          anchor,
+                          anchor + '\n    id("com.google.gms.google-services")', 1)
+                  else:
+                      anchor = "apply plugin: 'com.android.application'"
+                      assert anchor in a, 'anchor apply groovy tak ketemu'
+                      a = a.replace(
+                          anchor,
+                          anchor + "\napply plugin: 'com.google.gms.google-services'",
+                          1)
+                  app.write_text(a)
+              assert 'google-services' in root.read_text(), 'classpath hilang'
+              assert 'google-services' in app.read_text(), 'apply hilang'
+              print(f'google-services plugin {ver} ok:', root, app)
+          EOF
+      - run: |
+          python3 - <<'EOF'
           import pathlib
           m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
           s = m.read_text()
