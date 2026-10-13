@@ -63,6 +63,23 @@ void main() {
     );
   });
 
+  test('tol di TotalProtect bukan Transportasi', () {
+    expect(
+      suggestReceiptCategory(
+        items: const ['Nuvo TotalProtect 304000'],
+        categories: _cats,
+      ),
+      isNot('Transportasi'),
+    );
+    expect(
+      suggestReceiptCategory(
+        items: const ['Tol Jagorawi 15000'],
+        categories: _cats,
+      ),
+      'Transportasi',
+    );
+  });
+
   test('saran tak ada di daftar = null', () {
     expect(
       suggestReceiptCategory(

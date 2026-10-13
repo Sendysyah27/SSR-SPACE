@@ -43,8 +43,9 @@ class ReceiptData {
   });
 }
 
-final _totalKey =
-    RegExp(r'total|tot\s|jumlah|bayar|grand', caseSensitive: false);
+final _totalKey = RegExp(
+    r'\btotal\b|tot\s|subtotal|pembayaran|\bjumlah\b|bayar|grand',
+    caseSensitive: false);
 final _tenderKey =
     RegExp(r'tunai|kembali', caseSensitive: false);
 final _grandKey = RegExp(r'grand', caseSensitive: false);
@@ -99,8 +100,12 @@ bool _okAmount(double? v) => v != null && v >= 100;
 /// Baris total toleran OCR: spasi nyasar ("TOTA L") + 0/O ("T0TAL").
 bool _isTotalLine(String l) {
   if (_totalKey.hasMatch(l)) return true;
+  // OCR rusak ("T0TAL", "TOTA L"): spasi dibuang, 0 -> o. Suffix yang
+  // diizinkan sempit (belanja/bayar/jumlah) supaya merek seperti
+  // "TotalProtect" tetap lolos sebagai BUKAN total.
   final n = l.toLowerCase().replaceAll(' ', '').replaceAll('0', 'o');
-  return n.contains('total');
+  return RegExp(r'(^|[^a-z])total(belanja|bayar|jumlah)?([^a-z]|$)')
+      .hasMatch(n);
 }
 final _rejectKey = RegExp(
   r'kembali|tunai|dpp|ppn|harga jual|purchase|hemat|trxid',
@@ -254,13 +259,61 @@ List<String> _mergeVariants(List<String> lines) {
   return out;
 }
 
+/// Buang pasangan void: baris bernominal + baris berikut yang nilainya
+/// negatif identik ("304.000" lalu "-304.000"/"(304.000)"). Keduanya
+/// dibuang (batal transaksi). Diskon Solo negatif tanpa pasangan tetap.
+List<String> _dropVoids(List<String> lines) {
+  final out = <String>[];
+  for (var i = 0; i < lines.length; i++) {
+    final l = lines[i];
+    if (i + 1 < lines.length) {
+      final v = _lastAmount(l);
+      if (v != null && v > 0 && _isVoidOf(lines[i + 1], v)) {
+        i++;
+        continue;
+      }
+    }
+    out.add(l);
+  }
+  return out;
+}
+
+/// True bila [line] adalah lawan-void [v]: "-V" atau "(V)".
+bool _isVoidOf(String line, double v) {
+  var t = line.trim();
+  var neg = false;
+  if (t.startsWith('-')) {
+    neg = true;
+    t = t.substring(1).trim();
+  } else if (t.startsWith('(') && t.endsWith(')')) {
+    neg = true;
+    t = t.substring(1, t.length - 1);
+  } else {
+    return false;
+  }
+  final n = _toIdr(t);
+  return neg && n != null && (n - v).abs() < 0.005;
+}
+
+/// Selisih jumlah item vs total di luar toleransi (Rp1000 dan 5%):
+/// sinyal parsing ngaco → pemicu AI fallback. Kosong/valid = false.
+bool itemsMismatch(List<double> prices, double? total) {
+  if (total == null || total <= 0 || prices.isEmpty) return false;
+  var sum = 0.0;
+  for (final p in prices) {
+    sum += p;
+  }
+  final diff = (sum - total).abs();
+  return diff > 1000 && diff > total * 0.05;
+}
+
 /// Urut prioritas: baris kunci TOTAL dulu, abaikan baris pengecoh.
 ReceiptData parseReceipt(String raw) {
-  final lines = _mergeVariants(raw
+  final lines = _dropVoids(_mergeVariants(raw
       .split('\n')
       .map((l) => l.trim())
       .where((l) => l.isNotEmpty)
-      .toList());
+      .toList()));
   if (lines.isEmpty) return const ReceiptData();
 
   // Batas item vs footer: baris total pertama yang berangka, atau
@@ -289,6 +342,9 @@ ReceiptData parseReceipt(String raw) {
   double? grand;
   var seenTotal = false;
   var seenGrandMangled = false;
+  // Total terakhir SEBELUM tender pertama (diutamakan bila ada tender).
+  double? preTenderTotal;
+  var tenderSeen = false;
   // Suara angka nyasar (baris murni angka, bukan pengecoh, bukan "1 25000").
   // Voucher tak ikut suara (nominal promo bukan belanja).
   final votes = <double, int>{};
@@ -307,6 +363,10 @@ ReceiptData parseReceipt(String raw) {
     final l = lines[i];
     final isTotal = _isTotalLine(l);
     if (isTotal) seenTotal = true;
+    // Penanda tender di awal body (cabang bawah ada yang `continue`).
+    final isTenderLine = _cashKey.hasMatch(l) ||
+        _changeKey.hasMatch(l) ||
+        _payKey.hasMatch(l);
     // "TOTAL ITEM: 2" = cacah barang, bukan uang.
     if (isTotal && _countKey.hasMatch(l)) continue;
     if (!isTotal || _rejectKey.hasMatch(l)) {
@@ -315,12 +375,15 @@ ReceiptData parseReceipt(String raw) {
       if (isTotal && _tenderKey.hasMatch(l)) {
         final cut = _tenderKey.firstMatch(l)!.start;
         final v = _lastAmount(l.substring(0, cut));
-        if (_okAmount(v) && (amount == null || v! > amount)) {
-          amount = v;
+        if (_okAmount(v)) {
+          if (amount == null || v! > amount) amount = v;
+          preTenderTotal = v;
         }
+        tenderSeen = true;
       } else if (isTotal && _grandKey.hasMatch(l)) {
         seenGrandMangled = true;
       }
+      if (isTenderLine) tenderSeen = true;
       continue;
     }
     var v = _lastAmount(l);
@@ -344,8 +407,12 @@ ReceiptData parseReceipt(String raw) {
       } else if (amount == null || v! > amount) {
         amount = v;
       }
+      if (!tenderSeen && _okAmount(v)) preTenderTotal = v;
     }
+    if (isTenderLine) tenderSeen = true;
   }
+  // Tender ada → total terakhir sebelum tender (bukan max sedunia).
+  if (tenderSeen && preTenderTotal != null) amount = preTenderTotal;
   // Grand total menang atas subtotal/total (nominal akhir yang dibayar).
   if (grand != null) amount = grand;
   // PRIORITAS UTAMA: label TOTAL/GRAND telanjang + angka murni di ≤3

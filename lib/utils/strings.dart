@@ -2286,6 +2286,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Cadangan cerdas bila struk tak terbaca aturan biasa.',
     'en': 'Smart fallback when rules cannot read a receipt.',
   },
+  'ai_where': {
+    'id': 'Kunci gratis: buka opencode.ai → Zen → Create API Key, lalu tempel di sini.',
+    'en': 'Free key: open opencode.ai → Zen → Create API Key, then paste here.',
+  },
   'ai_enable': {'id': 'Nyalakan AI Parser', 'en': 'Enable AI Parser'},
   'ai_key_hint': {'id': 'Tempel kunci API Zen', 'en': 'Paste Zen API key'},
   'ai_save': {'id': 'Simpan kunci', 'en': 'Save key'},

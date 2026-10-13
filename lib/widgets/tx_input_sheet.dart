@@ -457,8 +457,13 @@ class _TxInputSheetState extends State<TxInputSheet> {
       setState(() => _scanning = false);
       if (r == null || raw == null) return;
       var data = r;
-      // Fallback AI bila rule tak confident (hybrid, gagal = manual).
-      if (!data.confident) {
+      // Fallback AI bila rule tak confident ATAU total tak konsisten
+      // dengan jumlah item (hybrid, gagal = manual).
+      final inconsistent = itemsMismatch(
+        [for (final li in r.lineItems) li.price],
+        r.amount,
+      );
+      if (!data.confident || inconsistent) {
         final ai = await _tryAiDraft(raw);
         if (!mounted) return;
         if (ai != null) {

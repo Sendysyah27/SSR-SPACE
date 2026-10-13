@@ -1038,6 +1038,8 @@ class _AiCardState extends State<_AiCard> {
       icon: AppIcons.autoBadge,
       children: [
         Text(tr('ai_sub'), style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: SsrSpace.xs),
+        Text(tr('ai_where'), style: Theme.of(context).textTheme.bodySmall),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(tr('ai_enable')),

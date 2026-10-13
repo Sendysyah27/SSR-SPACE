@@ -191,7 +191,9 @@ String? suggestReceiptCategory({
   String? best;
   var bestLen = 0;
   _itemAlias.forEach((alias, cat) {
-    if (hay.contains(alias) && alias.length > bestLen) {
+    // Batas kata: "tol" di "TotalProtect" bukan tol jalan.
+    if (!RegExp('\\b${RegExp.escape(alias)}\\b').hasMatch(hay)) return;
+    if (alias.length > bestLen) {
       final hit = pick(cat);
       if (hit != null) {
         best = hit;

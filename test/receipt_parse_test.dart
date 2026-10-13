@@ -538,6 +538,30 @@ void main() {
     expect(off.any((e) => e.text == 'Toko' && e.amount == 25000), isFalse);
   });
 
+  test('void: baris + lawan negatif identik dibuang', () {
+    const raw = 'INDOMARET\nNuvo TotalProtect Pouch 400ml x20 304000\n'
+        '-304.000\nSari Roti 15000\nJumlah: 115.500\nTUNAI 120.000';
+    final r = parseReceipt(raw);
+    expect(r.amount, 115500);
+    expect(r.items.any((e) => e.contains('304000')), isFalse);
+  });
+
+  test('total = Jumlah terakhir sebelum Tunai (bukan max)', () {
+    const raw = 'TOKO\nSUBTOTAL 120.000\nTOTAL 115.500\nTUNAI 150.000';
+    expect(parseReceipt(raw).amount, 115500);
+  });
+
+  test('TotalProtect bukan baris total', () {
+    const raw = 'TOKO\nNuvo TotalProtect 304000\nTOTAL 50000';
+    expect(parseReceipt(raw).amount, 50000);
+  });
+
+  test('sum item vs total jujur', () {
+    expect(itemsMismatch([25000.0, 34000.0], 59000), isFalse);
+    expect(itemsMismatch([25000.0], 115500), isTrue);
+    expect(itemsMismatch([], 50000), isFalse);
+  });
+
   test('kenangan: varian gabung ke produk induk', () {
     const raw = 'KOPI KENANGAN\nKOPI KENANGAN MANTAN\nNormal Ice\n25000\n'
         'MATCHA LATTE\nBlend Less Sugar\n34000\nTOTAL 59000';
