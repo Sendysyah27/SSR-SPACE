@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.48.0+130.
+Versi terpasang: 2.48.0+131.
+
+## Yang baru di 2.48.0+131
+
+1. Perbaikan Tes AI yang tampil "Instance of AiAppCheck": pesan error asli kini selalu tampil (bukan nama class), baik lewat parser maupun Tes AI langsung.
 
 ## Yang baru di 2.48.0+130
 

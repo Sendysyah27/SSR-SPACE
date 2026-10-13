@@ -28,6 +28,9 @@ class AiFailure implements Exception {
 class AiDenied implements Exception {
   final String? detail;
   const AiDenied([this.detail]);
+
+  @override
+  String toString() => 'AiDenied${detail == null ? '' : ': $detail'}';
 }
 
 /// Penanda dari factory: token App Check invalid/gagal.
@@ -36,6 +39,9 @@ class AiDenied implements Exception {
 class AiAppCheck implements Exception {
   final String? detail;
   const AiAppCheck([this.detail]);
+
+  @override
+  String toString() => 'AiAppCheck${detail == null ? '' : ': $detail'}';
 }
 
 /// Satu pemanggilan model: prompt -> teks JSON mentah (null = kosong).

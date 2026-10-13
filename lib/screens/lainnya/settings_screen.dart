@@ -1024,6 +1024,12 @@ class _AiCardState extends State<_AiCard> {
       out = (res == null || res.trim().isEmpty) ? 'AI: (kosong)' : res;
     } on AiFailure catch (e) {
       out = 'AI gagal (${e.code})${e.detail == null ? '' : '\n${e.detail}'}';
+    } on AiDenied catch (e) {
+      // gen langsung (tanpa parser) melempar penanda mentah — tampilkan
+      // pesannya, jangan nama class.
+      out = 'AI gagal (denied)${e.detail == null ? '' : '\n${e.detail}'}';
+    } on AiAppCheck catch (e) {
+      out = 'AI gagal (app_check)${e.detail == null ? '' : '\n${e.detail}'}';
     } on TimeoutException catch (e) {
       out = 'AI gagal (timeout)\n$e';
     } catch (e) {
