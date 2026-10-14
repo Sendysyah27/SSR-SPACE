@@ -20,6 +20,13 @@ const zenResponsesEndpoint = 'https://opencode.ai/zen/v1/responses';
 const zenChatEndpoint = 'https://opencode.ai/zen/v1/chat/completions';
 const zenModelSpark = 'muse-spark-1.3-contributor-free';
 const zenModelFree = 'kimi-k2.5-free';
+// Daftar fallback berurutan bila kuota model utama habis.
+const zenFallbackModels = [
+  'kimi-k2.5-free',
+  'nemotron-3.5-lightning-free',
+  'longcat-2.5-preview-free',
+  'space-bunny-free',
+];
 const aiZenTimeout = Duration(seconds: 60);
 
 /// POST Zen + baca respons (SSE atau JSON). Return teks gabungan.
@@ -193,7 +200,8 @@ Future<AiDraft?> parseReceiptZen({
     );
     return parseAiDraft(text);
   } on AiFailure catch (e) {
-    if (e.code == 'denied' || e.code == 'quota') rethrow;
+    // Hanya 'denied' yang fatal. Kuota habis -> lanjut ke fallback chain.
+    if (e.code == 'denied') rethrow;
   }
   // 2) Cadangan: model free via /chat/completions.
   // (_zenPost hanya melempar AiFailure → teruskan apa adanya.)
@@ -272,7 +280,8 @@ Future<({String text, String provider})> zenChatRaw({
     );
     return (text: text, provider: zenModelSpark);
   } on AiFailure catch (e) {
-    if (e.code == 'denied' || e.code == 'quota') rethrow;
+    // Hanya denied yang fatal. Kuota habis -> lanjut ke fallback chain.
+    if (e.code == 'denied') rethrow;
     // Cadangan chat/completions, provider = model cadangan.
     final text = await _zenPost(
       apiKey: apiKey,
