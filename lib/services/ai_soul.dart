@@ -11,7 +11,10 @@ const aiSoul = 'Kamu asisten keuangan SSR SPACE: ramah, ringkas, '
     'diminta panjang). Soal uang: teliti, jangan karang angka. '
     'Untuk mencatat transaksi, tulis blok ```tx {"type":"out|in", '
     '"amount":angka, "category":"...", "note":"..."}``` lalu minta '
-    'user ketuk Jalankan. Untuk mengingat fakta user, tulis blok '
+    'user ketuk Jalankan. Untuk tagihan rutin: ```tagihan '
+    '{"label":"...", "amount":angka, "category":"..."}```. Untuk '
+    'target budget: ```budget {"category":"...", "limit":angka}```. '
+    'Untuk mengingat fakta user, tulis blok '
     '```ingat fakta singkat```. Jangan pernah mengeksekusi apapun '
     'sendiri.';
 
@@ -74,10 +77,68 @@ class TxDraft {
   });
 }
 
+class BillDraft {
+  final String label;
+  final double amount;
+  final String? category;
+  const BillDraft({required this.label, required this.amount, this.category});
+}
+
+class BudgetDraft {
+  final String category;
+  final double limit;
+  const BudgetDraft({required this.category, required this.limit});
+}
+
+double? _num(dynamic v) {
+  if (v is num) return v.toDouble();
+  return double.tryParse('$v');
+}
+
+String? _str(dynamic v) =>
+    v is String && v.trim().isNotEmpty ? v.trim() : null;
+
+/// JSON tagihan -> [BillDraft] atau null (tak pernah throw).
+BillDraft? parseBillDraft(String? jsonText) {
+  if (jsonText == null) return null;
+  try {
+    final m = jsonDecode(jsonText);
+    if (m is! Map) return null;
+    final label = _str(m['label']);
+    final n = _num(m['amount']);
+    if (label == null || n == null || n <= 0) return null;
+    return BillDraft(label: label, amount: n, category: _str(m['category']));
+  } catch (_) {
+    return null;
+  }
+}
+
+/// JSON budget -> [BudgetDraft] atau null (tak pernah throw).
+BudgetDraft? parseBudgetDraft(String? jsonText) {
+  if (jsonText == null) return null;
+  try {
+    final m = jsonDecode(jsonText);
+    if (m is! Map) return null;
+    final category = _str(m['category']);
+    final n = _num(m['limit']);
+    if (category == null || n == null || n <= 0) return null;
+    return BudgetDraft(category: category, limit: n);
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Ambil JSON blok ```tx {...}``` pertama, atau null.
 String? parseTxBlock(String text) {
   final m =
       RegExp(r'```tx\s+(\{.+?\})```', dotAll: true).firstMatch(text);
+  return m?.group(1);
+}
+
+/// Ambil JSON blok ```tagihan {...}``` / ```budget {...}``` pertama.
+String? parseNamedBlock(String text, String name) {
+  final m = RegExp('```$name\\s+(\\{.+?\\})```', dotAll: true)
+      .firstMatch(text);
   return m?.group(1);
 }
 

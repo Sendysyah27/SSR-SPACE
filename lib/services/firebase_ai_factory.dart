@@ -372,15 +372,21 @@ Future<({String text, String provider})> aiChat(
   List<int>? imageBytes,
   String? mimeType,
   List<({bool mine, String text})>? history,
+  String? dataContext,
 }) async {
   if (prompt.trim().isEmpty) {
     throw const AiFailure('empty', 'prompt kosong');
   }
-  // Riwayat sesi sebagai konteks (AI jadi ingat percakapan).
+  // Konteks: riwayat sesi + data user (bila diizinkan). Urutan tetap:
+  // soul/memori (sudah di prompt pemanggil) <- riwayat <- data.
+  var full = prompt;
   final convo = (history == null || history.isEmpty)
       ? ''
       : '${chatHistoryBlock(history)}\n';
-  prompt = '$convo$prompt';
+  final data = (dataContext ?? '').trim().isNotEmpty
+      ? '${dataContext!.trim()}\n'
+      : '';
+  full = '$convo$data$prompt';
   final hasImage = imageBytes != null && imageBytes.isNotEmpty;
   AiFailure? last;
   void note(AiFailure e) {
@@ -389,15 +395,38 @@ Future<({String text, String provider})> aiChat(
   }
   // Prompt efektif: bila gambar dan vision gagal/tak tersedia, tempel
   // hasil OCR lokal agar provider text-only tetap bisa baca gambar.
-  var effectivePrompt = prompt;
+  var effectivePrompt = full;
   var viaOcr = false;
+
+  // VISION: Zen langsung dulu (tanpa OCR), lalu Gemini, lalu Firebase.
+  if (hasImage) {
+    final mime = (mimeType ?? '').isNotEmpty ? mimeType! : 'image/jpeg';
+    if (await aiProviderOn(aiProvZen)) {
+      try {
+        final zk = await readZenKey();
+        final r = await zenChatRaw(
+                apiKey: zk,
+                prompt: full,
+                imageBytes: imageBytes,
+                mimeType: mime)
+            .timeout(const Duration(seconds: 90));
+        if (r.text.trim().isNotEmpty) {
+          return (text: r.text, provider: 'Zen: ${r.provider}');
+        }
+      } on AiFailure catch (e) {
+        note(e);
+      } catch (e) {
+        note(AiFailure('network', '[Zen] $e'));
+      }
+    }
+  }
 
   if (await aiProviderOn(aiProvGemini)) {
     final k = await readGeminiKey();
     if (k != null) {
       try {
         String? used;
-        final t = await restGenerate(prompt,
+        final t = await restGenerate(full,
                 apiKey: k,
                 onModel: (m) => used = m,
                 imageBytes: imageBytes,
@@ -429,7 +458,7 @@ Future<({String text, String provider})> aiChat(
         final ocr = await ocrBytesToText(imgBytes);
         if (ocr.trim().isNotEmpty) {
           effectivePrompt =
-              '$prompt\nTEKS GAMBAR (OCR lokal):\n$ocr';
+              '$full\nTEKS GAMBAR (OCR lokal):\n$ocr';
           viaOcr = true;
         }
       } on AiFailure catch (e) {
@@ -481,7 +510,7 @@ Future<({String text, String provider})> aiChat(
         if (gen != null) {
           final t = await firebaseVisionAsk(
             bytes: img,
-            prompt: prompt,
+            prompt: full,
             mimeType: mimeType,
           );
           if (t != null && t.trim().isNotEmpty) {
@@ -491,8 +520,8 @@ Future<({String text, String provider})> aiChat(
       } else {
         final gen = await firebaseAiGenerate();
         if (gen != null) {
-          final t =
-              await gen(prompt).timeout(const Duration(seconds: 60));
+          final t = await gen(effectivePrompt)
+              .timeout(const Duration(seconds: 60));
           if (t != null && t.trim().isNotEmpty) {
             return (text: t, provider: 'Firebase');
           }
@@ -506,7 +535,7 @@ Future<({String text, String provider})> aiChat(
   }
   if (hasImage && last == null) {
     throw const AiFailure(
-        'server', '[Gambar] butuh kunci Gemini atau login Firebase');
+        'server', '[Gambar] tak ada jalur gambar yang bisa dipakai');
   }
   throw last ?? const AiFailure('network', 'semua provider mati/nonaktif');
 }

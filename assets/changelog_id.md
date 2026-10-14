@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.56.0+156.
+Versi terpasang: 2.57.0+157.
+
+## Yang baru di 2.57.0+157
+
+1. Mang AI: nama model disembunyikan di chat; tombol Jalankan beri feedback Tercatat; chat ingat + bisa gambar langsung via Zen.
+2. Mang AI bisa baca data (saldo/transaksi/tagihan/budget) setelah izin di awal chat; bisa siapkan tagihan & budget via tombol Jalankan.
 
 ## Yang baru di 2.56.0+156
 

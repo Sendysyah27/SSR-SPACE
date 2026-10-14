@@ -4,11 +4,16 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:uuid/uuid.dart';
+import 'package:ssr_space/services/ai_context.dart';
 import 'package:ssr_space/services/ai_memory.dart';
 import 'package:ssr_space/services/ai_soul.dart';
+import 'package:ssr_space/services/budget_service.dart';
+import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
 
@@ -30,6 +35,8 @@ class _ChatMsg {
   final bool isError;
   final List<int>? image;
   final TxDraft? action;
+  final BillDraft? billAction;
+  final BudgetDraft? budgetAction;
   const _ChatMsg({
     required this.mine,
     required this.text,
@@ -37,7 +44,12 @@ class _ChatMsg {
     this.isError = false,
     this.image,
     this.action,
+    this.billAction,
+    this.budgetAction,
   });
+
+  bool get hasAction =>
+      action != null || billAction != null || budgetAction != null;
 }
 
 class _AiChatScreenState extends State<AiChatScreen> {
@@ -47,6 +59,50 @@ class _AiChatScreenState extends State<AiChatScreen> {
   bool _sending = false;
   List<int>? _pendingImage;
   String? _pendingMime;
+  String _dataCtx = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAskData());
+  }
+
+  /// Izin akses data sekali (awal penggunaan): ya = AI baca snapshot
+  /// data; tidak = chat polos. Pilihan tersimpan.
+  Future<void> _maybeAskData() async {
+    if (!mounted) return;
+    bool? choice;
+    try {
+      choice = await aiDataChoice();
+    } catch (_) {
+      return;
+    }
+    if (!mounted || choice != null) {
+      if (choice == true) _dataCtx = await buildAiDataContext();
+      return;
+    }
+    final allow = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('ai_data_t')),
+        content: Text(tr('ai_data_s')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(tr('ai_deny')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(tr('ai_allow')),
+          ),
+        ],
+      ),
+    );
+    await setAiDataChoice(allow == true);
+    if (!mounted) return;
+    if (allow == true) _dataCtx = await buildAiDataContext();
+  }
 
   @override
   void dispose() {
@@ -211,13 +267,88 @@ class _AiChatScreenState extends State<AiChatScreen> {
   }
 
   Future<void> _runAction(TxDraft d) async {
-    await openTxInputSheet(
+    final ok = await openTxInputSheet(
       context,
       initialType: d.type,
       initialAmountIdr: d.amount,
       initialCategory: d.category,
       initialNote: d.note,
     );
+    if (!mounted || !ok) return;
+    final sign = d.type == 'in' ? '+' : '-';
+    setState(() {
+      _items.add(_ChatMsg(
+        mine: false,
+        text: 'Tercatat ✓ $sign${d.amount.toStringAsFixed(0)}'
+            '${d.category == null ? '' : ' · ${d.category}'}',
+        provider: 'Mang AI',
+      ));
+    });
+    _toBottom();
+  }
+
+  Future<void> _runBill(BillDraft d) async {
+    try {
+      final bills = await loadBills();
+      final now = DateTime.now();
+      final anchor = now.day > 28 ? 28 : now.day;
+      final nm = now.month == 12
+          ? DateTime(now.year + 1, 1, anchor)
+          : DateTime(now.year, now.month + 1, anchor);
+      final due =
+          '${nm.year}-${nm.month.toString().padLeft(2, '0')}-${nm.day.toString().padLeft(2, '0')}';
+      bills.add(RecurringBill(
+        id: const Uuid().v4(),
+        label: d.label,
+        amount: d.amount,
+        category: d.category ?? '',
+        walletId: '',
+        period: 'monthly',
+        anchorDay: anchor,
+        nextDue: due,
+        active: true,
+      ));
+      await saveBills(bills);
+      if (!mounted) return;
+      setState(() {
+        _items.add(_ChatMsg(
+          mine: false,
+          text: 'Tagihan "${d.label}" tercatat ✓ '
+              '(${d.amount.toStringAsFixed(0)}, jatuh $due)',
+          provider: 'Mang AI',
+        ));
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _items.add(_ChatMsg(
+            mine: false, text: tr('ai_fail'), isError: true));
+      });
+    }
+    _toBottom();
+  }
+
+  Future<void> _runBudget(BudgetDraft d) async {
+    try {
+      final orgId = await activeOrgId();
+      if (orgId.isEmpty) throw StateError('tanpa workspace');
+      await setBudget(orgId, d.category, d.limit);
+      if (!mounted) return;
+      setState(() {
+        _items.add(_ChatMsg(
+          mine: false,
+          text: 'Budget ${d.category} = ${d.limit.toStringAsFixed(0)} ✓',
+          provider: 'Mang AI',
+        ));
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _items.add(_ChatMsg(
+            mine: false, text: tr('ai_fail'), isError: true));
+      });
+    }
+    _toBottom();
   }
 
   @override
@@ -295,8 +426,26 @@ class _AiChatScreenState extends State<AiChatScreen> {
                             _Bubble(msg: m),
                             if (m.action != null)
                               _ActionCard(
-                                draft: m.action!,
+                                title:
+                                    '${m.action!.type == 'in' ? '+' : '-'}'
+                                    '${m.action!.amount.toStringAsFixed(0)}'
+                                    '${m.action!.category == null ? '' : ' · ${m.action!.category}'}',
+                                note: m.action!.note,
                                 onRun: () => _runAction(m.action!),
+                              ),
+                            if (m.billAction != null)
+                              _ActionCard(
+                                title:
+                                    '${m.billAction!.label} · ${m.billAction!.amount.toStringAsFixed(0)}',
+                                note: tr('mode_bill_s'),
+                                onRun: () => _runBill(m.billAction!),
+                              ),
+                            if (m.budgetAction != null)
+                              _ActionCard(
+                                title:
+                                    '${m.budgetAction!.category} · ${m.budgetAction!.limit.toStringAsFixed(0)}',
+                                note: tr('mode_budget_s'),
+                                onRun: () => _runBudget(m.budgetAction!),
                               ),
                           ],
                         );
@@ -415,11 +564,11 @@ class _Bubble extends StatelessWidget {
           vertical: SsrSpace.sm,
         ),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.8,
+          maxWidth: MediaQuery.of(context).size.width * 0.82,
         ),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,22 +576,24 @@ class _Bubble extends StatelessWidget {
           children: [
             if (msg.image != null) ...[
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: Image.memory(
                   Uint8List.fromList(msg.image!),
-                  width: 180,
+                  width: 200,
                   fit: BoxFit.cover,
                 ),
               ),
               const SizedBox(height: 6),
             ],
-            if (msg.provider != null)
+            // Rebrand: nama model disembunyikan, semua = Mang AI.
+            if (msg.provider != null && !msg.mine)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
-                  msg.provider!,
+                  tr('chat_mang'),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: fg.withValues(alpha: 0.7),
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
               ),
@@ -458,45 +609,48 @@ class _Bubble extends StatelessWidget {
   }
 }
 
-/// Kartu konfirmasi aksi transaksi dari AI: user ketuk Jalankan ->
-/// form prefill (user tetap yang simpan). Tanpa auto-eksekusi.
+/// Kartu konfirmasi aksi dari AI (transaksi/tagihan/budget): user ketuk
+/// Jalankan -> eksekusi nyata. Tanpa auto-eksekusi.
 class _ActionCard extends StatelessWidget {
-  final TxDraft draft;
+  final String title;
+  final String? note;
   final VoidCallback onRun;
-  const _ActionCard({required this.draft, required this.onRun});
+  const _ActionCard({
+    required this.title,
+    this.note,
+    required this.onRun,
+  });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final sign = draft.type == 'in' ? '+' : '-';
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(top: 2, bottom: 4),
         padding: const EdgeInsets.all(SsrSpace.md),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.8,
+          maxWidth: MediaQuery.of(context).size.width * 0.82,
         ),
         decoration: BoxDecoration(
           color: scheme.tertiaryContainer,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '$sign ${draft.amount.toStringAsFixed(0)}'
-              '${draft.category == null ? '' : ' · ${draft.category}'}',
+              title,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: scheme.onTertiaryContainer,
                     fontWeight: FontWeight.w700,
                   ),
             ),
-            if (draft.note != null) ...[
+            if (note != null) ...[
               const SizedBox(height: 2),
               Text(
-                draft.note!,
+                note!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: scheme.onTertiaryContainer,
                     ),

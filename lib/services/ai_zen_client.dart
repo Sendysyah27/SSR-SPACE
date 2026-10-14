@@ -139,25 +139,52 @@ Future<String> _readSnippet(http.StreamedResponse res) async {
 /// Teks OCR -> [AiDraft] via Zen langsung. Null = tak bisa dipakai
 /// (pemanggil lanjut ke Firebase). Melempar [AiFailure] jujur.
 /// Tanpa kunci = ANONIM (free tier bisa jalan tanpa key).
+/// [imageBytes] = mode vision (tanpa OCR); null = teks saja.
 Future<AiDraft?> parseReceiptZen({
   String? apiKey,
   required String ocrText,
+  List<int>? imageBytes,
+  String? mimeType,
   http.Client? client,
 }) async {
   if (ocrText.trim().isEmpty) return null;
   final session = zenSessionId();
+  final img = imageBytes != null && imageBytes.isNotEmpty ? imageBytes : null;
+  final mime = (mimeType ?? '').isNotEmpty ? mimeType! : 'image/jpeg';
   try {
     final text = await _zenPost(
       apiKey: apiKey,
       endpoint: zenResponsesEndpoint,
-      bodyOf: () => {
-        'model': zenModelSpark,
-        'input': aiReceiptPrompt(ocrText),
-        'stream': true,
-        'tool_choice': 'auto',
-        'store': false,
-        'tools': zenTools(),
-      },
+      bodyOf: img == null
+          ? () => {
+                'model': zenModelSpark,
+                'input': aiReceiptPrompt(ocrText),
+                'stream': true,
+                'tool_choice': 'auto',
+                'store': false,
+                'tools': zenTools(),
+              }
+          : () => {
+                'model': zenModelSpark,
+                'input': [
+                  {
+                    'role': 'user',
+                    'content': [
+                      {'type': 'input_text', 'text': aiReceiptPrompt(ocrText)},
+                      {
+                        'type': 'input_image',
+                        'image_url':
+                            'data:$mime;base64,${base64Encode(img)}',
+                        'detail': 'auto',
+                      },
+                    ],
+                  }
+                ],
+                'stream': true,
+                'tool_choice': 'auto',
+                'store': false,
+                'tools': zenTools(),
+              },
       tag: 'Zen:$zenModelSpark',
       session: session,
       client: client,
@@ -190,27 +217,53 @@ Future<AiDraft?> parseReceiptZen({
 
 /// Chat mentah ke Zen langsung (untuk Tes AI): prompt bebas ->
 /// (teks, provider). Throw [AiFailure] jujur. Tanpa kunci = ANONIM.
+/// [imageBytes] = multimodal langsung (tanpa OCR).
 Future<({String text, String provider})> zenChatRaw({
   String? apiKey,
   required String prompt,
+  List<int>? imageBytes,
+  String? mimeType,
   http.Client? client,
 }) async {
   if (prompt.trim().isEmpty) {
     throw const AiFailure('empty', '[Zen] prompt kosong');
   }
   final session = zenSessionId();
+  final img = imageBytes != null && imageBytes.isNotEmpty ? imageBytes : null;
+  final mime = (mimeType ?? '').isNotEmpty ? mimeType! : 'image/jpeg';
   try {
     final text = await _zenPost(
       apiKey: apiKey,
       endpoint: zenResponsesEndpoint,
-      bodyOf: () => {
-        'model': zenModelSpark,
-        'input': prompt,
-        'stream': true,
-        'tool_choice': 'auto',
-        'store': false,
-        'tools': zenTools(),
-      },
+      bodyOf: img == null
+          ? () => {
+                'model': zenModelSpark,
+                'input': prompt,
+                'stream': true,
+                'tool_choice': 'auto',
+                'store': false,
+                'tools': zenTools(),
+              }
+          : () => {
+                'model': zenModelSpark,
+                'input': [
+                  {
+                    'role': 'user',
+                    'content': [
+                      {'type': 'input_text', 'text': prompt},
+                      {
+                        'type': 'input_image',
+                        'image_url': 'data:$mime;base64,${base64Encode(img)}',
+                        'detail': 'auto',
+                      },
+                    ],
+                  }
+                ],
+                'stream': true,
+                'tool_choice': 'auto',
+                'store': false,
+                'tools': zenTools(),
+              },
       tag: 'Zen:$zenModelSpark',
       session: session,
       client: client,
@@ -222,16 +275,39 @@ Future<({String text, String provider})> zenChatRaw({
     final text = await _zenPost(
       apiKey: apiKey,
       endpoint: zenChatEndpoint,
-      bodyOf: () => {
-        'model': zenModelFree,
-        'stream': true,
-        'temperature': 0.1,
-        'max_tokens': 1500,
-        'messages': [
-          {'role': 'user', 'content': prompt},
-        ],
-        'tools': zenTools(),
-      },
+      bodyOf: img == null
+          ? () => {
+                'model': zenModelFree,
+                'stream': true,
+                'temperature': 0.1,
+                'max_tokens': 1500,
+                'messages': [
+                  {'role': 'user', 'content': prompt},
+                ],
+                'tools': zenTools(),
+              }
+          : () => {
+                'model': zenModelFree,
+                'stream': true,
+                'temperature': 0.1,
+                'max_tokens': 1500,
+                'messages': [
+                  {
+                    'role': 'user',
+                    'content': [
+                      {'type': 'text', 'text': prompt},
+                      {
+                        'type': 'image_url',
+                        'image_url': {
+                          'url':
+                              'data:$mime;base64,${base64Encode(img)}',
+                        },
+                      },
+                    ],
+                  }
+                ],
+                'tools': zenTools(),
+              },
       tag: 'Zen:$zenModelFree',
       session: session,
       client: client,
