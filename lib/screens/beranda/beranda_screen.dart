@@ -62,6 +62,9 @@ import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
+import 'package:ssr_space/theme/glass.dart';
+import 'package:ssr_space/theme/tokens.dart';
+import 'package:ssr_space/widgets/premium/premium_section_header.dart';
 
 class BerandaScreen extends StatefulWidget {
   final VoidCallback? onCatat;
@@ -659,21 +662,11 @@ class BerandaScreenState extends State<BerandaScreen> {
 
   /// Seksi dashboard di bawah hero: header Susun + kartu sesuai order.
   List<Widget> _dashSection() {
-    final theme = Theme.of(context);
     final rows = <Widget>[
-      Row(
-        children: [
-          Expanded(
-            child: Text(
-              tr('dash_title'),
-              style: theme.textTheme.titleMedium,
-            ),
-          ),
-          TextButton(
-            onPressed: () => setState(() => arranging = !arranging),
-            child: Text(tr(arranging ? 'dash_done' : 'dash_arrange')),
-          ),
-        ],
+      PremiumSectionHeader(
+        title: tr('dash_title'),
+        actionLabel: tr(arranging ? 'dash_done' : 'dash_arrange'),
+        onAction: () => setState(() => arranging = !arranging),
       ),
     ];
     for (final id in dashOrder) {
@@ -1009,26 +1002,11 @@ class BerandaScreenState extends State<BerandaScreen> {
           ),
           const SizedBox(height: SsrSpace.xl),
         ],
-        Text(tr('beranda_recent'), style: theme.textTheme.titleMedium),
-        if (figN > 0) ...[
-          const SizedBox(height: SsrSpace.xs),
-          InkWell(
-            onTap: _openMonthTx,
-            borderRadius: BorderRadius.circular(SsrRadius.chip),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                tr('beranda_tx_line')
-                    .replaceFirst('{n}', '$figN')
-                    .replaceFirst('{m}', _monthLower()),
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
+        PremiumSectionHeader(
+          title: tr('beranda_recent'),
+          actionLabel: figN > 0 ? tr('beranda_tx_line').replaceFirst('{n}', '$figN').replaceFirst('{m}', _monthLower()) : null,
+          onAction: _openMonthTx,
+        ),
         if (figN == 0)
           SizedBox(
             height: 280,
@@ -1043,7 +1021,8 @@ class BerandaScreenState extends State<BerandaScreen> {
           )
         else
           for (final b in buckets.take(7)) ...[
-            SectionCard(
+            GlassCard(
+              padding: const EdgeInsets.all(GlassSpace.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1085,16 +1064,24 @@ class BerandaScreenState extends State<BerandaScreen> {
       fontSize: 14,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
-    return Container(
-      padding: const EdgeInsets.all(SsrSpace.xl),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius:
-            const BorderRadius.all(Radius.circular(SsrRadius.hero)),
-        border: Border.all(color: scheme.outline),
-        boxShadow: Ind.heroShadow(dark),
-      ),
-      child: Column(
+    // Batch 2 (2.61.0+165): hero glassmorphism dengan entrance animation.
+    // TweenAnimationBuilder: fade + scale halus saat kartu muncul.
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: GlassDuration.slow,
+      curve: GlassDuration.curve,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.scale(
+            scale: 0.96 + (0.04 * value),
+            child: child,
+          ),
+        );
+      },
+      child: GlassPanel(
+        padding: const EdgeInsets.all(GlassSpace.lg),
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Align(
@@ -1213,7 +1200,8 @@ class BerandaScreenState extends State<BerandaScreen> {
               ),
             ],
           ),
-    );
+        ),
+      );
   }
 }
 
