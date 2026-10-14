@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.59.0+159.
+Versi terpasang: 2.59.0+160.
+
+## Yang baru di 2.59.0+160
+
+1. Batch 1 redesign: token industrial (radius/shadow/spacing) + Pengaturan grup iOS + baris Versi.
 
 ## Yang baru di 2.59.0+159
 
