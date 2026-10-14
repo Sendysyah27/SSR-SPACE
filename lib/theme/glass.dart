@@ -1,9 +1,10 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'tokens.dart';
 
 /// Glassmorphism primitives (Batch 1 — Design System 2.61.0+164).
-/// Kartu kaca: gradient halus + border putih 8% + blur backdrop.
+/// Kartu kaca: gradient statis + border putih + shadow halus.
+/// Batch 7 (2.61.0+170): BackdropFilter blur DIHAPUS demi performa
+/// (blur real-time mahal di GPU); efek kaca disimulasikan gradient.
 /// Selalu pakai di atas background gelap agar efek kaca terlihat.
 class GlassCard extends StatelessWidget {
   const GlassCard({
@@ -30,31 +31,30 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(borderRadius);
-    final card = ClipRRect(
-      borderRadius: radius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: opacity + 0.04),
-                Colors.white.withValues(alpha: opacity - 0.02),
-              ],
-            ),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: borderOpacity),
-              width: 1,
-            ),
-            boxShadow: GlassElevation.card,
-          ),
-          child: child,
+    // Batch 7 (2.61.0+170): tanpa BackdropFilter — gradient statis
+    // meniru kaca buram tanpa cost GPU. Param `blur` dipertahankan
+    // demi kompatibilitas API tapi diabaikan.
+    final card = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: opacity + 0.06),
+            Colors.white.withValues(alpha: opacity + 0.01),
+            Colors.white.withValues(alpha: opacity - 0.03),
+          ],
+          stops: const [0.0, 0.5, 1.0],
         ),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: borderOpacity + 0.04),
+          width: 1,
+        ),
+        boxShadow: GlassElevation.card,
       ),
+      child: child,
     );
     if (margin != null) {
       return Padding(
@@ -132,8 +132,8 @@ class GlassChip extends StatelessWidget {
   }
 }
 
-/// Dekorasi gaya-kaca untuk Sliver (tanpa blur — DecoratedSliver
-/// tak mendukung BackdropFilter). Selaras visual dengan GlassCard.
+/// Dekorasi gaya-kaca untuk Sliver. Selaras visual dengan GlassCard
+/// (semua kaca kini memakai gradient statis tanpa BackdropFilter).
 BoxDecoration glassSliverDecoration({double borderRadius = GlassRadius.lg}) {
   return BoxDecoration(
     borderRadius: BorderRadius.circular(borderRadius),

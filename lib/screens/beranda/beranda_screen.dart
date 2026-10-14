@@ -55,9 +55,9 @@ import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
 import 'package:ssr_space/widgets/day_header.dart';
 import 'package:ssr_space/widgets/mask_toggle.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
-import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
+import 'package:ssr_space/widgets/input_mode_sheet.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
@@ -582,6 +582,13 @@ class BerandaScreenState extends State<BerandaScreen> {
     );
   }
 
+  /// Batch 7 (2.61.0+170): aksi cepat — langsung buka mode scan struk.
+  Future<void> _goScan() async {
+    if (await openTxInputSheet(context, initialMode: TxInputMode.scanManual)) {
+      if (mounted) _load();
+    }
+  }
+
   void _openMonthTx() {
     Navigator.push(
       context,
@@ -804,17 +811,10 @@ class BerandaScreenState extends State<BerandaScreen> {
         ? '?'
         : orgName.trim()[0].toUpperCase();
     return Scaffold(
-      // Kaca AppBar (satu-satunya blur di app, R-10): konten terasa
-      // melayang di bawah bar iOS. extendBody agar blur terlihat.
       extendBodyBehindAppBar: false,
       appBar: AppBar(
-        backgroundColor: scheme.surface.withValues(alpha: 0.82),
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: const SizedBox.expand(),
-          ),
-        ),
+        // Batch 7 (2.61.0+170): blur AppBar dihapus demi performa.
+        backgroundColor: scheme.surface.withValues(alpha: 0.92),
         leading: Padding(
           padding: const EdgeInsets.only(left: 12),
           child: InkWell(
@@ -973,23 +973,36 @@ class BerandaScreenState extends State<BerandaScreen> {
           const SizedBox(height: SsrSpace.md),
           _CalmWeeks(weeks: calm),
         ],
-        const SizedBox(height: SsrSpace.xl),
-        PrimaryButton(label: tr('act_catat'), onPressed: _goCatat),
+        const SizedBox(height: SsrSpace.md),
+        PremiumSectionHeader(title: tr('qa_title')),
         const SizedBox(height: SsrSpace.sm),
-        Row(
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: SsrSpace.sm,
+          crossAxisSpacing: SsrSpace.sm,
+          childAspectRatio: 2.4,
           children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _goBudget,
-                child: Text(tr('nav_budget')),
-              ),
+            _QuickAction(
+              icon: AppIcons.add,
+              label: tr('act_catat'),
+              onTap: _goCatat,
             ),
-            const SizedBox(width: SsrSpace.sm),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _goLaporan,
-                child: Text(tr('nav_laporan')),
-              ),
+            _QuickAction(
+              icon: AppIcons.scan,
+              label: tr('rcp_scan'),
+              onTap: _goScan,
+            ),
+            _QuickAction(
+              icon: AppIcons.reports,
+              label: tr('nav_laporan'),
+              onTap: _goLaporan,
+            ),
+            _QuickAction(
+              icon: AppIcons.budget,
+              label: tr('nav_budget'),
+              onTap: _goBudget,
             ),
           ],
         ),
@@ -1120,35 +1133,64 @@ class BerandaScreenState extends State<BerandaScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          tr('tx_in'),
-                          style: heroLabel,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          amt(totalIn),
-                          style: heroValue,
-                        ),
-                      ],
+                    child: GlassCard(
+                      padding: const EdgeInsets.all(GlassSpace.sm),
+                      borderRadius: GlassRadius.md,
+                      child: Row(
+                        children: [
+                          Icon(AppIcons.arrowDown,
+                              size: 20, color: Colors.green.shade400),
+                          const SizedBox(width: GlassSpace.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  tr('tx_in'),
+                                  style: heroLabel,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  amt(totalIn),
+                                  style: heroValue,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                  const SizedBox(width: GlassSpace.sm),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          tr('tx_out'),
-                          style: heroLabel,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          amt(totalOut),
-                          style: heroValue,
-                        ),
-                      ],
+                    child: GlassCard(
+                      padding: const EdgeInsets.all(GlassSpace.sm),
+                      borderRadius: GlassRadius.md,
+                      child: Row(
+                        children: [
+                          Icon(AppIcons.arrowUp,
+                              size: 20, color: scheme.error),
+                          const SizedBox(width: GlassSpace.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  tr('tx_out'),
+                                  style: heroLabel,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  amt(totalOut),
+                                  style: heroValue,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -2225,6 +2267,55 @@ class _BillsSuggest extends StatelessWidget {
             ),
             if (b != bills.last) const Divider(height: 1),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Batch 7 (2.61.0+170): tombol aksi cepat — kartu kaca kecil berisi
+/// ikon + label, dipakai di grid 2x2 Beranda.
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: GlassSpace.md,
+        vertical: GlassSpace.sm,
+      ),
+      borderRadius: GlassRadius.md,
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(GlassRadius.md),
+            ),
+            child: Icon(icon, size: 22, color: scheme.primary),
+          ),
+          const SizedBox(width: GlassSpace.sm),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.titleSmall,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

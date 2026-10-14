@@ -23,6 +23,7 @@ const _t = <String, Map<String, String>>{
   'nav_profil': {'id': 'Profil', 'en': 'Profile'},
   'nav_dompet': {'id': 'Dompet', 'en': 'Wallets'},
   'act_catat': {'id': 'Catat', 'en': 'Record'},
+  'qa_title': {'id': 'Aksi Cepat', 'en': 'Quick Actions'},
   // Beranda
   'beranda_recent': {'id': 'Transaksi terbaru', 'en': 'Recent transactions'},
   'beranda_empty_t': {

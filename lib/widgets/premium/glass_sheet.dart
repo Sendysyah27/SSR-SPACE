@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/theme/tokens.dart';
@@ -33,40 +31,39 @@ class GlassSheetScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: _radius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: _radius,
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.white.withValues(alpha: 0.16),
-                Colors.white.withValues(alpha: 0.08),
-              ],
-            ),
-            border: Border(
-              top: BorderSide(
-                color: Colors.white.withValues(alpha: 0.14),
-                width: 1,
-              ),
-            ),
-            boxShadow: GlassElevation.sheet,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: _radius,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white.withValues(alpha: 0.18),
+              Colors.white.withValues(alpha: 0.12),
+              Colors.white.withValues(alpha: 0.08),
+            ],
+            stops: const [0.0, 0.5, 1.0],
           ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (showHandle) ...[
-                  const SizedBox(height: GlassSpace.sm),
-                  const _GlassDragHandle(),
-                ],
-                child,
-              ],
+          border: Border(
+            top: BorderSide(
+              color: Colors.white.withValues(alpha: 0.16),
+              width: 1,
             ),
+          ),
+          boxShadow: GlassElevation.sheet,
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (showHandle) ...[
+                const SizedBox(height: GlassSpace.sm),
+                const _GlassDragHandle(),
+              ],
+              child,
+            ],
           ),
         ),
       ),
