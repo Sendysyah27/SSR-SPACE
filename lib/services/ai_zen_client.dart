@@ -29,6 +29,11 @@ const zenFallbackModels = [
 ];
 const aiZenTimeout = Duration(seconds: 60);
 
+/// Session ID stabil per app-lifecycle: di-generate sekali, dipakai ulang
+/// untuk semua request agar prompt cache Zen tetap warm (hemat kuota).
+String? _cachedZenSession;
+String get cachedZenSession => _cachedZenSession ??= zenSessionId();
+
 /// POST Zen + baca respons (SSE atau JSON). Return teks gabungan.
 /// Throw [AiFailure] jujur (tag = label diagnosis, mis. [Zen]).
 /// [apiKey] kosong = ANONIM (tanpa header Authorization): free tier
@@ -157,7 +162,7 @@ Future<AiDraft?> parseReceiptZen({
   http.Client? client,
 }) async {
   if (ocrText.trim().isEmpty) return null;
-  final session = zenSessionId();
+  final session = cachedZenSession;
   final img = imageBytes != null && imageBytes.isNotEmpty ? imageBytes : null;
   final mime = (mimeType ?? '').isNotEmpty ? mimeType! : 'image/jpeg';
   try {
@@ -247,7 +252,7 @@ Future<({String text, String provider})> zenChatRaw({
   if (prompt.trim().isEmpty) {
     throw const AiFailure('empty', '[Zen] prompt kosong');
   }
-  final session = zenSessionId();
+  final session = cachedZenSession;
   final img = imageBytes != null && imageBytes.isNotEmpty ? imageBytes : null;
   final mime = (mimeType ?? '').isNotEmpty ? mimeType! : 'image/jpeg';
   try {
