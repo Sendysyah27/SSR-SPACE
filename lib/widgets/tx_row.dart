@@ -79,7 +79,7 @@ class TxRow extends StatelessWidget {
     );
     // ignore: curly_braces_in_flow_control_structures
     if (tx.category != null && tx.category!.isNotEmpty) chips.add(
-      StatusChip(label: "$categoryEmoji(tx.category!) ${tx.category!}", tone: StatusTone.neutral),
+      StatusChip(label: "${categoryEmoji(tx.category!)} ${tx.category!}", tone: StatusTone.neutral),
     );
     // ignore: curly_braces_in_flow_control_structures
     if (byLabel != null && chips.length >= 2) chips.add(
