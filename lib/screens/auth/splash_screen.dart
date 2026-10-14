@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _boot() async {
     setState(() => failed = false);
     try {
-      await Future.delayed(const Duration(milliseconds: 800));
+      await Future.delayed(const Duration(milliseconds: 300));
       if (!mounted) return;
       // Link awal (mis. ketukan email lupa-password): tukar dulu sebelum
       // cek sesi — stream AppLinks bisa datang setelah boot lewat.

@@ -27,11 +27,14 @@ Future<void> main() async {
   ForegroundTrack.initOnce();
   PinLinkVerify.initOnce();
   final prefs = await SharedPreferences.getInstance();
-  await loadMaskAmounts(prefs);
-  await loadAppSettings(prefs);
-  await loadAppCategories(prefs);
-  await refreshCategoryMeta();
-  await CurrencyService.loadCache(prefs);
+  // Optimasi startup: task independen jalan paralel (bukan sekuensial).
+  await Future.wait([
+    loadMaskAmounts(prefs),
+    loadAppSettings(prefs),
+    loadAppCategories(prefs),
+    refreshCategoryMeta(),
+    CurrencyService.loadCache(prefs),
+  ]);
   try {
     unawaited(CurrencyService.refresh());
   } catch (e) {
