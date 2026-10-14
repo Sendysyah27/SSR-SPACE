@@ -780,6 +780,14 @@ String? _findPayType(List<String> lines) {
   return null;
 }
 
+/// Pecah catatan struk "A · B, C" jadi baris terstruktur
+/// [merchant, item...]. Murni agar testable via `dart`.
+List<String> receiptNoteLines(String note) => note
+    .split('·')
+    .map((e) => e.trim())
+    .where((e) => e.isNotEmpty)
+    .toList();
+
 /// Satu baris catatan: merchant + item, maks 200 char.
 String receiptNote(ReceiptData d) {  final buf = StringBuffer();
   if (d.merchant != null) buf.write(d.merchant);

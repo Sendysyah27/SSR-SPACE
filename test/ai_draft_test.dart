@@ -51,6 +51,9 @@ void main() {
     expect(p.contains('merchant'), isTrue);
     expect(p.contains('items'), isTrue);
     expect(p.contains('varian'), isTrue);
+    expect(p.contains('SELURUH'), isTrue);
+    expect(p.contains('LENGKAP'), isTrue);
+    expect(p.contains('paling kanan'), isTrue);
   });
 
   test('ke ReceiptData jujur', () {

@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.54.0+152.
+Versi terpasang: 2.55.0+153.
+
+## Yang baru di 2.55.0+153
+
+1. Prompt AI struk dipertegas: baca seluruh struk, nama produk lengkap, varian gabung induk (kasus Burger Bangor).
+2. Ketuk catatan di transaksi kini tampil terstruktur (gerai tebal + rincian baris).
+3. Room AI Chat baru di hub (ikon AI): tanya apa saja via provider aktif, riwayat sesi ini saja.
 
 ## Yang baru di 2.54.0+152
 

@@ -6,6 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
 
+import 'ai_key_store.dart';
+import 'ai_openrouter_client.dart';
+import 'ai_zen_client.dart';
 import 'firebase_ai_parser.dart';
 
 // Daftar fallback model: utama dulu, lalu stabil cadangan.
@@ -291,4 +294,86 @@ Future<AiGenerate?> firebaseAiGenerate() async {
   } catch (_) {
     return null;
   }
+}
+
+/// Chat bebas dengan AI (room chat): prompt apa saja -> (teks, provider).
+/// Urutan sama seperti scan: Gemini -> OpenRouter -> Zen -> Firebase,
+/// hormati toggle per provider. Pertama sukses menang; semua gagal =
+/// throw error terakhir. Tak kirim foto/riwayat (prompt saja).
+Future<({String text, String provider})> aiChat(String prompt) async {
+  if (prompt.trim().isEmpty) {
+    throw const AiFailure('empty', 'prompt kosong');
+  }
+  AiFailure? last;
+  void note(AiFailure e) {
+    last = e;
+    if (e.code == 'quota') unawaited(noteQuotaHit());
+  }
+
+  if (await aiProviderOn(aiProvGemini)) {
+    final k = await readGeminiKey();
+    if (k != null) {
+      try {
+        String? used;
+        final t = await restGenerate(prompt,
+                apiKey: k, onModel: (m) => used = m)
+            .timeout(const Duration(seconds: 60));
+        if (t != null && t.trim().isNotEmpty) {
+          return (
+            text: t,
+            provider: 'Gemini${used == null ? '' : ': $used'}'
+          );
+        }
+      } on AiFailure catch (e) {
+        note(e);
+      } catch (e) {
+        note(AiFailure('network', '[Gemini] $e'));
+      }
+    }
+  }
+  if (await aiProviderOn(aiProvOr)) {
+    final k = await readOrKey();
+    if (k != null) {
+      try {
+        final t = await orChatRaw(apiKey: k, prompt: prompt)
+            .timeout(const Duration(seconds: 75));
+        return (text: t, provider: 'OpenRouter: $aiOrModel');
+      } on AiFailure catch (e) {
+        note(e);
+      } catch (e) {
+        note(AiFailure('network', '[OpenRouter] $e'));
+      }
+    }
+  }
+  if (await aiProviderOn(aiProvZen)) {
+    try {
+      final zk = await readZenKey();
+      final r = await zenChatRaw(apiKey: zk, prompt: prompt)
+          .timeout(const Duration(seconds: 75));
+      if (r.text.trim().isNotEmpty) {
+        return (text: r.text, provider: 'Zen: ${r.provider}');
+      }
+    } on AiFailure catch (e) {
+      note(e);
+    } catch (e) {
+      note(AiFailure('network', '[Zen] $e'));
+    }
+  }
+  if (await aiProviderOn(aiProvFb)) {
+    try {
+      final gen = await firebaseAiGenerate();
+      if (gen != null) {
+        final t =
+            await gen(prompt).timeout(const Duration(seconds: 60));
+        if (t != null && t.trim().isNotEmpty) {
+          return (text: t, provider: 'Firebase');
+        }
+      }
+    } on AiFailure catch (e) {
+      note(e);
+    } catch (e) {
+      note(AiFailure('network', '$e'));
+    }
+  }
+  throw last ?? const AiFailure('network', 'semua provider mati/nonaktif');
 }

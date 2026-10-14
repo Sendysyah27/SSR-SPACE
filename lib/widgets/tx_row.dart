@@ -13,6 +13,7 @@ import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/cool_icons.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
 class TxRow extends StatelessWidget {
@@ -209,9 +210,12 @@ class _TxBadge extends StatelessWidget {
 }
 
 /// Dialog catatan distinctive: ikon dokumen + teks selektif + salin.
-/// Dipakai baris transaksi dan sheet catat (satu desain, dua pintu).
+/// Catatan struk ("Merchant · item, item") tampil terstruktur:
+/// merchant tebal + tiap segmen jadi baris. Satu desain, dua pintu.
 Future<void> showNoteDialog(BuildContext context, String note) {
   final scheme = Theme.of(context).colorScheme;
+  final lines = receiptNoteLines(note);
+  final structured = lines.length > 1;
   return showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -239,13 +243,45 @@ Future<void> showNoteDialog(BuildContext context, String note) {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              tr('tx_f_note'),
+              structured ? lines.first : tr('tx_f_note'),
               style: Theme.of(ctx).textTheme.titleLarge,
             ),
           ),
         ],
       ),
-      content: SelectableText(note),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: structured
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final l in lines.skip(1))
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('•  ',
+                                style: Theme.of(ctx)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: scheme.primary)),
+                            Expanded(
+                              child: SelectableText(
+                                l,
+                                style: Theme.of(ctx).textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                )
+              : SelectableText(note),
+        ),
+      ),
       actions: [
         TextButton(
           onPressed: () {

@@ -2351,6 +2351,13 @@ const _t = <String, Map<String, String>>{
     'en': 'No Gemini key yet.',
   },
   'ai_test': {'id': 'Tes AI', 'en': 'Test AI'},
+  'chat_title': {'id': 'AI Chat', 'en': 'AI Chat'},
+  'chat_hint': {'id': 'Tanya apa saja...', 'en': 'Ask anything...'},
+  'chat_thinking': {'id': 'Mengetik...', 'en': 'Typing...'},
+  'chat_empty': {
+    'id': 'Mulai percakapan dengan AI. Riwayat hanya sesi ini.',
+    'en': 'Start chatting with AI. History lasts this session only.',
+  },
   'ai_on': {'id': 'Aktif', 'en': 'On'},
   'ai_off': {'id': 'Mati', 'en': 'Off'},
   'ai_key_invalid': {
