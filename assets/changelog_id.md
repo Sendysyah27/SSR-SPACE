@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.59.0+160.
+Versi terpasang: 2.59.0+161.
+
+## Yang baru di 2.59.0+161
+
+1. Batch 2 redesign: Budget bar tebal berwarna + insight pace + bottom sheet tambah + chip kategori lain. Emoji kategori, ring progress dihapus (kecuali tabungan).
 
 ## Yang baru di 2.59.0+160
 
