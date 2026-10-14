@@ -10,6 +10,8 @@ import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/theme/category_emoji.dart';
+import 'package:ssr_space/theme/glass.dart';
+import 'package:ssr_space/theme/tokens.dart';
 
 class TxRow extends StatelessWidget {
   final SaasTransaction tx;
@@ -121,15 +123,18 @@ class TxRow extends StatelessWidget {
       onDismissed: (_) => _showDeleteConfirm(context),
       background: _buildSwipeLeft(context, scheme),
       secondaryBackground: _buildSwipeRight(context, scheme),
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      child: GlassCard(
+        margin: const EdgeInsets.symmetric(
+            vertical: GlassSpace.xs, horizontal: GlassSpace.xs),
+        padding: const EdgeInsets.symmetric(
+            vertical: GlassSpace.sm, horizontal: GlassSpace.md),
+        borderRadius: GlassRadius.md,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

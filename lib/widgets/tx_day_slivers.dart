@@ -58,15 +58,20 @@ Widget txDaySliverList({
             count: s.bucket!.items.length,
           );
         }
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (s.leadDivider) const Divider(height: 1),
-            buildRow(s.tx!),
-            if (s.trailDivider) const Divider(height: 1),
-          ],
-        );
+        // Glassmorphism: cards carry their own visual separation;
+        // keep dividers only when caller explicitly wants the classic list look.
+        if (s.leadDivider || s.trailDivider) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (s.leadDivider) const Divider(height: 1),
+              buildRow(s.tx!),
+              if (s.trailDivider) const Divider(height: 1),
+            ],
+          );
+        }
+        return buildRow(s.tx!);
       },
       childCount: slots.length,
     ),

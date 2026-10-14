@@ -14,6 +14,8 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/tx_wallet_check.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/glass.dart';
+import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
@@ -740,20 +742,29 @@ class _TxSearchRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: TextField(
-            controller: controller,
-            decoration: InputDecoration(
-              hintText: tr('txf_search'),
-              prefixIcon: const DuoIcon(AppIcons.search),
-              suffixIcon: controller.text.isEmpty
-                  ? null
-                  : IconButton(
-                      onPressed: onClearSearch,
-                      icon: const DuoIcon(AppIcons.close),
-                      tooltip: tr('clear'),
-                    ),
-              border: const OutlineInputBorder(),
-              isDense: true,
+          child: GlassCard(
+            padding: const EdgeInsets.symmetric(horizontal: GlassSpace.sm),
+            borderRadius: GlassRadius.full,
+            blur: 12,
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: tr('txf_search'),
+                prefixIcon: const DuoIcon(AppIcons.search),
+                suffixIcon: controller.text.isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: onClearSearch,
+                        icon: const DuoIcon(AppIcons.close),
+                        tooltip: tr('clear'),
+                      ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                    vertical: GlassSpace.sm),
+              ),
             ),
           ),
         ),
