@@ -10,10 +10,10 @@ import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/cool_icons.dart';
-import 'package:ssr_space.models.transaction.dart';
-import 'package:ssr_space.utils.strings.dart';
+import 'package:ssr_space/models/transaction.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
-import 'package:ssr_space.widgets.status_chip.dart';
+import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/theme/category_emoji.dart';
 
 class TxRow extends StatelessWidget {
