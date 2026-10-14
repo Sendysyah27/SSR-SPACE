@@ -793,7 +793,6 @@ class _BudgetCard extends StatelessWidget {
     );
   }
 }
-}
 
 /// Baris pace budget: titik warna + satu kalimat. Hijau aman, emas
 /// waspada (tanggal proyeksi habis), merah bahaya. Sembunyi bila limit
@@ -857,13 +856,11 @@ class _PaceLine extends StatelessWidget {
 /// sisa default ikut outline tema agar adaptif light dan dark.
 class _BudgetGauge extends StatelessWidget {
   final double progress;
-  final bool over;
   final int pct;
   final Color? color;
 
   const _BudgetGauge({
     required this.progress,
-    this.over = false,
     required this.pct,
     this.color,
   });
@@ -872,7 +869,7 @@ class _BudgetGauge extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final used = progress.clamp(0.0, 1.0).toDouble();
-    final main = color ?? (over ? scheme.error : scheme.primary);
+    final main = color ?? scheme.primary;
     final track = Theme.of(context).colorScheme.outline;
     return SizedBox(
       width: 56,
@@ -1070,7 +1067,7 @@ class _BudgetAddSheetState extends State<_BudgetAddSheet> {
             ),
             const SizedBox(height: SsrSpace.md),
             DropdownButtonFormField<String>(
-              value: _cat,
+              initialValue: _cat,
               decoration: InputDecoration(labelText: tr('b_f_cat')),
               items: [
                 for (final c in widget.options)
