@@ -296,7 +296,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         }
       } catch (_) {}
     }
-    if (!context.mounted) return;
+    if (!mounted) return;
     final ok = await openTxInputSheet(
       context,
       initialType: d.type,
