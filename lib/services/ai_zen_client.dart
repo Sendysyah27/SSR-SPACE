@@ -203,26 +203,35 @@ Future<AiDraft?> parseReceiptZen({
     // Hanya 'denied' yang fatal. Kuota habis -> lanjut ke fallback chain.
     if (e.code == 'denied') rethrow;
   }
-  // 2) Cadangan: model free via /chat/completions.
-  // (_zenPost hanya melempar AiFailure → teruskan apa adanya.)
-  final text = await _zenPost(
-    apiKey: apiKey,
-    endpoint: zenChatEndpoint,
-    bodyOf: () => {
-      'model': zenModelFree,
-      'stream': true,
-      'temperature': 0.1,
-      'max_tokens': 1500,
-      'messages': [
-        {'role': 'user', 'content': aiReceiptPrompt(ocrText)},
-      ],
-      'tools': zenTools(),
-    },
-    tag: 'Zen:$zenModelFree',
-    session: session,
-    client: client,
-  );
-  return parseAiDraft(text);
+  // 2) Cadangan: chain model free via /chat/completions.
+  AiFailure? lastErr;
+  for (final m in zenFallbackModels) {
+    try {
+      final text = await _zenPost(
+        apiKey: apiKey,
+        endpoint: zenChatEndpoint,
+        bodyOf: () => {
+          'model': m,
+          'stream': true,
+          'temperature': 0.1,
+          'max_tokens': 1500,
+          'messages': [
+            {'role': 'user', 'content': aiReceiptPrompt(ocrText)},
+          ],
+          'tools': zenTools(),
+        },
+        tag: 'Zen:$m',
+        session: session,
+        client: client,
+      );
+      return parseAiDraft(text);
+    } on AiFailure catch (e) {
+      if (e.code == 'denied') rethrow;
+      lastErr = e;
+      continue;
+    }
+  }
+  throw lastErr ?? const AiFailure('server', '[Zen] semua model fallback gagal');
 }
 
 /// Chat mentah ke Zen langsung (untuk Tes AI): prompt bebas ->
@@ -282,48 +291,58 @@ Future<({String text, String provider})> zenChatRaw({
   } on AiFailure catch (e) {
     // Hanya denied yang fatal. Kuota habis -> lanjut ke fallback chain.
     if (e.code == 'denied') rethrow;
-    // Cadangan chat/completions, provider = model cadangan.
-    final text = await _zenPost(
-      apiKey: apiKey,
-      endpoint: zenChatEndpoint,
-      bodyOf: img == null
-          ? () => {
-                'model': zenModelFree,
-                'stream': true,
-                'temperature': 0.1,
-                'max_tokens': 1500,
-                'messages': [
-                  {'role': 'user', 'content': prompt},
-                ],
-                'tools': zenTools(),
-              }
-          : () => {
-                'model': zenModelFree,
-                'stream': true,
-                'temperature': 0.1,
-                'max_tokens': 1500,
-                'messages': [
-                  {
-                    'role': 'user',
-                    'content': [
-                      {'type': 'text', 'text': prompt},
-                      {
-                        'type': 'image_url',
-                        'image_url': {
-                          'url':
-                              'data:$mime;base64,${base64Encode(img)}',
-                        },
-                      },
+    // Cadangan: chain model free via chat/completions.
+    AiFailure? lastErr;
+    for (final m in zenFallbackModels) {
+      try {
+        final text = await _zenPost(
+          apiKey: apiKey,
+          endpoint: zenChatEndpoint,
+          bodyOf: img == null
+              ? () => {
+                    'model': m,
+                    'stream': true,
+                    'temperature': 0.1,
+                    'max_tokens': 1500,
+                    'messages': [
+                      {'role': 'user', 'content': prompt},
                     ],
+                    'tools': zenTools(),
                   }
-                ],
-                'tools': zenTools(),
-              },
-      tag: 'Zen:$zenModelFree',
-      session: session,
-      client: client,
-    );
-    return (text: text, provider: zenModelFree);
+              : () => {
+                    'model': m,
+                    'stream': true,
+                    'temperature': 0.1,
+                    'max_tokens': 1500,
+                    'messages': [
+                      {
+                        'role': 'user',
+                        'content': [
+                          {'type': 'text', 'text': prompt},
+                          {
+                            'type': 'image_url',
+                            'image_url': {
+                              'url':
+                                  'data:$mime;base64,${base64Encode(img)}',
+                            },
+                          },
+                        ],
+                      }
+                    ],
+                    'tools': zenTools(),
+                  },
+          tag: 'Zen:$m',
+          session: session,
+          client: client,
+        );
+        return (text: text, provider: m);
+      } on AiFailure catch (e) {
+        if (e.code == 'denied') rethrow;
+        lastErr = e;
+        continue;
+      }
+    }
+    throw lastErr ?? const AiFailure('server', '[Zen] semua model fallback gagal');
   }
 }
 
