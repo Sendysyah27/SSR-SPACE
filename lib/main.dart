@@ -19,14 +19,26 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/utils/diag_log.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  DiagLog.write('DIAG main start');
   ErrorReporter.init();
+  DiagLog.write('DIAG ErrorReporter init ok');
   await SupabaseConfig.init();
+  DiagLog.write('DIAG Supabase init ok');
   ForegroundTrack.initOnce();
   PinLinkVerify.initOnce();
-  final prefs = await SharedPreferences.getInstance();
+  DiagLog.write('DIAG sebelum SharedPreferences.getInstance');
+  late final dynamic prefs;
+  try {
+    prefs = await SharedPreferences.getInstance();
+    DiagLog.write('DIAG SharedPreferences ok');
+  } catch (e, s) {
+    DiagLog.error('SharedPreferences.getInstance', e, s);
+    rethrow;
+  }
   // Optimasi startup: task independen jalan paralel (bukan sekuensial).
   await Future.wait([
     loadMaskAmounts(prefs),
@@ -79,7 +91,9 @@ Future<void> main() async {
   // Heartbeat anti-pause (max 1/hari, fail-silent): aktivitas API harian
   // menjaga project free-tier tetap hidup walau semua cron diam.
   unawaited(touchHeartbeatDaily());
+  DiagLog.write('DIAG sebelum SessionService');
   final app = SsrSpaceApp(session: SessionService(prefs));
+  DiagLog.write('DIAG runApp dipanggil');
   runZonedGuarded(
     () => runApp(app),
     (err, stack) => ErrorReporter.capture(err, stack, context: 'zone'),

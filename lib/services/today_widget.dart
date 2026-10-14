@@ -9,6 +9,7 @@ import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/widget_snapshot.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/utils/diag_log.dart';
 
 // Snapshot widget home: sisa budget bulan ini + keluar hari ini (Batch 15).
 //
@@ -27,6 +28,7 @@ Future<void> refreshTodayWidget({
   required String text,
   String text2 = '',
 }) async {
+  DiagLog.write('DIAG refreshTodayWidget start');
   try {
     final prefs = await SharedPreferences.getInstance();
     if (!widgetToday.value) {
