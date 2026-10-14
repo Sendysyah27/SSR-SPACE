@@ -3,6 +3,7 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/nav_tile.dart';
+import 'package:ssr_space/widgets/premium/glass_sheet.dart';
 
 /// Mode input dari tombol + : live / scan OCR / scan vision / voice.
 enum TxInputMode { live, scanManual, scanVision, voice }
@@ -12,10 +13,8 @@ Future<TxInputMode?> showInputModeSheet(BuildContext context) {
   return showModalBottomSheet<TxInputMode>(
     context: context,
     useSafeArea: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
-    builder: (ctx) => SafeArea(
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => GlassSheetScaffold(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           SsrSpace.md,

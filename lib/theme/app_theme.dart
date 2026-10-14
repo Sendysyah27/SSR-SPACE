@@ -211,7 +211,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: Colors.white.withValues(alpha: 0.72),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SsrRadius.input),
           borderSide: const BorderSide(color: Ind.lineL),
@@ -240,6 +240,12 @@ class AppTheme {
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(SsrRadius.tile),
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: Colors.white.withValues(alpha: 0.85),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
       switchTheme: SwitchThemeData(
@@ -374,17 +380,21 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Ind.surfaceD,
+        fillColor: Colors.white.withValues(alpha: 0.06),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(SsrRadius.input),
-          borderSide: const BorderSide(color: Ind.lineD),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: Colors.white.withValues(alpha: 0.12),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(SsrRadius.input),
-          borderSide: const BorderSide(color: Ind.lineD),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: Colors.white.withValues(alpha: 0.12),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(SsrRadius.input),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(
             color: Ind.blueD,
             width: 1.6,
@@ -410,6 +420,12 @@ class AppTheme {
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(SsrRadius.tile),
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: Colors.white.withValues(alpha: 0.10),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
       switchTheme: SwitchThemeData(

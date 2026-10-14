@@ -5,6 +5,8 @@ import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/widgets/premium/glass_sheet.dart';
+import 'package:ssr_space/widgets/premium/premium_button.dart';
 
 /// Detail transaksi read-only dari ketuk notif tersimpan.
 /// Kembalikan true bila user pilih Lihat di Transaksi.
@@ -16,10 +18,9 @@ Future<bool?> showTxDetailSheet(
   return showModalBottomSheet<bool>(
     context: context,
     useSafeArea: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
-    builder: (_) => _TxDetailSheet(tx: tx, orgId: orgId),
+    backgroundColor: Colors.transparent,
+    builder: (_) =>
+        GlassSheetScaffold(child: _TxDetailSheet(tx: tx, orgId: orgId)),
   );
 }
 
@@ -45,8 +46,7 @@ class _TxDetailSheet extends StatelessWidget {
         : tx.type == 'transfer'
             ? tr('tx_transfer')
             : tr('tx_out');
-    return SafeArea(
-      child: FutureBuilder<Map<String, String>>(
+    return FutureBuilder<Map<String, String>>(
         future: _names(),
         builder: (context, snap) {
           final names = snap.data ?? {};
@@ -93,9 +93,9 @@ class _TxDetailSheet extends StatelessWidget {
                 if (tx.code != null && tx.code!.isNotEmpty)
                   _row(context, 'TX', tx.code!),
                 const SizedBox(height: SsrSpace.md),
-                FilledButton(
+                PremiumButton(
+                  label: tr('td_view'),
                   onPressed: () => Navigator.pop(context, true),
-                  child: Text(tr('td_view')),
                 ),
                 const SizedBox(height: SsrSpace.sm),
                 TextButton(
@@ -106,8 +106,7 @@ class _TxDetailSheet extends StatelessWidget {
             ),
           );
         },
-      ),
-    );
+      );
   }
 
   Widget _row(BuildContext context, String label, String value) {

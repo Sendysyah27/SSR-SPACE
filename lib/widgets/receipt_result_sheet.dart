@@ -41,8 +41,7 @@ class ReceiptResultSheet extends StatelessWidget {
         (data.voucher ?? 0);
     final total = data.amount ?? (subtotal - potongan);
     final showSummary = items.isNotEmpty || data.amount != null;
-    return SafeArea(
-      child: SelectionArea(
+    return SelectionArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(SsrSpace.lg),
           child: Center(
@@ -102,8 +101,7 @@ class ReceiptResultSheet extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
 

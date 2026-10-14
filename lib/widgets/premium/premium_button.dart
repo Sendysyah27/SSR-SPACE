@@ -12,6 +12,7 @@ class PremiumButton extends StatefulWidget {
     this.gradient,
     this.fullWidth = true,
     this.height = 52,
+    this.loading = false,
   });
 
   final String label;
@@ -20,6 +21,7 @@ class PremiumButton extends StatefulWidget {
   final Gradient? gradient;
   final bool fullWidth;
   final double height;
+  final bool loading;
 
   @override
   State<PremiumButton> createState() => _PremiumButtonState();
@@ -62,7 +64,7 @@ class _PremiumButtonState extends State<PremiumButton>
       onTapDown: (_) => _ctrl.forward(),
       onTapUp: (_) => _ctrl.reverse(),
       onTapCancel: () => _ctrl.reverse(),
-      onTap: widget.onPressed,
+      onTap: widget.loading ? null : widget.onPressed,
       child: ScaleTransition(
         scale: _scale,
         child: Container(
@@ -81,23 +83,32 @@ class _PremiumButtonState extends State<PremiumButton>
             ),
           ),
           alignment: Alignment.center,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (widget.icon != null) ...[
-                widget.icon!,
-                const SizedBox(width: GlassSpace.sm),
-              ],
-              Text(
-                widget.label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+          child: widget.loading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: Colors.white,
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.icon != null) ...[
+                      widget.icon!,
+                      const SizedBox(width: GlassSpace.sm),
+                    ],
+                    Text(
+                      widget.label,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
         ),
       ),
     );

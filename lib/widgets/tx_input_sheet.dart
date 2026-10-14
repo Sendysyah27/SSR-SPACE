@@ -39,7 +39,8 @@ import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/category_chips.dart';
-import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/widgets/premium/glass_sheet.dart';
+import 'package:ssr_space/widgets/premium/premium_button.dart';
 import 'package:ssr_space/widgets/receipt_result_sheet.dart';
 import 'package:ssr_space/widgets/scan_overlay.dart';
 import 'package:ssr_space/widgets/success_lottie.dart';
@@ -99,20 +100,22 @@ Future<bool> openTxInputSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
-    builder: (_) => TxInputSheet(
-      orgId: orgId,
-      wallets: wallets,
-      balances: balances,
-      editing: editing,
-      initialType: initialType,
-      initialAmountIdr: initialAmountIdr,
-      initialCategory: initialCategory,
-      initialWalletId: initialWalletId,
-      initialNote: initialNote,
-      initialMode: initialMode,
+    backgroundColor: Colors.transparent,
+    builder: (_) => GlassSheetScaffold(
+      // TxInputSheet sudah punya _DragHandle sendiri.
+      showHandle: false,
+      child: TxInputSheet(
+        orgId: orgId,
+        wallets: wallets,
+        balances: balances,
+        editing: editing,
+        initialType: initialType,
+        initialAmountIdr: initialAmountIdr,
+        initialCategory: initialCategory,
+        initialWalletId: initialWalletId,
+        initialNote: initialNote,
+        initialMode: initialMode,
+      ),
     ),
   );
   if (!context.mounted || res == null) return false;
@@ -465,22 +468,20 @@ class _TxInputSheetState extends State<TxInputSheet> {
 
   /// Dialog sumber foto lalu OCR; hasil prefill form (preview, tanpa simpan).
   Future<void> _pickScanSource() async {
-    final src = await showDialog<ImageSource>(
+    final src = await showGlassDialog<ImageSource>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(tr('rcp_scan')),
-        content: Text(tr('rcp_scan_hint')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ImageSource.camera),
-            child: Text(tr('rcp_camera')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
-            child: Text(tr('rcp_gallery')),
-          ),
-        ],
-      ),
+      title: Text(tr('rcp_scan')),
+      content: Text(tr('rcp_scan_hint')),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, ImageSource.camera),
+          child: Text(tr('rcp_camera')),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
+          child: Text(tr('rcp_gallery')),
+        ),
+      ],
     );
     if (src == null || !mounted) return;
     setState(() {
@@ -517,13 +518,16 @@ class _TxInputSheetState extends State<TxInputSheet> {
         await showModalBottomSheet<void>(
           context: context,
           isScrollControlled: true,
-          builder: (_) => ReceiptResultSheet(
-            data: data,
-            mirror: mirrorReceipt(
-              raw,
-              pairOrphans: layoutFor(detectReceiptKind(raw)).pairOrphans,
+          backgroundColor: Colors.transparent,
+          builder: (_) => GlassSheetScaffold(
+            child: ReceiptResultSheet(
+              data: data,
+              mirror: mirrorReceipt(
+                raw,
+                pairOrphans: layoutFor(detectReceiptKind(raw)).pairOrphans,
+              ),
+              onShowRaw: () => _showRawOcrDialog(raw),
             ),
-            onShowRaw: () => _showRawOcrDialog(raw),
           ),
         );
       }
@@ -543,22 +547,20 @@ class _TxInputSheetState extends State<TxInputSheet> {
   /// Scan AI: foto -> model vision LANGSUNG tanpa OCR. Hasil prefill
   /// + replika; baris dibangun dari item (bisa edit penuh di form).
   Future<void> _pickVisionSource() async {
-    final src = await showDialog<ImageSource>(
+    final src = await showGlassDialog<ImageSource>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(tr('rcp_scan')),
-        content: Text(tr('mode_vision_s')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ImageSource.camera),
-            child: Text(tr('rcp_camera')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
-            child: Text(tr('rcp_gallery')),
-          ),
-        ],
-      ),
+      title: Text(tr('rcp_scan')),
+      content: Text(tr('mode_vision_s')),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, ImageSource.camera),
+          child: Text(tr('rcp_camera')),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
+          child: Text(tr('rcp_gallery')),
+        ),
+      ],
     );
     if (src == null || !mounted) return;
     setState(() {
@@ -750,23 +752,21 @@ class _TxInputSheetState extends State<TxInputSheet> {
     final ocr = raw.trim().isEmpty ? tr('rcp_raw_empty') : raw;
     final err = _aiErrDetail;
     final body = err == null ? ocr : '$err\n\n---\n\n$ocr';
-    await showDialog<void>(
+    await showGlassDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(tr('rcp_raw_title')),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: SelectableText(body),
-          ),
+      title: Text(tr('rcp_raw_title')),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: SelectableText(body),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(tr('rcp_raw_close')),
-          ),
-        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(tr('rcp_raw_close')),
+        ),
+      ],
     );
   }
 
@@ -969,7 +969,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
                 onScan: _scanning ? null : _pickScanSource,
               ),
               const SizedBox(height: SsrSpace.md),
-              PrimaryButton(
+              PremiumButton(
                 label: tr('wiz_next'),
                 onPressed: _selCat == null ? null : _goStep2,
               ),
@@ -1056,7 +1056,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
               ),
             ],
             const SizedBox(height: SsrSpace.md),
-            PrimaryButton(
+            PremiumButton(
               label: _isEdit ? tr('tx_save_edit') : tr('tx_save_add'),
               onPressed: _save,
               loading: saving,

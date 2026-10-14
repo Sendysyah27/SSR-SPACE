@@ -12,6 +12,7 @@ import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/theme/category_emoji.dart';
 import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/theme/tokens.dart';
+import 'package:ssr_space/widgets/premium/glass_sheet.dart';
 
 class TxRow extends StatelessWidget {
   final SaasTransaction tx;
@@ -198,14 +199,13 @@ class TxRow extends StatelessWidget {
 
 /// Tampilkan dialog baca catatan transaksi (teks penuh).
 void showNoteDialog(BuildContext context, String note) {
-  showDialog(
+  showGlassDialog(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(tr('tx_f_note')),
-      content: SingleChildScrollView(child: Text(note)),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('close'))),
-      ],
-    ),
+    title: Text(tr('tx_f_note')),
+    content: SingleChildScrollView(child: Text(note)),
+    actions: [
+      TextButton(
+          onPressed: () => Navigator.pop(context), child: Text(tr('close'))),
+    ],
   );
 }
