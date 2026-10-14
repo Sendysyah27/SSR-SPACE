@@ -415,9 +415,10 @@ Future<({String text, String provider})> aiChat(
     final orOn = await aiProviderOn(aiProvOr);
     final zenOn = await aiProviderOn(aiProvZen);
     final orKey = await readOrKey();
-    if ((orOn && orKey != null) || zenOn) {
+    final img = imageBytes;
+    if (((orOn && orKey != null) || zenOn) && img != null) {
       try {
-        final ocr = await ocrBytesToText(imageBytes!);
+        final ocr = await ocrBytesToText(img);
         if (ocr.trim().isNotEmpty) {
           effectivePrompt =
               '$prompt\nTEKS GAMBAR (OCR lokal):\n$ocr';
