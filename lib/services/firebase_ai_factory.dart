@@ -10,6 +10,7 @@ import 'ai_key_store.dart';
 import 'ai_openrouter_client.dart';
 import 'ai_zen_client.dart';
 import 'firebase_ai_parser.dart';
+import 'receipt_scan_service.dart';
 
 // Daftar fallback model: utama dulu, lalu stabil cadangan.
 // SENGAJA tanpa gemini-2.0/1.5-flash: keduanya mati 2026
@@ -379,6 +380,10 @@ Future<({String text, String provider})> aiChat(
     last = e;
     if (e.code == 'quota') unawaited(noteQuotaHit());
   }
+  // Prompt efektif: bila gambar dan vision gagal/tak tersedia, tempel
+  // hasil OCR lokal agar provider text-only tetap bisa baca gambar.
+  var effectivePrompt = prompt;
+  var viaOcr = false;
 
   if (await aiProviderOn(aiProvGemini)) {
     final k = await readGeminiKey();
@@ -404,15 +409,37 @@ Future<({String text, String provider})> aiChat(
       }
     }
   }
-  // OpenRouter & Zen text-only: lewati diam bila ada gambar (jangan
-  // kirim prompt tanpa gambarnya — menyesatkan).
-  if (!hasImage && await aiProviderOn(aiProvOr)) {
+  // OpenRouter & Zen text-only: bila ada gambar, OCR-kan lokal dulu
+  // (jangan tampilkan error butuh-Gemini selama OCR bisa jalan).
+  if (hasImage) {
+    final orOn = await aiProviderOn(aiProvOr);
+    final zenOn = await aiProviderOn(aiProvZen);
+    final orKey = await readOrKey();
+    if ((orOn && orKey != null) || zenOn) {
+      try {
+        final ocr = await ocrBytesToText(imageBytes!);
+        if (ocr.trim().isNotEmpty) {
+          effectivePrompt =
+              '$prompt\nTEKS GAMBAR (OCR lokal):\n$ocr';
+          viaOcr = true;
+        }
+      } on AiFailure catch (e) {
+        note(e);
+      } catch (e) {
+        note(AiFailure('network', '[OCR] $e'));
+      }
+    }
+  }
+  if (await aiProviderOn(aiProvOr)) {
     final k = await readOrKey();
     if (k != null) {
       try {
-        final t = await orChatRaw(apiKey: k, prompt: prompt)
+        final t = await orChatRaw(apiKey: k, prompt: effectivePrompt)
             .timeout(const Duration(seconds: 75));
-        return (text: t, provider: 'OpenRouter: $aiOrModel');
+        return (
+          text: t,
+          provider: 'OpenRouter: $aiOrModel${viaOcr ? ' (OCR)' : ''}'
+        );
       } on AiFailure catch (e) {
         note(e);
       } catch (e) {
@@ -420,13 +447,16 @@ Future<({String text, String provider})> aiChat(
       }
     }
   }
-  if (!hasImage && await aiProviderOn(aiProvZen)) {
+  if (await aiProviderOn(aiProvZen)) {
     try {
       final zk = await readZenKey();
-      final r = await zenChatRaw(apiKey: zk, prompt: prompt)
+      final r = await zenChatRaw(apiKey: zk, prompt: effectivePrompt)
           .timeout(const Duration(seconds: 75));
       if (r.text.trim().isNotEmpty) {
-        return (text: r.text, provider: 'Zen: ${r.provider}');
+        return (
+          text: r.text,
+          provider: 'Zen: ${r.provider}${viaOcr ? ' (OCR)' : ''}'
+        );
       }
     } on AiFailure catch (e) {
       note(e);

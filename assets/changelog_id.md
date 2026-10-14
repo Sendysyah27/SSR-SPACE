@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.56.0+154.
+Versi terpasang: 2.56.0+155.
+
+## Yang baru di 2.56.0+155
+
+1. Chat gambar tanpa kunci vision: bila Zen/OpenRouter aktif, gambar di-OCR lokal dulu lalu dibaca sebagai teks (label provider + OCR). Tak ada lagi error butuh-Gemini yang menyesatkan.
 
 ## Yang baru di 2.56.0+154
 

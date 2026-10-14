@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_layout.dart';
@@ -19,6 +20,33 @@ class ReceiptScanException implements Exception {
 /// Teks OCR mentah dari scan terakhir (diagnosis di device saja).
 /// Null bila scan gagal sebelum OCR. Hanya di memori, tak diupload.
 String? lastRawOcrText;
+
+/// OCR lokal dari bytes gambar (untuk chat AI saat provider vision
+/// tak tersedia tapi Zen/OpenRouter aktif). Tulis temp file, baca
+/// via ML Kit, hapus lagi. Tanpa upload. Butuh Android/iOS.
+Future<String> ocrBytesToText(List<int> bytes) async {
+  if (!Platform.isAndroid && !Platform.isIOS) {
+    throw const ReceiptScanException('rcp_fail');
+  }
+  if (bytes.isEmpty) throw const ReceiptScanException('rcp_empty');
+  final dir = await getTemporaryDirectory();
+  final f = File(
+      '${dir.path}/ai_ocr_${DateTime.now().millisecondsSinceEpoch}.jpg');
+  try {
+    await f.writeAsBytes(bytes);
+    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    try {
+      final out = await recognizer.processImage(InputImage.fromFilePath(f.path));
+      return out.text;
+    } finally {
+      await recognizer.close();
+    }
+  } finally {
+    try {
+      await f.delete();
+    } catch (_) {}
+  }
+}
 
 /// Foto struk (kamera/galeri) -> OCR on-device -> [ReceiptData].
 /// Null bila user batal memilih. File foto dihapus setelah dibaca.
