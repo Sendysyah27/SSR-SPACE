@@ -296,6 +296,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         }
       } catch (_) {}
     }
+    if (!context.mounted) return;
     final ok = await openTxInputSheet(
       context,
       initialType: d.type,
@@ -476,6 +477,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                           ),
                         );
                       },
+                    ),
             ),
             if (_pendingImage != null)
               Align(
