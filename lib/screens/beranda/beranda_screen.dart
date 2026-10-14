@@ -46,6 +46,7 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/utils/diag_log.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
@@ -131,6 +132,7 @@ class BerandaScreenState extends State<BerandaScreen> {
   @override
   void initState() {
     super.initState();
+    DiagLog.write('DIAG Beranda initState');
     _load();
   }
 
@@ -178,6 +180,7 @@ class BerandaScreenState extends State<BerandaScreen> {
   }
 
   Future<void> _load() async {
+    DiagLog.write('DIAG Beranda _load start');
     snapBudgetLeft = null;
     dashBudgets = [];
     dashAvgOut = 0;

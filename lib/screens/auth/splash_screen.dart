@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ssr_space/utils/diag_log.dart';
 import 'package:app_links/app_links.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
@@ -40,6 +41,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _go(Widget w) async {
     if (!mounted) return;
+    DiagLog.write('DIAG Splash _go ke ${w.runtimeType}');
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => w));
   }
 
