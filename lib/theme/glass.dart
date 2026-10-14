@@ -131,3 +131,24 @@ class GlassChip extends StatelessWidget {
     );
   }
 }
+
+/// Dekorasi gaya-kaca untuk Sliver (tanpa blur — DecoratedSliver
+/// tak mendukung BackdropFilter). Selaras visual dengan GlassCard.
+BoxDecoration glassSliverDecoration({double borderRadius = GlassRadius.lg}) {
+  return BoxDecoration(
+    borderRadius: BorderRadius.circular(borderRadius),
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Colors.white.withValues(alpha: 0.14),
+        Colors.white.withValues(alpha: 0.08),
+      ],
+    ),
+    border: Border.all(
+      color: Colors.white.withValues(alpha: 0.08),
+      width: 1,
+    ),
+    boxShadow: GlassElevation.card,
+  );
+}

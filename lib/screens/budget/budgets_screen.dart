@@ -23,10 +23,11 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/theme/category_emoji.dart';
+import 'package:ssr_space/theme/glass.dart';
+import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/pin_pad.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
-import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
@@ -593,10 +594,8 @@ class _SavingCard extends StatelessWidget {
     final b = budget;
     final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
     final done = pct >= 100;
-    return SectionCard(
-      color: AppColors.gold.withValues(alpha: 0.14),
-      borderColor: AppColors.gold.withValues(alpha: 0.45),
-      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+    return GlassCard(
+      margin: const EdgeInsets.only(bottom: GlassSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -736,9 +735,8 @@ class _BudgetCard extends StatelessWidget {
     final progress = budgetProgress(b.spent, b.limit);
     final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
     final color = _statusColor(over, pct, context);
-    final scheme = Theme.of(context).colorScheme;
-    return SectionCard(
-      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+    return GlassCard(
+      margin: const EdgeInsets.only(bottom: GlassSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -771,13 +769,36 @@ class _BudgetCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: SsrSpace.sm),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress.clamp(0.0, 1.0).toDouble(),
-              minHeight: 8,
-              backgroundColor: scheme.outline,
-              valueColor: AlwaysStoppedAnimation<Color>(color),
+          Container(
+            height: 10,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(GlassRadius.sm),
+              color: Colors.white.withValues(alpha: 0.08),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progress.clamp(0.0, 1.0).toDouble(),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(GlassRadius.sm),
+                  gradient: LinearGradient(
+                    colors: [
+                      color,
+                      color.withValues(alpha: 0.65),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
           const SizedBox(height: SsrSpace.xs),

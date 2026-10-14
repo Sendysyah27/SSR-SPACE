@@ -34,10 +34,11 @@ import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
+import 'package:ssr_space/theme/glass.dart';
+import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/widgets/day_header.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
-import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/tx_day_slivers.dart';
@@ -861,7 +862,8 @@ class _MonthFlowChart extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final total = totalIn + spendOut + savingOut;
     final pctIn = total <= 0 ? 0 : (totalIn / total * 100).round();
-    return SectionCard(
+    return GlassCard(
+      padding: const EdgeInsets.all(GlassSpace.lg),
       child: Column(
         children: [
           _DonutDial(
@@ -1116,7 +1118,7 @@ class _TransferHints extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1194,11 +1196,12 @@ class _CategoryRecapState extends State<_CategoryRecap> {
           style: theme.textTheme.titleMedium,
         ),
         const SizedBox(height: SsrSpace.xs),
-        SectionCard(
+        GlassCard(
           padding: const EdgeInsets.symmetric(
-            horizontal: SsrSpace.lg,
-            vertical: SsrSpace.sm,
+            horizontal: GlassSpace.lg,
+            vertical: GlassSpace.sm,
           ),
+          borderRadius: GlassRadius.md,
           child: Column(
             children: [
               for (final c in shown)
@@ -1340,11 +1343,12 @@ class _TxListCard extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: SsrSpace.xs),
-        SectionCard(
+        GlassCard(
           padding: const EdgeInsets.symmetric(
-            horizontal: SsrSpace.sm,
-            vertical: SsrSpace.xs,
+            horizontal: GlassSpace.sm,
+            vertical: GlassSpace.xs,
           ),
+          borderRadius: GlassRadius.md,
           child: Column(
             children: [
               for (final b in buckets) ...[
@@ -1398,7 +1402,7 @@ class _TxListCard extends StatelessWidget {
           SsrSpace.lg,
         ),
         sliver: DecoratedSliver(
-          decoration: sectionCardDecoration(context),
+          decoration: glassSliverDecoration(),
           sliver: SliverPadding(
             padding: const EdgeInsets.symmetric(
               horizontal: SsrSpace.sm,
@@ -1440,7 +1444,8 @@ class _YearFlowCard extends StatelessWidget {
     const inColor = Color(0xFF0A84FF);
     const outColor = Color(0xFFFF453A);
     final nowM = currentMonth();
-    return SectionCard(
+    return GlassCard(
+      padding: const EdgeInsets.all(GlassSpace.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1555,13 +1560,7 @@ class _InsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.all(SsrSpace.lg),
-      decoration: BoxDecoration(
-        color: dark ? const Color(0xFF26232E) : const Color(0xFFF5F3FF),
-        borderRadius: BorderRadius.circular(SsrRadius.card),
-      ),
+    return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1608,7 +1607,8 @@ class _MonthlySummary extends StatelessWidget {
     double value,
     Color color,
   ) {
-    return SectionCard(
+    return GlassCard(
+      borderRadius: GlassRadius.md,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1699,7 +1699,8 @@ class _NetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return SectionCard(
+    return GlassCard(
+      padding: const EdgeInsets.all(GlassSpace.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
