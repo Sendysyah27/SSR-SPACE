@@ -2351,6 +2351,27 @@ const _t = <String, Map<String, String>>{
     'en': 'No Gemini key yet.',
   },
   'ai_test': {'id': 'Tes AI', 'en': 'Test AI'},
+  'mode_title': {'id': 'Mode Input', 'en': 'Input Mode'},
+  'mode_live': {'id': 'Input Live', 'en': 'Live Input'},
+  'mode_live_s': {
+    'id': 'Catat langsung lengkap.',
+    'en': 'Full manual entry.',
+  },
+  'mode_scan': {'id': 'Scan Manual (OCR)', 'en': 'Manual Scan (OCR)'},
+  'mode_scan_s': {
+    'id': 'Foto struk dibaca OCR.',
+    'en': 'Photo receipt read by OCR.',
+  },
+  'mode_vision': {'id': 'Scan AI (Vision)', 'en': 'AI Scan (Vision)'},
+  'mode_vision_s': {
+    'id': 'Foto dibaca AI langsung, tanpa OCR.',
+    'en': 'Photo read by AI directly, no OCR.',
+  },
+  'mode_voice': {'id': 'Mode Voice', 'en': 'Voice Mode'},
+  'mode_voice_s': {
+    'id': 'Ucapkan transaksi.',
+    'en': 'Speak your transaction.',
+  },
   'chat_title': {'id': 'AI Chat', 'en': 'AI Chat'},
   'chat_hint': {'id': 'Tanya apa saja...', 'en': 'Ask anything...'},
   'chat_thinking': {'id': 'Mengetik...', 'en': 'Typing...'},
@@ -2358,6 +2379,14 @@ const _t = <String, Map<String, String>>{
     'id': 'Mulai percakapan dengan AI. Riwayat hanya sesi ini.',
     'en': 'Start chatting with AI. History lasts this session only.',
   },
+  'chat_attach': {'id': 'Lampirkan gambar', 'en': 'Attach image'},
+  'chat_mem_t': {'id': 'Memori AI', 'en': 'AI memory'},
+  'chat_mem_empty': {
+    'id': 'Belum ada yang diingat.',
+    'en': 'Nothing remembered yet.',
+  },
+  'chat_mem_clear': {'id': 'Hapus semua', 'en': 'Clear all'},
+  'ai_run': {'id': 'Jalankan', 'en': 'Run'},
   'ai_on': {'id': 'Aktif', 'en': 'On'},
   'ai_off': {'id': 'Mati', 'en': 'Off'},
   'ai_key_invalid': {

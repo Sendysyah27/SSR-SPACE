@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.55.0+153.
+Versi terpasang: 2.56.0+154.
+
+## Yang baru di 2.56.0+154
+
+1. AI Chat naik kelas: lampiran gambar, memori otomatis (atur di ikon otak), AI bisa siapkan transaksi — user ketuk Jalankan lalu simpan. Shortcut chat di Beranda.
+2. Tombol + tawarkan 4 Mode Input: Live, Scan OCR, Scan AI vision (tanpa OCR, butuh kunci Gemini/login Firebase), Voice.
 
 ## Yang baru di 2.55.0+153
 

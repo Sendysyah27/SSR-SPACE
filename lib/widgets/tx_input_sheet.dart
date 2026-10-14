@@ -25,6 +25,8 @@ import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
+import 'package:ssr_space/services/vision_scan_service.dart';
+import 'package:ssr_space/widgets/input_mode_sheet.dart';
 import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -61,6 +63,7 @@ Future<bool> openTxInputSheet(
   String? initialCategory,
   String? initialWalletId,
   String? initialNote,
+  TxInputMode? initialMode,
 }) async {
   final orgId = await activeOrgId();
   if (orgId.isEmpty || !context.mounted) return false;
@@ -112,6 +115,7 @@ Future<bool> openTxInputSheet(
       initialCategory: initialCategory,
       initialWalletId: initialWalletId,
       initialNote: initialNote,
+      initialMode: initialMode,
     ),
   );
   if (!context.mounted || res == null) return false;
@@ -157,6 +161,9 @@ class TxInputSheet extends StatefulWidget {
   final String? initialWalletId;
   final String? initialNote;
 
+  /// Mode dari chooser +: langsung picu scan/voice saat sheet dibuka.
+  final TxInputMode? initialMode;
+
   const TxInputSheet({
     super.key,
     required this.orgId,
@@ -168,6 +175,7 @@ class TxInputSheet extends StatefulWidget {
     this.initialCategory,
     this.initialWalletId,
     this.initialNote,
+    this.initialMode,
   });
 
   @override
@@ -248,6 +256,26 @@ class _TxInputSheetState extends State<TxInputSheet> {
     noteC.text = e?.note ?? widget.initialNote ?? '';
     _selCat = catC.text.trim().isEmpty ? null : catC.text.trim();
     _step = _isEdit ? 1 : 0;
+    // Mode chooser: picu aksi sekali setelah frame pertama.
+    final mode = widget.initialMode;
+    if (mode != null && !_isEdit) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        switch (mode) {
+          case TxInputMode.live:
+            break;
+          case TxInputMode.scanManual:
+            _pickScanSource();
+            break;
+          case TxInputMode.scanVision:
+            _pickVisionSource();
+            break;
+          case TxInputMode.voice:
+            _toggleMic();
+            break;
+        }
+      });
+    }
   }
 
   /// Dompet default pengaturan (bila masih ada di daftar). Null = pilih
@@ -508,6 +536,86 @@ class _TxInputSheetState extends State<TxInputSheet> {
       });
       if (raw != null) await _showRawOcrDialog(raw);
     }
+  }
+
+  /// Scan AI: foto -> model vision LANGSUNG tanpa OCR. Hasil prefill
+  /// + replika; baris dibangun dari item (bisa edit penuh di form).
+  Future<void> _pickVisionSource() async {
+    final src = await showDialog<ImageSource>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('rcp_scan')),
+        content: Text(tr('mode_vision_s')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ImageSource.camera),
+            child: Text(tr('rcp_camera')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
+            child: Text(tr('rcp_gallery')),
+          ),
+        ],
+      ),
+    );
+    if (src == null || !mounted) return;
+    setState(() {
+      _scanning = true;
+      _scanErr = null;
+    });
+    try {
+      final out = await scanReceiptVision(src);
+      if (!mounted) return;
+      setState(() => _scanning = false);
+      if (out == null) return;
+      _applyReceiptPrefill(out.data);
+      setState(() {
+        _scanOrigin = '${out.provider} · ${_scanOrigin ?? ''}';
+      });
+      if (mounted) {
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          builder: (_) => ReceiptResultSheet(
+            data: out.data,
+            mirror: _visionMirror(out.data),
+            onShowRaw: () => _showRawOcrDialog(out.data.merchant ?? ''),
+          ),
+        );
+      }
+    } on VisionScanException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _scanning = false;
+        _scanErr = e.detail == null
+            ? tr(e.trKey)
+            : '${tr(e.trKey)}\n${e.detail}';
+      });
+    } on AiFailure catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _scanning = false;
+        _scanErr = e.code == 'quota'
+            ? quotaWaitLine(e.detail)
+            : tr(aiMessageKey(e.code));
+      });
+    }
+  }
+
+  /// Replika baris dari item vision (tanpa OCR): merchant + item + total.
+  List<MirrorLine> _visionMirror(ReceiptData r) {
+    final lines = <MirrorLine>[];
+    if ((r.merchant ?? '').trim().isNotEmpty) {
+      lines.add(MirrorLine(r.merchant!.trim(), centered: true, bold: true));
+    }
+    for (final it in r.lineItems) {
+      final qty = it.qty > 1 ? ' x${it.qty}' : '';
+      lines.add(MirrorLine('${it.name}$qty', amount: it.price * it.qty));
+    }
+    if (r.amount != null && r.amount! > 0) {
+      lines.add(MirrorLine(tr('rcp_total'), amount: r.amount, bold: true));
+    }
+    return lines;
   }
 
   /// Prefill form dari hasil struk (rule maupun draft AI yang diedit).

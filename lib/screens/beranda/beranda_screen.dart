@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/screens/lainnya/ai_chat_screen.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/services/budget_pace.dart';
 import 'package:ssr_space/services/budget_service.dart';
@@ -832,6 +833,13 @@ class BerandaScreenState extends State<BerandaScreen> {
         ),
         title: Text(tr('nav_beranda')),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.chat_outlined),
+            tooltip: tr('chat_title'),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AiChatScreen()),
+            ),
+          ),
           IconButton(
             icon: const DuoIcon(AppIcons.settings, size: 22),
             tooltip: tr('st_title'),

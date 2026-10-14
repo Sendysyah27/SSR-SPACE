@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'ai_key_store.dart';
 import 'ai_openrouter_client.dart';
@@ -63,7 +64,9 @@ Future<String?> restGenerate(String prompt,
     {String? model,
     String? apiKey,
     http.Client? client,
-    void Function(String model)? onModel}) async {
+    void Function(String model)? onModel,
+    List<int>? imageBytes,
+    String? mimeType}) async {
   final key =
       (apiKey ?? '').trim().isNotEmpty ? apiKey!.trim() : googleApiKey;
   if (key.isEmpty) return null;
@@ -75,6 +78,19 @@ Future<String?> restGenerate(String prompt,
     for (var mi = 0; mi < names.length; mi++) {
       final name = names[mi];
       try {
+        final parts = <Map<String, Object?>>[
+          {'text': prompt}
+        ];
+        if (imageBytes != null && imageBytes.isNotEmpty) {
+          parts.add({
+            'inline_data': {
+              'mime_type': (mimeType ?? '').isNotEmpty
+                  ? mimeType!
+                  : 'image/jpeg',
+              'data': base64Encode(imageBytes),
+            }
+          });
+        }
         final res = await httpClient
             .post(
               Uri.parse(
@@ -83,7 +99,13 @@ Future<String?> restGenerate(String prompt,
                 'x-goog-api-key': key,
                 'Content-Type': 'application/json',
               },
-              body: jsonEncode(restPromptBody(prompt)),
+              body: imageBytes != null && imageBytes.isNotEmpty
+                  ? jsonEncode({
+                      'contents': [
+                        {'parts': parts}
+                      ],
+                    })
+                  : jsonEncode(restPromptBody(prompt)),
             )
             .timeout(_restTimeout);
         debugPrint('firebase ai rest $name status ${res.statusCode}');
@@ -300,10 +322,59 @@ Future<AiGenerate?> firebaseAiGenerate() async {
 /// Urutan sama seperti scan: Gemini -> OpenRouter -> Zen -> Firebase,
 /// hormati toggle per provider. Pertama sukses menang; semua gagal =
 /// throw error terakhir. Tak kirim foto/riwayat (prompt saja).
-Future<({String text, String provider})> aiChat(String prompt) async {
+/// Tanya model Firebase langsung dengan GAMBAR (multimodal).
+/// Return teks atau null; throw [AiFailure] jujur (quota/denied/server).
+Future<String?> firebaseVisionAsk({
+  required List<int> bytes,
+  required String prompt,
+  String? mimeType,
+}) async {
+  try {
+    if (FirebaseAuth.instance.currentUser == null) return null;
+    final model = FirebaseAI.googleAI().generativeModel(
+      model: firebaseAiModel,
+    );
+    final res = await model
+        .generateContent([
+          Content.multi([
+            TextPart(prompt),
+            InlineDataPart(
+              (mimeType ?? '').isNotEmpty ? mimeType! : 'image/jpeg',
+              Uint8List.fromList(bytes),
+            ),
+          ])
+        ])
+        .timeout(const Duration(seconds: 60));
+    return res.text;
+  } catch (e) {
+    final m = e.toString().toLowerCase();
+    if (m.contains('app check') ||
+        m.contains('appcheck') ||
+        m.contains('app_check') ||
+        m.contains('integrity')) {
+      throw AiAppCheck(e.toString());
+    }
+    if (m.contains('permission-denied') ||
+        m.contains('unauthenticated') ||
+        m.contains('403') ||
+        m.contains('api key')) {
+      throw AiDenied(e.toString());
+    }
+    if (isQuotaMessage(m)) throw AiFailure('quota', e.toString());
+    if (isBusyMessage(m)) throw AiFailure('server', e.toString());
+    rethrow;
+  }
+}
+
+Future<({String text, String provider})> aiChat(
+  String prompt, {
+  List<int>? imageBytes,
+  String? mimeType,
+}) async {
   if (prompt.trim().isEmpty) {
     throw const AiFailure('empty', 'prompt kosong');
   }
+  final hasImage = imageBytes != null && imageBytes.isNotEmpty;
   AiFailure? last;
   void note(AiFailure e) {
     last = e;
@@ -316,7 +387,10 @@ Future<({String text, String provider})> aiChat(String prompt) async {
       try {
         String? used;
         final t = await restGenerate(prompt,
-                apiKey: k, onModel: (m) => used = m)
+                apiKey: k,
+                onModel: (m) => used = m,
+                imageBytes: imageBytes,
+                mimeType: mimeType)
             .timeout(const Duration(seconds: 60));
         if (t != null && t.trim().isNotEmpty) {
           return (
@@ -331,7 +405,9 @@ Future<({String text, String provider})> aiChat(String prompt) async {
       }
     }
   }
-  if (await aiProviderOn(aiProvOr)) {
+  // OpenRouter & Zen text-only: lewati diam bila ada gambar (jangan
+  // kirim prompt tanpa gambarnya — menyesatkan).
+  if (!hasImage && await aiProviderOn(aiProvOr)) {
     final k = await readOrKey();
     if (k != null) {
       try {
@@ -345,7 +421,7 @@ Future<({String text, String provider})> aiChat(String prompt) async {
       }
     }
   }
-  if (await aiProviderOn(aiProvZen)) {
+  if (!hasImage && await aiProviderOn(aiProvZen)) {
     try {
       final zk = await readZenKey();
       final r = await zenChatRaw(apiKey: zk, prompt: prompt)
@@ -361,12 +437,26 @@ Future<({String text, String provider})> aiChat(String prompt) async {
   }
   if (await aiProviderOn(aiProvFb)) {
     try {
-      final gen = await firebaseAiGenerate();
-      if (gen != null) {
-        final t =
-            await gen(prompt).timeout(const Duration(seconds: 60));
-        if (t != null && t.trim().isNotEmpty) {
-          return (text: t, provider: 'Firebase');
+      if (hasImage) {
+        final gen = await firebaseAiGenerate();
+        if (gen != null) {
+          final t = await firebaseVisionAsk(
+            bytes: imageBytes!,
+            prompt: prompt,
+            mimeType: mimeType,
+          );
+          if (t != null && t.trim().isNotEmpty) {
+            return (text: t, provider: 'Firebase');
+          }
+        }
+      } else {
+        final gen = await firebaseAiGenerate();
+        if (gen != null) {
+          final t =
+              await gen(prompt).timeout(const Duration(seconds: 60));
+          if (t != null && t.trim().isNotEmpty) {
+            return (text: t, provider: 'Firebase');
+          }
         }
       }
     } on AiFailure catch (e) {
@@ -374,6 +464,10 @@ Future<({String text, String provider})> aiChat(String prompt) async {
     } catch (e) {
       note(AiFailure('network', '$e'));
     }
+  }
+  if (hasImage && last == null) {
+    throw const AiFailure(
+        'server', '[Gambar] butuh kunci Gemini atau login Firebase');
   }
   throw last ?? const AiFailure('network', 'semua provider mati/nonaktif');
 }

@@ -155,25 +155,32 @@ String? openAiContentFromBody(dynamic body) {
 
 /// Prompt ekstraksi struk: teks OCR mentah -> JSON terstruktur.
 /// Varian multi-baris wajib gabung ke produk induk (konvensi parser lokal).
+String _receiptRules() =>
+    'Kamu pengurai struk belanja Indonesia. Baca SELURUH struk '
+    'dari atas sampai bawah dengan teliti, jangan berhenti di total '
+    'pertama. Kembalikan SATU objek JSON valid saja (tanpa markdown, '
+    'tanpa penjelasan) dengan kunci persis: merchant (string|null, '
+    'nama gerai lengkap), date (format YYYY-MM-DD|null), items (array '
+    '{name, qty, price} dalam rupiah angka), subtotal (angka|null), '
+    'tax (angka|null), total (angka|null), payment_method (string|null).\n'
+    'Aturan item: tiap produk = nama LENGKAP + qty + harga. Pecahan '
+    'bacaan (huruf/angka nyasar mis. "g 4", "/y", "1<") BUKAN item '
+    'sendiri — gabungkan ke nama produk terdekat di atas/bawahnya. '
+    'Baris varian atau pilihan tanpa harga sendiri (mis. "Normal Ice", '
+    '"Less Sugar", "Pilihan Nugget") BUKAN item — gabungkan ke nama '
+    'produk induknya; judul pilihan saja tanpa produk = abaikan. '
+    'qty = angka sebelum x/X atau sesudah nama; harga = angka paling '
+    'kanan pada barisnya. Abaikan NPWP, alamat, kasir, jam, nomor '
+    'struk, dan ucapan terima kasih. total = angka pada baris '
+    'TOTAL/GRAND (bukan subtotal, bukan tunai/kembali). Bila ragu, '
+    'null (jangan karang).';
+
 String aiReceiptPrompt(String ocrText) {
   final capped = ocrText.length <= 4000 ? ocrText : ocrText.substring(0, 4000);
-  return 'Kamu pengurai struk belanja Indonesia. Baca SELURUH TEKS OCR '
-      'dari atas sampai bawah dengan teliti, jangan berhenti di total '
-      'pertama. Kembalikan SATU objek JSON valid saja (tanpa markdown, '
-      'tanpa penjelasan) dengan kunci persis: merchant (string|null, '
-      'nama gerai lengkap), date (format YYYY-MM-DD|null), items (array '
-      '{name, qty, price} dalam rupiah angka), subtotal (angka|null), '
-      'tax (angka|null), total (angka|null), payment_method (string|null).\n'
-      'Aturan item: tiap produk = nama LENGKAP + qty + harga. Pecahan '
-      'OCR (huruf/angka nyasar mis. "g 4", "/y", "1<") BUKAN item '
-      'sendiri — gabungkan ke nama produk terdekat di atas/bawahnya. '
-      'Baris varian atau pilihan tanpa harga sendiri (mis. "Normal Ice", '
-      '"Less Sugar", "Pilihan Nugget") BUKAN item — gabungkan ke nama '
-      'produk induknya; judul pilihan saja tanpa produk = abaikan. '
-      'qty = angka sebelum x/X atau sesudah nama; harga = angka paling '
-      'kanan pada barisnya. Abaikan NPWP, alamat, kasir, jam, nomor '
-      'struk, dan ucapan terima kasih. total = angka pada baris '
-      'TOTAL/GRAND (bukan subtotal, bukan tunai/kembali). Bila ragu, '
-      'null (jangan karang).\n'
-      'TEKS:\n$capped';
+  return '${_receiptRules()}\nTEKS:\n$capped';
 }
+
+/// Prompt untuk model vision: aturan sama, sumbernya GAMBAR struk
+/// (JPG/PNG) yang dilampirkan — tanpa teks OCR.
+String aiVisionPrompt() =>
+    '${_receiptRules()}\nGambar struk terlampir. Uraikan langsung dari gambar.';

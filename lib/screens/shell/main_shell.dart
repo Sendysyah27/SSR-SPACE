@@ -18,6 +18,7 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
+import 'package:ssr_space/widgets/input_mode_sheet.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/screens/auth/set_password_screen.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
@@ -180,7 +181,12 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 
   Future<void> _openInput() async {
-    if (await openTxInputSheet(context)) {
+    final mode = await showInputModeSheet(context);
+    if (mode == null || !mounted) return;
+    if (await openTxInputSheet(
+      context,
+      initialMode: mode == TxInputMode.live ? null : mode,
+    )) {
       berandaKey.currentState?.reload();
       txKey.currentState?.reload();
       budgetKey.currentState?.reload();
