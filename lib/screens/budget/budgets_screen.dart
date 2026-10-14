@@ -12,6 +12,7 @@ import 'package:ssr_space/services/budget_pace.dart';
 import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/category_meta.dart';
+import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/session_service.dart';
@@ -21,9 +22,9 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
+import 'package:ssr_space/theme/category_emoji.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/pin_pad.dart';
-import 'package:ssr_space/widgets/category_chips.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
@@ -42,13 +43,8 @@ class BudgetsScreenState extends State<BudgetsScreen> {
   bool loading = true;
   bool saving = false;
   String? err;
-  String? formErr;
   List<Map<String, dynamic>> alerts = [];
   int alertsSeen = 0;
-  final catC = TextEditingController();
-  final limitC = TextEditingController();
-  final warnC = TextEditingController();
-  final catFocus = FocusNode();
 
   @override
   void initState() {
@@ -58,10 +54,6 @@ class BudgetsScreenState extends State<BudgetsScreen> {
 
   @override
   void dispose() {
-    catC.dispose();
-    limitC.dispose();
-    warnC.dispose();
-    catFocus.dispose();
     super.dispose();
   }
 
@@ -108,57 +100,6 @@ class BudgetsScreenState extends State<BudgetsScreen> {
         err = tr('b_err_load');
       });
     }
-  }
-
-  Future<void> _save() async {
-    final cat = topOf(catC.text);
-    final typedLimit = double.tryParse(limitC.text);
-    final limit = typedLimit == null ? null : CurrencyService.toIdr(typedLimit);
-    if (cat.isEmpty) {
-      setState(() => formErr = tr('b_err_cat'));
-      return;
-    }
-    if (catC.text.contains('>')) {
-      // Budget selalu lapis kategori: sub ditolak, bukan dipotong diam-diam.
-      setState(() => formErr = tr('sub_sep_err'));
-      return;
-    }
-    if (limit == null || limit <= 0) {
-      setState(() => formErr = tr('b_err_limit'));
-      return;
-    }
-    final warn = parseWarnPct(warnC.text);
-    if (warn == null) {
-      setState(() => formErr = tr('b_err_warn'));
-      return;
-    }
-    setState(() {
-      formErr = null;
-      saving = true;
-    });
-    try {
-      await setBudget(await activeOrgId(), cat, limit, warnPct: warn);
-      catC.clear();
-      limitC.clear();
-      warnC.clear();
-      await _load();
-      if (mounted) {
-        unawaited(showSuccessFlash(context));
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(tr('b_saved'))));
-      }
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => formErr = tr('b_err_save'));
-    } finally {
-      if (mounted) setState(() => saving = false);
-    }
-  }
-
-  void _focusForm() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      catFocus.requestFocus();
-    });
   }
 
   /// Ketuk banner = tandai semua alert bulan ini sudah dilihat.
@@ -392,9 +333,16 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       );
     }
     final items = data?.items ?? [];
-    final urgent = urgentBudgetCategory(items);
     return Scaffold(
-      appBar: AppBar(title: Text(_title)),
+      appBar: AppBar(
+        title: Text(_title),
+        actions: [
+          TextButton(
+            onPressed: () => _openAdd(null),
+            child: Text('+ ${tr('b_add')}'),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
@@ -404,6 +352,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
             onTap: _markAlertsSeen,
           ),
           _OverAllocBanner(data: data),
+          _MonthCaption(leftDays: _daysLeft()),
           if (items.isEmpty)
             EmptyView(
               icon: AppIcons.budget,
@@ -411,68 +360,103 @@ class BudgetsScreenState extends State<BudgetsScreen> {
               title: tr('b_empty_t'),
               subtitle: tr('b_empty_s'),
               actionLabel: tr('b_empty_a'),
-              onAction: _focusForm,
+              onAction: () => _openAdd(null),
             ),
           for (final b in items)
             _BudgetEntry(
               budget: b,
-              urgent: b.category == urgent,
               onTap: () => _openEdit(b),
             ),
           const SizedBox(height: SsrSpace.md),
-          _BudgetForm(
-            catC: catC,
-            limitC: limitC,
-            warnC: warnC,
-            catFocus: catFocus,
-            formErr: formErr,
-            saving: saving,
-            onSave: _save,
+          _OthersChips(
+            items: items,
+            onPick: (cat) => _openAdd(cat),
           ),
         ],
       ),
     );
   }
-}
 
-/// Kategori belanja paling mendesak bulan ini: persen tertinggi di bawah
-/// 100 persen; bila semua sudah jebol, yang tertinggi. Satu nama saja.
-/// Kartu tabungan dikecualikan (cincinnya selalu emas, maknanya terkumpul,
-/// bukan terpakai). Murni baca, math progres tak berubah.
-String? urgentBudgetCategory(List<Budget> items) {
-  String? best;
-  var bestPct = -1.0;
-  for (final b in items) {
-    if (isSavingCategory(b.category) || b.limit <= 0) continue;
-    final pct = b.spent / b.limit;
-    if (pct < 1 && pct > bestPct) {
-      bestPct = pct;
-      best = b.category;
+  /// Sisa hari bulan berjalan (0 bila ganti bulan).
+  int _daysLeft() {
+    final now = DateTime.now();
+    final last = DateTime(now.year, now.month + 1, 0).day;
+    final left = last - now.day;
+    return left < 0 ? 0 : left;
+  }
+
+  /// Simpan budget baru/edit (validasi sama untuk sheet + dialog edit).
+  /// Return null bila sukses, atau kunci strings error.
+  Future<String?> _submitBudget({
+    required String cat,
+    required double limit,
+    required int warn,
+  }) async {
+    try {
+      await setBudget(await activeOrgId(), cat, limit, warnPct: warn);
+      await _load();
+      if (mounted) {
+        unawaited(showSuccessFlash(context));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(tr('b_saved'))));
+      }
+      return null;
+    } catch (_) {
+      return tr('b_err_save');
     }
   }
-  if (best != null) return best;
-  for (final b in items) {
-    if (isSavingCategory(b.category) || b.limit <= 0) continue;
-    final pct = b.spent / b.limit;
-    if (pct > bestPct) {
-      bestPct = pct;
-      best = b.category;
-    }
+
+  /// Buka bottom sheet tambah (preset kategori opsional dari chip).
+  Future<void> _openAdd(String? preset) async {
+    final cats = appCategories.value
+        .map(topOf)
+        .toSet()
+        .where((c) => c.isNotEmpty)
+        .toList();
+    final have =
+        data?.items.map((b) => topOf(b.category).toLowerCase()).toSet() ?? {};
+    final options =
+        cats.where((c) => !have.contains(c.toLowerCase())).toList();
+    if (!mounted) return;
+    final res = await showModalBottomSheet<(String, double, int)?>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _BudgetAddSheet(
+        options: options,
+        preset: preset,
+      ),
+    );
+    if (!mounted || res == null) return;
+    setState(() => saving = true);
+    final err = await _submitBudget(
+      cat: res.$1,
+      limit: res.$2,
+      warn: res.$3,
+    );
+    if (!mounted) return;
+    setState(() {
+      saving = false;
+      if (err != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(err)));
+      }
+    });
   }
-  return best;
 }
 
-/// Warna cincin budget: jebol tampil rust, satu kategori mendesak tampil
-/// gold, sisanya emerald. Penentu mendesak lihat [urgentBudgetCategory].
-/// Bila yang mendesak ternyata sudah jebol, rust menang (jebol duluan).
-Color budgetRingColor({
-  required bool over,
-  required bool urgent,
-  required ColorScheme scheme,
-}) {
-  if (over) return scheme.error;
-  if (urgent) return AppColors.gold;
-  return scheme.primary;
+/// Warna status budget by persen (brief §4.2, adaptasi AA tercatat):
+/// <70 emerald, 70-90 gold-dark, ≥90/jebol rust. Deviasi dari hex iOS
+/// mentah (gagal AA di putih) — tercatat di token Ind.
+Color _statusColor(bool over, int pct, BuildContext context) {
+  final scheme = Theme.of(context).colorScheme;
+  final dark = Theme.of(context).brightness == Brightness.dark;
+  if (over || pct >= 90) return scheme.error;
+  if (pct >= 70) return AppColors.chipSurplusText;
+  return dark ? AppColors.emeraldBright : AppColors.emerald;
 }
 
 /// Banner: total limit bulan ini melebihi pemasukan bulan ini.
@@ -579,12 +563,10 @@ class _BudgetAlertBanner extends StatelessWidget {
 /// kartu biasa bila bukan. Ketuk untuk ubah/hapus.
 class _BudgetEntry extends StatelessWidget {
   final Budget budget;
-  final bool urgent;
   final VoidCallback onTap;
 
   const _BudgetEntry({
     required this.budget,
-    this.urgent = false,
     required this.onTap,
   });
 
@@ -594,7 +576,7 @@ class _BudgetEntry extends StatelessWidget {
       onTap: onTap,
       child: isSavingCategory(budget.category)
           ? _SavingCard(budget: budget)
-          : _BudgetCard(budget: budget, urgent: urgent),
+          : _BudgetCard(budget: budget),
     );
   }
 }
@@ -740,13 +722,12 @@ class _SavingChip extends StatelessWidget {
   }
 }
 
-/// Kartu satu kategori: nama + chip (persen / lebih batas), angka
-/// "terpakai dari batas", dan bar progres.
+/// Kartu satu kategori (brief §4): emoji + persen status + bar 8px +
+/// angka "terpakai dari batas" + insight pace. Tanpa cincin.
 class _BudgetCard extends StatelessWidget {
   final Budget budget;
-  final bool urgent;
 
-  const _BudgetCard({required this.budget, this.urgent = false});
+  const _BudgetCard({required this.budget});
 
   @override
   Widget build(BuildContext context) {
@@ -754,11 +735,8 @@ class _BudgetCard extends StatelessWidget {
     final over = b.spent > b.limit;
     final progress = budgetProgress(b.spent, b.limit);
     final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
-    final ring = budgetRingColor(
-      over: over,
-      urgent: urgent,
-      scheme: Theme.of(context).colorScheme,
-    );
+    final color = _statusColor(over, pct, context);
+    final scheme = Theme.of(context).colorScheme;
     return SectionCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
@@ -766,6 +744,11 @@ class _BudgetCard extends StatelessWidget {
         children: [
           Row(
             children: [
+              Text(
+                categoryEmoji(b.category),
+                style: const TextStyle(fontSize: 22),
+              ),
+              const SizedBox(width: SsrSpace.sm),
               Expanded(
                 child: Text(
                   b.category,
@@ -775,34 +758,41 @@ class _BudgetCard extends StatelessWidget {
               if (over)
                 StatusChip(label: tr('b_over'), tone: StatusTone.danger)
               else
-                StatusChip(label: '$pct%', tone: StatusTone.accent),
+                Text(
+                  '$pct%',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                        fontFeatures: const [
+                          FontFeature.tabularFigures()
+                        ],
+                      ),
+                ),
             ],
           ),
+          const SizedBox(height: SsrSpace.sm),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0).toDouble(),
+              minHeight: 8,
+              backgroundColor: scheme.outline,
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
           const SizedBox(height: SsrSpace.xs),
-          Row(
-            children: [
-              _BudgetGauge(
-                progress: progress,
-                over: over,
-                pct: pct,
-                color: ring,
-              ),
-              const SizedBox(width: SsrSpace.md),
-              Expanded(
-                child: Text(
-                  '${amt(b.spent)} dari ${amt(b.limit)}',
-                  style: SsrType.moneyMedium.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            '${amt(b.spent)} ${tr('sv_of')} ${amt(b.limit)}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
           ),
           _PaceLine(budget: b),
         ],
       ),
     );
   }
+}
 }
 
 /// Baris pace budget: titik warna + satu kalimat. Hijau aman, emas
@@ -933,78 +923,203 @@ PieChartData _gaugeData(double used, Color main, Color rest) {
   );
 }
 
-/// Kartu form "Batas baru": kategori + nominal batas + tombol simpan.
-class _BudgetForm extends StatelessWidget {
-  final TextEditingController catC;
-  final TextEditingController limitC;
-  final TextEditingController warnC;
-  final FocusNode catFocus;
-  final String? formErr;
-  final bool saving;
-  final VoidCallback onSave;
-
-  const _BudgetForm({
-    required this.catC,
-    required this.limitC,
-    required this.warnC,
-    required this.catFocus,
-    required this.formErr,
-    required this.saving,
-    required this.onSave,
-  });
+/// Caption "OKTOBER 2026 · N hari tersisa" (brief §4.1).
+class _MonthCaption extends StatelessWidget {
+  final int leftDays;
+  const _MonthCaption({required this.leftDays});
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            tr('b_form_title'),
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: SsrSpace.md),
-          TextField(
-            controller: catC,
-            focusNode: catFocus,
-            decoration: InputDecoration(labelText: tr('b_f_cat')),
-          ),
-          const SizedBox(height: SsrSpace.sm),
-          CategoryChips(controller: catC),
-          const SizedBox(height: SsrSpace.md),
-          TextField(
-            controller: limitC,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: tr('b_f_limit'),
-              prefixText: '${kCurrencySymbols[currencyCode.value] ?? 'Rp'} ',
+    return Padding(
+      padding: const EdgeInsets.only(bottom: SsrSpace.sm),
+      child: Text(
+        '${monthLabel(currentMonth()).toUpperCase()} · $leftDays ${tr('b_days')}',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
             ),
-          ),
-          const SizedBox(height: SsrSpace.md),
-          TextField(
-            controller: warnC,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: tr('b_f_warn'),
-              suffixText: '%',
-            ),
-          ),
-          if (formErr != null) ...[
-            const SizedBox(height: SsrSpace.sm),
-            Text(
-              formErr!,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: scheme.error),
-            ),
+      ),
+    );
+  }
+}
+
+/// Chip cepat tambah untuk kategori tanpa budget (brief §4.1).
+/// Sembunyi total bila semua kategori sudah ada budgetnya.
+class _OthersChips extends StatelessWidget {
+  final List<Budget> items;
+  final ValueChanged<String> onPick;
+
+  const _OthersChips({required this.items, required this.onPick});
+
+  @override
+  Widget build(BuildContext context) {
+    final have =
+        items.map((b) => topOf(b.category).toLowerCase()).toSet();
+    final options = appCategories.value
+        .map(topOf)
+        .toSet()
+        .where((c) => c.isNotEmpty && !have.contains(c.toLowerCase()))
+        .toList();
+    if (options.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          tr('b_others').toUpperCase(),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.5,
+              ),
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        Wrap(
+          spacing: SsrSpace.sm,
+          runSpacing: SsrSpace.sm,
+          children: [
+            for (final c in options)
+              ActionChip(
+                label: Text('+ $c'),
+                onPressed: () => onPick(c),
+              ),
           ],
-          const SizedBox(height: SsrSpace.lg),
-          PrimaryButton(
-            label: tr('b_save'),
-            loading: saving,
-            onPressed: onSave,
-          ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Bottom sheet tambah budget: kategori + nominal + segmented
+/// peringatan (brief §4.1). Kembalikan (cat, limitIdr, warn) atau null.
+class _BudgetAddSheet extends StatefulWidget {
+  final List<String> options;
+  final String? preset;
+
+  const _BudgetAddSheet({required this.options, this.preset});
+
+  @override
+  State<_BudgetAddSheet> createState() => _BudgetAddSheetState();
+}
+
+class _BudgetAddSheetState extends State<_BudgetAddSheet> {
+  late String? _cat;
+  final _limitC = TextEditingController();
+  int _warn = 80;
+  String? _err;
+
+  @override
+  void initState() {
+    super.initState();
+    _cat = widget.preset != null && widget.options.contains(widget.preset)
+        ? widget.preset
+        : (widget.options.isNotEmpty ? widget.options.first : null);
+  }
+
+  @override
+  void dispose() {
+    _limitC.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final cat = topOf(_cat);
+    if (cat.isEmpty) {
+      setState(() => _err = tr('b_err_cat'));
+      return;
+    }
+    if ((_cat ?? '').contains('>')) {
+      setState(() => _err = tr('sub_sep_err'));
+      return;
+    }
+    final typed = double.tryParse(_limitC.text);
+    final limit = typed == null ? null : CurrencyService.toIdr(typed);
+    if (limit == null || limit <= 0) {
+      setState(() => _err = tr('b_err_limit'));
+      return;
+    }
+    Navigator.pop(context, (cat, limit, _warn));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          SsrSpace.lg,
+          SsrSpace.sm,
+          SsrSpace.lg,
+          MediaQuery.of(context).viewInsets.bottom + SsrSpace.lg,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.outline,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: SsrSpace.md),
+            Text(
+              tr('b_add_title'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: SsrSpace.md),
+            DropdownButtonFormField<String>(
+              value: _cat,
+              decoration: InputDecoration(labelText: tr('b_f_cat')),
+              items: [
+                for (final c in widget.options)
+                  DropdownMenuItem(value: c, child: Text('${categoryEmoji(c)} $c')),
+              ],
+              onChanged: (v) => setState(() => _cat = v),
+            ),
+            const SizedBox(height: SsrSpace.md),
+            TextField(
+              controller: _limitC,
+              keyboardType: TextInputType.number,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+              decoration: InputDecoration(
+                labelText: tr('b_f_limit'),
+                prefixText:
+                    '${kCurrencySymbols[currencyCode.value] ?? 'Rp'} ',
+              ),
+            ),
+            const SizedBox(height: SsrSpace.md),
+            Text(
+              tr('b_f_warn'),
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: SsrSpace.xs),
+            SegmentedButton<int>(
+              segments: const [
+                ButtonSegment(value: 70, label: Text('70%')),
+                ButtonSegment(value: 80, label: Text('80%')),
+                ButtonSegment(value: 90, label: Text('90%')),
+              ],
+              selected: {_warn},
+              onSelectionChanged: (s) => setState(() => _warn = s.first),
+            ),
+            if (_err != null) ...[
+              const SizedBox(height: SsrSpace.sm),
+              Text(
+                _err!,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            const SizedBox(height: SsrSpace.lg),
+            PrimaryButton(label: tr('b_save'), onPressed: _submit),
+          ],
+        ),
       ),
     );
   }
