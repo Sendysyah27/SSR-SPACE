@@ -22,6 +22,9 @@ import 'package:ssr_space/utils/app_info.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
+import 'package:ssr_space/theme/glass.dart';
+import 'package:ssr_space/theme/tokens.dart';
+import 'package:ssr_space/widgets/premium/premium_section_header.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/pin_pad.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
@@ -116,11 +119,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           // Grup iOS batch 1 (brief §7.2): caption caps + kartu.
           // Isi kartu tak diubah (R-26: semua kontrol tetap jalan).
-          _GroupCaption(tr('st_group_ai')),
+          PremiumSectionHeader(title: tr('st_group_ai')),
           const SizedBox(height: SsrSpace.sm),
           const _AiCard(),
           const SizedBox(height: SsrSpace.md),
-          _GroupCaption(tr('st_group_data')),
+          PremiumSectionHeader(title: tr('st_group_data')),
           const SizedBox(height: SsrSpace.sm),
           ValueListenableBuilder<String>(
             valueListenable: localeCode,
@@ -160,7 +163,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           Container(key: _topnKey, child: const _TopNCard()),
           const SizedBox(height: SsrSpace.md),
-          _GroupCaption(tr('st_group_display')),
+          PremiumSectionHeader(title: tr('st_group_display')),
           const SizedBox(height: SsrSpace.sm),
           ValueListenableBuilder<double>(
             valueListenable: fontScale,
@@ -186,11 +189,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           Container(key: _widgetKey, child: const _WidgetCard()),
           const SizedBox(height: SsrSpace.md),
-          _GroupCaption(tr('st_group_reminder')),
+          PremiumSectionHeader(title: tr('st_group_reminder')),
           const SizedBox(height: SsrSpace.sm),
           Container(key: _reminderKey, child: const _ReminderCard()),
           const SizedBox(height: SsrSpace.md),
-          _GroupCaption(tr('st_group_security')),
+          PremiumSectionHeader(title: tr('st_group_security')),
           const SizedBox(height: SsrSpace.sm),
           Container(key: _lockKey, child: const _LockTimeoutCard()),
           const SizedBox(height: SsrSpace.md),
@@ -198,8 +201,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           const _BiometricCard(),
           const SizedBox(height: SsrSpace.md),
-          _GroupCaption(tr('st_group_about')),
-          const SizedBox(height: SsrSpace.sm),
           const _VersionCard(),
         ],
       ),
@@ -218,40 +219,42 @@ class _P2StatusLine extends StatelessWidget {
   }
 }
 
-/// Caption grup iOS (11sp caps sekunder): MANG AI / DATA / dst.
-class _GroupCaption extends StatelessWidget {
-  final String text;
-  const _GroupCaption(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: SsrSpace.md, bottom: 2),
-      child: Text(
-        text.toUpperCase(),
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
-            ),
-      ),
-    );
-  }
-}
-
 /// Baris versi app (read-only, dari AppInfo — ikut bump pubspec).
+/// Hero treatment kaca untuk seksi Tentang (Batch 5): GlassPanel +
+/// tagline brand + angka versi.
 class _VersionCard extends StatelessWidget {
   const _VersionCard();
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
-      label: tr('st_group_about'),
-      children: [
-        Text(
-          '${tr('st_version')} ${AppInfo.version}',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      ],
+    final theme = Theme.of(context);
+    return GlassPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('st_group_about').toUpperCase(),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: GlassSpace.xs),
+          Text(
+            tr('sp_tagline'),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: GlassSpace.sm),
+          Text(
+            '${tr('st_version')} ${AppInfo.version}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -265,7 +268,7 @@ class _LangCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_lang'),
       icon: AppIcons.menu,
       children: [
@@ -309,7 +312,7 @@ class _CurrencyCard extends StatelessWidget {
             ? tr('st_fx_none')
             : tr('st_fx_cache')
                   .replaceFirst('{d}', '${at.day}-${at.month}-${at.year}'));
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_currency'),
       icon: AppIcons.billing,
       children: [
@@ -345,7 +348,7 @@ class _FontCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_font'),
       icon: AppIcons.settings,
       children: [
@@ -369,7 +372,7 @@ class _DefaultCurrencyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_def_currency'),
       icon: AppIcons.billing,
       children: [
@@ -398,7 +401,7 @@ class _NumberFormatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_numformat'),
       icon: AppIcons.reports,
       children: [
@@ -449,7 +452,7 @@ class _DefaultWalletCardState extends State<_DefaultWalletCard> {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_def_wallet'),
       icon: AppIcons.wallet,
       children: [
@@ -490,7 +493,7 @@ class _WeekStartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_weekstart'),
       icon: AppIcons.calendar,
       children: [
@@ -530,7 +533,7 @@ class _LockTimeoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_lock_timeout'),
       icon: AppIcons.lock,
       children: [
@@ -575,7 +578,7 @@ class _TopNCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_topn'),
       icon: AppIcons.reports,
       children: [
@@ -600,7 +603,7 @@ class _AnimsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_anims'),
       icon: AppIcons.menu,
       children: [
@@ -624,7 +627,7 @@ class _ListStyleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_list_style'),
       icon: AppIcons.menu,
       children: [
@@ -664,7 +667,7 @@ class _DateStyleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_date_style'),
       icon: AppIcons.calendar,
       children: [
@@ -693,7 +696,7 @@ class _HeroStyleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_hero_style'),
       icon: AppIcons.eye,
       children: [
@@ -727,7 +730,7 @@ class _ThemeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_theme'),
       icon: AppIcons.eye,
       children: [
@@ -801,7 +804,7 @@ class _ReminderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_reminder_time'),
       icon: AppIcons.clock,
       children: [
@@ -991,7 +994,7 @@ class _WidgetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_widget_today'),
       icon: AppIcons.transactions,
       children: [
@@ -1154,7 +1157,7 @@ class _AiCardState extends State<_AiCard> {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('ai_title'),
       icon: AppIcons.autoBadge,
       children: [
@@ -1269,7 +1272,7 @@ class _BiometricCardState extends State<_BiometricCard> {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('bio_t'),
       icon: AppIcons.success,
       children: [
@@ -1429,7 +1432,7 @@ class _PinCardState extends State<_PinCard> {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return GlassLabeledCard(
       label: tr('st_pin'),
       icon: AppIcons.lock,
       children: [

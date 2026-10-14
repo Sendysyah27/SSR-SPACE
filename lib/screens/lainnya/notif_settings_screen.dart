@@ -14,7 +14,7 @@ import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/screens/lainnya/track_wizard_screen.dart';
 import 'package:ssr_space/widgets/bank_track_row.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
-import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
@@ -256,7 +256,7 @@ class _WizardEntry extends StatelessWidget {
         ),
       );
     }
-    return SectionCard(
+    return GlassCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,7 +353,7 @@ class _StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
+    return GlassCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,7 +556,7 @@ class _BankMappingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
+    return GlassCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,7 +616,7 @@ class _RecentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
