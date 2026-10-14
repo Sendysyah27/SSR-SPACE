@@ -170,7 +170,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
     ];
     try {
       final r = await aiChat(prompt,
-          imageBytes: img, mimeType: mime, history: history);
+          imageBytes: img,
+          mimeType: mime,
+          history: history,
+          dataContext: _dataCtx.isEmpty ? null : _dataCtx);
       if (!mounted) return;
       unawaited(
           addAiMemory(parseIngatBlocks(r.text)).then((_) async {
@@ -178,12 +181,16 @@ class _AiChatScreenState extends State<AiChatScreen> {
         debugPrint('ai memori: ${n.length} fakta');
       }));
       final tx = parseTxDraft(parseTxBlock(r.text));
+      final bill = parseBillDraft(parseNamedBlock(r.text, 'tagihan'));
+      final budget = parseBudgetDraft(parseNamedBlock(r.text, 'budget'));
       setState(() {
         _items.add(_ChatMsg(
           mine: false,
           text: r.text,
           provider: r.provider,
           action: tx,
+          billAction: bill,
+          budgetAction: budget,
         ));
         _sending = false;
       });
