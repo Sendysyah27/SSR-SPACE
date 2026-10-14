@@ -1051,7 +1051,6 @@ class BerandaScreenState extends State<BerandaScreen> {
     // Hero industrial: kartu permukaan netral + angka tinta, bayangan
     // halus satu-satunya (R-12). Makna tetap via chip + warna angka.
     final scheme = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final onHero = scheme.onSurface;
     final heroLabel = TextStyle(
       color: scheme.onSurfaceVariant,
