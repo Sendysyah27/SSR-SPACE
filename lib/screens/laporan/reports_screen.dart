@@ -61,7 +61,7 @@ class ReportsScreenState extends State<ReportsScreen> {
   // Angka eksak via RPC (ikut filter dompet); display via halaman.
   MonthFigures? fig;
   // Arus kas 12 bulan terakhir (fail-open: bulan gagal = nol).
-  List<_YearBar> yearFlow = [];
+  List<_YearBar> _yearFlow = [];
   // Insight Mang AI (cache prefs 1 jam, fail-open sembunyi).
   String? insight;
   // Pagination display: halaman 100, sambung saat gulir mentok.
@@ -101,7 +101,7 @@ class ReportsScreenState extends State<ReportsScreen> {
       items = [];
       hasMore = true;
       loadingMore = false;
-      yearFlow = [];
+      _yearFlow = [];
       insight = null;
     });
     try {
@@ -124,7 +124,7 @@ class ReportsScreenState extends State<ReportsScreen> {
         items = txs;
         fig = cur;
         hasMore = txPageHasMore(txs.length, txPageSize);
-        yearFlow = yf;
+        _yearFlow = yf;
         walletNames = {for (final w in ws) w.id: w.name};
         if (filterWallet != null && !walletNames.containsKey(filterWallet)) {
           filterWallet = null;
@@ -204,7 +204,7 @@ class ReportsScreenState extends State<ReportsScreen> {
       final text = r.text.trim();
       if (text.isEmpty) return;
       await prefs.setString(key, text);
-      await prefs.setInt(key + '_at', nowMs);
+      await prefs.setInt('${key}_at', nowMs);
       if (!mounted) return;
       setState(() => insight = text);
     } catch (_) {}
@@ -452,7 +452,7 @@ class ReportsScreenState extends State<ReportsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _YearFlowCard(bars: yearFlow),
+        _YearFlowCard(bars: _yearFlow),
         const SizedBox(height: SsrSpace.md),
         if (hasFlow) ...[
           _MonthFlowChart(
