@@ -846,6 +846,13 @@ const _t = <String, Map<String, String>>{
   },
   // Pengaturan
   'st_title': {'id': 'Pengaturan', 'en': 'Settings'},
+  'st_group_ai': {'id': 'Mang AI', 'en': 'Mang AI'},
+  'st_group_data': {'id': 'Data', 'en': 'Data'},
+  'st_group_display': {'id': 'Tampilan', 'en': 'Appearance'},
+  'st_group_reminder': {'id': 'Pengingat', 'en': 'Reminders'},
+  'st_group_security': {'id': 'Keamanan', 'en': 'Security'},
+  'st_group_about': {'id': 'Tentang', 'en': 'About'},
+  'st_version': {'id': 'Versi', 'en': 'Version'},
   'st_lang': {'id': 'Bahasa', 'en': 'Language'},
   'st_currency': {'id': 'Mata uang tampilan', 'en': 'Display currency'},
   'st_fx_refresh': {'id': 'Perbarui kurs', 'en': 'Refresh rates'},

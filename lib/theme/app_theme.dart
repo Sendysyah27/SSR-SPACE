@@ -33,11 +33,13 @@ class AppColors {
 /// - scaffold/surface abu iOS (grup + kartu terbaca tanpa border tebal).
 /// - teks sekunder #6E6E73 di putih ≈5.0 (AA); dark #98989D di hitam aman.
 /// - aksen #007AFF (putih di atasnya ≈4.5); dark #0A84FF.
-/// - bayangan hanya penanda hero (R-12), radius 16 kartu / 20 hero (R-11).
+/// - radius 20 kartu / 14 kecil-input / 999 pill / 14 tombol (R-11).
+/// - bayangan SATU level 0/8/24 6% untuk hero/kartu terangkat (R-12).
 /// Warna makna uang (emerald/rust/gold) TIDAK diubah: tetap untuk
 /// masuk/keluar/tabungan + label kata.
 class Ind {
   static const scaffoldL = Color(0xFFF2F2F7);
+  static const card2L = Color(0xFFF9F9FB);
   static const ink = Color(0xFF1C1C1E);
   static const secondaryL = Color(0xFF6E6E73);
   static const lineL = Color(0xFFE5E5EA);
@@ -48,12 +50,18 @@ class Ind {
   static const secondaryD = Color(0xFF98989D);
   static const lineD = Color(0xFF38383A);
   static const blueD = Color(0xFF0A84FF);
+  // Semantik iOS (brief §1.1): KHUSUS grafik/fill besar, BUKAN teks
+  // (di putih gagal AA: green ±2.2, orange ±2.1). Teks makna tetap
+  // emerald/rust/gold-dark yang lolos AA. Deviasi tercatat (R-37).
+  static const green = Color(0xFF30D158);
+  static const red = Color(0xFFFF453A);
+  static const orange = Color(0xFFFF9F0A);
 
   static List<BoxShadow> heroShadow(bool dark) => [
         BoxShadow(
-          color: Colors.black.withValues(alpha: dark ? 0.35 : 0.08),
-          blurRadius: 16,
-          offset: const Offset(0, 4),
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 24,
+          offset: const Offset(0, 8),
         ),
       ];
 }
@@ -67,11 +75,12 @@ class SsrMotion {
 
 class SsrRadius {
   static const chip = 8.0;
-  static const input = 12.0;
-  static const tile = 12.0;
-  static const button = 12.0;
-  static const card = 16.0;
+  static const input = 14.0;
+  static const tile = 14.0;
+  static const button = 14.0;
+  static const card = 20.0;
   static const hero = 20.0;
+  static const pill = 999.0;
 }
 
 class SsrSpace {
@@ -81,6 +90,7 @@ class SsrSpace {
   static const lg = 16.0;
   static const xl = 20.0;
   static const xxl = 24.0;
+  static const xxxl = 32.0;
 }
 
 class SsrFonts {

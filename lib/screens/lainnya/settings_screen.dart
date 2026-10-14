@@ -18,6 +18,7 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/utils/app_info.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
@@ -113,6 +114,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           const _P2StatusLine(),
           const SizedBox(height: SsrSpace.md),
+          // Grup iOS batch 1 (brief §7.2): caption caps + kartu.
+          // Isi kartu tak diubah (R-26: semua kontrol tetap jalan).
+          _GroupCaption(tr('st_group_ai')),
+          const SizedBox(height: SsrSpace.sm),
+          const _AiCard(),
+          const SizedBox(height: SsrSpace.md),
+          _GroupCaption(tr('st_group_data')),
+          const SizedBox(height: SsrSpace.sm),
           ValueListenableBuilder<String>(
             valueListenable: localeCode,
             builder: (context, loc, _) => Container(
@@ -135,14 +144,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: SsrSpace.md),
-          ValueListenableBuilder<double>(
-            valueListenable: fontScale,
-            builder: (context, fs, _) => Container(
-              key: _fontKey,
-              child: _FontCard(value: fs, onChanged: (v) => setFontScale(v)),
-            ),
-          ),
-          const SizedBox(height: SsrSpace.md),
           const _DefaultCurrencyCard(),
           const SizedBox(height: SsrSpace.md),
           Container(key: _numKey, child: const _NumberFormatCard()),
@@ -157,9 +158,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const _WeekStartCard(),
           ),
           const SizedBox(height: SsrSpace.md),
-          Container(key: _lockKey, child: const _LockTimeoutCard()),
-          const SizedBox(height: SsrSpace.md),
           Container(key: _topnKey, child: const _TopNCard()),
+          const SizedBox(height: SsrSpace.md),
+          _GroupCaption(tr('st_group_display')),
+          const SizedBox(height: SsrSpace.sm),
+          ValueListenableBuilder<double>(
+            valueListenable: fontScale,
+            builder: (context, fs, _) => Container(
+              key: _fontKey,
+              child: _FontCard(value: fs, onChanged: (v) => setFontScale(v)),
+            ),
+          ),
           const SizedBox(height: SsrSpace.md),
           Container(key: _animsKey, child: const _AnimsCard()),
           const SizedBox(height: SsrSpace.md),
@@ -175,15 +184,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _ThemeCard(value: theme, onChanged: (v) => setThemeChoice(v)),
           ),
           const SizedBox(height: SsrSpace.md),
-          Container(key: _reminderKey, child: const _ReminderCard()),
-          const SizedBox(height: SsrSpace.md),
           Container(key: _widgetKey, child: const _WidgetCard()),
           const SizedBox(height: SsrSpace.md),
-          const _AiCard(),
+          _GroupCaption(tr('st_group_reminder')),
+          const SizedBox(height: SsrSpace.sm),
+          Container(key: _reminderKey, child: const _ReminderCard()),
+          const SizedBox(height: SsrSpace.md),
+          _GroupCaption(tr('st_group_security')),
+          const SizedBox(height: SsrSpace.sm),
+          Container(key: _lockKey, child: const _LockTimeoutCard()),
           const SizedBox(height: SsrSpace.md),
           Container(key: _pinKey, child: const _PinCard()),
           const SizedBox(height: SsrSpace.md),
           const _BiometricCard(),
+          const SizedBox(height: SsrSpace.md),
+          _GroupCaption(tr('st_group_about')),
+          const SizedBox(height: SsrSpace.sm),
+          const _VersionCard(),
         ],
       ),
     );
@@ -198,6 +215,44 @@ class _P2StatusLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(tr('msg_p2'), style: Theme.of(context).textTheme.bodySmall);
+  }
+}
+
+/// Caption grup iOS (11sp caps sekunder): MANG AI / DATA / dst.
+class _GroupCaption extends StatelessWidget {
+  final String text;
+  const _GroupCaption(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: SsrSpace.md, bottom: 2),
+      child: Text(
+        text.toUpperCase(),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
+            ),
+      ),
+    );
+  }
+}
+
+/// Baris versi app (read-only, dari AppInfo — ikut bump pubspec).
+class _VersionCard extends StatelessWidget {
+  const _VersionCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return LabeledSectionCard(
+      label: tr('st_group_about'),
+      children: [
+        Text(
+          '${tr('st_version')} ${AppInfo.version}',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ],
+    );
   }
 }
 

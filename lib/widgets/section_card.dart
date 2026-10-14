@@ -37,16 +37,16 @@ BoxDecoration sectionCardDecoration(
   Color? borderColor,
 }) {
   final scheme = Theme.of(context).colorScheme;
-  final dark = Theme.of(context).brightness == Brightness.dark;
   return BoxDecoration(
     color: color ?? scheme.surface,
     borderRadius: BorderRadius.circular(SsrRadius.card),
     border: Border.all(color: borderColor ?? scheme.outline),
+    // SATU level bayangan industrial (R-12): penanda kartu terangkat.
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withValues(alpha: dark ? 0.4 : 0.08),
-        blurRadius: 30,
-        offset: const Offset(0, 10),
+        color: Colors.black.withValues(alpha: 0.06),
+        blurRadius: 24,
+        offset: const Offset(0, 8),
       ),
     ],
   );
