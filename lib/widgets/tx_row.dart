@@ -120,7 +120,7 @@ class TxRow extends StatelessWidget {
     return Dismissible(
       key: Key(tx.id),
       direction: DismissDirection.horizontal,
-      onDismissed: (_) => onDelete?.call(() => _showDeleteConfirm(context)),
+      onDismissed: (_) => _showDeleteConfirm(context),
       background: _buildSwipeLeft(context, scheme),
       secondaryBackground: _buildSwipeRight(context, scheme),
       child: GestureDetector(
