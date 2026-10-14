@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'ai_key_store.dart';
 import 'ai_openrouter_client.dart';
@@ -437,11 +436,12 @@ Future<({String text, String provider})> aiChat(
   }
   if (await aiProviderOn(aiProvFb)) {
     try {
-      if (hasImage) {
+      final img = imageBytes;
+      if (hasImage && img != null) {
         final gen = await firebaseAiGenerate();
         if (gen != null) {
           final t = await firebaseVisionAsk(
-            bytes: imageBytes!,
+            bytes: img,
             prompt: prompt,
             mimeType: mimeType,
           );
