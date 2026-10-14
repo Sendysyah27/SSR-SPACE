@@ -51,7 +51,7 @@ class StatusChip extends StatelessWidget {
     final bg = _bgOf(dark, scheme);
     final fg = _fgOf(dark, scheme);
     final text = tone == StatusTone.ink ? label.toUpperCase() : label;
-    final padding = isSmall ? EdgeInsets.symmetric(horizontal: 8, vertical: 3) : EdgeInsets.symmetric(horizontal: 12, vertical: 5);
+    final padding = isSmall ? const EdgeInsets.symmetric(horizontal: 8, vertical: 3) : const EdgeInsets.symmetric(horizontal: 12, vertical: 5);
     final fontSize = isSmall ? 11.0 : 12.5;
     return Container(
       padding: padding,
