@@ -50,12 +50,12 @@ Future<void> refreshTodayWidget({
 /// Minta provider native gambar ulang snapshot terbaru SEKARANG.
 /// Fail-silent total: tak pernah throw, tak pernah menunggu >2 dtk.
 Future<void> requestWidgetRefresh() async {
-  try {
-    if (!widgetToday.value) return;
-    await const MethodChannel('ssr_space/widget')
-        .invokeMethod('refresh')
-        .timeout(const Duration(seconds: 2));
-  } catch (_) {}
+  // DIAG-FIX 2026-10-14: MethodChannel invokeMethod(refresh) tersangka
+  // FC silent (native crash tak tertangkap Dart). Disable sementara —
+  // widget tetap update via snapshot SharedPreferences yang dibaca
+  // provider native secara periodik.
+  DiagLog.write('DIAG requestWidgetRefresh SKIPPED (native disabled)');
+  return;
 }
 
 /// Tulis snapshot + minta gambar ulang, hitung dari server.
