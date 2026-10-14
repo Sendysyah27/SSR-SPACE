@@ -459,6 +459,9 @@ const _t = <String, Map<String, String>>{
   'r_dl': {'id': 'Unduh {l}', 'en': 'Download {l}'},
   // Laporan: rekap kategori Top-8 + Others + susun section (P2)
   'r_recap': {'id': 'Rekap kategori', 'en': 'Category recap'},
+  'r_flow12': {'id': 'Arus Kas 12 Bulan', 'en': '12-Month Cash Flow'},
+  'r_see_all': {'id': 'Lihat semua ›', 'en': 'See all ›'},
+  'ai_insight_t': {'id': '🤖 Insight Mang AI', 'en': '🤖 Mang AI Insight'},
   'r_others': {'id': 'Lainnya ({n})', 'en': 'Other ({n})'},
   'r_collapse': {'id': 'Sederhanakan', 'en': 'Show less'},
   'r_arrange': {'id': 'Susun', 'en': 'Arrange'},

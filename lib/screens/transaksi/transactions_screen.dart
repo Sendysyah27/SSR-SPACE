@@ -35,7 +35,10 @@ String txHistoryTitle(String m) {
 /// lewat tombol + tengah navbar / aksi + AppBar / ketuk baris (edit).
 class TransactionsScreen extends StatefulWidget {
   final String? initialMonth;
-  const TransactionsScreen({super.key, this.initialMonth});
+
+  /// Drill dari Laporan: filter kategori langsung aktif.
+  final String? initialCategory;
+  const TransactionsScreen({super.key, this.initialMonth, this.initialCategory});
   @override
   State<TransactionsScreen> createState() => TransactionsScreenState();
 }
@@ -66,6 +69,10 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   void initState() {
     super.initState();
     month = widget.initialMonth ?? currentMonth();
+    if (widget.initialCategory != null &&
+        widget.initialCategory!.trim().isNotEmpty) {
+      _cats = {widget.initialCategory!.trim()};
+    }
     _scroll.addListener(_onScroll);
     _searchC.addListener(_onQueryChanged);
     _load();

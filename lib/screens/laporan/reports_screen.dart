@@ -4,25 +4,23 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/billing_service.dart';
-import 'package:ssr_space/services/cashflow_forecast.dart';
-import 'package:ssr_space/services/category_icons.dart';
-import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/export_files.dart';
 import 'package:ssr_space/services/export_saved_notify.dart';
 import 'package:ssr_space/services/month.dart';
-import 'package:ssr_space/services/month_compare.dart';
 import 'package:ssr_space/services/month_figures.dart';
-import 'package:ssr_space/services/recurring_bills.dart';
+import 'package:ssr_space/theme/category_emoji.dart';
 import 'package:ssr_space/services/plan_limits.dart';
+import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
 import 'package:ssr_space/services/report_export.dart';
 import 'package:ssr_space/services/report_pdf.dart';
 import 'package:ssr_space/services/report_xlsx.dart';
@@ -62,14 +60,14 @@ class ReportsScreenState extends State<ReportsScreen> {
   bool exporting = false;
   // Angka eksak via RPC (ikut filter dompet); display via halaman.
   MonthFigures? fig;
-  Map<String, double> prevCats = {};
-  // Prakiraan kas 30 hari (fail-open null = kartu sembunyi).
-  CashForecast? forecast;
+  // Arus kas 12 bulan terakhir (fail-open: bulan gagal = nol).
+  List<_YearBar> yearFlow = [];
+  // Insight Mang AI (cache prefs 1 jam, fail-open sembunyi).
+  String? insight;
   // Pagination display: halaman 100, sambung saat gulir mentok.
   final _scroll = ScrollController();
   bool hasMore = true;
   bool loadingMore = false;
-  bool reordering = false;
   String? err;
 
   @override
@@ -103,7 +101,8 @@ class ReportsScreenState extends State<ReportsScreen> {
       items = [];
       hasMore = true;
       loadingMore = false;
-      forecast = null;
+      yearFlow = [];
+      insight = null;
     });
     try {
       final orgId = await activeOrgId();
@@ -114,42 +113,26 @@ class ReportsScreenState extends State<ReportsScreen> {
       }
       // Angka eksak via RPC (ikut filter dompet); gagal → fallback list.
       final cur = await _figuresFor(orgId, month, filterWallet);
-      var prev = <String, double>{};
-      try {
-        final pm = await _figuresFor(
-          orgId,
-          prevMonth(month),
-          filterWallet,
-        );
-        prev = pm.catTotalsNoSaving;
-      } catch (_) {
-        prev = {};
-      }
       final ws = await WalletService().list(orgId);
       // Display: halaman terbaru (cukup untuk rekap + daftar awal).
       final txs = await TransactionService().listMonthPage(orgId, month);
       if (!mounted) return;
-      // Prakiraan kas: saldo kini + run-rate 30 hari + tagihan terjadwal.
-      // Fail-open null (kartu sembunyi), tak ganggu angka utama.
-      CashForecast? fc;
-      try {
-        fc = await _loadForecast(orgId);
-      } catch (_) {
-        fc = null;
-      }
+      // Arus 12 bulan paralel (tiap bulan fail-open nol).
+      final yf = await _loadYearFlow(orgId, filterWallet);
       if (!mounted) return;
       setState(() {
         items = txs;
         fig = cur;
-        prevCats = prev;
         hasMore = txPageHasMore(txs.length, txPageSize);
-        forecast = fc;
+        yearFlow = yf;
         walletNames = {for (final w in ws) w.id: w.name};
         if (filterWallet != null && !walletNames.containsKey(filterWallet)) {
           filterWallet = null;
         }
         loading = false;
       });
+      // Insight AI: tak block layar (async, cache 1 jam).
+      unawaited(_loadInsight(orgId));
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -159,50 +142,72 @@ class ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  /// Prakiraan 30 hari dari hari ini: saldo dompet kini + run-rate
-  /// 30 hari terakhir + tagihan aktif terjadwal. Throw bila gagal
-  /// (pemanggil fail-open).
-  Future<CashForecast> _loadForecast(String orgId) async {
-    final bals = await WalletService().balances(orgId);
-    var start = 0.0;
-    for (final b in bals) {
-      start += b.balance;
-    }
+  /// Total masuk/keluar 12 bulan terakhir (paralel, per bulan fail-open).
+  Future<List<_YearBar>> _loadYearFlow(
+      String orgId, String? walletId) async {
     final now = DateTime.now();
-    String ymd(DateTime d) =>
-        '${d.year.toString().padLeft(4, '0')}-'
-        '${d.month.toString().padLeft(2, '0')}-'
-        '${d.day.toString().padLeft(2, '0')}';
-    final today = ymd(now);
-    final hist = await TransactionService().listRange(
-      orgId,
-      ymd(now.subtract(const Duration(days: 29))),
-      ymd(now.add(const Duration(days: 1))),
-      limit: 500,
-    );
-    final rate = dailyRate(
-      [
-        for (final t in hist)
-          TxFlow(date: t.date ?? '', type: t.type, amount: t.amount),
-      ],
-      30,
-    );
-    final bills = await loadBills();
-    final dues = upcomingBills(
-      [
-        for (final b in bills)
-          BillDue(nextDue: b.nextDue, amount: b.amount, active: b.active),
-      ],
-      today,
-      forecastDays,
-    );
-    return projectForecast(
-      start: start,
-      inPerDay: rate.inPerDay,
-      outPerDay: rate.outPerDay,
-      dues: dues,
-      fromDate: today,
-    );
+    final months = <String>[];
+    for (var i = 11; i >= 0; i--) {
+      final d = DateTime(now.year, now.month - i, 1);
+      months.add('${d.year}-${d.month.toString().padLeft(2, '0')}');
+    }
+    final out = await Future.wait(months.map((m) async {
+      try {
+        final mix = await TransactionService()
+            .monthMix(orgId, m, walletId: walletId);
+        final f = foldMonthMix(
+          mix.rows,
+          otherLabel: '',
+          totalN: mix.totalN,
+        );
+        return _YearBar(month: m, masuk: f.totalIn, keluar: f.totalOut);
+      } catch (_) {
+        return _YearBar(month: m, masuk: 0, keluar: 0);
+      }
+    }));
+    return out;
+  }
+
+  /// Insight Mang AI 2-3 kalimat (brief §5.1): cache prefs 1 jam per
+  /// org+bulan, fail-silent (kartu sembunyi). Tanpa foto (teks saja).
+  Future<void> _loadInsight(String orgId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'ai_insight_${orgId}_$month';
+      final at = prefs.getInt('${key}_at') ?? 0;
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      if (nowMs - at < 3600000) {
+        final cached = prefs.getString(key);
+        if (cached != null && cached.trim().isNotEmpty) {
+          if (!mounted) return;
+          setState(() => insight = cached);
+          return;
+        }
+      }
+      final f = fig;
+      if (f == null) return;
+      final tops = f.catTotalsNoSaving.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+      final top3 = tops
+          .take(3)
+          .map((e) => '${e.key} ${amt(e.value)}')
+          .join(', ');
+      final prompt =
+          'Kamu Mang AI, asisten keuangan santai Bahasa Indonesia. '
+          'Data bulan ${monthLabel(month)}: masuk ${amt(f.totalIn)}, '
+          'keluar ${amt(f.totalOut)}, net ${amt(f.net)}. '
+          'Top belanja: ${top3.isEmpty ? '-' : top3}. '
+          'Tulis 2-3 kalimat manusiawi: sorotan + satu saran hemat. '
+          'Tanpa list mentah, tanpa markdown berat.';
+      final r = await aiChat(prompt);
+      if (!mounted) return;
+      final text = r.text.trim();
+      if (text.isEmpty) return;
+      await prefs.setString(key, text);
+      await prefs.setInt(key + '_at', nowMs);
+      if (!mounted) return;
+      setState(() => insight = text);
+    } catch (_) {}
   }
 
   /// Angka sebulan (ikut filter dompet): RPC dulu, list penuh bila gagal.
@@ -422,8 +427,6 @@ class ReportsScreenState extends State<ReportsScreen> {
     _load();
   }
 
-  void _toggleOrdering() => setState(() => reordering = !reordering);
-
   /// Angka sebulan dari agregat RPC (eksak, ikut filter dompet);
   /// display/export memakai item termuat di bawah.
   _MonthFigures _figuresFromFold(List<SaasTransaction> loaded) {
@@ -444,13 +447,13 @@ class ReportsScreenState extends State<ReportsScreen> {
   Widget _summarySection(
     _MonthFigures f,
     bool hasItems,
-    Map<String, double> prevCats,
   ) {
     final hasFlow = f.totalIn + f.spendOut + f.savingOut > 0;
-    final deltas = compareMonths(f.catTotalsNoSaving, prevCats);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _YearFlowCard(bars: yearFlow),
+        const SizedBox(height: SsrSpace.md),
         if (hasFlow) ...[
           _MonthFlowChart(
             totalIn: f.totalIn,
@@ -470,13 +473,9 @@ class ReportsScreenState extends State<ReportsScreen> {
           onExportXlsx: () => _runExport(_exportXlsx),
           onExportPdf: () => _guardPdf(),
         ),
-        if (forecast != null && month == currentMonth()) ...[
+        if (insight != null) ...[
           const SizedBox(height: SsrSpace.md),
-          _ForecastCard(fc: forecast!),
-        ],
-        if (deltas.isNotEmpty) ...[
-          const SizedBox(height: SsrSpace.md),
-          _CompareCard(deltas: deltas),
+          _InsightCard(text: insight!),
         ],
       ],
     );
@@ -520,16 +519,12 @@ class ReportsScreenState extends State<ReportsScreen> {
             wallet: filterWallet,
             names: walletNames,
             onWallet: _onWalletChanged,
-            ordering: reordering,
-            onOrder: _toggleOrdering,
           ),
           Expanded(
             child: _ReportSections(
               month: month,
-              reordering: reordering,
-              summary: _summarySection(figs, items.isNotEmpty, prevCats),
+              summary: _summarySection(figs, items.isNotEmpty),
               recapTotals: figs.catTotals,
-              list: _listSection(figs.items),
               listSlivers: _listSlivers(
                 figs.items,
                 totalN: figs.totalN,
@@ -545,7 +540,6 @@ class ReportsScreenState extends State<ReportsScreen> {
   String _walletName(String? id) => walletNames[id] ?? tr('tx_f_wallet');
 
   /// Bagian filter + daftar untuk path lazy (mode baca).
-  /// Path susun-ulang (reorder) tetap pakai [_listSection] eager.
   /// [totalN] = cacah filter eksak (ikut filter dompet) untuk caption jujur.
   List<Widget> _listSlivers(
     List<SaasTransaction> filtered, {
@@ -687,46 +681,20 @@ class ReportsScreenState extends State<ReportsScreen> {
     return (visible: visible, pairs: detectTransferPairs(filtered));
   }
 
-  Widget _listSection(List<SaasTransaction> filtered) {
-    final parts = _flowParts(filtered);
-    final visible = parts.visible;
-    final pairs = parts.pairs;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _FlowFilter(
-          value: flowFilter,
-          onChanged: (v) => setState(() => flowFilter = v),
-        ),
-        const SizedBox(height: SsrSpace.md),
-        if (pairs.isNotEmpty) ...[
-          _TransferHints(pairs: pairs, nameOf: _walletName),
-          const SizedBox(height: SsrSpace.md),
-        ],
-        if (filtered.isEmpty)
-          EmptyView(
-            icon: AppIcons.reports,
-            illustration: 'assets/illustrations/empty_laporan.svg',
-            title: tr('r_empty_t'),
-            subtitle: tr('r_empty_s'),
-            actionLabel: tr('reload'),
-            onAction: _load,
-          )
-        else if (visible.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: SsrSpace.xl),
-            child: Text(tr('r_noflow'), textAlign: TextAlign.center),
-          )
-        else
-          _TxListCard(items: visible),
-      ],
-    );
-  }
+/// Satu batang tahun: total masuk/keluar sebulan (fail-open nol).
+class _YearBar {
+  final String month;
+  final double masuk;
+  final double keluar;
+  const _YearBar({
+    required this.month,
+    required this.masuk,
+    required this.keluar,
+  });
 }
 
 /// Angka turunan sebulan dari list yang sudah difilter dompet.
-class _MonthFigures {
-  final List<SaasTransaction> items;
+class _MonthFigures {  final List<SaasTransaction> items;
   final double totalIn;
   final double totalOut;
   final double spendOut;
@@ -749,16 +717,14 @@ class _MonthFigures {
   });
 }
 
-/// Kepala Laporan: month picker + filter dompet + toggle susun ulang.
-/// Murni visual; state dan logika tetap milik ReportsScreenState.
+/// Kepala Laporan: month picker + filter dompet dalam wadah segmented
+/// iOS (brief §5.1). Murni visual; state milik ReportsScreenState.
 class _ReportHeader extends StatelessWidget {
   final String month;
   final ValueChanged<String> onMonth;
   final String? wallet;
   final Map<String, String> names;
   final ValueChanged<String?> onWallet;
-  final bool ordering;
-  final VoidCallback onOrder;
 
   const _ReportHeader({
     required this.month,
@@ -766,44 +732,47 @@ class _ReportHeader extends StatelessWidget {
     required this.wallet,
     required this.names,
     required this.onWallet,
-    required this.ordering,
-    required this.onOrder,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            SsrSpace.lg,
-            SsrSpace.lg,
-            SsrSpace.lg,
-            0,
-          ),
-          child: MonthPicker(month: month, onChanged: onMonth),
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        SsrSpace.lg,
+        SsrSpace.lg,
+        SsrSpace.lg,
+        0,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: SsrSpace.sm,
+          vertical: SsrSpace.xs,
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            SsrSpace.lg,
-            SsrSpace.sm,
-            SsrSpace.lg,
-            0,
-          ),
-          child: _WalletFilterDropdown(
-            value: wallet,
-            names: names,
-            onChanged: onWallet,
-          ),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
         ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: onOrder,
-            child: Text(tr(ordering ? 'r_arrange_done' : 'r_arrange')),
-          ),
+        child: Row(
+          children: [
+            Expanded(
+              child: MonthPicker(month: month, onChanged: onMonth),
+            ),
+            Container(
+              width: 1,
+              height: 28,
+              color: scheme.outline,
+            ),
+            Expanded(
+              child: _WalletFilterDropdown(
+                value: wallet,
+                names: names,
+                onChanged: onWallet,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -812,10 +781,8 @@ class _ReportHeader extends StatelessWidget {
 /// Murni relokasi builder ListenableBuilder dari build; logika identik.
 class _ReportSections extends StatelessWidget {
   final String month;
-  final bool reordering;
   final Widget summary;
   final Map<String, double> recapTotals;
-  final Widget list;
 
   /// Varian lazy seksi daftar untuk mode baca (dibangun di parent).
   final List<Widget> listSlivers;
@@ -825,10 +792,8 @@ class _ReportSections extends StatelessWidget {
 
   const _ReportSections({
     required this.month,
-    required this.reordering,
     required this.summary,
     required this.recapTotals,
-    required this.list,
     required this.listSlivers,
     required this.scrollController,
   });
@@ -845,112 +810,36 @@ class _ReportSections extends StatelessWidget {
             key: ValueKey('recap-$month'),
             totals: recapTotals,
             topN: reportsTopN.value,
+            month: month,
           ),
-          'list': list,
         };
-        final kids = _sectionKids(order, sections, recapTotals.isEmpty);
-        if (!reordering) {
-          return CustomScrollView(
-            controller: scrollController,
-            slivers: [
-              for (final id in order)
-                if (id == 'recap' && recapTotals.isEmpty)
-                  const SliverToBoxAdapter(
-                    key: ValueKey('recap-empty'),
-                    child: SizedBox.shrink(),
-                  )
-                else if (id == 'list')
-                  ...listSlivers
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      SsrSpace.lg,
-                      0,
-                      SsrSpace.lg,
-                      SsrSpace.lg,
-                    ),
-                    sliver: SliverToBoxAdapter(child: sections[id]!),
+        return CustomScrollView(
+          controller: scrollController,
+          slivers: [
+            for (final id in order)
+              if (id == 'recap' && recapTotals.isEmpty)
+                const SliverToBoxAdapter(
+                  key: ValueKey('recap-empty'),
+                  child: SizedBox.shrink(),
+                )
+              else if (id == 'list')
+                ...listSlivers
+              else if (id == 'summary')
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    SsrSpace.lg,
+                    0,
+                    SsrSpace.lg,
+                    SsrSpace.lg,
                   ),
-            ],
-          );
-        }
-
-        /// Pindah seksi lalu simpan urutan (tetap 3 seksi valid).
-        Future<void> move(int i, int dir) async {
-          final j = i + dir;
-          if (j < 0 || j >= order.length) return;
-          final next = List<String>.of(order);
-          final moved = next.removeAt(i);
-          next.insert(j, moved);
-          await setReportSectionOrder(next);
-        }
-
-        return ListView(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                SsrSpace.lg,
-                SsrSpace.sm,
-                SsrSpace.lg,
-                0,
-              ),
-              child: Text(
-                tr('r_arrange_hint'),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-            for (var i = 0; i < kids.length; i++)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: kids[i]),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const DuoIcon(AppIcons.arrowUp, size: 20),
-                        tooltip: tr('r_arrange_up'),
-                        onPressed: i == 0 ? null : () => move(i, -1),
-                      ),
-                      IconButton(
-                        icon: const DuoIcon(AppIcons.arrowDown, size: 20),
-                        tooltip: tr('r_arrange_down'),
-                        onPressed: i == kids.length - 1
-                            ? null
-                            : () => move(i, 1),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                  sliver: SliverToBoxAdapter(child: sections[id]!),
+                ),
           ],
         );
       },
     );
   }
-
-  List<Widget> _sectionKids(
-    List<String> order,
-    Map<String, Widget> sections,
-    bool recapEmpty,
-  ) {
-    return [
-      for (final id in order)
-        if (id == 'recap' && recapEmpty)
-          const SizedBox.shrink(key: ValueKey('recap-empty'))
-        else
-          Padding(
-            key: ValueKey('sec-$id'),
-            padding: const EdgeInsets.fromLTRB(
-              SsrSpace.lg,
-              0,
-              SsrSpace.lg,
-              SsrSpace.lg,
-            ),
-            child: sections[id]!,
-          ),
-    ];
-  }
+}
 }
 
 /// Donut 3 iris bulan terpilih: emerald (masuk), rust (belanja
@@ -1257,8 +1146,14 @@ class _TransferHints extends StatelessWidget {
 class _CategoryRecap extends StatefulWidget {
   final Map<String, double> totals;
   final bool topN;
+  final String month;
 
-  const _CategoryRecap({super.key, required this.totals, required this.topN});
+  const _CategoryRecap({
+    super.key,
+    required this.totals,
+    required this.topN,
+    required this.month,
+  });
 
   @override
   State<_CategoryRecap> createState() => _CategoryRecapState();
@@ -1267,11 +1162,30 @@ class _CategoryRecap extends StatefulWidget {
 class _CategoryRecapState extends State<_CategoryRecap> {
   bool expanded = false;
 
+  void _drill(String category) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TransactionsScreen(
+          initialMonth: widget.month,
+          initialCategory: category,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.totals.isEmpty) return const SizedBox.shrink();
     final result = top8PlusOthers(widget.totals, enabled: widget.topN);
     final theme = Theme.of(context);
+    final sum = result.top.fold(0.0, (s, c) => s + c.total) +
+        result.othersTotal;
+    final shown = expanded
+        ? [...result.top, ...result.others]
+        : result.top.take(5).toList();
+    final canExpand =
+        result.top.length + result.others.length > shown.length ||
+            expanded;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1283,16 +1197,35 @@ class _CategoryRecapState extends State<_CategoryRecap> {
         SectionCard(
           padding: const EdgeInsets.symmetric(
             horizontal: SsrSpace.lg,
-            vertical: SsrSpace.xs,
+            vertical: SsrSpace.sm,
           ),
           child: Column(
             children: [
-              for (final c in result.top)
-                _RecapRow(name: c.name, total: c.total),
-              _RecapOthers(
-                result: result,
-                expanded: expanded,
-                onToggle: () => setState(() => expanded = !expanded),
+              for (final c in shown)
+                _RecapRow(
+                  name: c.name,
+                  total: c.total,
+                  pct: sum > 0 ? c.total / sum : 0,
+                  onTap: () => _drill(c.name),
+                ),
+              if (canExpand)
+                InkWell(
+                onTap: () => setState(() => expanded = !expanded),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        expanded ? tr('r_collapse') : tr('r_see_all'),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -1302,139 +1235,75 @@ class _CategoryRecapState extends State<_CategoryRecap> {
   }
 }
 
-/// Satu baris rekap kategori: lencana SVG + label + nominal ala TxRow.
-/// Baris rekap selalu total belanja, jadi ikut varian Keluar (tint dan
-/// glif rust, nominal rust). Logika TopN tak berubah.
+/// Satu baris rekap (brief §5.2): emoji + nama 15sp + persen kanan,
+/// bar 6px di bawah. Tap = drill ke Transaksi filter kategori ini.
 class _RecapRow extends StatelessWidget {
   final String name;
   final double total;
+  final double pct;
+  final VoidCallback onTap;
 
-  const _RecapRow({required this.name, required this.total});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          _RecapBadge(category: name),
-          const SizedBox(width: SsrSpace.md),
-          Expanded(
-            child: Text(
-              name,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
-          Text(
-            amt(total),
-            style: SsrType.moneyMedium.copyWith(color: scheme.error),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Lencana rekap: tint + glif ikut kustomisasi kategori bila ada,
-/// else tint rust + glif rust 19px ikut baris Keluar TxRow.
-class _RecapBadge extends StatelessWidget {
-  final String category;
-
-  const _RecapBadge({required this.category});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return ValueListenableBuilder<Map<String, CatMeta>>(
-      valueListenable: categoryMeta,
-      builder: (context, meta, _) {
-        final m = meta[topOf(category)];
-        final base = m == null ? scheme.error : metaSlotColor(context, m.color);
-        final svg = m == null
-            ? svgForCategory(category)
-            : svgForMetaIcon(m.icon);
-        return Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: base.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(11),
-          ),
-          child: Center(
-            child: SvgPicture.asset(
-              svg,
-              width: 19,
-              colorFilter: ColorFilter.mode(base, BlendMode.srcIn),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Baris Others rekap: prompt kembang saat ciut, daftar sisa plus
-/// tombol tutup saat kembang. Cabang dan kondisi tampil identik
-/// dengan logika inline sebelumnya.
-class _RecapOthers extends StatelessWidget {
-  final TopNResult result;
-  final bool expanded;
-  final VoidCallback onToggle;
-
-  const _RecapOthers({
-    required this.result,
-    required this.expanded,
-    required this.onToggle,
+  const _RecapRow({
+    required this.name,
+    required this.total,
+    required this.pct,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    if (result.others.isNotEmpty && !expanded) {
-      return InkWell(
-        onTap: onToggle,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  tr('r_others').replaceFirst('{n}', '${result.others.length}'),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w600,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(SsrRadius.tile),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  categoryEmoji(name),
+                  style: const TextStyle(fontSize: 22),
+                ),
+                const SizedBox(width: SsrSpace.sm),
+                Expanded(
+                  child: Text(
+                    name,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 15),
                   ),
                 ),
-              ),
-              Text(
-                amt(result.othersTotal),
-                style: SsrType.moneyMedium.copyWith(color: scheme.error),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    if (!expanded) return const SizedBox.shrink();
-    return Column(
-      children: [
-        for (final c in result.others)
-          _RecapRow(name: c.name, total: c.total),
-        InkWell(
-          onTap: onToggle,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              tr('r_collapse'),
-              style: TextStyle(color: theme.colorScheme.primary),
+                Text(
+                  '${(pct * 100).round()}%',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(width: SsrSpace.sm),
+                Text(
+                  amt(total),
+                  style: SsrType.moneyMedium.copyWith(color: scheme.error),
+                ),
+              ],
             ),
-          ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: LinearProgressIndicator(
+                value: pct.clamp(0.0, 1.0).toDouble(),
+                minHeight: 6,
+                backgroundColor: scheme.outline,
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(scheme.error),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -1546,284 +1415,170 @@ class _TxListCard extends StatelessWidget {
   }
 }
 
+/// Kartu ARUS KAS 12 BULAN (brief §5.1): grouped bar masuk biru +
+/// keluar merah, radius 4 atas, bulan berjalan highlight, ringkasan.
+/// Biru #0A84FF & merah #FF453A untuk GRAFIK (bukan teks) — alasan
+/// identitas iOS per brief; teks tetap warna skema (R-37 tercatat).
+class _YearFlowCard extends StatelessWidget {
+  final List<_YearBar> bars;
+
+  const _YearFlowCard({required this.bars});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    var totalIn = 0.0;
+    var totalOut = 0.0;
+    var maxV = 0.0;
+    for (final b in bars) {
+      totalIn += b.masuk;
+      totalOut += b.keluar;
+      if (b.masuk > maxV) maxV = b.masuk;
+      if (b.keluar > maxV) maxV = b.keluar;
+    }
+    const inColor = Color(0xFF0A84FF);
+    const outColor = Color(0xFFFF453A);
+    final nowM = currentMonth();
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('r_flow12'),
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: SsrSpace.md),
+          SizedBox(
+            height: 170,
+            child: bars.isEmpty
+                ? Center(
+                    child: Text(
+                      tr('r_empty_s'),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  )
+                : BarChart(
+                    BarChartData(
+                      maxY: maxV <= 0 ? 1 : maxV * 1.15,
+                      gridData: const FlGridData(show: false),
+                      borderData: FlBorderData(show: false),
+                      titlesData: FlTitlesData(
+                        leftTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (v, _) {
+                              final i = v.toInt();
+                              if (i < 0 || i >= bars.length) {
+                                return const SizedBox.shrink();
+                              }
+                              const names = 'JFMAMJJASOND';
+                              final m =
+                                  int.tryParse(bars[i].month.substring(5)) ??
+                                      1;
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  names[(m - 1).clamp(0, 11)],
+                                  style: const TextStyle(fontSize: 9),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      barGroups: [
+                        for (var i = 0; i < bars.length; i++)
+                          BarChartGroupData(
+                            x: i,
+                            barsSpace: 2,
+                            barRods: [
+                              BarChartRodData(
+                                toY: bars[i].masuk,
+                                width: 6,
+                                color: inColor,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(4),
+                                ),
+                                backDrawRodData: BackgroundBarChartRodData(
+                                  show:
+                                      bars[i].month == nowM,
+                                  toY: maxV <= 0 ? 1 : maxV * 1.15,
+                                  color: scheme.primary
+                                      .withValues(alpha: 0.10),
+                                ),
+                              ),
+                              BarChartRodData(
+                                toY: bars[i].keluar,
+                                width: 6,
+                                color: outColor,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(4),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+          ),
+          const SizedBox(height: SsrSpace.sm),
+          Text(
+            '${tr('tx_in')} ${amt(totalIn)} · ${tr('tx_out')} ${amt(totalOut)}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu INSIGHT MANG AI (brief §5.1): 2-3 kalimat manusiawi, cache
+/// prefs 1 jam, fail-silent (sembunyi bila gagal). Tint ungu-biru
+/// sebagai penanda identitas AI (R-01: alasan tertulis, satu kartu).
+class _InsightCard extends StatelessWidget {
+  final String text;
+
+  const _InsightCard({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(SsrSpace.lg),
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF26232E) : const Color(0xFFF5F3FF),
+        borderRadius: BorderRadius.circular(SsrRadius.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('ai_insight_t'),
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: SsrSpace.sm),
+          Text(text, style: theme.textTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
+}
+
 /// Ringkasan bulan berjalan: kartu Masuk + Keluar, kartu Selisih,
 /// dan tombol unduh CSV / PDF.
-/// Kartu banding bulan ini vs bulan lalu per kategori, urut perubahan
-/// terbesar. 3 teratas tebal + panah berwarna (naik = merah, turun =
-/// hijau). Panah selalu ditemani angka persen, bukan makna tunggal.
-class _CompareCard extends StatelessWidget {
-  final List<MonthDelta> deltas;
-
-  const _CompareCard({required this.deltas});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(tr('cmp_title'), style: theme.textTheme.titleSmall),
-          const SizedBox(height: SsrSpace.sm),
-          for (var i = 0; i < deltas.length; i++)
-            _CompareRow(
-              delta: deltas[i],
-              highlight: i < 3,
-              upColor: scheme.error,
-              downColor: scheme.primary,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CompareRow extends StatelessWidget {
-  final MonthDelta delta;
-  final bool highlight;
-  final Color upColor;
-  final Color downColor;
-
-  const _CompareRow({
-    required this.delta,
-    required this.highlight,
-    required this.upColor,
-    required this.downColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final d = delta;
-    final up = d.delta > 0;
-    final same = d.delta == 0;
-    final color = same
-        ? theme.colorScheme.outline
-        : (up ? upColor : downColor);
-    final pctText = d.pct == null
-        ? tr('cmp_new')
-        : '${d.pct! >= 0 ? '+' : ''}${d.pct!.round()}%';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          if (!same)
-            Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: DuoIcon(
-                up ? AppIcons.arrowUp : AppIcons.arrowDown,
-                size: 16,
-                color: color,
-              ),
-            ),
-          Expanded(
-            child: Text(
-              d.category,
-              overflow: TextOverflow.ellipsis,
-              style: (highlight
-                      ? theme.textTheme.bodyMedium
-                      : theme.textTheme.bodySmall)
-                  ?.copyWith(fontWeight:
-                      highlight ? FontWeight.w700 : FontWeight.w400),
-            ),
-          ),
-          Text(
-            amt(d.cur),
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 56,
-            child: Text(
-              pctText,
-              textAlign: TextAlign.right,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Prakiraan kas 30 hari: garis saldo + angka akhir bulan + warning.
-/// Merah bila diprediksi minus; chart ikut colorScheme (dark aman).
-class _ForecastCard extends StatelessWidget {
-  final CashForecast fc;
-
-  const _ForecastCard({required this.fc});
-
-  /// Sumbu-Y kompak: 1500rb -> 1,5jt, 50000 -> 50rb.
-  String _short(double v) {
-    final a = v.abs();
-    final sign = v < 0 ? '-' : '';
-    if (a >= 1000000) {
-      final n = a / 1000000;
-      return '$sign${n.toStringAsFixed(n % 1 == 0 ? 0 : 1)}jt';
-    }
-    if (a >= 1000) {
-      final n = a / 1000;
-      return '$sign${n.toStringAsFixed(n % 1 == 0 ? 0 : 1)}rb';
-    }
-    return '$sign${a.toStringAsFixed(0)}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final now = DateTime.now();
-    final lastDay = DateTime(now.year, now.month + 1, 0).day;
-    final endIdx = (lastDay - now.day).clamp(0, fc.points.length - 1);
-    final endVal = fc.points[endIdx];
-    final negative = fc.min < 0;
-    return SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(tr('cf_title'), style: theme.textTheme.titleSmall),
-          Text(tr('cf_sub'), style: theme.textTheme.bodySmall),
-          const SizedBox(height: SsrSpace.sm),
-          SizedBox(
-            height: 160,
-            child: LineChart(_data(scheme, negative)),
-          ),
-          const SizedBox(height: SsrSpace.sm),
-          Text(
-            tr('cf_end').replaceFirst('{m}', amt(endVal)),
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: endVal < 0 ? scheme.error : null,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-          if (negative) ...[
-            const SizedBox(height: SsrSpace.sm),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: scheme.error.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(SsrRadius.chip),
-              ),
-              child: Text(
-                tr('cf_warn')
-                    .replaceFirst('{m}', amt(fc.min))
-                    .replaceFirst('{n}', '${fc.minDay}'),
-                style: TextStyle(
-                  color: scheme.error,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  LineChartData _data(ColorScheme scheme, bool negative) {
-    final pts = fc.points;
-    var lo = pts.first;
-    var hi = pts.first;
-    for (final v in pts) {
-      if (v < lo) lo = v;
-      if (v > hi) hi = v;
-    }
-    if ((hi - lo).abs() < 1) {
-      hi += 1;
-      lo -= 1;
-    }
-    final pad = (hi - lo) * 0.1;
-    return LineChartData(
-      minX: 0,
-      maxX: (pts.length - 1).toDouble(),
-      minY: lo - pad,
-      maxY: hi + pad,
-      lineTouchData: const LineTouchData(enabled: false),
-      gridData: FlGridData(
-        show: true,
-        drawVerticalLine: false,
-        horizontalInterval: (hi - lo) / 3,
-      ),
-      titlesData: FlTitlesData(
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 44,
-            getTitlesWidget: (v, _) => Text(
-              _short(v),
-              style: const TextStyle(fontSize: 10),
-            ),
-          ),
-        ),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            interval: 10,
-            getTitlesWidget: (v, _) => Text(
-              '${v.toInt()}',
-              style: const TextStyle(fontSize: 10),
-            ),
-          ),
-        ),
-        topTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        rightTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-      ),
-      borderData: FlBorderData(show: false),
-      extraLinesData: negative
-          ? ExtraLinesData(
-              horizontalLines: [
-                HorizontalLine(
-                  y: 0,
-                  color: scheme.error,
-                  dashArray: [4, 4],
-                ),
-              ],
-            )
-          : const ExtraLinesData(),
-      lineBarsData: [
-        LineChartBarData(
-          spots: [
-            for (var i = 0; i < pts.length; i++) FlSpot(i.toDouble(), pts[i]),
-          ],
-          isCurved: true,
-          color: negative ? scheme.error : scheme.primary,
-          barWidth: 2.5,
-          dotData: const FlDotData(show: false),
-          belowBarData: BarAreaData(
-            show: true,
-            color: (negative ? scheme.error : scheme.primary)
-                .withValues(alpha: 0.15),
-          ),
-        ),
-        if (negative)
-          LineChartBarData(
-            spots: [FlSpot(fc.minDay.toDouble(), fc.min)],
-            color: Colors.transparent,
-            barWidth: 0,
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
-                radius: 4,
-                color: scheme.error,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class _MonthlySummary extends StatelessWidget {
   final String monthLabel;
   final double totalIn;

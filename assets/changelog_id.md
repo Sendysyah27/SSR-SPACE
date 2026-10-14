@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.59.0+161.
+Versi terpasang: 2.59.0+162.
+
+## Yang baru di 2.59.0+162
+
+1. Batch 3 redesign: Laporan header segmented iOS, grafik arus 12 bulan, kategori emoji + drill ke Transaksi, Insight Mang AI (cache 1 jam). Prakiraan, banding, dan Susun dihapus.
 
 ## Yang baru di 2.59.0+161
 
