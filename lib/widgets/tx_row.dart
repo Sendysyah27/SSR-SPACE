@@ -69,15 +69,19 @@ class TxRow extends StatelessWidget {
         : (r.$2 ? tr('sp_by_you') : tr('sp_by_member').replaceFirst('{s}', r.$1));
     // Show max 3 chips: auto, wallet, category (creator shown only if others present)
     final chips = <Widget>[];
+    // ignore: curly_braces_in_flow_control_structures
     if (tx.sourcePackage != null) chips.add(
       StatusChip(label: tr('tx_auto'), tone: StatusTone.accent, icon: AppIcons.autoBadge, isSmall: true),
     );
+    // ignore: curly_braces_in_flow_control_structures
     if (hasNoWallet(tx)) chips.add(
       StatusChip(label: tr('tx_nowallet'), tone: StatusTone.danger),
     );
+    // ignore: curly_braces_in_flow_control_structures
     if (tx.category != null && tx.category!.isNotEmpty) chips.add(
       StatusChip(label: "$categoryEmoji(tx.category!) ${tx.category!}", tone: StatusTone.neutral),
     );
+    // ignore: curly_braces_in_flow_control_structures
     if (byLabel != null && chips.length >= 2) chips.add(
       StatusChip(label: byLabel, tone: r!.$2 ? StatusTone.accent : StatusTone.neutral),
     );
