@@ -335,113 +335,9 @@ jobs:
           if [ -n "$SSR_GOOGLE_SERVICES_JSON" ]; then
             echo "$SSR_GOOGLE_SERVICES_JSON" > android/app/google-services.json
             echo 'google-services.json ok (native Google login aktif)'
-            KEY=$(python3 -c "import json;print(json.load(open('android/app/google-services.json'))['client'][0]['api_key'][0]['current_key'])")
-            echo "GOOGLE_API_KEY=$KEY" >> "$GITHUB_ENV"
-            echo 'api key Plan B REST ok (tak ditampilkan)'
           else
             echo 'tanpa google-services.json (native gagal, fallback browser OAuth)'
           fi
-      - run: |
-          python3 - <<'EOF'
-          import pathlib, re
-          # Firebase AI Logic butuh plugin gradle google-services agar
-          # Firebase.initializeApp() baca google-services.json.
-          # Tanpa json (secret kosong) = lewati jujur, app tetap build
-          # dengan AI mati (fail-open di Dart). android/ di-generate CI.
-          js = pathlib.Path('android/app/google-services.json')
-          if not js.exists():
-              print('tanpa google-services.json, plugin dilewati (AI mati)')
-          else:
-              ver = '4.5.0'
-              roots = [pathlib.Path('android/build.gradle.kts'),
-                       pathlib.Path('android/build.gradle')]
-              root = next((p for p in roots if p.exists()), None)
-              settings = pathlib.Path('android/settings.gradle.kts')
-              if not settings.exists():
-                  settings = pathlib.Path('android/settings.gradle')
-
-              def show(p):
-                  print(f'--- {p} ---')
-                  print(pathlib.Path(p).read_text()[:1500])
-
-              def add_after_line(text, pattern, newline):
-                  m = re.search(r'(?m)^[ \t]*' + pattern + r'[^\n]*$', text)
-                  if m is None:
-                      return None
-                  return text[:m.end()] + '\n' + newline + text[m.end():]
-
-              gsettings = ''
-              if settings.exists():
-                  gsettings = settings.read_text()
-              use_dsl = ('org.jetbrains.kotlin.android' in gsettings or
-                         'com.android.application' in gsettings)
-              if use_dsl:
-                  # Template modern: plugins DSL di settings (apply false)
-                  # + dipakai di app. Root build.gradle.kts yang ada hanya
-                  # berisi allprojects/buildDir (tanpa plugins) — bukan
-                  # tempat classpath. (Fakta dump CI 2026-10-13.)
-                  g = gsettings
-                  if 'google-services' not in g:
-                      g2 = add_after_line(g, r'id[(]"org[.]jetbrains[.]kotlin[.]android"[)]',
-                          '    id("com.google.gms.google-services") version "' + ver + '" apply false')
-                      if g2 is None:
-                          g2 = add_after_line(g, r'id[(]"com[.]android[.]application"[)]',
-                              '    id("com.google.gms.google-services") version "' + ver + '" apply false')
-                      if g2 is None:
-                          show(settings)
-                          raise SystemExit('anchor plugins settings tak ketemu')
-                      settings.write_text(g2)
-                  rooted = settings
-              elif root is not None:
-                  # Template lama: classpath di root build.gradle.
-                  s = root.read_text()
-                  if 'google-services' not in s:
-                      if root.suffix == '.kts':
-                          pat = re.compile(r'classpath[(]"org[.]jetbrains[.]kotlin:kotlin-gradle-plugin:[^"]+"[)]')
-                          if len(pat.findall(s)) != 1:
-                              show(root)
-                              raise SystemExit('anchor kotlin KTS tak ketemu')
-                          s = pat.sub(
-                              lambda m: m.group(0) +
-                              '\n        classpath("com.google.gms:google-services:' + ver + '")',
-                              s, count=1)
-                      else:
-                          pat = re.compile(r'classpath\s+"org[.]jetbrains[.]kotlin:kotlin-gradle-plugin:[^"]+"')
-                          if len(pat.findall(s)) != 1:
-                              show(root)
-                              raise SystemExit('anchor kotlin groovy tak ketemu')
-                          s = pat.sub(
-                              lambda m: m.group(0) +
-                              '\n        classpath "com.google.gms:google-services:' + ver + '"',
-                              s, count=1)
-                      root.write_text(s)
-                  rooted = root
-              else:
-                  raise SystemExit('root build gradle + settings tak ketemu')
-              apps = [pathlib.Path('android/app/build.gradle.kts'),
-                      pathlib.Path('android/app/build.gradle')]
-              app = next((p for p in apps if p.exists()), None)
-              assert app is not None, 'app build gradle tak ketemu'
-              a = app.read_text()
-              if 'google-services' not in a:
-                  if app.suffix == '.kts':
-                      a2 = add_after_line(a, r'id[(]"com[.]android[.]application"[)]',
-                          '    id("com.google.gms.google-services")')
-                      if a2 is None:
-                          show(app)
-                          raise SystemExit('anchor plugins KTS tak ketemu')
-                      app.write_text(a2)
-                  else:
-                      a2 = add_after_line(a, r"apply plugin: 'com[.]android[.]application'",
-                          "apply plugin: 'com.google.gms.google-services'")
-                      if a2 is None:
-                          show(app)
-                          raise SystemExit('anchor apply groovy tak ketemu')
-                      app.write_text(a2)
-              assert 'google-services' in rooted.read_text(), 'daftar hilang'
-              assert 'google-services' in app.read_text(), 'pakai hilang'
-              print(f'google-services plugin {ver} ok:', rooted, app)
-          EOF
       - run: |
           python3 - <<'EOF'
           import pathlib
@@ -1435,12 +1331,12 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-      - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }} --dart-define=GOOGLE_API_KEY=${{ env.GOOGLE_API_KEY }}
+      - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         env:
           SSR_KEYSTORE_PASS: ${{ secrets.SSR_KEYSTORE_PASS }}
           SSR_KEY_ALIAS: ${{ secrets.SSR_KEY_ALIAS }}
           SSR_KEY_PASS: ${{ secrets.SSR_KEY_PASS }}
-      - run: flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }} --dart-define=GOOGLE_API_KEY=${{ env.GOOGLE_API_KEY }}
+      - run: flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         env:
           SSR_KEYSTORE_PASS: ${{ secrets.SSR_KEYSTORE_PASS }}
           SSR_KEY_ALIAS: ${{ secrets.SSR_KEY_ALIAS }}

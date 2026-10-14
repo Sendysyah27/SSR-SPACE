@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/category_meta.dart';
@@ -24,30 +22,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Firebase untuk AI parser struk: gagal init = AI mati, app tetap
-  // jalan (tanpa google-services.json di device lama / build lokal).
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    debugPrint('firebase init gagal (AI mati): $e');
-  }
-  // SENGAJA tanpa Firebase App Check: token invalid yang menempel
-  // justru bikin 403 "App attestation failed" walau console Unenforced
-  // (token invalid != tanpa token). Tanpa activate = tanpa token =
-  // lolos saat unenforced. Jangan tambah activate() lagi kecuali
-  // console di-enforce.
   ErrorReporter.init();
   await SupabaseConfig.init();
-  // Perbaiki sesi lama / fallback browser: ada sesi Supabase tapi tanpa
-  // sesi Firebase → top-up (link/anonim), fail-open. Tanpa ini user yang
-  // login sebelum update tak pernah dapat AI sampai login ulang.
-  try {
-    if (SupabaseConfig.client.auth.currentSession != null) {
-      await ensureFirebaseSession();
-    }
-  } catch (e) {
-    debugPrint('firebase ensure gagal (AI mati): $e');
-  }
   ForegroundTrack.initOnce();
   PinLinkVerify.initOnce();
   final prefs = await SharedPreferences.getInstance();

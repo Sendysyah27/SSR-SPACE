@@ -1,7 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart'
-    hide User, OAuthProvider;
-import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/supabase_config.dart';
@@ -31,29 +28,13 @@ class AuthService {
 
   Stream<AuthState> authChanges() => _c.auth.onAuthStateChange;
 
-  Future<AuthResponse> signUp(String email, String password) async {
-    final res = await _c.auth.signUp(email: email, password: password);
-    // Top-up sesi Firebase (anonim) agar AI parser ikut hidup untuk
-    // user email — fail-open, sesi Supabase tetap sumber kebenaran.
-    await ensureFirebaseSession();
-    return res;
-  }
+  Future<AuthResponse> signUp(String email, String password) =>
+      _c.auth.signUp(email: email, password: password);
 
-  Future<AuthResponse> signIn(String email, String password) async {
-    final res = await _c.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
-    await ensureFirebaseSession();
-    return res;
-  }
+  Future<AuthResponse> signIn(String email, String password) =>
+      _c.auth.signInWithPassword(email: email, password: password);
 
-  Future<void> signOut() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-    } catch (_) {}
-    await _c.auth.signOut();
-  }
+  Future<void> signOut() => _c.auth.signOut();
 
   Future<void> resendVerification(String email) =>
       _c.auth.resend(type: OtpType.signup, email: email);
@@ -87,14 +68,6 @@ class AuthService {
       }
       final res = await _c.auth.signInWithIdToken(
         provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: gauth.accessToken,
-      );
-      // Link sesi Firebase untuk AI parser struk (fail-open: gagal
-      // link = AI mati, sesi Supabase tetap sumber kebenaran).
-      // Tanpa idToken (fallback browser) = top-up anonim agar AI tetap
-      // hidup untuk user Google juga.
-      await ensureFirebaseSession(
         idToken: idToken,
         accessToken: gauth.accessToken,
       );

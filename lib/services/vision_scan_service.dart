@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
+import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
-import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'ai_draft.dart';
@@ -19,10 +19,10 @@ class VisionScanException implements Exception {
   const VisionScanException(this.trKey, [this.detail]);
 }
 
-/// Foto struk (kamera/galeri) -> model VISION langsung, TANPA OCR.
-/// Syarat: kunci Gemini (multimodal) atau login Firebase. Provider
-/// text-only (OpenRouter/Zen) dilewati jujur. File foto dihapus.
-/// Null = user batal. Return [ReceiptData] + nama provider pemenang.
+/// Foto struk (kamera/galeri) -> Zen VISION langsung, TANPA OCR.
+/// Anonim bila tanpa kunci. Gagal vision -> OCR lokal -> Zen teks.
+/// File foto dihapus. Null = user batal.
+/// Return [ReceiptData] + nama provider pemenang.
 Future<({ReceiptData data, String provider})?> scanReceiptVision(
   ImageSource source,
 ) async {
@@ -46,67 +46,44 @@ Future<({ReceiptData data, String provider})?> scanReceiptVision(
     String? text;
     String provider = '';
     AiFailure? last;
-    // 1) Gemini key (multimodal penuh).
-    if (await aiProviderOn(aiProvGemini)) {
-      final k = await readGeminiKey();
-      if (k != null) {
-        try {
-          String? used;
-          text = await restGenerate(aiVisionPrompt(),
-                  apiKey: k,
-                  onModel: (m) => used = m,
-                  imageBytes: bytes,
-                  mimeType: mime)
-              .timeout(const Duration(seconds: 90));
-          provider = 'Gemini${used == null ? '' : ': $used'}';
-        } on AiFailure catch (e) {
-          last = e;
-          if (e.code == 'quota') unawaited(noteQuotaHit());
-        } catch (e) {
-          last = AiFailure('network', '[Gemini] $e');
-        }
+    // 1) Zen vision langsung (prompt vision + gambar).
+    try {
+      final zkey = await readZenKey();
+      final r = await zenChatRaw(
+        apiKey: zkey,
+        prompt: aiVisionPrompt(),
+        imageBytes: bytes,
+        mimeType: mime,
+      ).timeout(const Duration(seconds: 90));
+      if (r.text.trim().isNotEmpty) {
+        text = r.text;
+        provider = 'Zen: ${r.provider}';
       }
+    } on AiFailure catch (e) {
+      last = e;
+      if (e.code == 'quota') unawaited(noteQuotaHit());
+    } catch (e) {
+      last = AiFailure('network', '[Zen] $e');
     }
-    // 2) Firebase login (multimodal SDK).
-    if ((text == null || text.trim().isEmpty) &&
-        await aiProviderOn(aiProvFb)) {
+    // 2) Jatuh ke OCR lokal -> Zen teks (untuk model buta gambar).
+    if (text == null || text.trim().isEmpty) {
       try {
-        text = await firebaseVisionAsk(
-          bytes: bytes,
-          prompt: aiVisionPrompt(),
-          mimeType: mime,
-        );
-        if (text != null && text.trim().isEmpty) text = null;
-        if (text != null) provider = 'Firebase';
+        final ocr = await ocrBytesToText(bytes);
+        if (ocr.trim().isNotEmpty) {
+          final zkey = await readZenKey();
+          final draft = await parseReceiptZen(
+            apiKey: zkey,
+            ocrText: ocr,
+          );
+          if (draft != null) {
+            return (data: draft.toReceiptData(), provider: 'Zen (OCR)');
+          }
+        }
       } on AiFailure catch (e) {
         last = e;
         if (e.code == 'quota') unawaited(noteQuotaHit());
       } catch (e) {
-        last = AiFailure('network', '$e');
-      }
-    }
-    // 3) Tanpa vision (cuma Zen/OpenRouter aktif): OCR lokal lalu
-    // rantai teks. Berlaku untuk mode catat DAN chat room.
-    if (text == null || text.trim().isEmpty) {
-      final orOn = await aiProviderOn(aiProvOr);
-      final zenOn = await aiProviderOn(aiProvZen);
-      final fbOn = await aiProviderOn(aiProvFb);
-      final orKey = await readOrKey();
-      if ((orOn && orKey != null) || zenOn || fbOn) {
-        try {
-          final ocr = await ocrBytesToText(bytes);
-          if (ocr.trim().isNotEmpty) {
-            final r = await aiTextChain(
-                '${aiVisionPrompt()}\nTEKS (OCR lokal):\n$ocr');
-            text = r.text;
-            provider = '${r.provider} (OCR)';
-          }
-        } on AiFailure catch (e) {
-          last = e;
-          if (e.code == 'quota') unawaited(noteQuotaHit());
-        } catch (e) {
-          last = AiFailure('network', '[OCR] $e');
-        }
+        last = AiFailure('network', '[OCR] $e');
       }
     }
     if (text == null || text.trim().isEmpty) {

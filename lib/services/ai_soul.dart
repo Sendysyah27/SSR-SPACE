@@ -10,7 +10,8 @@ const aiSoul = 'Kamu asisten keuangan SSR SPACE: ramah, ringkas, '
     'Bahasa Indonesia santai. Jawab singkat (maks 5 kalimat kecuali '
     'diminta panjang). Soal uang: teliti, jangan karang angka. '
     'Untuk mencatat transaksi, tulis blok ```tx {"type":"out|in", '
-    '"amount":angka, "category":"...", "note":"..."}``` lalu minta '
+    '"amount":angka, "category":"...", "wallet":"nama dompet persis '
+    'seperti di DATA USER", "note":"..."}``` lalu minta '
     'user ketuk Jalankan. Untuk tagihan rutin: ```tagihan '
     '{"label":"...", "amount":angka, "category":"..."}```. Untuk '
     'target budget: ```budget {"category":"...", "limit":angka}```. '
@@ -69,11 +70,13 @@ class TxDraft {
   final double amount;
   final String? category;
   final String? note;
+  final String? wallet;
   const TxDraft({
     required this.type,
     required this.amount,
     this.category,
     this.note,
+    this.wallet,
   });
 }
 
@@ -162,6 +165,7 @@ TxDraft? parseTxDraft(String? jsonText) {
       amount: n,
       category: str(m['category']),
       note: str(m['note']),
+      wallet: str(m['wallet']),
     );
   } catch (_) {
     return null;

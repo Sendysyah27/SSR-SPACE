@@ -2288,31 +2288,6 @@ const _t = <String, Map<String, String>>{
     'en': 'Smart fallback when rules cannot read a receipt.',
   },
   'ai_enable': {'id': 'Nyalakan AI Parser', 'en': 'Enable AI Parser'},
-  'ai_active': {
-    'id': 'AI aktif via login Google.',
-    'en': 'AI active via Google sign-in.',
-  },
-  'ai_need_google': {
-    'id': 'Masuk dengan Google untuk menyalakan AI.',
-    'en': 'Sign in with Google to enable AI.',
-  },
-  'ai_active_pre': {'id': 'Aktif: ', 'en': 'Active: '},
-  'ai_or_hint': {
-    'id': 'Tempel kunci OpenRouter API',
-    'en': 'Paste OpenRouter API key',
-  },
-  'ai_or_saved': {
-    'id': 'Kunci OpenRouter tersimpan aman (***).',
-    'en': 'OpenRouter key stored securely (***).',
-  },
-  'ai_or_where': {
-    'id': 'Ambil gratis di https://openrouter.ai/settings/keys',
-    'en': 'Get it free at https://openrouter.ai/settings/keys',
-  },
-  'ai_need_orkey': {
-    'id': 'Belum ada kunci OpenRouter.',
-    'en': 'No OpenRouter key yet.',
-  },
   'ai_zen_hint': {
     'id': 'Tempel kunci OpenCode API',
     'en': 'Paste OpenCode API key',
@@ -2326,30 +2301,13 @@ const _t = <String, Map<String, String>>{
     'en': 'Get it at https://opencode.ai/settings',
   },
   'ai_need_zenkey': {
-    'id': 'Belum ada kunci Zen.',
-    'en': 'No Zen key yet.',
-  },
-  'ai_need_either': {
-    'id': 'Tempel kunci Gemini/OpenRouter/Zen atau masuk Google untuk AI.',
-    'en': 'Paste a Gemini/OpenRouter/Zen key or sign in with Google for AI.',
-  },
-  'ai_key_hint': {'id': 'Tempel kunci Gemini API', 'en': 'Paste Gemini API key'},
-  'ai_key_saved': {
-    'id': 'Kunci Gemini tersimpan aman (***).',
-    'en': 'Gemini key stored securely (***).',
-  },
-  'ai_key_where': {
-    'id': 'Ambil gratis di https://aistudio.google.com/apikey',
-    'en': 'Get it free at https://aistudio.google.com/apikey',
+    'id': 'Belum ada kunci Zen (jalan anonim).',
+    'en': 'No Zen key yet (anonymous mode).',
   },
   'ai_save': {'id': 'Simpan kunci', 'en': 'Save key'},
   'ai_clear': {'id': 'Hapus kunci', 'en': 'Delete key'},
   'ai_saved': {'id': 'Kunci tersimpan aman.', 'en': 'Key stored securely.'},
   'ai_cleared': {'id': 'Kunci dihapus.', 'en': 'Key deleted.'},
-  'ai_need_key': {
-    'id': 'Belum ada kunci Gemini.',
-    'en': 'No Gemini key yet.',
-  },
   'ai_test': {'id': 'Tes AI', 'en': 'Test AI'},
   'mode_title': {'id': 'Mode Input', 'en': 'Input Mode'},
   'mode_live': {'id': 'Input Live', 'en': 'Live Input'},
@@ -2404,18 +2362,12 @@ const _t = <String, Map<String, String>>{
   },
   'chat_mem_clear': {'id': 'Hapus semua', 'en': 'Clear all'},
   'ai_run': {'id': 'Jalankan', 'en': 'Run'},
-  'ai_on': {'id': 'Aktif', 'en': 'On'},
-  'ai_off': {'id': 'Mati', 'en': 'Off'},
   'ai_key_invalid': {
     'id': 'Kunci API tidak valid, cek di Pengaturan.',
     'en': 'API key is invalid, check Settings.',
   },
   'ai_rescan': {'id': 'Scan ulang', 'en': 'Rescan'},
   'ai_scan_title': {'id': 'AI Struk', 'en': 'AI Receipt'},
-  'ai_no_net': {
-    'id': 'Tidak bisa konek ke server Google AI. Cek DNS/firewall/ISP atau VPN, lalu coba lagi.',
-    'en': 'Cannot reach the Google AI server. Check DNS/firewall/ISP or VPN, then retry.',
-  },
   'ai_busy': {
     'id': 'Model AI lagi sibuk, coba lagi sebentar.',
     'en': 'The AI model is busy, retry in a moment.',

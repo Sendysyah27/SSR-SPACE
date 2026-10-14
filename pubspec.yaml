@@ -1,7 +1,7 @@
 name: ssr_space
 description: SSR SPACE - Simple. Secure. Reliable. Your Finance Space. Pencatatan keuangan multi-dompet dengan workspace bersama dan auto-track notifikasi bank.
 publish_to: 'none'
-version: 2.57.0+157
+version: 2.58.0+158
 environment:
   sdk: '>=3.11.0 <4.0.0'
 dependencies:
@@ -39,14 +39,8 @@ dependencies:
   image_picker: ^1.1.2
   # Buka file ekspor dari ketuk notifikasi (FileProvider via merger).
   open_filex: ^4.7.0
-  # AI parser struk via Firebase AI Logic (tanpa kunci manual;
-  # aktif bila login Google). Versi pin 2026-10-13 (pub.dev stable).
-  firebase_core: ^4.14.0
-  firebase_auth: ^6.6.0
-  firebase_ai: ^4.0.0
-  # HTTP murni HANYA untuk Plan B REST fallback AI (tanpa SDK).
+  # AI native OpenCode Zen (satu-satunya provider): HTTP + Keystore.
   http: ^1.2.2
-  # Keystore kunci API Zen (bukan prefs) — kembali dipakai 2.50.0.
   flutter_secure_storage: ^9.2.4
   # Dipin exact: 13.x menarik permission_handler_android 14 (butuh
   # compileSdk 37, app 36) → build merah checkReleaseAarMetadata.

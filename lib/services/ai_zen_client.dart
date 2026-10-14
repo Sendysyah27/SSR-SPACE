@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'ai_draft.dart';
+import 'ai_key_store.dart';
+import 'ai_soul.dart';
 import 'firebase_ai_parser.dart';
 
 // OpenCode Zen LANGSUNG dari app (tanpa proxy VPS).
@@ -314,4 +316,48 @@ Future<({String text, String provider})> zenChatRaw({
     );
     return (text: text, provider: zenModelFree);
   }
+}
+
+/// Chat bebas via Zen LANGSUNG (satu-satunya provider AI).
+/// [imageBytes] = multimodal (tanpa OCR). [history] = turn sesi.
+/// Return (teks, provider). Throw [AiFailure] terakhir yang jujur.
+Future<({String text, String provider})> aiChat(
+  String prompt, {
+  List<int>? imageBytes,
+  String? mimeType,
+  List<({bool mine, String text})>? history,
+  String? dataContext,
+}) async {
+  if (prompt.trim().isEmpty) {
+    throw const AiFailure('empty', 'prompt kosong');
+  }
+  final convo = (history == null || history.isEmpty)
+      ? ''
+      : '${chatHistoryBlock(history)}\n';
+  final data = (dataContext ?? '').trim().isNotEmpty
+      ? '${dataContext!.trim()}\n'
+      : '';
+  final full = '$convo$data$prompt';
+  final hasImage = imageBytes != null && imageBytes.isNotEmpty;
+  final mime = (mimeType ?? '').isNotEmpty ? mimeType! : 'image/jpeg';
+  try {
+    final key = await readZenKey();
+    if (hasImage) {
+      final r = await zenChatRaw(
+        apiKey: key,
+        prompt: full,
+        imageBytes: imageBytes,
+        mimeType: mime,
+      ).timeout(const Duration(seconds: 90));
+      if (r.text.trim().isNotEmpty) return (text: r.text, provider: r.provider);
+    } else {
+      final r = await zenChatRaw(apiKey: key, prompt: full)
+          .timeout(const Duration(seconds: 75));
+      if (r.text.trim().isNotEmpty) return (text: r.text, provider: r.provider);
+    }
+  } on AiFailure catch (e) {
+    if (e.code == 'quota') unawaited(noteQuotaHit());
+    rethrow;
+  }
+  throw const AiFailure('network', '[Zen] tanpa jawaban');
 }

@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.57.0+157.
+Versi terpasang: 2.58.0+158.
+
+## Yang baru di 2.58.0+158
+
+1. AI kini OpenCode native saja: Gemini, OpenRouter, dan Firebase dilepas total (kode + settings + dependensi). Lebih ringan, satu jalur, tanpa kuota silang.
 
 ## Yang baru di 2.57.0+157
 

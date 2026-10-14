@@ -9,8 +9,10 @@ import 'package:ssr_space/services/ai_context.dart';
 import 'package:ssr_space/services/ai_memory.dart';
 import 'package:ssr_space/services/ai_soul.dart';
 import 'package:ssr_space/services/budget_service.dart';
+import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
-import 'package:ssr_space/services/firebase_ai_factory.dart';
+import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
@@ -60,6 +62,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   List<int>? _pendingImage;
   String? _pendingMime;
   String _dataCtx = '';
+  int _animFrom = 0;
 
   @override
   void initState() {
@@ -155,6 +158,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         ? '${aiContextBlock(memory)}\nJelaskan gambar terlampir.'
         : '${aiContextBlock(memory)}\nUser: $text';
     setState(() {
+      _animFrom = _items.length;
       _items.add(_ChatMsg(mine: true, text: text.isEmpty ? '(gambar)' : text,
           image: img));
       _c.clear();
@@ -274,11 +278,30 @@ class _AiChatScreenState extends State<AiChatScreen> {
   }
 
   Future<void> _runAction(TxDraft d) async {
+    String? walletId;
+    if (d.wallet != null) {
+      try {
+        final orgId = await activeOrgId();
+        if (orgId.isNotEmpty) {
+          final ws = await WalletService().list(orgId);
+          final hit = matchWalletName(
+            d.wallet!,
+            [for (final w in ws) w.name],
+          );
+          if (hit != null) {
+            for (final w in ws) {
+              if (w.name == hit) walletId = w.id;
+            }
+          }
+        }
+      } catch (_) {}
+    }
     final ok = await openTxInputSheet(
       context,
       initialType: d.type,
       initialAmountIdr: d.amount,
       initialCategory: d.category,
+      initialWalletId: walletId,
       initialNote: d.note,
     );
     if (!mounted || !ok) return;
@@ -407,29 +430,24 @@ class _AiChatScreenState extends State<AiChatScreen> {
                       itemCount: _items.length + (_sending ? 1 : 0),
                       itemBuilder: (_, i) {
                         if (i >= _items.length) {
-                          return Align(
+                          return const Align(
                             alignment: Alignment.centerLeft,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Text(
-                                tr('chat_thinking'),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: scheme.onSurfaceVariant,
-                                    ),
-                              ),
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: _TypingDots(),
                             ),
                           );
                         }
                         final m = _items[i];
-                        return Column(
-                          crossAxisAlignment: m.mine
-                              ? CrossAxisAlignment.end
-                              : CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                        return _Enter(
+                          animate: i >= _animFrom,
+                          mine: m.mine,
+                          child: Column(
+                            crossAxisAlignment: m.mine
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                             _Bubble(msg: m),
                             if (m.action != null)
                               _ActionCard(
@@ -454,10 +472,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                 note: tr('mode_budget_s'),
                                 onRun: () => _runBudget(m.budgetAction!),
                               ),
-                          ],
+                            ],
+                          ),
                         );
                       },
-                    ),
             ),
             if (_pendingImage != null)
               Align(
@@ -545,8 +563,89 @@ class _AiChatScreenState extends State<AiChatScreen> {
   }
 }
 
-class _Bubble extends StatelessWidget {
-  final _ChatMsg msg;
+/// Entrance halus bubble baru (fade + geser 12px, 250ms).
+/// Bubble lama (animate=false) tampil instan tanpa replay.
+class _Enter extends StatelessWidget {
+  final bool animate;
+  final bool mine;
+  final Widget child;
+  const _Enter({
+    required this.animate,
+    required this.mine,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!animate) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      builder: (_, v, c) => Opacity(
+        opacity: v,
+        child: Transform.translate(
+          offset: Offset((mine ? 1 : -1) * (1 - v) * 12, (1 - v) * 8),
+          child: c,
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Tiga titik mengetik berdenyut berurutan (loop).
+class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < 3; i++)
+            Padding(
+              padding: EdgeInsets.only(right: i == 2 ? 0 : 5),
+              child: Opacity(
+                opacity:
+                    (0.35 + 0.65 * ((_c.value + i / 3) % 1.0)).clamp(0.0, 1.0),
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {  final _ChatMsg msg;
   const _Bubble({required this.msg});
 
   @override

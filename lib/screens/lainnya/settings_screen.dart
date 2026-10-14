@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
-import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
-import 'package:ssr_space/services/ai_openrouter_client.dart';
 import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/biometric_auth.dart';
@@ -23,7 +21,6 @@ import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
-import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/pin_pad.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
@@ -969,21 +966,10 @@ class _AiCard extends StatefulWidget {
 
 class _AiCardState extends State<_AiCard> {
   bool _on = true;
-  bool _ready = false;
   bool _busy = true;
   String? _msg;
   String? _quotaInfo;
-  bool _hasKey = false;
-  bool _hasOrKey = false;
   bool _hasZenKey = false;
-  final Map<String, bool> _prov = {
-    aiProvGemini: true,
-    aiProvOr: true,
-    aiProvZen: true,
-    aiProvFb: true,
-  };
-  final _keyC = TextEditingController();
-  final _orKeyC = TextEditingController();
   final _zenKeyC = TextEditingController();
 
   @override
@@ -994,36 +980,19 @@ class _AiCardState extends State<_AiCard> {
 
   @override
   void dispose() {
-    _keyC.dispose();
-    _orKeyC.dispose();
     _zenKeyC.dispose();
     super.dispose();
   }
 
   Future<void> _refresh() async {
-    final gen = await firebaseAiGenerate();
     final on = await aiEnabled();
     final hit = await lastQuotaHit();
-    final key = await readGeminiKey();
-    final orKey = await readOrKey();
     final zenKey = await readZenKey();
-    final prov = <String, bool>{
-      aiProvGemini: await aiProviderOn(aiProvGemini),
-      aiProvOr: await aiProviderOn(aiProvOr),
-      aiProvZen: await aiProviderOn(aiProvZen),
-      aiProvFb: await aiProviderOn(aiProvFb),
-    };
     if (!mounted) return;
     setState(() {
-      _ready = gen != null;
       _on = on;
       _busy = false;
-      _hasKey = key != null;
-      _hasOrKey = orKey != null;
       _hasZenKey = zenKey != null;
-      _prov
-        ..clear()
-        ..addAll(prov);
       _quotaInfo = hit == null
           ? null
           : '${dayLabel(_ymd(hit))} '
@@ -1037,11 +1006,6 @@ class _AiCardState extends State<_AiCard> {
       '${d.day.toString().padLeft(2, '0')}';
 
   Future<void> _toggle(bool v) async {
-    if (v && !_hasKey && !_hasOrKey && !_hasZenKey && !_ready) {
-      if (!mounted) return;
-      setState(() => _msg = tr('ai_need_either'));
-      return;
-    }
     setState(() => _busy = true);
     await setAiEnabled(v);
     await _refresh();
@@ -1049,93 +1013,6 @@ class _AiCardState extends State<_AiCard> {
     setState(() {
       _busy = false;
       _msg = null;
-    });
-  }
-
-  Future<void> _toggleProv(String name, bool v) async {
-    setState(() => _busy = true);
-    await setAiProviderOn(name, v);
-    final on = await aiProviderOn(name);
-    if (!mounted) return;
-    setState(() {
-      _prov[name] = on;
-      _busy = false;
-    });
-  }
-
-  /// Baris provider: nama + chip status + switch sendiri.
-  Widget _provRow(
-    BuildContext context,
-    String name,
-    String label,
-    bool configured,
-  ) {
-    final on = _prov[name] ?? true;
-    final active = on && configured;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.titleSmall),
-          ),
-          StatusChip(
-            label: active ? tr('ai_on') : tr('ai_off'),
-            tone: active ? StatusTone.accent : StatusTone.neutral,
-          ),
-          const SizedBox(width: SsrSpace.sm),
-          Switch(
-            value: on,
-            onChanged: _busy ? null : (v) => _toggleProv(name, v),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _saveKey() async {
-    setState(() => _busy = true);
-    await writeGeminiKey(_keyC.text);
-    _keyC.clear();
-    await _refresh();
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _msg = tr('ai_saved');
-    });
-  }
-
-  Future<void> _clearKey() async {
-    setState(() => _busy = true);
-    await clearGeminiKey();
-    await _refresh();
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _msg = tr('ai_cleared');
-    });
-  }
-
-  Future<void> _saveOrKey() async {
-    setState(() => _busy = true);
-    await writeOrKey(_orKeyC.text);
-    _orKeyC.clear();
-    await _refresh();
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _msg = tr('ai_saved');
-    });
-  }
-
-  Future<void> _clearOrKey() async {
-    setState(() => _busy = true);
-    await clearOrKey();
-    await _refresh();
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _msg = tr('ai_cleared');
     });
   }
 
@@ -1162,173 +1039,37 @@ class _AiCardState extends State<_AiCard> {
     });
   }
 
-  String _providerSubtitle() {
-    final ps = <String>[];
-    if (_hasKey) ps.add('Gemini');
-    if (_hasOrKey) ps.add('OpenRouter');
-    if (_hasZenKey) ps.add('Zen');
-    if (_ready) ps.add('Firebase');
-    if (ps.isEmpty) return tr('ai_need_either');
-    return '${tr('ai_active_pre')}${ps.join(' + ')}.';
-  }
-
-  /// Diagnosis jujur: panggil model dengan prompt "Halo", tampilkan
-  /// hasil mentah atau sebab gagal mentah (kode + pesan asli).
-  /// Hanya di layar, untuk screenshot/laporan — tak diupload.
+  /// Tes AI via Zen langsung ("Halo"): tampilkan jawaban mentah atau
+  /// sebab gagal mentah. Tanpa kunci = mode anonim.
   Future<void> _testAi() async {
     setState(() {
       _busy = true;
       _msg = tr('ai_working');
     });
-    // Diagnosis network dulu (10 dtk): buntu = hemat 90 detik tunggu AI,
-    // langsung vonis DNS/firewall/ISP.
-    final net = await checkGoogleAiReachability();
+    final key = await readZenKey();
     if (!mounted) return;
-    if (net.contains('BUNTU')) {
-      setState(() => _busy = false);
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(tr('ai_test')),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: SelectableText('$net\n\n${tr('ai_no_net')}'),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(tr('rcp_raw_close')),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                unawaited(_testAi());
-              },
-              child: Text(tr('ai_retry')),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-    final gen = await firebaseAiGenerate();
-    if (!mounted) return;
-    final parts = <String>[];
-    final useGemini = await aiProviderOn(aiProvGemini);
-    final useOr = await aiProviderOn(aiProvOr);
-    final useZen = await aiProviderOn(aiProvZen);
-    final useFb = await aiProviderOn(aiProvFb);
-    // PRIMER: kunci Gemini user → REST langsung (bypass kuota Firebase).
-    final key = await readGeminiKey();
-    if (!mounted) return;
-    if (!useGemini) {
-      parts.add('[Gemini] (${tr('ai_off')})');
-    } else if (key != null) {
-      try {
-        String? used;
-        final t = await restGenerate('Halo',
-                apiKey: key, onModel: (m) => used = m)
-            .timeout(const Duration(seconds: 45));
-        parts.add('[Gemini${used == null ? '' : ': $used'}]\n'
-            '${(t == null || t.trim().isEmpty) ? 'AI: (kosong)' : t}');
-      } on AiFailure catch (e) {
-        if (e.code == 'quota') await noteQuotaHit();
-        parts.add(e.code == 'quota'
-            ? '[Gemini] ${quotaWaitLine(e.detail)}'
-            : '[Gemini] AI gagal (${e.code})'
-                '${e.detail == null ? '' : '\n${e.detail}'}');
-      } on TimeoutException catch (e) {
-        parts.add('[Gemini] AI gagal (timeout)\n$e');
-      } catch (e) {
-        parts.add('[Gemini] AI gagal (tak dikenal)\n$e');
-      }
-    } else {
-      parts.add('[Gemini] (${tr('ai_need_key')})');
-    }
-    // KEDUA: OpenRouter (bila ada kunci).
-    final orKey = await readOrKey();
-    if (!mounted) return;
-    if (!useOr) {
-      parts.add('[OpenRouter] (${tr('ai_off')})');
-    } else if (orKey != null) {
-      try {
-        String? used;
-        final res = await orChatRaw(
-                apiKey: orKey, prompt: 'Halo', onModel: (m) => used = m)
-            .timeout(const Duration(seconds: 60));
-        parts.add('[OpenRouter${used == null ? '' : ': $used'}]\n'
-            '${res.trim().isEmpty ? 'AI: (kosong)' : res}');
-      } on AiFailure catch (e) {
-        if (e.code == 'quota') await noteQuotaHit();
-        parts.add(e.code == 'quota'
-            ? '[OpenRouter] ${quotaWaitLine(e.detail)}'
-            : '[OpenRouter] AI gagal (${e.code})'
-                '${e.detail == null ? '' : '\n${e.detail}'}');
-      } on TimeoutException catch (e) {
-        parts.add('[OpenRouter] AI gagal (timeout)\n$e');
-      } catch (e) {
-        parts.add('[OpenRouter] AI gagal (tak dikenal)\n$e');
-      }
-    } else {
-      parts.add('[OpenRouter] (${tr('ai_need_orkey')})');
-    }
-    // KETIGA: Zen langsung (anonim bila tanpa kunci).
-    final zenKey = await readZenKey();
-    if (!mounted) return;
-    if (!useZen) {
-      parts.add('[Zen] (${tr('ai_off')})');
-    } else {
-      try {
-        final r = await zenChatRaw(apiKey: zenKey, prompt: 'Halo')
-            .timeout(const Duration(seconds: 60));
-        parts.add('[Zen: ${r.provider}]\n'
-            '${r.text.trim().isEmpty ? 'AI: (kosong)' : r.text}');
-      } on AiFailure catch (e) {
-        if (e.code == 'quota') await noteQuotaHit();
-        parts.add(e.code == 'quota'
-            ? '[Zen] ${quotaWaitLine(e.detail)}'
-            : '[Zen] AI gagal (${e.code})'
-                '${e.detail == null ? '' : '\n${e.detail}'}');
-      } on TimeoutException catch (e) {
-        parts.add('[Zen] AI gagal (timeout)\n$e');
-      } catch (e) {
-        parts.add('[Zen] AI gagal (tak dikenal)\n$e');
-      }
-    }
-    if (!useFb) {
-      parts.add('[Firebase] (${tr('ai_off')})');
-    } else if (gen == null) {
-      parts.add('[Firebase] (${tr('ai_need_google')})');
-    } else {
-      try {
-        final res = await gen('Halo').timeout(const Duration(seconds: 60));
-        parts.add('[Firebase]\n'
-            '${(res == null || res.trim().isEmpty) ? 'AI: (kosong)' : res}');
-      } on AiFailure catch (e) {
-        parts.add(e.code == 'quota'
-            ? '[Firebase] ${quotaWaitLine(e.detail)}'
-            : '[Firebase] AI gagal (${e.code})'
-                '${e.detail == null ? '' : '\n${e.detail}'}');
-      } on AiDenied catch (e) {
-        parts.add('[Firebase] AI gagal (denied)'
-            '${e.detail == null ? '' : '\n${e.detail}'}');
-      } on AiAppCheck catch (e) {
-        parts.add('[Firebase] AI gagal (app_check)'
-            '${e.detail == null ? '' : '\n${e.detail}'}');
-      } on TimeoutException catch (e) {
-        parts.add('[Firebase] AI gagal (timeout)\n$e');
-      } catch (e) {
-        parts.add('[Firebase] AI gagal (tak dikenal)\n$e');
-      }
+    String out;
+    try {
+      final r = await zenChatRaw(apiKey: key, prompt: 'Halo')
+          .timeout(const Duration(seconds: 60));
+      out = '[Zen: ${r.provider}]\n'
+          '${r.text.trim().isEmpty ? 'AI: (kosong)' : r.text}';
+    } on AiFailure catch (e) {
+      if (e.code == 'quota') await noteQuotaHit();
+      out = e.code == 'quota'
+          ? '[Zen] ${quotaWaitLine(e.detail)}'
+          : '[Zen] AI gagal (${e.code})'
+              '${e.detail == null ? '' : '\n${e.detail}'}';
+    } on TimeoutException catch (e) {
+      out = '[Zen] AI gagal (timeout)\n$e';
+    } catch (e) {
+      out = '[Zen] AI gagal (tak dikenal)\n$e';
     }
     if (!mounted) return;
     setState(() {
       _busy = false;
       _msg = null;
     });
-    final out = parts.join('\n\n');
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1336,7 +1077,7 @@ class _AiCardState extends State<_AiCard> {
         content: SizedBox(
           width: double.maxFinite,
           child: SingleChildScrollView(
-            child: SelectableText('$net\n\n$out'),
+            child: SelectableText(out),
           ),
         ),
         actions: [
@@ -1366,109 +1107,14 @@ class _AiCardState extends State<_AiCard> {
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(tr('ai_enable')),
-          subtitle: Text(_providerSubtitle()),
-          value: _on && (_hasKey || _hasOrKey || _hasZenKey || _ready),
+          subtitle: Text(
+            _hasZenKey ? tr('ai_zen_saved') : tr('ai_zen_anon'),
+          ),
+          value: _on,
           onChanged: _busy ? null : _toggle,
         ),
-        const Divider(height: SsrSpace.md),
-        _provRow(context, aiProvGemini, 'Gemini', _hasKey),
-        _provRow(context, aiProvOr, 'OpenRouter', _hasOrKey),
-        _provRow(context, aiProvZen, 'Zen', _hasZenKey),
-        _provRow(context, aiProvFb, 'Firebase', _ready),
-        const Divider(height: SsrSpace.md),
         const SizedBox(height: SsrSpace.xs),
-        // Kunci Gemini tak pernah tampil mentah: hanya status ***.
-        Text(
-          _hasKey ? tr('ai_key_saved') : tr('ai_key_hint'),
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(height: SsrSpace.xs),
-        SelectableText(
-          tr('ai_key_where'),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-              ),
-        ),
-        const SizedBox(height: SsrSpace.xs),
-        TextField(
-          controller: _keyC,
-          obscureText: true,
-          enableSuggestions: false,
-          autocorrect: false,
-          decoration: InputDecoration(
-            hintText: tr('ai_key_hint'),
-            border: const OutlineInputBorder(),
-            isDense: true,
-          ),
-        ),
-        const SizedBox(height: SsrSpace.sm),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _busy ? null : _saveKey,
-                child: Text(tr('ai_save')),
-              ),
-            ),
-            const SizedBox(width: SsrSpace.sm),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _busy ? null : _clearKey,
-                child: Text(tr('ai_clear')),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: SsrSpace.sm),
-        // Kunci OpenRouter (provider ketiga) — sama amannya (***).
-        Text(
-          _hasOrKey ? tr('ai_or_saved') : tr('ai_or_hint'),
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(height: SsrSpace.xs),
-        SelectableText(
-          tr('ai_or_where'),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-              ),
-        ),
-        const SizedBox(height: SsrSpace.xs),
-        TextField(
-          controller: _orKeyC,
-          obscureText: true,
-          enableSuggestions: false,
-          autocorrect: false,
-          decoration: InputDecoration(
-            hintText: tr('ai_or_hint'),
-            border: const OutlineInputBorder(),
-            isDense: true,
-          ),
-        ),
-        const SizedBox(height: SsrSpace.sm),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _busy ? null : _saveOrKey,
-                child: Text(tr('ai_save')),
-              ),
-            ),
-            const SizedBox(width: SsrSpace.sm),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _busy ? null : _clearOrKey,
-                child: Text(tr('ai_clear')),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: SsrSpace.sm),
-        // Kunci OpenCode Zen (provider keempat, via proxy VPS).
-        Text(
-          _hasZenKey ? tr('ai_zen_saved') : tr('ai_zen_hint'),
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(height: SsrSpace.xs),
+        // Kunci Zen tak pernah tampil mentah: hanya status ***.
         SelectableText(
           tr('ai_zen_where'),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(

@@ -9,9 +9,7 @@ import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/screens/lainnya/ai_draft_screen.dart';
 import 'package:ssr_space/services/ai_draft.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
-import 'package:ssr_space/services/ai_openrouter_client.dart';
 import 'package:ssr_space/services/ai_zen_client.dart';
-import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/app_settings.dart';
@@ -333,11 +331,16 @@ class _TxInputSheetState extends State<TxInputSheet> {
       );
       if (q.category != null) catC.text = q.category!;
       if (q.walletName != null) {
-        final low = q.walletName!.toLowerCase();
-        for (final w in widget.wallets) {
-          if (w.name.trim().toLowerCase() == low) {
-            walletId = w.id;
-            break;
+        final hit = matchWalletName(
+          q.walletName!,
+          [for (final w in widget.wallets) w.name],
+        );
+        if (hit != null) {
+          for (final w in widget.wallets) {
+            if (w.name == hit) {
+              walletId = w.id;
+              break;
+            }
           }
         }
       }
@@ -652,9 +655,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
     });
   }
 
-  /// Fallback AI: Gemini -> OpenRouter -> Zen -> Firebase.
-  /// Teks OCR -> draft, gagal jujur (null = manual). Yang tampil dipilih
-  /// via pickAiError: kuota Firebase ditekan bila ada kunci user.
+  /// AI native OpenCode Zen (satu-satunya provider).
+  /// Teks OCR -> draft, gagal jujur (null = manual).
   Future<AiDraft?> _tryAiDraft(String raw) async {
     if (!await aiEnabled()) return null;
     setState(() {
@@ -662,59 +664,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
       _scanErr = tr('ai_working');
       _aiErrDetail = null;
     });
-    AiFailure? gemErr;
-    AiFailure? orErr;
-    AiFailure? zenErr;
-    AiFailure? fbErr;
-    // 1) PRIMER: kunci Gemini user → REST langsung.
-    final gkey = await readGeminiKey();
-    final okey = await readOrKey();
     final zkey = await readZenKey();
-    final useGemini = await aiProviderOn(aiProvGemini);
-    final useOr = await aiProviderOn(aiProvOr);
-    final useZen = await aiProviderOn(aiProvZen);
-    final useFb = await aiProviderOn(aiProvFb);
-    if (mounted && gkey != null && useGemini) {
-      try {
-        final t = await restGenerate(aiReceiptPrompt(raw), apiKey: gkey)
-            .timeout(const Duration(seconds: 45));
-        final draft = t == null ? null : parseAiDraft(t);
-        if (draft != null) {
-          if (!mounted) return null;
-          setState(() {
-            _scanning = false;
-            _scanErr = null;
-          });
-          return draft;
-        }
-      } on AiFailure catch (e) {
-        if (e.code == 'quota') await noteQuotaHit();
-        gemErr = e;
-      } catch (e) {
-        gemErr = AiFailure('network', '[Gemini] $e');
-      }
-    }
-    // 2) KEDUA: kunci OpenRouter user (free tier).
-    if (mounted && okey != null && useOr) {
-      try {
-        final draft = await parseReceiptOr(apiKey: okey, ocrText: raw);
-        if (!mounted) return null;
-        if (draft != null) {
-          setState(() {
-            _scanning = false;
-            _scanErr = null;
-          });
-          return draft;
-        }
-      } on AiFailure catch (e) {
-        if (e.code == 'quota') await noteQuotaHit();
-        orErr = e;
-      } catch (e) {
-        orErr = AiFailure('network', '[OpenRouter] $e');
-      }
-    }
-    // 3) KETIGA: OpenCode Zen langsung (anonim bila tanpa kunci).
-    if (mounted && useZen) {
+    if (mounted) {
       try {
         final draft = await parseReceiptZen(
           apiKey: zkey,
@@ -730,57 +681,36 @@ class _TxInputSheetState extends State<TxInputSheet> {
         }
       } on AiFailure catch (e) {
         if (e.code == 'quota') await noteQuotaHit();
-        zenErr = e;
-      } catch (e) {
-        zenErr = AiFailure('network', '[Zen] $e');
-      }
-    }
-    // 4) CADANGAN: Firebase (pool kuota beda dari kunci user).
-    if (mounted && useFb) {
-      try {
-        final gen = await firebaseAiGenerate();
-        if (gen != null) {
-          final draft =
-              await parseReceiptFirebase(ocrText: raw, generate: gen);
-          if (!mounted) return null;
-          if (draft != null) {
-            setState(() {
-              _scanning = false;
-              _scanErr = null;
-            });
-            return draft;
+        if (!mounted) return null;
+        // Log lengkap (kode + pesan asli) — user hanya lihat yang ramah.
+        debugPrint('ai scan gagal: $e');
+        setState(() {
+          _scanning = false;
+          if (e.code == 'quota') {
+            _scanErr = quotaWaitLine(e.detail);
+            _aiErrDetail = 'AI (quota) ${e.detail ?? ''}';
+          } else {
+            _scanErr = tr(aiMessageKey(e.code));
+            _aiErrDetail = 'AI (${e.code}) ${e.detail ?? ''}';
           }
-        }
-      } on AiFailure catch (e) {
-        fbErr = e;
+        });
+        return null;
       } catch (e) {
-        fbErr = AiFailure('network', '$e');
+        if (!mounted) return null;
+        debugPrint('ai scan gagal: $e');
+        setState(() {
+          _scanning = false;
+          _scanErr = tr('ai_fail');
+          _aiErrDetail = 'AI $e';
+        });
+        return null;
       }
     }
     if (!mounted) return null;
-    final e = pickAiError(
-      gemini: gemErr,
-      openRouter: orErr,
-      zen: zenErr,
-      firebase: fbErr,
-      hasKey: (gkey != null && useGemini) ||
-          (okey != null && useOr) ||
-          (zkey != null && useZen),
-    );
-    // Log lengkap (kode + pesan asli) — user hanya lihat yang ramah.
-    if (e != null) debugPrint('ai scan gagal: $e');
     setState(() {
       _scanning = false;
-      if (e == null) {
-        _scanErr = tr('ai_fail');
-        _aiErrDetail = null;
-      } else if (e.code == 'quota') {
-        _scanErr = quotaWaitLine(e.detail);
-        _aiErrDetail = 'AI (quota) ${e.detail ?? ''}';
-      } else {
-        _scanErr = tr(aiMessageKey(e.code));
-        _aiErrDetail = 'AI (${e.code}) ${e.detail ?? ''}';
-      }
+      _scanErr = tr('ai_fail');
+      _aiErrDetail = null;
     });
     return null;
   }

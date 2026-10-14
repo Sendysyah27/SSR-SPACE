@@ -172,6 +172,24 @@ String? _matchWallet(String t, List<String> wallets) {
   return best;
 }
 
+/// Cocokkan nama dompet dari teks bebas ke daftar nama dompet:
+/// persis dulu, lalu substring (awal + terpanjang menang).
+/// Dipakai ketik-cepat DAN aksi chat AI. Murni agar testable.
+String? matchWalletName(String text, List<String> wallets) {
+  final t = text.trim().toLowerCase();
+  if (t.isEmpty) return null;
+  for (final w in wallets) {
+    if (w.trim().toLowerCase() == t) return w;
+  }
+  // Fragment dari AI (mis. "variance") cocok ke nama dompet
+  // ("Variance Plus"): arah sebaliknya dari _matchWallet.
+  for (final w in wallets) {
+    final low = w.trim().toLowerCase();
+    if (low.isNotEmpty && low.contains(t)) return w;
+  }
+  return _matchWallet(t, wallets);
+}
+
 /// Urai teks bebas. Null bila tak ada nominal valid. Tak pernah throw
 /// untuk input aneh (kembalikan null).
 QuickInput? parseQuickInput(
