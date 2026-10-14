@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import 'ai_key_store.dart';
 import 'ai_openrouter_client.dart';
+import 'ai_soul.dart';
 import 'ai_zen_client.dart';
 import 'firebase_ai_parser.dart';
 import 'receipt_scan_service.dart';
@@ -370,10 +371,16 @@ Future<({String text, String provider})> aiChat(
   String prompt, {
   List<int>? imageBytes,
   String? mimeType,
+  List<({bool mine, String text})>? history,
 }) async {
   if (prompt.trim().isEmpty) {
     throw const AiFailure('empty', 'prompt kosong');
   }
+  // Riwayat sesi sebagai konteks (AI jadi ingat percakapan).
+  final convo = (history == null || history.isEmpty)
+      ? ''
+      : '${chatHistoryBlock(history)}\n';
+  prompt = '$convo$prompt';
   final hasImage = imageBytes != null && imageBytes.isNotEmpty;
   AiFailure? last;
   void note(AiFailure e) {
@@ -411,13 +418,15 @@ Future<({String text, String provider})> aiChat(
   }
   // OpenRouter & Zen text-only: bila ada gambar, OCR-kan lokal dulu
   // (jangan tampilkan error butuh-Gemini selama OCR bisa jalan).
-  if (hasImage) {
+  List<int>? imgBytes;
+  if (hasImage) imgBytes = imageBytes;
+  if (imgBytes != null) {
     final orOn = await aiProviderOn(aiProvOr);
     final zenOn = await aiProviderOn(aiProvZen);
     final orKey = await readOrKey();
-    if (((orOn && orKey != null) || zenOn) && imageBytes != null) {
+    if ((orOn && orKey != null) || zenOn) {
       try {
-        final ocr = await ocrBytesToText(imageBytes);
+        final ocr = await ocrBytesToText(imgBytes);
         if (ocr.trim().isNotEmpty) {
           effectivePrompt =
               '$prompt\nTEKS GAMBAR (OCR lokal):\n$ocr';
@@ -498,6 +507,64 @@ Future<({String text, String provider})> aiChat(
   if (hasImage && last == null) {
     throw const AiFailure(
         'server', '[Gambar] butuh kunci Gemini atau login Firebase');
+  }
+  throw last ?? const AiFailure('network', 'semua provider mati/nonaktif');
+}
+
+/// Rantai teks murni (tanpa gambar/vision): OpenRouter -> Zen ->
+/// Firebase-teks, hormati toggle. Untuk Scan AI yang jatuh ke OCR.
+/// Throw error terakhir. Tak kirim foto (prompt teks saja).
+Future<({String text, String provider})> aiTextChain(
+  String fullPrompt,
+) async {
+  AiFailure? last;
+  void note(AiFailure e) {
+    last = e;
+    if (e.code == 'quota') unawaited(noteQuotaHit());
+  }
+  if (await aiProviderOn(aiProvOr)) {
+    final k = await readOrKey();
+    if (k != null) {
+      try {
+        final t = await orChatRaw(apiKey: k, prompt: fullPrompt)
+            .timeout(const Duration(seconds: 75));
+        return (text: t, provider: 'OpenRouter: $aiOrModel');
+      } on AiFailure catch (e) {
+        note(e);
+      } catch (e) {
+        note(AiFailure('network', '[OpenRouter] $e'));
+      }
+    }
+  }
+  if (await aiProviderOn(aiProvZen)) {
+    try {
+      final zk = await readZenKey();
+      final r = await zenChatRaw(apiKey: zk, prompt: fullPrompt)
+          .timeout(const Duration(seconds: 75));
+      if (r.text.trim().isNotEmpty) {
+        return (text: r.text, provider: 'Zen: ${r.provider}');
+      }
+    } on AiFailure catch (e) {
+      note(e);
+    } catch (e) {
+      note(AiFailure('network', '[Zen] $e'));
+    }
+  }
+  if (await aiProviderOn(aiProvFb)) {
+    try {
+      final gen = await firebaseAiGenerate();
+      if (gen != null) {
+        final t =
+            await gen(fullPrompt).timeout(const Duration(seconds: 60));
+        if (t != null && t.trim().isNotEmpty) {
+          return (text: t, provider: 'Firebase');
+        }
+      }
+    } on AiFailure catch (e) {
+      note(e);
+    } catch (e) {
+      note(AiFailure('network', '$e'));
+    }
   }
   throw last ?? const AiFailure('network', 'semua provider mati/nonaktif');
 }

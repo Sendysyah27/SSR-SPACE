@@ -107,8 +107,14 @@ class _AiChatScreenState extends State<AiChatScreen> {
       _sending = true;
     });
     _toBottom();
+    // Riwayat sesi sebagai konteks (maks 10 turn terakhir).
+    final history = [
+      for (final m in _items)
+        (mine: m.mine, text: m.image != null ? '${m.text} [gambar]' : m.text),
+    ];
     try {
-      final r = await aiChat(prompt, imageBytes: img, mimeType: mime);
+      final r = await aiChat(prompt,
+          imageBytes: img, mimeType: mime, history: history);
       if (!mounted) return;
       unawaited(
           addAiMemory(parseIngatBlocks(r.text)).then((_) async {
@@ -225,6 +231,15 @@ class _AiChatScreenState extends State<AiChatScreen> {
             icon: const Icon(Icons.psychology_outlined),
             tooltip: tr('chat_mem_t'),
             onPressed: _openMemory,
+          ),
+          IconButton(
+            icon: const Icon(Icons.restart_alt_outlined),
+            tooltip: tr('chat_reset'),
+            onPressed: _sending
+                ? null
+                : () => setState(() {
+                      _items.clear();
+                    }),
           ),
         ],
       ),

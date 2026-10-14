@@ -16,6 +16,27 @@ const aiSoul = 'Kamu asisten keuangan SSR SPACE: ramah, ringkas, '
     'sendiri.';
 
 const aiMemoryCap = 20;
+const aiHistoryTurns = 10;
+const aiHistoryChars = 300;
+
+/// Blok riwayat chat sesi ini untuk konteks tiap request (maks 10
+/// turn terakhir, teks dipadatkan). Murni agar testable.
+String chatHistoryBlock(List<({bool mine, String text})> history) {
+  if (history.isEmpty) return '';
+  final turns = history.length <= aiHistoryTurns
+      ? history
+      : history.sublist(history.length - aiHistoryTurns);
+  final buf = StringBuffer('Riwayat chat sesi ini:\n');
+  for (final t in turns) {
+    var txt = t.text.replaceAll('\n', ' ').trim();
+    if (txt.length > aiHistoryChars) {
+      txt = txt.substring(0, aiHistoryChars);
+    }
+    buf.write(t.mine ? 'User: ' : 'AI: ');
+    buf.writeln(txt);
+  }
+  return buf.toString();
+}
 
 /// Blok konteks disuntik ke tiap prompt: soul + fakta user.
 String aiContextBlock(List<String> memory) {

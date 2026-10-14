@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
+import 'package:ssr_space/services/receipt_scan_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/firebase_ai_factory.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
@@ -75,14 +76,37 @@ Future<({ReceiptData data, String provider})?> scanReceiptVision(
           prompt: aiVisionPrompt(),
           mimeType: mime,
         );
-        if (text != null && text.trim().isNotEmpty) {
-          provider = 'Firebase';
-        }
+        if (text != null && text.trim().isEmpty) text = null;
+        if (text != null) provider = 'Firebase';
       } on AiFailure catch (e) {
         last = e;
         if (e.code == 'quota') unawaited(noteQuotaHit());
       } catch (e) {
         last = AiFailure('network', '$e');
+      }
+    }
+    // 3) Tanpa vision (cuma Zen/OpenRouter aktif): OCR lokal lalu
+    // rantai teks. Berlaku untuk mode catat DAN chat room.
+    if (text == null || text.trim().isEmpty) {
+      final orOn = await aiProviderOn(aiProvOr);
+      final zenOn = await aiProviderOn(aiProvZen);
+      final fbOn = await aiProviderOn(aiProvFb);
+      final orKey = await readOrKey();
+      if ((orOn && orKey != null) || zenOn || fbOn) {
+        try {
+          final ocr = await ocrBytesToText(bytes);
+          if (ocr.trim().isNotEmpty) {
+            final r = await aiTextChain(
+                '${aiVisionPrompt()}\nTEKS (OCR lokal):\n$ocr');
+            text = r.text;
+            provider = '${r.provider} (OCR)';
+          }
+        } on AiFailure catch (e) {
+          last = e;
+          if (e.code == 'quota') unawaited(noteQuotaHit());
+        } catch (e) {
+          last = AiFailure('network', '[OCR] $e');
+        }
       }
     }
     if (text == null || text.trim().isEmpty) {

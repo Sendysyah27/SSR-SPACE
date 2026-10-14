@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.56.0+155.
+Versi terpasang: 2.56.0+156.
+
+## Yang baru di 2.56.0+156
+
+1. AI Chat ingat percakapan (10 turn terakhir sebagai konteks) + tombol reset sesi di AppBar.
+2. Scan AI tanpa vision: foto di-OCR lokal lalu dibaca Zen/OpenRouter/Firebase-teks — berlaku di mode catat dan chat.
 
 ## Yang baru di 2.56.0+155
 

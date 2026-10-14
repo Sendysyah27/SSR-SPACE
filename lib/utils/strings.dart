@@ -2375,6 +2375,7 @@ const _t = <String, Map<String, String>>{
   'chat_title': {'id': 'AI Chat', 'en': 'AI Chat'},
   'chat_hint': {'id': 'Tanya apa saja...', 'en': 'Ask anything...'},
   'chat_thinking': {'id': 'Mengetik...', 'en': 'Typing...'},
+  'chat_reset': {'id': 'Reset sesi', 'en': 'Reset session'},
   'chat_empty': {
     'id': 'Mulai percakapan dengan AI. Riwayat hanya sesi ini.',
     'en': 'Start chatting with AI. History lasts this session only.',
