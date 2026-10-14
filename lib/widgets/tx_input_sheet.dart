@@ -474,11 +474,11 @@ class _TxInputSheetState extends State<TxInputSheet> {
       content: Text(tr('rcp_scan_hint')),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx, ImageSource.camera),
+          onPressed: () => Navigator.pop(context, ImageSource.camera),
           child: Text(tr('rcp_camera')),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
+          onPressed: () => Navigator.pop(context, ImageSource.gallery),
           child: Text(tr('rcp_gallery')),
         ),
       ],
@@ -553,11 +553,11 @@ class _TxInputSheetState extends State<TxInputSheet> {
       content: Text(tr('mode_vision_s')),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx, ImageSource.camera),
+          onPressed: () => Navigator.pop(context, ImageSource.camera),
           child: Text(tr('rcp_camera')),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
+          onPressed: () => Navigator.pop(context, ImageSource.gallery),
           child: Text(tr('rcp_gallery')),
         ),
       ],
@@ -763,7 +763,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx),
+          onPressed: () => Navigator.pop(context),
           child: Text(tr('rcp_raw_close')),
         ),
       ],
