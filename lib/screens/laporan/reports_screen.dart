@@ -681,6 +681,7 @@ class ReportsScreenState extends State<ReportsScreen> {
     return (visible: visible, pairs: detectTransferPairs(filtered));
   }
 
+}
 /// Satu batang tahun: total masuk/keluar sebulan (fail-open nol).
 class _YearBar {
   final String month;
@@ -839,7 +840,6 @@ class _ReportSections extends StatelessWidget {
       },
     );
   }
-}
 }
 
 /// Donut 3 iris bulan terpilih: emerald (masuk), rust (belanja
