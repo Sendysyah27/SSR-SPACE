@@ -1,27 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/tx_wallet_check.dart';
 import 'package:ssr_space/services/space_logic.dart';
-import 'package:ssr_space/services/supabase_config.dart';
-import 'package:ssr_space/services/category_icons.dart';
-import 'package:ssr_space/services/category_meta.dart';
-import 'package:ssr_space/theme/app_icons.dart';
-import 'package:ssr_space/theme/app_theme.dart';
-import 'package:ssr_space/theme/cool_icons.dart';
-import 'package:ssr_space/models/transaction.dart';
-import 'package:ssr_space/utils/strings.dart';
-import 'package:ssr_space/services/receipt_parse.dart';
-import 'package:ssr_space/widgets/status_chip.dart';
+import 'package:ssr_space.services/supabase_config.dart';
+import 'package:ssr_space.services.category_icons.dart';
+import 'package:ssr_space.services.category_meta.dart';
+import 'package:ssr_space.theme.app_icons.dart';
+import 'package:ssr_space.theme.app_theme.dart';
+import 'package:ssr_space.theme.cool_icons.dart';
+import 'package:ssr_space.models.transaction.dart';
+import 'package:ssr_space.utils.strings.dart';
+import 'package:ssr_space.services.receipt_parse.dart';
+import 'package:ssr_space.widgets.status_chip.dart';
+import 'package:ssr_space/theme/category_emoji.dart';
 
 class TxRow extends StatelessWidget {
   final SaasTransaction tx;
   final VoidCallback? onTap;
   final bool selected;
+  final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
 
-  const TxRow({super.key, required this.tx, this.onTap, this.selected = false});
+  const TxRow({super.key, required this.tx, this.onTap, this.selected = false, this.onDelete, this.onEdit});
 
   String get _kindLabel {
     switch (tx.type) {
@@ -71,19 +73,21 @@ class TxRow extends StatelessWidget {
     final byLabel = r == null
         ? null
         : (r.$2 ? tr('sp_by_you') : tr('sp_by_member').replaceFirst('{s}', r.$1));
-    return [
-      if (tx.sourcePackage != null)
-        StatusChip(label: tr('tx_auto'), tone: StatusTone.accent, icon: AppIcons.autoBadge),
-      if (hasNoWallet(tx))
-        StatusChip(label: tr('tx_nowallet'), tone: StatusTone.danger),
-      if (tx.category != null && tx.category!.isNotEmpty)
-        StatusChip(label: tx.category!, tone: StatusTone.neutral),
-      if (byLabel != null)
-        StatusChip(
-          label: byLabel,
-          tone: r!.$2 ? StatusTone.accent : StatusTone.neutral,
-        ),
-    ];
+    // Show max 3 chips: auto, wallet, category (creator shown only if others present)
+    final chips = <Widget>[];
+    if (tx.sourcePackage != null) chips.add(
+      StatusChip(label: tr('tx_auto'), tone: StatusTone.accent, icon: AppIcons.autoBadge, isSmall: true),
+    );
+    if (hasNoWallet(tx)) chips.add(
+      StatusChip(label: tr('tx_nowallet'), tone: StatusTone.danger),
+    );
+    if (tx.category != null && tx.category!.isNotEmpty) chips.add(
+      StatusChip(label: "$categoryEmoji(tx.category!) ${tx.category!}", tone: StatusTone.neutral),
+    );
+    if (byLabel != null && chips.length >= 2) chips.add(
+      StatusChip(label: byLabel, tone: r!.$2 ? StatusTone.accent : StatusTone.neutral),
+    );
+    return chips;
   }
 
   Widget _title(ThemeData theme, Color amountColor) {
@@ -111,18 +115,22 @@ class TxRow extends StatelessWidget {
     final amountColor = _amountColor(context);
     final subtitle = _subtitle;
     final myId = SupabaseConfig.client.auth.currentUser?.id ?? '';
-    return Material(
-      color: selected
-          ? theme.colorScheme.primary.withValues(alpha: 0.12)
-          : Colors.transparent,
-      child: InkWell(
+    final scheme = Theme.of(context).colorScheme;
+
+    return Dismissible(
+      key: Key(tx.id),
+      direction: DismissDirection.horizontal,
+      onDismissed: (_) => onDelete?.call(() => _showDeleteConfirm(context)),
+      background: _buildSwipeLeft(context, scheme),
+      secondaryBackground: _buildSwipeRight(context, scheme),
+      child: GestureDetector(
         onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _TxBadge(isOut: _isOut, category: tx.category),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -130,7 +138,7 @@ class TxRow extends StatelessWidget {
                   children: [
                     _title(theme, amountColor),
                     const SizedBox(height: 6),
-                    Wrap(spacing: 6, runSpacing: 4, children: _chips(myId)),
+                    Wrap(spacing: 4, runSpacing: 2, children: _chips(myId)),
                     if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
@@ -151,150 +159,36 @@ class TxRow extends StatelessWidget {
       ),
     );
   }
-}
 
-class _TxBadge extends StatelessWidget {
-  final bool isOut;
-  final String? category;
-
-  const _TxBadge({required this.isOut, required this.category});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return ValueListenableBuilder<Map<String, CatMeta>>(
-      valueListenable: categoryMeta,
-      builder: (context, meta, _) {
-        final m = meta[topOf(category)];
-        if (m == null) {
-          return Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: isOut
-                  ? scheme.error.withValues(alpha: 0.12)
-                  : AppColors.goldSoft,
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Center(
-              child: SvgPicture.asset(
-                svgForCategory(category),
-                width: 19,
-                colorFilter: ColorFilter.mode(
-                  isOut ? scheme.error : AppColors.chipSurplusText,
-                  BlendMode.srcIn,
-                ),
-              ),
-            ),
-          );
-        }
-        final c = metaSlotColor(context, m.color);
-        return Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: c.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(11),
-          ),
-          child: Center(
-            child: SvgPicture.asset(
-              svgForMetaIcon(m.icon),
-              width: 19,
-              colorFilter: ColorFilter.mode(c, BlendMode.srcIn),
-            ),
-          ),
-        );
-      },
+  Widget _buildSwipeLeft(BuildContext context, ColorScheme scheme) {
+    return Container(
+      color: scheme.error,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: const Text('Hapus', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
     );
   }
-}
 
-/// Dialog catatan distinctive: ikon dokumen + teks selektif + salin.
-/// Catatan struk ("Merchant · item, item") tampil terstruktur:
-/// merchant tebal + tiap segmen jadi baris. Satu desain, dua pintu.
-Future<void> showNoteDialog(BuildContext context, String note) {
-  final scheme = Theme.of(context).colorScheme;
-  final lines = receiptNoteLines(note);
-  final structured = lines.length > 1;
-  return showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: scheme.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(SsrRadius.tile),
-            ),
-            child: Center(
-              child: SvgPicture.asset(
-                CoolSvg.document,
-                width: 22,
-                height: 22,
-                colorFilter: ColorFilter.mode(
-                  scheme.primary,
-                  BlendMode.srcIn,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              structured ? lines.first : tr('tx_f_note'),
-              style: Theme.of(ctx).textTheme.titleLarge,
-            ),
-          ),
+  Widget _buildSwipeRight(BuildContext context, ColorScheme scheme) {
+    return Container(
+      color: scheme.primary,
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: const Text('Edit', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
+    );
+  }
+
+  void _showDeleteConfirm(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('tx_del_title')),
+        content: Text(tr('tx_del_body')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('cancel'))),
+          TextButton(onPressed: () => onDelete?.call(), child: Text(tr('tx_delete'))),
         ],
       ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: SingleChildScrollView(
-          child: structured
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final l in lines.skip(1))
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('•  ',
-                                style: Theme.of(ctx)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(color: scheme.primary)),
-                            Expanded(
-                              child: SelectableText(
-                                l,
-                                style: Theme.of(ctx).textTheme.bodyMedium,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                )
-              : SelectableText(note),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: note));
-            Navigator.pop(ctx);
-          },
-          child: Text(tr('iv_copy')),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(tr('rcp_raw_close')),
-        ),
-      ],
-    ),
-  );
+    );
+  }
 }

@@ -378,87 +378,6 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   }
 }
 
-/// Strip ringkasan bulan: Masuk / Keluar / Surplus-Defisit.
-/// Rumus sama dengan beranda (transfer diabaikan), angka mask-aware.
-class _TxSummaryStrip extends StatelessWidget {
-  final List<SaasTransaction> items;
-
-  const _TxSummaryStrip({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    var totalIn = 0.0;
-    var totalOut = 0.0;
-    for (final t in items) {
-      if (t.type == 'in') {
-        totalIn += t.amount;
-      } else if (t.type == 'out') {
-        totalOut += t.amount;
-      }
-    }
-    final net = totalIn - totalOut;
-    final scheme = Theme.of(context).colorScheme;
-    return SectionCard(
-      child: Row(
-        children: [
-          _SummaryCell(
-            label: tr('tx_in'),
-            value: amt(totalIn),
-            color: scheme.primary,
-          ),
-          _SummaryCell(
-            label: tr('tx_out'),
-            value: amt(totalOut),
-            color: scheme.error,
-          ),
-          _SummaryCell(
-            label: tr(net >= 0 ? 'beranda_surplus' : 'beranda_defisit'),
-            value: amt(net),
-            color: scheme.onSurface,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Satu kolom angka ringkasan: label kecil sekunder, nominal tabular.
-class _SummaryCell extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-
-  const _SummaryCell({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: color,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Blok riwayat: judul bulan + banner tanpa-dompet + daftar TxRow
 /// (atau EmptyView bila kosong). Ketuk baris = ubah via sheet.
 class _TxHistorySection {
@@ -702,11 +621,6 @@ class _TxListBody extends StatelessWidget {
                   onOpenFilter: onOpenFilter,
                   onClearSearch: searchController.clear,
                 ),
-                const SizedBox(height: SsrSpace.sm),
-                MonthPicker(month: month, onChanged: onMonthChanged),
-                const SizedBox(height: SsrSpace.md),
-                _TxSummaryStrip(items: shown),
-                const SizedBox(height: SsrSpace.xs),
                 _TxCountCaption(
                   filtering: filtering,
                   shown: shown.length,

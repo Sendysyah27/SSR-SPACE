@@ -8,12 +8,14 @@ class StatusChip extends StatelessWidget {
   final String label;
   final StatusTone tone;
   final IconData? icon;
+  final bool isSmall;
 
   const StatusChip({
     super.key,
     required this.label,
     this.tone = StatusTone.neutral,
     this.icon,
+    this.isSmall = false,
   });
 
   Color _bgOf(bool dark, ColorScheme scheme) {
@@ -49,8 +51,10 @@ class StatusChip extends StatelessWidget {
     final bg = _bgOf(dark, scheme);
     final fg = _fgOf(dark, scheme);
     final text = tone == StatusTone.ink ? label.toUpperCase() : label;
+    final padding = isSmall ? EdgeInsets.symmetric(horizontal: 8, vertical: 3) : EdgeInsets.symmetric(horizontal: 12, vertical: 5);
+    final fontSize = isSmall ? 11.0 : 12.5;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      padding: padding,
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
@@ -59,17 +63,17 @@ class StatusChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            DuoIcon(icon!, size: 12, color: fg),
-            const SizedBox(width: 4),
+            DuoIcon(icon!, size: isSmall ? 10 : 12, color: fg),
+            const SizedBox(width: isSmall ? 3 : 4),
           ],
           Text(
             text,
             style: TextStyle(
               fontFamily: SsrFonts.body,
-              fontSize: 12.5,
+              fontSize: fontSize,
               fontWeight: FontWeight.w600,
               color: fg,
-              height: 1.2,
+              height: isSmall ? 1.0 : 1.2,
             ),
           ),
         ],
