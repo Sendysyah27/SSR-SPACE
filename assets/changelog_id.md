@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.58.0+158.
+Versi terpasang: 2.59.0+159.
+
+## Yang baru di 2.59.0+159
+
+1. Tampilan Industrial: netral premium terang/gelap, aksen biru, kartu grup iOS, AppBar kaca Beranda. Warna makna uang tetap.
 
 ## Yang baru di 2.58.0+158
 

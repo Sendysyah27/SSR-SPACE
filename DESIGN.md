@@ -28,6 +28,12 @@ Adaptasi tercatat di spec tersebut bagian 8: font via bundel existing
   tabungan.
 - Sinyal makna: masuk emerald, keluar rust, tabungan gold, selalu
   ditemani label kata.
+- Revisi Industrial 2026-10-14 (disetujui owner, ganti arah penuh):
+  chrome netral premium (light `#F2F2F7`/`#FFFFFF`/`#1C1C1E`, dark
+  `#000000`/`#1C1C1E`), satu aksen biru iOS (`#007AFF`/`#0A84FF`)
+  untuk aksi primer + bubble chat user. Warna makna uang di atas
+  TIDAK berubah. Token di `Ind` (app_theme.dart); radius kartu 16,
+  hero 20; bayangan hanya hero.
 - Semua pasangan teks lolos WCAG AA (terukur 4.73 sampai 16.39;
   terendah `#7A5E14` di goldSoft 4.73, dipakai hanya untuk teks di atas
   tint, bukan solid).
@@ -46,7 +52,9 @@ Adaptasi tercatat di spec tersebut bagian 8: font via bundel existing
 
 ## Motif
 
-Garis ledger: daftar transaksi berupa baris ber-lineup hairline seperti buku kas. Satu-satunya dekorasi yang berulang.
+Grup iOS: kartu inset radius 16 di atas latar grup, pemisah hairline
+(evolusi motif ledger, bukan hapus). Satu-satunya dekorasi yang
+berulang. Kaca (blur) hanya AppBar Beranda.
 
 ## Gerak
 

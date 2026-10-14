@@ -28,6 +28,36 @@ class AppColors {
   static const chipWarnBg = Color(0xFFF6E4E1);
 }
 
+/// Token Industrial iPhone (2026-10-14, disetujui owner): chrome netral
+/// premium, satu aksen biru. Alasan tiap nilai:
+/// - scaffold/surface abu iOS (grup + kartu terbaca tanpa border tebal).
+/// - teks sekunder #6E6E73 di putih ≈5.0 (AA); dark #98989D di hitam aman.
+/// - aksen #007AFF (putih di atasnya ≈4.5); dark #0A84FF.
+/// - bayangan hanya penanda hero (R-12), radius 16 kartu / 20 hero (R-11).
+/// Warna makna uang (emerald/rust/gold) TIDAK diubah: tetap untuk
+/// masuk/keluar/tabungan + label kata.
+class Ind {
+  static const scaffoldL = Color(0xFFF2F2F7);
+  static const ink = Color(0xFF1C1C1E);
+  static const secondaryL = Color(0xFF6E6E73);
+  static const lineL = Color(0xFFE5E5EA);
+  static const blue = Color(0xFF007AFF);
+  static const scaffoldD = Color(0xFF000000);
+  static const surfaceD = Color(0xFF1C1C1E);
+  static const inkD = Color(0xFFF5F5F7);
+  static const secondaryD = Color(0xFF98989D);
+  static const lineD = Color(0xFF38383A);
+  static const blueD = Color(0xFF0A84FF);
+
+  static List<BoxShadow> heroShadow(bool dark) => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: dark ? 0.35 : 0.08),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+        ),
+      ];
+}
+
 class SsrMotion {
   static const fast = Duration(milliseconds: 150);
   static const base = Duration(milliseconds: 200);
@@ -40,8 +70,8 @@ class SsrRadius {
   static const input = 12.0;
   static const tile = 12.0;
   static const button = 12.0;
-  static const card = 24.0;
-  static const hero = 24.0;
+  static const card = 16.0;
+  static const hero = 20.0;
 }
 
 class SsrSpace {
@@ -65,22 +95,22 @@ class SsrFonts {
 class AppTheme {
   static ThemeData light() {
     const scheme = ColorScheme.light(
-      primary: AppColors.emerald,
-      onPrimary: AppColors.cream,
+      primary: Ind.blue,
+      onPrimary: Colors.white,
       surface: Colors.white,
-      onSurface: AppColors.ink,
+      onSurface: Ind.ink,
       error: AppColors.rust,
-      onError: AppColors.cream,
-      outline: AppColors.line,
+      onError: Colors.white,
+      outline: Ind.lineL,
     );
     return ThemeData(
       useMaterial3: true,
       fontFamily: SsrFonts.body,
-      scaffoldBackgroundColor: AppColors.cream,
+      scaffoldBackgroundColor: Ind.scaffoldL,
       colorScheme: scheme,
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.cream,
-        foregroundColor: AppColors.ink,
+        backgroundColor: Ind.scaffoldL,
+        foregroundColor: Ind.ink,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
@@ -88,7 +118,7 @@ class AppTheme {
           fontSize: 22,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.3,
-          color: AppColors.ink,
+          color: Ind.ink,
         ),
       ),
       textTheme: const TextTheme(
@@ -97,51 +127,51 @@ class AppTheme {
           fontSize: 32,
           fontWeight: FontWeight.w400,
           letterSpacing: -0.5,
-          color: AppColors.ink,
+          color: Ind.ink,
         ),
         titleLarge: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 20,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.2,
-          color: AppColors.ink,
+          color: Ind.ink,
         ),
         titleMedium: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: AppColors.ink,
+          color: Ind.ink,
         ),
         bodyLarge: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 16,
           height: 1.5,
-          color: AppColors.ink,
+          color: Ind.ink,
         ),
         bodyMedium: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 14,
           height: 1.5,
-          color: AppColors.ink,
+          color: Ind.ink,
         ),
         bodySmall: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 12,
           height: 1.4,
-          color: AppColors.inkSoft,
+          color: Ind.secondaryL,
         ),
         labelLarge: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.ink,
+          color: Ind.ink,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(48, 48),
-          backgroundColor: AppColors.emerald,
-          foregroundColor: AppColors.cream,
+          backgroundColor: Ind.blue,
+          foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(SsrRadius.button),
@@ -156,8 +186,8 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(48, 48),
-          foregroundColor: AppColors.ink,
-          side: const BorderSide(color: AppColors.line),
+          foregroundColor: Ind.ink,
+          side: const BorderSide(color: Ind.lineL),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(SsrRadius.button),
           ),
@@ -166,7 +196,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           minimumSize: const Size(48, 44),
-          foregroundColor: AppColors.emerald,
+          foregroundColor: Ind.blue,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -174,15 +204,15 @@ class AppTheme {
         fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SsrRadius.input),
-          borderSide: const BorderSide(color: AppColors.line),
+          borderSide: const BorderSide(color: Ind.lineL),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SsrRadius.input),
-          borderSide: const BorderSide(color: AppColors.line),
+          borderSide: const BorderSide(color: Ind.lineL),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SsrRadius.input),
-          borderSide: const BorderSide(color: AppColors.emerald, width: 1.6),
+          borderSide: const BorderSide(color: Ind.blue, width: 1.6),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
@@ -192,10 +222,10 @@ class AppTheme {
       dividerTheme: const DividerThemeData(thickness: 0.8, space: 1),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.ink,
+        backgroundColor: Ind.ink,
         contentTextStyle: const TextStyle(
           fontFamily: SsrFonts.body,
-          color: AppColors.cream,
+          color: Colors.white,
           fontSize: 14,
         ),
         shape: RoundedRectangleBorder(
@@ -205,19 +235,19 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.cream;
+            return Colors.white;
           }
           return null;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.emerald;
+            return Ind.blue;
           }
           return null;
         }),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.emerald,
+        color: Ind.blue,
       ),
       listTileTheme: const ListTileThemeData(
         contentPadding: EdgeInsets.symmetric(horizontal: 4),
@@ -228,22 +258,22 @@ class AppTheme {
 
   static ThemeData dark() {
     const scheme = ColorScheme.dark(
-      primary: AppColors.emeraldBright,
-      onPrimary: AppColors.bgDark,
-      surface: AppColors.surfaceDark,
-      onSurface: AppColors.inkDark,
+      primary: Ind.blueD,
+      onPrimary: Colors.white,
+      surface: Ind.surfaceD,
+      onSurface: Ind.inkD,
       error: AppColors.rust,
-      onError: AppColors.inkDark,
-      outline: AppColors.lineDark,
+      onError: Ind.inkD,
+      outline: Ind.lineD,
     );
     return ThemeData(
       useMaterial3: true,
       fontFamily: SsrFonts.body,
-      scaffoldBackgroundColor: AppColors.bgDark,
+      scaffoldBackgroundColor: Ind.scaffoldD,
       colorScheme: scheme,
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.bgDark,
-        foregroundColor: AppColors.inkDark,
+        backgroundColor: Ind.scaffoldD,
+        foregroundColor: Ind.inkD,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
@@ -251,7 +281,7 @@ class AppTheme {
           fontSize: 22,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.3,
-          color: AppColors.inkDark,
+          color: Ind.inkD,
         ),
       ),
       textTheme: const TextTheme(
@@ -260,51 +290,51 @@ class AppTheme {
           fontSize: 32,
           fontWeight: FontWeight.w400,
           letterSpacing: -0.5,
-          color: AppColors.inkDark,
+          color: Ind.inkD,
         ),
         titleLarge: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 20,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.2,
-          color: AppColors.inkDark,
+          color: Ind.inkD,
         ),
         titleMedium: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: AppColors.inkDark,
+          color: Ind.inkD,
         ),
         bodyLarge: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 16,
           height: 1.5,
-          color: AppColors.inkDark,
+          color: Ind.inkD,
         ),
         bodyMedium: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 14,
           height: 1.5,
-          color: AppColors.inkDark,
+          color: Ind.inkD,
         ),
         bodySmall: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 12,
           height: 1.4,
-          color: AppColors.inkSoftDark,
+          color: Ind.secondaryD,
         ),
         labelLarge: TextStyle(
           fontFamily: SsrFonts.body,
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.inkDark,
+          color: Ind.inkD,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(48, 48),
-          backgroundColor: AppColors.emeraldBright,
-          foregroundColor: AppColors.bgDark,
+          backgroundColor: Ind.blueD,
+          foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(SsrRadius.button),
@@ -319,8 +349,8 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(48, 48),
-          foregroundColor: AppColors.inkDark,
-          side: const BorderSide(color: AppColors.lineDark),
+          foregroundColor: Ind.inkD,
+          side: const BorderSide(color: Ind.lineD),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(SsrRadius.button),
           ),
@@ -329,24 +359,24 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           minimumSize: const Size(48, 44),
-          foregroundColor: AppColors.emeraldBright,
+          foregroundColor: Ind.blueD,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceDark,
+        fillColor: Ind.surfaceD,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SsrRadius.input),
-          borderSide: const BorderSide(color: AppColors.lineDark),
+          borderSide: const BorderSide(color: Ind.lineD),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SsrRadius.input),
-          borderSide: const BorderSide(color: AppColors.lineDark),
+          borderSide: const BorderSide(color: Ind.lineD),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SsrRadius.input),
           borderSide: const BorderSide(
-            color: AppColors.emeraldBright,
+            color: Ind.blueD,
             width: 1.6,
           ),
         ),
@@ -362,10 +392,10 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.surfaceDark,
+        backgroundColor: Ind.surfaceD,
         contentTextStyle: const TextStyle(
           fontFamily: SsrFonts.body,
-          color: AppColors.inkDark,
+          color: Ind.inkD,
           fontSize: 14,
         ),
         shape: RoundedRectangleBorder(
@@ -375,19 +405,19 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.bgDark;
+            return Colors.white;
           }
           return null;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.emeraldBright;
+            return Ind.blueD;
           }
           return null;
         }),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.emeraldBright,
+        color: Ind.blueD,
       ),
       listTileTheme: const ListTileThemeData(
         contentPadding: EdgeInsets.symmetric(horizontal: 4),

@@ -653,13 +653,15 @@ class _Bubble extends StatelessWidget {  final _ChatMsg msg;
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    // Bubble iOS: user biru-putih, Mang AI abu netral, error merah.
+    // Satu-satunya aksen biru di layar (R-01, R-29).
     final bg = msg.mine
-        ? scheme.primaryContainer
+        ? scheme.primary
         : msg.isError
             ? scheme.errorContainer
             : scheme.surfaceContainerHighest;
     final fg = msg.mine
-        ? scheme.onPrimaryContainer
+        ? scheme.onPrimary
         : msg.isError
             ? scheme.onErrorContainer
             : scheme.onSurface;

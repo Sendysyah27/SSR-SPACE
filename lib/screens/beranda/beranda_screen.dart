@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -810,7 +811,17 @@ class BerandaScreenState extends State<BerandaScreen> {
         ? '?'
         : orgName.trim()[0].toUpperCase();
     return Scaffold(
+      // Kaca AppBar (satu-satunya blur di app, R-10): konten terasa
+      // melayang di bawah bar iOS. extendBody agar blur terlihat.
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
+        backgroundColor: scheme.surface.withValues(alpha: 0.82),
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: const SizedBox.expand(),
+          ),
+        ),
         leading: Padding(
           padding: const EdgeInsets.only(left: 12),
           child: InkWell(
@@ -1058,13 +1069,13 @@ class BerandaScreenState extends State<BerandaScreen> {
     int? pctOut,
   ) {
     final positive = surplus >= 0;
-    // Teks hero: cream di light, inkDark di dark, keduanya di atas
-    // emeraldDeep. Ikut brightness tema aplikasi, bukan platform.
+    // Hero industrial: kartu permukaan netral + angka tinta, bayangan
+    // halus satu-satunya (R-12). Makna tetap via chip + warna angka.
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final onHero = dark ? scheme.onSurface : scheme.onPrimary;
+    final onHero = scheme.onSurface;
     final heroLabel = TextStyle(
-      color: onHero.withValues(alpha: 0.7),
+      color: scheme.onSurfaceVariant,
       fontSize: 12,
     );
     final heroValue = TextStyle(
@@ -1076,9 +1087,12 @@ class BerandaScreenState extends State<BerandaScreen> {
     );
     return Container(
       padding: const EdgeInsets.all(SsrSpace.xl),
-      decoration: const BoxDecoration(
-        color: AppColors.emeraldDeep,
-        borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius:
+            const BorderRadius.all(Radius.circular(SsrRadius.hero)),
+        border: Border.all(color: scheme.outline),
+        boxShadow: Ind.heroShadow(dark),
       ),
       child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
