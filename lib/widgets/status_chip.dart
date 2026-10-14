@@ -64,7 +64,7 @@ class StatusChip extends StatelessWidget {
         children: [
           if (icon != null) ...[
             DuoIcon(icon!, size: isSmall ? 10 : 12, color: fg),
-            const SizedBox(width: isSmall ? 3 : 4),
+            SizedBox(width: isSmall ? 3 : 4),
           ],
           Text(
             text,

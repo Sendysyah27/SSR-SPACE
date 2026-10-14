@@ -4,15 +4,15 @@ import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/tx_wallet_check.dart';
 import 'package:ssr_space/services/space_logic.dart';
-import 'package:ssr_space.services/supabase_config.dart';
-import 'package:ssr_space.services.category_icons.dart';
-import 'package:ssr_space.services.category_meta.dart';
-import 'package:ssr_space.theme.app_icons.dart';
-import 'package:ssr_space.theme.app_theme.dart';
-import 'package:ssr_space.theme.cool_icons.dart';
+import 'package:ssr_space/services/supabase_config.dart';
+import 'package:ssr_space/services/category_icons.dart';
+import 'package:ssr_space/services/category_meta.dart';
+import 'package:ssr_space/theme/app_icons.dart';
+import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/cool_icons.dart';
 import 'package:ssr_space.models.transaction.dart';
 import 'package:ssr_space.utils.strings.dart';
-import 'package:ssr_space.services.receipt_parse.dart';
+import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space.widgets.status_chip.dart';
 import 'package:ssr_space/theme/category_emoji.dart';
 
@@ -191,4 +191,18 @@ class TxRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Tampilkan dialog baca catatan transaksi (teks penuh).
+void showNoteDialog(BuildContext context, String note) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(tr('tx_f_note')),
+      content: SingleChildScrollView(child: Text(note)),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('close'))),
+      ],
+    ),
+  );
 }
