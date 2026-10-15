@@ -632,3 +632,8 @@ Manifest manggil  yang tidak ada -> FC pas launch.
   - Bug A: kartu konfirmasi chat tidak muncul. Root cause: wallet_tidak_cocok ("QRIS BCA" = metode bayar, bukan nama dompet) → action dibuang diam-diam. Fix: reason codes debug-only, system prompt diperkuat, kartu fallback dengan dropdown dompet/kategori.
   - Bug B: parser OCR - tanggal nama-bulan ID/EN (dd Mmm yyyy), baris non-item (subtotal/pajak/pembayaran) tidak jadi item, "Grand Total: 0" fallback ke baris pembayaran, pembulatan tidak pernah jadi total, flag inconsistent/suspicious. Struk 1: total 81000, tanggal 2026-06-21, item burger+nugget.
   - Bug C: sheet/dialog opak (glass_sheet solid surface), ikon Masuk/Keluar Icon→DuoIcon (font PhosphorDuotone hilang sejak 2.8.0+58), ikon kategori diperbaiki.
+- **2.69.0+215** (2026-10-15): 4 item laporan user.
+  - Memori AI: system prompt lokal tambah instruksi blok ingat → fakta user tersimpan & tampil di dialog Memori AI.
+  - Chat: tombol Simpan di kartu konfirmasi + menu hapus/mulai session baru di AppBar.
+  - Mode Catat: sheet Langkah 2 bisa scroll penuh sampai tombol Simpan (ConstrainedBox maxHeight 92%).
+  - Vision: prompt minta SEMUA item produk lengkap (nama/qty/harga), hasil tampil replika struk. Bounding box tidak feasible (LLM teks, koordinat halusinasi).
