@@ -38,7 +38,10 @@ if 'import io.flutter.plugin.common.MethodChannel' not in ms:
     print('Import ditambahkan')
 
 # 2. Tambah/kembangkan configureFlutterEngine
-class_match = re.search(r'class MainActivity[^{]*\{', ms)
+# Cari class MainActivity - bisa dengan atau tanpa body { }
+# Format 1: class MainActivity: FlutterActivity() { ... }
+# Format 2: class MainActivity: FlutterActivity()  (tanpa body)
+class_match = re.search(r'class MainActivity\s*:[^{]*', ms)
 assert class_match, 'FAIL: Class MainActivity tidak ketemu!'
 
 if 'override fun configureFlutterEngine' in ms:
@@ -50,8 +53,12 @@ if 'override fun configureFlutterEngine' in ms:
     ms = ms[:sm.start()] + inject + ms[sm.end():]
     print('Inject ke configureFlutterEngine yang ada')
 else:
-    # Belum ada -> buat baru
-    insert_pos = class_match.end()
+    # Belum ada -> buat method baru
+    # Jika class tanpa body, tambah body dengan method di dalamnya
+    # Jika class dengan body, tambah method di dalam body
+    class_decl_end = class_match.end()
+    # Cek apakah ada { setelah class declaration
+    after_class = ms[class_decl_end:class_decl_end+10].strip()
     method = (
         '\n    override fun configureFlutterEngine('
         'flutterEngine: io.flutter.embedding.engine.FlutterEngine'
@@ -62,8 +69,15 @@ else:
         'AiFlutterBridge.CHANNEL))\n'
         '    }'
     )
-    ms = ms[:insert_pos] + method + ms[insert_pos:]
-    print('configureFlutterEngine baru dibuat')
+    if after_class.startswith('{'):
+        # Ada body, insert setelah {
+        brace_pos = ms.find('{', class_decl_end)
+        ms = ms[:brace_pos+1] + method + ms[brace_pos+1:]
+        print('configureFlutterEngine ditambahkan ke class body yang ada')
+    else:
+        # Tidak ada body, buat body baru
+        ms = ms[:class_decl_end] + ' {' + method + '\n}' + ms[class_decl_end:]
+        print('configureFlutterEngine baru dibuat dengan class body')
 
 mp.write_text(ms)
 
