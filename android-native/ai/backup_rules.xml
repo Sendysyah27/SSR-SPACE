@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup rules: API key AI TIDAK BOLEH ikut backup.
+    File: ai_key_prefs.xml (EncryptedSharedPreferences)
+-->
+<full-backup-content>
+    <!-- Exclude AI key prefs dari backup -->
+    <exclude domain="sharedpref" path="ai_key_prefs.xml"/>
+</full-backup-content>
