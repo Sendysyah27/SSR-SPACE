@@ -1167,7 +1167,7 @@ class _PendingActionCardState extends State<_PendingActionCard> {
               const SizedBox(height: SsrSpace.xs),
               if (p.walletOptions.isNotEmpty)
                 DropdownButtonFormField<String>(
-                  value: _wallet,
+                  initialValue: _wallet,
                   hint: const Text('Pilih dompet'),
                   items: [
                     for (final w in p.walletOptions)
@@ -1185,7 +1185,7 @@ class _PendingActionCardState extends State<_PendingActionCard> {
               const SizedBox(height: SsrSpace.xs),
               if (p.categoryOptions.isNotEmpty)
                 DropdownButtonFormField<String>(
-                  value: _category,
+                  initialValue: _category,
                   hint: const Text('Pilih kategori'),
                   items: [
                     for (final c in p.categoryOptions)

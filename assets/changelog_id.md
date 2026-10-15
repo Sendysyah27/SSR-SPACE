@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.68.0+212.
+Versi terpasang: 2.68.0+213.
+
+## Yang baru di 2.68.0+213
+
+1. Perbaikan kecil: dropdown dompet/kategori pakai initialValue (API baru Flutter). Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.68.0+212
 
