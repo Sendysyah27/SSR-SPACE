@@ -202,6 +202,17 @@ jobs:
           mf.write_text(mt)
           print('AI native integration OK')
           PYEOF
+      - name: Patch MainActivity (AiFlutterBridge)
+        run: python3 patch_ma.py
+
+      - name: Verifikasi AiFlutterBridge terdaftar
+        run: |
+          if ! grep -rq "AiFlutterBridge.setup" android/app/src/main/kotlin/ android/app/src/main/java/ 2>/dev/null; then
+            echo "ERROR: AiFlutterBridge.setup tidak ketemu di MainActivity!"
+            exit 1
+          fi
+          echo "Verifikasi OK"
+
       - run: |
       - run: |
           python3 - <<'EOF'
