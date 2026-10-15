@@ -48,8 +48,10 @@ Future<({ReceiptData data, String provider})?> scanReceiptVision(
     String provider = '';
     AiFailure? last;
     // 1) Zen vision langsung (prompt vision + gambar).
-    // Cek provider: local (OpenCode) atau zen
-    final useLocal = await aiProviderId() == 'local';
+    // Coba OpenCode lokal dulu kalau ada password (agresif, tanpa cek provider)
+    // Kalau gagal, baru coba Zen
+    final localPass = await readLocalPass();
+    final useLocal = localPass != null && localPass.isNotEmpty;
     try {
       if (useLocal) {
         // Pakai OpenCode lokal via MethodChannel (vision support)
