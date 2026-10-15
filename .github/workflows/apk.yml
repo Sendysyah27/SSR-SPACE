@@ -141,17 +141,7 @@ jobs:
       - run: |
           BG=android/app/build.gradle
           if ! grep -q "doNotStrip" "$BG"; then
-            python3 -c "
-            import pathlib;
-            p = pathlib.Path('android/app/build.gradle');
-            t = p.read_text();
-            old = '    buildTypes {';
-            add = '    packagingOptions {\\n        doNotStrip \"*/arm64-v8a/libopencode.so\"\\n    }\\n';
-            assert old in t;
-            t = t.replace(old, add + old, 1);
-            p.write_text(t);
-            print('doNotStrip ok')
-            "
+            python3 -c "import pathlib; p=pathlib.Path('android/app/build.gradle'); t=p.read_text(); old='    buildTypes {'; add='    packagingOptions {\n        doNotStrip "*/arm64-v8a/libopencode.so"\n    }\n'; assert old in t; t=t.replace(old,add+old,1); p.write_text(t); print('doNotStrip ok')"
           fi
       - run: |
           python3 - <<'EOF'
