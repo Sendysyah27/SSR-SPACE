@@ -606,3 +606,23 @@ APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 - **2.64.2+189** (2026-10-15): sync AppInfo.version dengan pubspec (aturan §7 AGENTS.md).
 - **2.65.0+190** (2026-10-15): fix native lib dir tidak ketemu - fallback berlapis (proc/maps + scan /data/app + path umum).
 - **2.66.0+192** (2026-10-15): getNativeLibDir via MethodChannel ssr_space/widget (3 strategi Dart gagal - Android blokir akses path).
+
+## Root Cause: SsrApp.java tidak masuk dex (2.62.0+176)
+
+**Penyebab**: Workflow menulis SsrApp.java ke  (parent dir MainActivity).
+MainActivity adalah Kotlin file (.kt) di .
+SsrApp.java (Java) ikut ditulis ke folder .
+
+**Masalah**: Gradle Kotlin plugin secara default HANYA compile:
+- Kotlin files dari 
+- Java files dari 
+
+Java file di folder kotlin/ TIDAK di-compile -> class tidak masuk dex.
+Manifest manggil  yang tidak ada -> FC pas launch.
+
+**Fix yang benar** (jika SsrApp mau dipakai lagi):
+- Tulis SsrApp.java ke  (bukan kotlin/), ATAU
+- Tulis SsrApp.kt (Kotlin) bukan .java, ATAU  
+- Konfigurasi sourceSets di build.gradle untuk include Java di kotlin dir.
+
+**Status**: Sudah di-hotfix via 2.62.1+177 (revert dari manifest). Tidak dipakai lagi.
