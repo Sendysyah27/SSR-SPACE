@@ -637,3 +637,11 @@ Manifest manggil  yang tidak ada -> FC pas launch.
   - Chat: tombol Simpan di kartu konfirmasi + menu hapus/mulai session baru di AppBar.
   - Mode Catat: sheet Langkah 2 bisa scroll penuh sampai tombol Simpan (ConstrainedBox maxHeight 92%).
   - Vision: prompt minta SEMUA item produk lengkap (nama/qty/harga), hasil tampil replika struk. Bounding box tidak feasible (LLM teks, koordinat halusinasi).
+- **2.70.0+217** (2026-10-16): 5 lampiran user.
+  - Timeout vision 120 dtk khusus scan (struk 43 item > 30 dtk); chat tetap 30 dtk.
+  - Tombol OCR vs AI Vision bersampingan; mode strict tanpa fallback diam-diam.
+  - Memori.md dalam app: blok ringkas percakapan penting (FIFO 30).
+  - Session chat persisten sampai user hapus via menu titik 3.
+  - Edit memori via UI (ubah/hapus per item).
+  - AI akses baca data penuh (dompet, budget, target, utang) untuk konteks.
+  - Beranda: ikon robot AI, tombol Mang AI sejajar Catat, greeting random sesuai waktu.
