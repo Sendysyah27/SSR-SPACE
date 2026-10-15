@@ -91,6 +91,27 @@ object AiFlutterBridge {
                     }
                     runProvider(ZenProvider(config), prompt, result)
                 }
+                "completeWithImage" -> {
+                    val prompt = call.argument<String>("prompt")
+                    val imageBytes = call.argument<ByteArray>("imageBytes")
+                    val mimeType = call.argument<String>("mimeType") ?: "image/jpeg"
+                    if (prompt.isNullOrBlank() || imageBytes == null || imageBytes.isEmpty()) {
+                        result.error("INVALID", "prompt atau gambar kosong", null)
+                        return@setMethodCallHandler
+                    }
+                    val which = call.argument<String>("provider") ?: "zen"
+                    if (which == "local") {
+                        val base = (call.argument<String>("baseUrl") ?: "").trim().trimEnd('/')
+                        val pass = call.argument<String>("localPassword") ?: ""
+                        if (base.isEmpty() || pass.isEmpty()) {
+                            result.error("NO_LOCAL_PASS", "Belum ada password OpenCode lokal.", null)
+                            return@setMethodCallHandler
+                        }
+                        runProviderWithImage(LocalOpenCodeProvider(base, pass), prompt, imageBytes, mimeType, result)
+                        return@setMethodCallHandler
+                    }
+                    result.error("UNSUPPORTED", "Vision hanya untuk OpenCode lokal.", null)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -98,6 +119,30 @@ object AiFlutterBridge {
 
     fun onDestroy() {
         scope.cancel()
+    }
+
+    private fun runProviderWithImage(
+        provider: AiProvider,
+        prompt: String,
+        imageBytes: ByteArray,
+        mimeType: String,
+        result: MethodChannel.Result,
+    ) {
+        scope.launch {
+            try {
+                val aiResult = withContext(Dispatchers.IO) {
+                    provider.completeWithImage(prompt, imageBytes, mimeType)
+                }
+                aiResult.fold(
+                    onSuccess = { text -> result.success(text) },
+                    onFailure = { e ->
+                        result.error("AI_ERROR", e.message ?: "Unknown", null)
+                    }
+                )
+            } catch (e: Exception) {
+                result.error("AI_ERROR", e.message ?: "Unknown", null)
+            }
+        }
     }
 
     /**

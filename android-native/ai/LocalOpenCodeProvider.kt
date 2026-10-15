@@ -1,5 +1,6 @@
 package com.ssr.space.ssr_space.ai
 
+import android.util.Base64
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -43,7 +44,7 @@ import java.net.UnknownHostException
 class LocalOpenCodeProvider(
     baseUrl: String,
     private val password: String,
-    private val timeoutMs: Int = 30_000,
+    private val timeoutMs: Int = 7_000,
     private val systemPrompt: String = DEFAULT_SYSTEM,
 ) : AiProvider {
 
@@ -77,6 +78,70 @@ class LocalOpenCodeProvider(
                 sessionId?.let { deleteSession(it) }
             }
         }
+
+    override suspend fun completeWithImage(
+        prompt: String,
+        imageBytes: ByteArray,
+        mimeType: String
+    ): Result<String> = withContext(Dispatchers.IO) {
+        val maskedPrompt = DataMasker.mask(prompt)
+        var sessionId: String? = null
+        try {
+            sessionId = createSession()
+            val parsed = sendMessageWithImage(sessionId, maskedPrompt, imageBytes, mimeType)
+            Log.d(TAG, "tokens_in=${parsed.inputTokens}")
+            Result.success(parsed.text)
+        } catch (e: AiFailure) {
+            Result.failure(e)
+        } catch (e: Exception) {
+            Result.failure(AiFailure.Unknown(e.message ?: "Unknown error"))
+        } finally {
+            sessionId?.let { deleteSession(it) }
+        }
+    }
+
+    /** POST /session/{id}/message dengan gambar (vision). */
+    private fun sendMessageWithImage(
+        sessionId: String,
+        maskedPrompt: String,
+        imageBytes: ByteArray,
+        mimeType: String,
+    ): LocalOpenCodeParser.ParsedResult {
+        val conn = open("POST", "$base/session/$sessionId/message")
+        try {
+            val base64Img = Base64.encodeToString(imageBytes, Base64.NO_WRAP)
+            val body = JSONObject().apply {
+                put("system", systemPrompt)
+                put("parts", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("type", "text")
+                        put("text", maskedPrompt)
+                    })
+                    put(JSONObject().apply {
+                        put("type", "image")
+                        put("mimeType", mimeType)
+                        put("data", base64Img)
+                    })
+                })
+            }
+            OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { w ->
+                w.write(body.toString())
+                w.flush()
+            }
+            val code = conn.responseCode
+            if (code == 401) throw AiFailure.InvalidKey()
+            if (code < 200 || code >= 300) {
+                throw AiFailure.Unknown("HTTP $code: ${readErr(conn).take(200)}")
+            }
+            return LocalOpenCodeParser.parseMessage(readOk(conn)).getOrThrow()
+        } catch (e: AiFailure) {
+            throw e
+        } catch (e: Exception) {
+            throw mapNetwork(e)
+        } finally {
+            conn.disconnect()
+        }
+    }
 
     // -- wire --------------------------------------------------------------
 

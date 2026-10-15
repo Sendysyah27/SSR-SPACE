@@ -11,6 +11,22 @@ interface AiProvider {
      * @return Result<String> berisi response, atau AiFailure jika gagal.
      */
     suspend fun complete(prompt: String): Result<String>
+
+    /**
+     * Kirim prompt + gambar ke AI (mode vision).
+     * Default: tidak didukung, override di provider yang support.
+     * @param prompt Prompt yang sudah di-mask.
+     * @param imageBytes Byte array gambar (JPEG/PNG).
+     * @param mimeType MIME type gambar (default image/jpeg).
+     * @return Result<String> berisi response, atau AiFailure jika gagal.
+     */
+    suspend fun completeWithImage(
+        prompt: String,
+        imageBytes: ByteArray,
+        mimeType: String = "image/jpeg"
+    ): Result<String> {
+        return Result.failure(AiFailure.Unknown("Vision tidak didukung provider ini."))
+    }
 }
 
 /**
