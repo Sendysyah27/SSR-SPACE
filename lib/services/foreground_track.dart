@@ -5,6 +5,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/utils/diag_log.dart';
 
 String? foregroundGate({
   required bool isAndroid,
@@ -19,19 +20,26 @@ String? foregroundGate({
 
 @pragma('vm:entry-point')
 void foregroundStartCallback() {
+  DiagLog.write('DIAG fg callback start');
   FlutterForegroundTask.setTaskHandler(_PassiveTaskHandler());
 }
 
 /// Service hanya menjaga proses hidup; event notif tetap di stream plugin.
 class _PassiveTaskHandler extends TaskHandler {
   @override
-  Future<void> onStart(DateTime timestamp, TaskStarter starter) async {}
+  Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
+    DiagLog.write('DIAG fg onStart');
+  }
 
   @override
-  void onRepeatEvent(DateTime timestamp) {}
+  void onRepeatEvent(DateTime timestamp) {
+    DiagLog.write('DIAG fg onRepeat');
+  }
 
   @override
-  Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {}
+  Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
+    DiagLog.write('DIAG fg onDestroy');
+  }
 }
 
 class ForegroundTrack {

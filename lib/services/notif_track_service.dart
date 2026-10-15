@@ -8,6 +8,7 @@ import 'package:notification_listener_service/notification_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/utils/diag_log.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/budget_alert_notify.dart';
 import 'package:ssr_space/services/notif_parse.dart';
@@ -341,6 +342,7 @@ class NotifTrack {
   }
 
   static Future<void> _onEvent(ServiceNotificationEvent e) async {
+    DiagLog.write('DIAG notif event');
     try {
       if (e.hasRemoved) return;
       final pkg = e.packageName.trim();
@@ -474,6 +476,7 @@ class NotifTrack {
       _remember(n);
     } catch (err, st) {
       ErrorReporter.capture(err, st, context: 'notif_pipeline');
+      DiagLog.error('DIAG notif_pipeline', err, st);
       debugPrint('track: $err');
     }
   }

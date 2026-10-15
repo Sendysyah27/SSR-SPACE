@@ -23,6 +23,13 @@ import 'package:ssr_space/utils/diag_log.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FlutterError.onError = (details) {
+    DiagLog.error('DIAG FlutterError', details.exception, details.stack);
+  };
+  WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+    DiagLog.error('DIAG uncaught-async', error, stack);
+    return true;
+  };
   DiagLog.write('DIAG main start');
   ErrorReporter.init();
   DiagLog.write('DIAG ErrorReporter init ok');
