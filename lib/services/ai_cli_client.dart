@@ -2,24 +2,33 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
+import 'ai_key_store.dart';
 import 'ai_soul.dart';
 import 'firebase_ai_parser.dart';
 
-// AI via MethodChannel ke native Kotlin (ZenProvider).
+// AI via MethodChannel ke native Kotlin (ZenProvider / LocalOpenCodeProvider).
 //
 // Latar: native binary (libopencode.so) di-bundle tapi Android memblokir
 // eksekusi/pencarian path-nya (3 strategi + MethodChannel getNativeLibDir
-// semuanya gagal). Solusi: hapus jalur binary, pakai HTTP langsung via
-// Kotlin ZenProvider yang key-nya tersimpan aman di EncryptedSharedPreferences.
+// semuanya gagal). Solusi: HTTP via Kotlin yang key-nya tersimpan aman.
+//
+// Dua provider (pilihan di layar Mang AI, prefs ai_provider):
+//  1. 'zen' (default): Kotlin ZenProvider POST ke
+//     https://opencode.ai/zen/v1/chat/completions (key = Zen key).
+//  2. 'local': Kotlin LocalOpenCodeProvider ke opencode serve lokal
+//     (baseUrl prefs, password = secure storage Dart, dikirim per-call,
+//     TIDAK PERNAH di-log).
 //
 // Cara kerja:
 //  1. aiChatViaCli(): panggil MethodChannel 'ssr_space/ai' method 'complete'.
-//  2. Kotlin ZenProvider POST ke https://opencode.ai/zen/v1/chat/completions.
-//  3. Hasil dikembalikan ke Dart.
+//  2. Hasil dikembalikan ke Dart.
 // Throw [AiFailure] jujur (kode: empty | timeout | denied | server).
 
 /// Nama provider untuk tracking.
 const cliProviderName = 'zen-http';
+
+/// Nama provider lokal untuk tracking.
+const localProviderName = 'opencode-lokal';
 
 const cliTimeout = Duration(seconds: 30);
 
@@ -74,27 +83,47 @@ Future<({String text, String provider})> aiChatViaCli(
   // Mask data sensitif sebelum kirim (nomor panjang >= 10 digit)
   final masked = _maskLongNumbers(full);
 
+  // Provider lokal: baseUrl + password per-call (password tak pernah di-log).
+  final useLocal = await aiProviderId() == 'local';
+  final args = <String, dynamic>{'prompt': masked};
+  if (useLocal) {
+    final pass = await readLocalPass();
+    if (pass == null || pass.isEmpty) {
+      throw const AiFailure('denied',
+          '[AI] Belum ada password OpenCode lokal. Isi di Mang AI.');
+    }
+    args['provider'] = 'local';
+    args['baseUrl'] = await aiBaseUrl();
+    args['localPassword'] = pass;
+  }
+
   try {
     final text = await _aiChannel
-        .invokeMethod<String>('complete', {'prompt': masked})
+        .invokeMethod<String>('complete', args)
         .timeout(cliTimeout);
     if (text == null || text.trim().isEmpty) {
       throw const AiFailure('server', '[AI] response kosong');
     }
-    return (text: text, provider: cliProviderName);
+    return (text: text, provider: useLocal ? localProviderName : cliProviderName);
   } on PlatformException catch (e) {
     // Map error code dari Kotlin ke AiFailure
     switch (e.code) {
       case 'NO_KEY':
         throw const AiFailure('denied', '[AI] Belum ada API key. Buka Pengaturan AI.');
+      case 'NO_LOCAL_PASS':
+        throw const AiFailure('denied',
+            '[AI] Belum ada password OpenCode lokal. Isi di Mang AI.');
       case 'INVALID_KEY':
         throw const AiFailure('denied', '[AI] API key salah.');
       case 'RATE_LIMITED':
         throw const AiFailure('server', '[AI] Limit terlampaui, coba lagi nanti.');
       case 'MODEL_UNAVAILABLE':
         throw const AiFailure('server', '[AI] Model tidak tersedia.');
+      case 'EMPTY':
+        throw const AiFailure('server', '[AI] AI tidak mengembalikan teks.');
       case 'OFFLINE':
-        throw const AiFailure('server', '[AI] Offline. Periksa koneksi.');
+        // Pesan native sudah jujur (mis. "Jalankan opencode serve di Termux").
+        throw AiFailure('server', '[AI] ${e.message ?? 'Offline'}');
       case 'INVALID':
         throw AiFailure('empty', '[AI] ${e.message ?? 'prompt invalid'}');
       default:

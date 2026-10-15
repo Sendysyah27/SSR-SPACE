@@ -35,6 +35,10 @@ sealed class AiFailure(message: String) : Exception(message) {
     class InvalidResponse(reason: String) :
         AiFailure("Response AI tidak valid: $reason")
 
+    /** AI tidak mengembalikan part teks sama sekali. */
+    class EmptyResponse :
+        AiFailure("AI tidak mengembalikan teks.")
+
     /** Error tidak diketahui. */
     class Unknown(message: String) : AiFailure(message)
 }

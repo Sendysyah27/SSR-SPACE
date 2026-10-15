@@ -50,6 +50,13 @@ fun main() = runBlocking {
     testClassifierRegexHit()
     testClassifierLlmFallback()
     testClassifierCacheHit()
+    testLocalParserReasoningText()
+    testLocalParserTanpaText()
+    testLocalParserJsonRusak()
+    testLocalParserSse()
+    testLocalParserTanpaToken()
+    testLocalSessionId()
+    testLocalBasicAuth()
 
     println("\n=== Hasil: $passed lulus, $failed gagal ===")
     if (failed > 0) {
@@ -230,4 +237,69 @@ private suspend fun testClassifierCacheHit() {
     val firstCount = fake.callCount
     classifier.classify("XYZ999 Toko Unik") // harusnya dari cache
     check("LLM hanya dipanggil 1x total", fake.callCount == firstCount)
+}
+
+// --- LocalOpenCodeParser tests (bentuk wire opencode serve 1.18.9) ---
+
+private fun localMsgFixture(): String = """
+{"info":{"tokens":{"total":41511,"input":33486,"output":16,"reasoning":216}},"parts":[
+{"type":"step-start","id":"prt_1"},
+{"type":"reasoning","text":"analisis: Indomaret itu belanja","time":{"start":1,"end":2}},
+{"type":"text","text":"{\"amount\":25000,\"category\":\"Belanja\"}"},
+{"type":"step-finish","reason":"stop"}]}""".trimIndent()
+
+private fun testLocalParserReasoningText() {
+    println("[LocalParser] reasoning+text -> hanya text")
+    val r = LocalOpenCodeParser.parseResponseBody(localMsgFixture())
+    check("result sukses", r.isSuccess)
+    check("hanya text part", r.getOrNull()?.text == """{"amount":25000,"category":"Belanja"}""")
+    check("token input 33486", r.getOrNull()?.inputTokens == 33486)
+}
+
+private fun testLocalParserTanpaText() {
+    println("[LocalParser] tanpa part text -> EmptyResponse")
+    val body = """{"info":{"tokens":{"input":100}},"parts":[{"type":"step-start"},{"type":"reasoning","text":"mikir"},{"type":"step-finish"}]}"""
+    val r = LocalOpenCodeParser.parseResponseBody(body)
+    check("result gagal", r.isFailure)
+    check("jenis EmptyResponse", r.exceptionOrNull() is AiFailure.EmptyResponse)
+}
+
+private fun testLocalParserJsonRusak() {
+    println("[LocalParser] JSON rusak -> InvalidResponse")
+    val r = LocalOpenCodeParser.parseResponseBody("{bukan json")
+    check("result gagal", r.isFailure)
+    check("jenis InvalidResponse", r.exceptionOrNull() is AiFailure.InvalidResponse)
+}
+
+private fun testLocalParserSse() {
+    println("[LocalParser] SSE multi-chunk digabung")
+    val sse = "data: {\"parts\":[{\"type\":\"reasoning\",\"text\":\"a\"}]}\n" +
+        "data: {\"parts\":[{\"type\":\"text\",\"text\":\"halo\"}],\"info\":{\"tokens\":{\"input\":7}}}\n"
+    val r = LocalOpenCodeParser.parseResponseBody(sse)
+    check("result sukses", r.isSuccess)
+    check("text gabungan", r.getOrNull()?.text == "halo")
+    check("token dari chunk info", r.getOrNull()?.inputTokens == 7)
+}
+
+private fun testLocalParserTanpaToken() {
+    println("[LocalParser] tanpa info.tokens -> tetap sukses, token -1")
+    val body = """{"parts":[{"type":"text","text":"ok"}]}"""
+    val r = LocalOpenCodeParser.parseResponseBody(body)
+    check("result sukses", r.isSuccess)
+    check("token -1", r.getOrNull()?.inputTokens == -1)
+}
+
+private fun testLocalSessionId() {
+    println("[LocalParser] session id")
+    check("id terbaca", LocalOpenCodeParser.parseSessionId("""{"id":"ses_abc"}""").getOrNull() == "ses_abc")
+    val r = LocalOpenCodeParser.parseSessionId("""{"nope":1}""")
+    check("tanpa id -> gagal", r.isFailure)
+}
+
+private fun testLocalBasicAuth() {
+    println("[LocalParser] basic auth header")
+    val h = LocalOpenCodeParser.basicAuthHeader("s3cr3t")
+    check("prefix Basic", h.startsWith("Basic "))
+    val decoded = String(java.util.Base64.getDecoder().decode(h.removePrefix("Basic ")))
+    check("isi user:pass", decoded == "opencode:s3cr3t")
 }

@@ -64,36 +64,32 @@ object AiFlutterBridge {
                         result.error("INVALID", "prompt kosong", null)
                         return@setMethodCallHandler
                     }
+                    // Provider dipilih sisi Dart (prefs ai_provider):
+                    // "local" = opencode serve lokal (password per-call,
+                    // tidak disimpan di native), selain itu = Zen.
+                    val which = call.argument<String>("provider") ?: "zen"
+                    if (which == "local") {
+                        val base = (call.argument<String>("baseUrl") ?: "")
+                            .trim().trimEnd('/')
+                        // JANGAN log password!
+                        val pass = call.argument<String>("localPassword") ?: ""
+                        if (base.isEmpty() || pass.isEmpty()) {
+                            result.error(
+                                "NO_LOCAL_PASS",
+                                "Belum ada password OpenCode lokal. Isi di layar Mang AI.",
+                                null
+                            )
+                            return@setMethodCallHandler
+                        }
+                        runProvider(LocalOpenCodeProvider(base, pass), prompt, result)
+                        return@setMethodCallHandler
+                    }
                     val config = keyStore.toAiConfig()
                     if (config == null) {
                         result.error("NO_KEY", "Belum ada API key", null)
                         return@setMethodCallHandler
                     }
-                    // Jalankan di background, return via result
-                    scope.launch {
-                        try {
-                            val provider = ZenProvider(config)
-                            val aiResult = withContext(Dispatchers.IO) {
-                                provider.complete(prompt)
-                            }
-                            aiResult.fold(
-                                onSuccess = { text -> result.success(text) },
-                                onFailure = { e ->
-                                    // JANGAN sertakan key di error!
-                                    val code = when (e) {
-                                        is AiFailure.RateLimited -> "RATE_LIMITED"
-                                        is AiFailure.InvalidKey -> "INVALID_KEY"
-                                        is AiFailure.ModelUnavailable -> "MODEL_UNAVAILABLE"
-                                        is AiFailure.NetworkError -> "OFFLINE"
-                                        else -> "ERROR"
-                                    }
-                                    result.error(code, e.message, null)
-                                }
-                            )
-                        } catch (e: Exception) {
-                            result.error("ERROR", e.message, null)
-                        }
-                    }
+                    runProvider(ZenProvider(config), prompt, result)
                 }
                 else -> result.notImplemented()
             }
@@ -102,5 +98,40 @@ object AiFlutterBridge {
 
     fun onDestroy() {
         scope.cancel()
+    }
+
+    /**
+     * Jalankan provider di background, return via result.
+     * Dipakai Zen maupun OpenCode lokal (routing di "complete").
+     */
+    private fun runProvider(
+        provider: AiProvider,
+        prompt: String,
+        result: MethodChannel.Result,
+    ) {
+        scope.launch {
+            try {
+                val aiResult = withContext(Dispatchers.IO) {
+                    provider.complete(prompt)
+                }
+                aiResult.fold(
+                    onSuccess = { text -> result.success(text) },
+                    onFailure = { e ->
+                        // JANGAN sertakan key/password di error!
+                        val code = when (e) {
+                            is AiFailure.RateLimited -> "RATE_LIMITED"
+                            is AiFailure.InvalidKey -> "INVALID_KEY"
+                            is AiFailure.ModelUnavailable -> "MODEL_UNAVAILABLE"
+                            is AiFailure.NetworkError -> "OFFLINE"
+                            is AiFailure.EmptyResponse -> "EMPTY"
+                            else -> "ERROR"
+                        }
+                        result.error(code, e.message, null)
+                    }
+                )
+            } catch (e: Exception) {
+                result.error("ERROR", e.message, null)
+            }
+        }
     }
 }

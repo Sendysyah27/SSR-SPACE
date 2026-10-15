@@ -2324,6 +2324,23 @@ const _t = <String, Map<String, String>>{
   'ai_saved': {'id': 'Kunci tersimpan aman.', 'en': 'Key stored securely.'},
   'ai_cleared': {'id': 'Kunci dihapus.', 'en': 'Key deleted.'},
   'ai_test': {'id': 'Tes AI', 'en': 'Test AI'},
+  'ai_prov_t': {'id': 'Provider AI', 'en': 'AI provider'},
+  'ai_prov_zen': {'id': 'Zen API', 'en': 'Zen API'},
+  'ai_prov_local': {'id': 'OpenCode lokal', 'en': 'Local OpenCode'},
+  'ai_prov_url': {
+    'id': 'Base URL (cth. http://127.0.0.1:4096)',
+    'en': 'Base URL (e.g. http://127.0.0.1:4096)',
+  },
+  'ai_prov_pass': {
+    'id': 'Password opencode serve',
+    'en': 'opencode serve password',
+  },
+  'ai_prov_hint': {
+    'id': 'Password tersimpan terenkripsi, hanya dikirim ke server lokal.',
+    'en': 'Password stored encrypted, only sent to your local server.',
+  },
+  'ai_prov_save': {'id': 'Simpan', 'en': 'Save'},
+  'ai_prov_clear': {'id': 'Hapus password', 'en': 'Delete password'},
   'mode_title': {'id': 'Mode Input', 'en': 'Input Mode'},
   'mode_live': {'id': 'Input Live', 'en': 'Live Input'},
   'mode_live_s': {

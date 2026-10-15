@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.67.0+198.
+Versi terpasang: 2.68.0+199.
+
+## Yang baru di 2.68.0+199
+
+1. Mang AI bisa pakai OpenCode lokal (Termux): pilih provider Zen API / OpenCode lokal + base URL + password di layar chat. Sesi baru tiap permintaan, hanya part teks yang dibaca, password terenkripsi tak pernah di-log.
 
 ## Yang baru di 2.67.0+198
 

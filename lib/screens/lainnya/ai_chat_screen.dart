@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import 'package:ssr_space/services/ai_context.dart';
+import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_memory.dart';
 import 'package:ssr_space/services/ai_soul.dart';
 import 'package:ssr_space/services/budget_service.dart';
@@ -62,12 +63,16 @@ class _AiChatScreenState extends State<AiChatScreen> {
   List<int>? _pendingImage;
   String? _pendingMime;
   String _dataCtx = '';
+  String _providerId = 'zen';
   int _animFrom = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAskData());
+    aiProviderId().then((v) {
+      if (mounted) setState(() => _providerId = v);
+    });
   }
 
   /// Izin akses data sekali (awal penggunaan): ya = AI baca snapshot
@@ -280,6 +285,119 @@ class _AiChatScreenState extends State<AiChatScreen> {
         ),
       ),
     );
+  }
+
+  /// Pilih provider AI (Zen API / OpenCode lokal) + baseUrl + password.
+  /// Password tersimpan di secure storage, tak pernah di-log/di-debug.
+  Future<void> _openProvider() async {
+    var pick = _providerId == 'local' ? 'local' : 'zen';
+    final urlC = TextEditingController(text: await aiBaseUrl());
+    final passC = TextEditingController();
+    final hasPass = await readLocalPass() != null;
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: SsrSpace.md,
+              right: SsrSpace.md,
+              top: SsrSpace.md,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + SsrSpace.md,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(tr('ai_prov_t'),
+                    style: Theme.of(ctx).textTheme.titleMedium),
+                const SizedBox(height: SsrSpace.sm),
+                SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment(
+                        value: 'zen', label: Text(tr('ai_prov_zen'))),
+                    ButtonSegment(
+                        value: 'local', label: Text(tr('ai_prov_local'))),
+                  ],
+                  selected: {pick},
+                  onSelectionChanged: (s) =>
+                      setSheet(() => pick = s.first),
+                ),
+                if (pick == 'local') ...[
+                  const SizedBox(height: SsrSpace.sm),
+                  TextField(
+                    controller: urlC,
+                    keyboardType: TextInputType.url,
+                    decoration: InputDecoration(
+                      labelText: tr('ai_prov_url'),
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: SsrSpace.sm),
+                  TextField(
+                    controller: passC,
+                    obscureText: true,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    decoration: InputDecoration(
+                      labelText:
+                          '${tr('ai_prov_pass')}${hasPass ? ' (***)' : ''}',
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(tr('ai_prov_hint'),
+                      style: Theme.of(ctx).textTheme.bodySmall),
+                ],
+                const SizedBox(height: SsrSpace.sm),
+                Row(
+                  children: [
+                    if (pick == 'local')
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () async {
+                            await clearLocalPass();
+                            if (ctx.mounted) Navigator.pop(ctx);
+                          },
+                          child: Text(tr('ai_prov_clear')),
+                        ),
+                      ),
+                    if (pick == 'local')
+                      const SizedBox(width: SsrSpace.sm),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () async {
+                          await setAiProviderId(pick);
+                          if (pick == 'local') {
+                            await setAiBaseUrl(urlC.text);
+                            // Kosong = biarkan password lama.
+                            if (passC.text.trim().isNotEmpty) {
+                              await writeLocalPass(passC.text);
+                            }
+                          }
+                          if (mounted) {
+                            setState(() => _providerId = pick);
+                          }
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        },
+                        child: Text(tr('ai_prov_save')),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    urlC.dispose();
+    passC.dispose();
   }
 
   Future<void> _runAction(TxDraft d) async {
@@ -543,8 +661,20 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 SsrSpace.md,
                 SsrSpace.md,
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  ActionChip(
+                    label: Text(_providerId == 'local'
+                        ? tr('ai_prov_local')
+                        : tr('ai_prov_zen')),
+                    avatar: const Icon(Icons.smart_toy_outlined, size: 16),
+                    onPressed: _sending ? null : _openProvider,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
                   IconButton(
                     icon: const Icon(Icons.image_outlined),
                     tooltip: tr('chat_attach'),
@@ -568,6 +698,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   IconButton.filled(
                     onPressed: _sending ? null : () => _send(),
                     icon: const Icon(Icons.send),
+                  ),
+                    ],
                   ),
                 ],
               ),

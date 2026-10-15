@@ -34,6 +34,87 @@ Future<void> clearZenKey() async {
   } catch (_) {}
 }
 
+// Password opencode serve lokal (Keystore/Keychain, bukan prefs).
+// Diisi dari layar Mang AI, dikirim per-call via MethodChannel,
+// TIDAK PERNAH di-log di mana pun.
+const _kLocalPass = 'ssr_local_ai_pass';
+
+Future<String?> readLocalPass() async {
+  try {
+    final v = await _storage.read(key: _kLocalPass);
+    if (v == null || v.trim().isEmpty) return null;
+    return v.trim();
+  } catch (_) {
+    return null;
+  }
+}
+
+Future<void> writeLocalPass(String v) async {
+  try {
+    if (v.trim().isEmpty) {
+      await _storage.delete(key: _kLocalPass);
+    } else {
+      await _storage.write(key: _kLocalPass, value: v.trim());
+    }
+  } catch (_) {}
+}
+
+Future<void> clearLocalPass() async {
+  try {
+    await _storage.delete(key: _kLocalPass);
+  } catch (_) {}
+}
+
+// Pilihan provider AI (prefs biasa, bukan rahasia): 'zen' | 'local'.
+// Default + fallback aman = 'zen'.
+const _kAiProvider = 'ai_provider';
+
+Future<String> aiProviderId() async {
+  try {
+    final v =
+        (await SharedPreferences.getInstance()).getString(_kAiProvider);
+    return v == 'local' ? 'local' : 'zen';
+  } catch (_) {
+    return 'zen';
+  }
+}
+
+Future<void> setAiProviderId(String v) async {
+  try {
+    await (await SharedPreferences.getInstance())
+        .setString(_kAiProvider, v == 'local' ? 'local' : 'zen');
+  } catch (_) {}
+}
+
+// Base URL opencode serve lokal (prefs biasa, bukan rahasia).
+const _kAiBaseUrl = 'ai_base_url';
+const defaultLocalBaseUrl = 'http://127.0.0.1:4096';
+
+Future<String> aiBaseUrl() async {
+  try {
+    var v = ((await SharedPreferences.getInstance())
+                .getString(_kAiBaseUrl) ??
+            '')
+        .trim();
+    while (v.endsWith('/')) {
+      v = v.substring(0, v.length - 1);
+    }
+    if (!v.startsWith('http://') && !v.startsWith('https://')) {
+      return defaultLocalBaseUrl;
+    }
+    return v;
+  } catch (_) {
+    return defaultLocalBaseUrl;
+  }
+}
+
+Future<void> setAiBaseUrl(String v) async {
+  try {
+    await (await SharedPreferences.getInstance())
+        .setString(_kAiBaseUrl, v.trim());
+  } catch (_) {}
+}
+
 // Sakelar AI (prefs biasa, default ON). Tanpa prefs (error) = ON.
 const _kAiEnabled = 'ai_enabled';
 
