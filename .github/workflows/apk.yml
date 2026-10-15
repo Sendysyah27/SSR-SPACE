@@ -702,6 +702,8 @@ jobs:
                           } catch (e: Exception) {
                               result.success(false)
                           }
+                      } else if (call.method == "getNativeLibDir") {
+                          result.success(applicationInfo.nativeLibraryDir)
                       } else {
                           result.notImplemented()
                       }

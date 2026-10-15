@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/services.dart';
+
 import 'package:path_provider/path_provider.dart';
 
 import 'ai_soul.dart';
@@ -44,9 +46,23 @@ const cliTimeout = Duration(seconds: 120);
 String _snip(String s, [int max = 300]) =>
     s.length <= max ? s : '${s.substring(0, max)}...';
 
-/// Cari native library directory dengan fallback berlapis.
-/// libopencode.so ada di dir yang sama dengan libflutter.so.
+/// Cari native library directory via MethodChannel (widget channel).
+/// Channel ssr_space/widget sudah ada; method getNativeLibDir ditambahkan di CI.
 Future<String> _findNativeLibDir() async {
+  // Strategi 0: MethodChannel (paling reliable)
+  try {
+    const ch = MethodChannel('ssr_space/widget');
+    final dir = await ch.invokeMethod<String>('getNativeLibDir');
+    if (dir != null && dir.isNotEmpty) {
+      final test = File('$dir/libopencode.so');
+      if (await test.exists()) return dir;
+    }
+  } catch (_) {}
+  // Fallback ke strategi lama jika channel gagal
+  return _findNativeLibDirFallback();}
+
+/// Fallback lama (jika MethodChannel tidak tersedia).
+Future<String> _findNativeLibDirFallback() async {
   // Strategi 1: /proc/self/maps (cari libflutter.so)
   try {
     final maps = await File('/proc/self/maps').readAsString();

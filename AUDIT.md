@@ -605,3 +605,4 @@ APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 - **2.64.1+188** (2026-10-15): tambah debug error detail di Mang AI chat (`_friendly` tampilkan `[Debug: ...]`) untuk diagnosa kenapa CLI gagal.
 - **2.64.2+189** (2026-10-15): sync AppInfo.version dengan pubspec (aturan §7 AGENTS.md).
 - **2.65.0+190** (2026-10-15): fix native lib dir tidak ketemu - fallback berlapis (proc/maps + scan /data/app + path umum).
+- **2.66.0+192** (2026-10-15): getNativeLibDir via MethodChannel ssr_space/widget (3 strategi Dart gagal - Android blokir akses path).
