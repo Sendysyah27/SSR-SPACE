@@ -202,17 +202,6 @@ jobs:
           mf.write_text(mt)
           print('AI native integration OK')
           PYEOF
-      - name: Patch MainActivity (AiFlutterBridge)
-        run: python3 patch_ma.py
-
-      - name: Verifikasi AiFlutterBridge terdaftar
-        run: |
-          if ! grep -rq "AiFlutterBridge.setup" android/app/src/main/kotlin/ android/app/src/main/java/ 2>/dev/null; then
-            echo "ERROR: AiFlutterBridge.setup tidak ketemu di MainActivity!"
-            exit 1
-          fi
-          echo "Verifikasi OK"
-
       - run: |
       - run: |
           python3 - <<'EOF'
@@ -1247,6 +1236,22 @@ jobs:
           assert 'registerVoiceChannel' in p.read_text(), 'voice register hilang'
           print('voice channel ok')
           EOF
+      # Patch AiFlutterBridge PALING AKHIR (setelah widget+voice step):
+      # patch_ma.py meng-inject ke configureFlutterEngine yang SUDAH ADA.
+      # Bila jalan duluan (sebelum widget step), ia bikin override sendiri
+      # -> widget step bikin override kedua + import MethodChannel ganda
+      # -> "Conflicting import ... ambiguous" + "Conflicting overloads".
+      - name: Patch MainActivity (AiFlutterBridge)
+        run: python3 patch_ma.py
+
+      - name: Verifikasi AiFlutterBridge terdaftar
+        run: |
+          if ! grep -rq "AiFlutterBridge.setup" android/app/src/main/kotlin/ android/app/src/main/java/ 2>/dev/null; then
+            echo "ERROR: AiFlutterBridge.setup tidak ketemu di MainActivity!"
+            exit 1
+          fi
+          echo "Verifikasi OK"
+
       - name: Setup release signing
         env:
           SSR_KEYSTORE_B64: ${{ secrets.SSR_KEYSTORE_B64 }}

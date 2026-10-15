@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.67.0+195.
+Versi terpasang: 2.67.0+196.
+
+## Yang baru di 2.67.0+196
+
+1. Perbaikan build: patch AiFlutterBridge pindah ke setelah voice step — tidak ada lagi import MethodChannel ganda / override configureFlutterEngine ganda. Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.67.0+195
 
