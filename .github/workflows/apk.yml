@@ -145,7 +145,20 @@ jobs:
           </service>
           '''
               s = s.replace('</application>', svc + '</application>')
-              m.write_text(s)
+              # 2.61.5+175 FIX: template flutter sudah punya
+          # android:name="${applicationName}". GANTI jadi .SsrApp
+          # (tambah atribut baru = duplikat = XML error).
+          if 'android:name="${applicationName}"' in s:
+              s = s.replace('android:name="${applicationName}"',
+                            'android:name=".SsrApp"', 1)
+          elif 'android:name=".SsrApp"' not in s:
+              s = s.replace(
+                  '<application android:requestLegacyExternalStorage="true"',
+                  '<application android:name=".SsrApp" '
+                  'android:requestLegacyExternalStorage="true"',
+                  1,
+              )
+          m.write_text(s)
           assert 'NotificationListenerService' in m.read_text()
           EOF
       - run: |
@@ -362,7 +375,7 @@ jobs:
               if '<application' in s:
                   s = s.replace(
                       '<application',
-                      '<application android:name=".SsrApp" android:requestLegacyExternalStorage="true"',
+                      '<application android:requestLegacyExternalStorage="true"',
                       1,
                   )
           m.write_text(s)
