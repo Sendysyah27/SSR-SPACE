@@ -69,8 +69,14 @@ class LocalOpenCodeProvider(
          * - "category": HARUS salah satu dari: Makanan, Transportasi,
          *   Belanja, Tagihan, Kesehatan, Pendidikan, Hiburan,
          *   Pulsa & Internet, Tabungan, Lainnya.
-         * - "wallet": nama dompet persis seperti di DATA USER; bila tidak
-         *   tahu, isi string kosong (aplikasi menolak aksi tanpa dompet).
+         * - "wallet": HARUS persis salah satu nama di bagian "Dompet" pada
+         *   DATA USER (contoh: TUNAI). JANGAN karang nama dompet; jangan
+         *   tulis metode bayar (mis. "QRIS BCA", "OVO", "DANA") kecuali nama
+         *   itu persis ada di daftar. Bila tidak yakin dompet mana: isi
+         *   "action":null dan tanyakan SATU hal itu saja di "reply".
+         * - Kata "konfirmasi"/"tinggal konfirmasi" di "reply" HANYA bila
+         *   "action" non-null dan valid. Bila ada info kurang, jangan
+         *   janjikan tombol; tanyakan satu hal yang kurang saja.
          * - Jangan pakai tool. Jangan mengeksekusi apa pun sendiri;
          *   aplikasi yang menampilkan tombol konfirmasi ke user.
          */
@@ -78,7 +84,7 @@ class LocalOpenCodeProvider(
         val DEFAULT_SYSTEM = """
             Kamu asisten keuangan. Balas HANYA satu objek JSON, tanpa markdown fence, tanpa teks di luar JSON.
             Bentuk: {"reply":"<teks Bahasa Indonesia untuk user>","action":null} atau {"reply":"...","action":{"type":"in|out|transfer","amount":<bilangan bulat>,"category":"...","wallet":"...","note":"..."}}.
-            Aturan: "action" null bila tidak ada transaksi yang perlu dicatat. "type" hanya in, out, atau transfer. "amount" HARUS bilangan bulat lebih dari 0 dalam rupiah tanpa titik/koma (contoh 16000); jangan desimal, jangan string. "category" HARUS salah satu dari: Makanan, Transportasi, Belanja, Tagihan, Kesehatan, Pendidikan, Hiburan, Pulsa & Internet, Tabungan, Lainnya. "wallet" adalah nama dompet persis seperti di DATA USER; bila tidak tahu isi "". Jangan pakai tool. Jangan mengeksekusi apa pun sendiri; aplikasi yang menampilkan tombol konfirmasi ke user.
+            Aturan: "action" null bila tidak ada transaksi yang perlu dicatat. "type" hanya in, out, atau transfer. "amount" HARUS bilangan bulat lebih dari 0 dalam rupiah tanpa titik/koma (contoh 16000); jangan desimal, jangan string. "category" HARUS salah satu dari: Makanan, Transportasi, Belanja, Tagihan, Kesehatan, Pendidikan, Hiburan, Pulsa & Internet, Tabungan, Lainnya. "wallet" HARUS persis salah satu nama di bagian "Dompet" pada DATA USER (contoh TUNAI); JANGAN karang nama dompet dan JANGAN tulis metode bayar (mis. "QRIS BCA") kecuali persis ada di daftar; bila tidak yakin dompet mana, isi "action":null dan tanyakan SATU hal itu saja di "reply". Kata "konfirmasi"/"tinggal konfirmasi" di "reply" HANYA bila "action" non-null dan valid; bila ada info kurang, jangan janjikan tombol, tanyakan satu hal yang kurang saja. Jangan pakai tool. Jangan mengeksekusi apa pun sendiri; aplikasi yang menampilkan tombol konfirmasi ke user.
             """.trimIndent()
     }
 

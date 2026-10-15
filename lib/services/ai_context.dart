@@ -53,6 +53,10 @@ Future<String> buildAiDataContext() async {
     for (final l in lines) {
       buf.writeln('- $l');
     }
+    // Penegas kontrak aksi: wallet HARUS persis dari daftar di atas.
+    buf.writeln(
+        "Isi 'wallet' pada action HANYA dengan nama persis dari daftar dompet di atas; "
+        'jangan karang nama/metode bayar lain.');
   } catch (_) {}
   // Arus bulan berjalan.
   try {

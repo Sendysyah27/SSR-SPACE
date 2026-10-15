@@ -199,4 +199,209 @@ void main() {
     expect(r.action, isNotNull);
     expect(r.action!['wallet'], 'Dompetku');
   });
+
+  group('reason codes (debug-only, tanpa isi pesan)', () {
+    test('wallet tidak dikenal -> wallet_tidak_cocok + actionRaw', () {
+      final r = parseChatReply(
+        '{"reply":"Siap, tinggal konfirmasi.","action":{"type":"out",'
+        '"amount":16000,"category":"Makanan","wallet":"QRIS BCA"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.action, isNull);
+      expect(r.reason, 'wallet_tidak_cocok');
+      expect(r.actionRaw, isNotNull);
+      expect(r.actionRaw!['wallet'], 'QRIS BCA');
+      expect(r.actionRaw!['amount'], 16000);
+    });
+
+    test('kategori tidak dikenal -> kategori_tidak_cocok', () {
+      final r = parseChatReply(
+        '{"reply":"Ok.","action":{"type":"out","amount":16000,'
+        '"category":"Jajan","wallet":"TUNAI"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.action, isNull);
+      expect(r.reason, 'kategori_tidak_cocok');
+    });
+
+    test('amount string -> amount_invalid', () {
+      final r = parseChatReply(
+        '{"reply":"Ok.","action":{"type":"out","amount":"16000",'
+        '"category":"Makanan","wallet":"TUNAI"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.reason, 'amount_invalid');
+    });
+
+    test('amount nol -> amount_invalid', () {
+      final r = parseChatReply(
+        '{"reply":"Ok.","action":{"type":"out","amount":0,'
+        '"category":"Makanan","wallet":"TUNAI"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.reason, 'amount_invalid');
+    });
+
+    test('bukan JSON -> parse_gagal, reply = teks asli', () {
+      const raw = 'halo, ini bukan json';
+      final r = parseChatReply(raw, wallets: _wallets, categories: _cats);
+      expect(r.reply, raw);
+      expect(r.action, isNull);
+      expect(r.reason, 'parse_gagal');
+    });
+
+    test('action null eksplisit -> action_null', () {
+      final r = parseChatReply(
+        '{"reply":"Halo.","action":null}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.reason, 'action_null');
+    });
+
+    test('type tidak dikenal -> type_invalid', () {
+      final r = parseChatReply(
+        '{"reply":"Ok.","action":{"type":"bayar","amount":1000,'
+        '"category":"Makanan","wallet":"TUNAI"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.reason, 'type_invalid');
+    });
+
+    test('aksi valid -> reason null', () {
+      final r = parseChatReply(
+        '{"reply":"Ok.","action":{"type":"out","amount":1000,'
+        '"category":"Makanan","wallet":"TUNAI"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.reason, isNull);
+      expect(r.action, isNotNull);
+    });
+  });
+
+  group('replyPromisesConfirmation', () {
+    test('mengandung "konfirmasi" -> true', () {
+      expect(replyPromisesConfirmation('Siap, tinggal konfirmasi ya.'), isTrue);
+    });
+
+    test('mengandung "jalankan" -> true', () {
+      expect(replyPromisesConfirmation('Ketuk jalankan di bawah.'), isTrue);
+    });
+
+    test('teks biasa -> false', () {
+      expect(replyPromisesConfirmation('Halo, apa kabar?'), isFalse);
+    });
+  });
+
+  group('shouldShowActionFallback', () {
+    test('action null + janji konfirmasi -> true', () {
+      expect(
+        shouldShowActionFallback(
+          action: null,
+          reason: 'wallet_tidak_cocok',
+          reply: 'Siap, tinggal konfirmasi.',
+        ),
+        isTrue,
+      );
+    });
+
+    test('action valid -> false', () {
+      expect(
+        shouldShowActionFallback(
+          action: {'type': 'out'},
+          reason: null,
+          reply: 'tinggal konfirmasi',
+        ),
+        isFalse,
+      );
+    });
+
+    test('ditolak tanpa janji -> false', () {
+      expect(
+        shouldShowActionFallback(
+          action: null,
+          reason: 'wallet_tidak_cocok',
+          reply: 'Halo, apa kabar?',
+        ),
+        isFalse,
+      );
+    });
+
+    test('reason null -> false', () {
+      expect(
+        shouldShowActionFallback(
+          action: null,
+          reason: null,
+          reply: 'tinggal konfirmasi',
+        ),
+        isFalse,
+      );
+    });
+  });
+
+  group('buildPendingChatAction', () {
+    test('wallet bad -> fixable, walletBad terisi', () {
+      final p = buildPendingChatAction(
+        reason: 'wallet_tidak_cocok',
+        raw: {
+          'type': 'out',
+          'amount': 16000,
+          'category': 'Makanan',
+          'wallet': 'QRIS BCA',
+        },
+        walletNames: _wallets,
+        categories: _cats,
+      );
+      expect(p, isNotNull);
+      expect(p!.fixable, isTrue);
+      expect(p.walletBad, 'QRIS BCA');
+      expect(p.walletOk, isNull);
+      expect(p.categoryOk, 'Makanan');
+      expect(p.amount, 16000);
+      expect(p.walletOptions, _wallets);
+    });
+
+    test('kategori bad -> fixable, categoryBad terisi', () {
+      final p = buildPendingChatAction(
+        reason: 'kategori_tidak_cocok',
+        raw: {
+          'type': 'out',
+          'amount': 16000,
+          'category': 'Jajan',
+          'wallet': 'TUNAI',
+        },
+        walletNames: _wallets,
+        categories: _cats,
+      );
+      expect(p!.fixable, isTrue);
+      expect(p.categoryBad, 'Jajan');
+      expect(p.walletOk, 'TUNAI');
+    });
+
+    test('amount invalid -> unfixable', () {
+      final p = buildPendingChatAction(
+        reason: 'amount_invalid',
+        raw: null,
+        walletNames: _wallets,
+        categories: _cats,
+      );
+      expect(p!.fixable, isFalse);
+    });
+
+    test('parse_gagal -> unfixable', () {
+      final p = buildPendingChatAction(
+        reason: 'parse_gagal',
+        raw: null,
+        walletNames: _wallets,
+        categories: _cats,
+      );
+      expect(p!.fixable, isFalse);
+    });
+  });
 }

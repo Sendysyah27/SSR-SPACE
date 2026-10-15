@@ -623,4 +623,124 @@ void main() {
     expect(r.lineItems[0].price, 50000);
     expect(r.lineItems[1].qty, 1);
   });
+
+  // ===== BUG B: perbaikan parser OCR (2026-10-15) =====
+
+  // Fixture Struk 1: Bangor (teks OCR persis dari laporan bug).
+  test('bug-b struk1 bangor: total 81000, tgl 2026-06-21, 2 item', () {
+    const raw = 'sendy\n'
+        'BANGOR\n'
+        'buger Bugir - Sug farkan J1. Ton Mariasasnita No. 15\n'
+        'RT.017 RN 005 Pangadangan,\n'
+        'Pamanukan, Kab Subang\n'
+        'PNK210626-00041\n'
+        'Delanggan regita\n'
+        'ansaksi : 21 Jun 2026, 12.52\n'
+        'Karyawarn : SPV Subang\n'
+        'Pamanukan\n'
+        'Dine In\n'
+        'Burgetang 4\n'
+        '2 x Rp35.909 Rp71.818*\n'
+        'Pilihan Nugget\n'
+        '2 x SpiCy Chicken Rp1.818\n'
+        'Nugget\n'
+        'Subtotal: Rp73.636\n'
+        '1 tal : Rp73.636\n'
+        'Pajak : Rp7.364\n'
+        'Grand Total: 0\n'
+        'Gopay : Rp81.000\n'
+        'Jika ada keluhan jangan ragu\n'
+        'kasi, Terina';
+    final r = parseReceipt(raw);
+    expect(r.amount, 81000);
+    expect(r.confident, isTrue);
+    expect(r.date?.year, 2026);
+    expect(r.date?.month, 6);
+    expect(r.date?.day, 21);
+    expect(r.dateFromReceipt, isTrue);
+    expect(r.lineItems.length, 2);
+    final prices = [for (final li in r.lineItems) li.price];
+    expect(prices.contains(71818.0), isTrue);
+    expect(prices.contains(1818.0), isTrue);
+    // item + pajak = total
+    expect(r.tax, 7364);
+    expect(r.inconsistent, isFalse);
+    // baris non-item tak boleh jadi item
+    final names =
+        [for (final li in r.lineItems) li.name.toLowerCase()].join('|');
+    expect(names.contains('pajak'), isFalse);
+    expect(names.contains('gopay'), isFalse);
+    expect(r.lineItems.every((li) => li.suspicious == false), isTrue);
+  });
+
+  test('bug-b tanggal nama-bulan ID/EN', () {
+    var r = parseReceipt('TOKO\nA 5000\n05 Desember 2026\nTOTAL 5000');
+    expect(r.date?.day, 5);
+    expect(r.date?.month, 12);
+    expect(r.dateFromReceipt, isTrue);
+    r = parseReceipt('TOKO\nA 5000\n1 January 2025\nTOTAL 5000');
+    expect(r.date?.day, 1);
+    expect(r.date?.month, 1);
+    expect(r.date?.year, 2025);
+  });
+
+  test('bug-b tanpa tanggal: dateFromReceipt false', () {
+    final r = parseReceipt('TOKO\nA 5000\nTOTAL 5000');
+    expect(r.date, isNull);
+    expect(r.dateFromReceipt, isFalse);
+  });
+
+  test('bug-b tanggal nama-bulan invalid ditolak', () {
+    final r = parseReceipt('TOKO\nA 5000\n32 Foo 2026\nTOTAL 5000');
+    expect(r.date, isNull);
+    expect(r.dateFromReceipt, isFalse);
+  });
+
+  test('bug-b "1 tal" dibaca sebagai Total', () {
+    final r = parseReceipt('TOKO\nA 50000\n1 tal : 50000\nTUNAI 50000');
+    expect(r.amount, 50000);
+  });
+
+  test('bug-b pembulatan tak pernah jadi total', () {
+    const raw = 'TOKO\nA 50000\nB 60000\nTOTAL\nPembulatan:\n100\n100\n'
+        'TUNAI 120000\nKEMBALI 4900';
+    final r = parseReceipt(raw);
+    expect(r.amount == 100, isFalse);
+  });
+
+  test('bug-b item harga > total ditandai suspicious', () {
+    const raw =
+        'TOKO\nNuvo Total Protect Pouch 400ml 304000\nSari Roti 15000\n'
+        'TOTAL 115500';
+    final r = parseReceipt(raw);
+    expect(r.amount, 115500);
+    expect(r.lineItems.any((li) => li.suspicious), isTrue);
+    expect(
+        r.lineItems
+            .where((li) => li.price == 304000)
+            .every((li) => li.suspicious),
+        isTrue);
+  });
+
+  test('bug-b inconsistent: item tak cocok total', () {
+    final r = parseReceipt('TOKO\nA 25000\nTOTAL 115500');
+    expect(r.inconsistent, isTrue);
+  });
+
+  test('bug-b prioritas2: subtotal+pajak tanpa total eksplisit', () {
+    final r = parseReceipt('TOKO\nA 50000\nSubtotal: 50000\nPajak: 5000');
+    expect(r.amount, 55000);
+  });
+
+  test('bug-b prioritas2: tak menimpa total eksplisit', () {
+    final r =
+        parseReceipt('TOKO\nSUBTOTAL 120000\nTOTAL 115500\nTUNAI 150000');
+    expect(r.amount, 115500);
+  });
+
+  test('bug-b prioritas2: ppn termasuk tak dobel', () {
+    final r = parseReceipt(
+        'TOKO\nA 100000\nSubtotal (Termasuk PPN): 100000\nPajak: 10000');
+    expect(r.amount, 100000);
+  });
 }

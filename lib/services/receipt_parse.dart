@@ -9,7 +9,13 @@ class ReceiptItem {
   final String name;
   final int qty;
   final double price;
-  const ReceiptItem({required this.name, this.qty = 1, required this.price});
+  /// True bila harga item melebihi total struk (perlu diperiksa manual).
+  final bool suspicious;
+  const ReceiptItem(
+      {required this.name,
+      this.qty = 1,
+      required this.price,
+      this.suspicious = false});
 }
 
 class ReceiptData {
@@ -26,6 +32,12 @@ class ReceiptData {
   final String? receiptNo;
   final String? time;
   final String? payType;
+  /// Pajak (ppn) yang terdeteksi di struk, bila ada.
+  final double? tax;
+  /// False bila tanggal tidak ketemu di struk (form memakai hari ini).
+  final bool dateFromReceipt;
+  /// True bila jumlah item (+pajak -diskon) tak cocok dengan total.
+  final bool inconsistent;
   const ReceiptData({
     this.amount,
     this.date,
@@ -40,12 +52,17 @@ class ReceiptData {
     this.receiptNo,
     this.time,
     this.payType,
+    this.tax,
+    this.dateFromReceipt = true,
+    this.inconsistent = false,
   });
 }
 
 final _totalKey = RegExp(
     r'\btotal\b|tot\s|subtotal|pembayaran|\bjumlah\b|bayar|grand',
     caseSensitive: false);
+/// Label subtotal (untuk rakitan total prioritas 2).
+final _subtotalKey = RegExp(r'subtotal', caseSensitive: false);
 final _tenderKey =
     RegExp(r'tunai|kembali', caseSensitive: false);
 final _grandKey = RegExp(r'grand', caseSensitive: false);
@@ -97,15 +114,26 @@ final _pureAmount = RegExp(r'^[Rp\s.:]*\(?[\d.,]+\)?\s*$');
 /// item), bukan uang.
 bool _okAmount(double? v) => v != null && v >= 100;
 
-/// Baris total toleran OCR: spasi nyasar ("TOTA L") + 0/O ("T0TAL").
+/// Baris total toleran OCR: spasi nyasar ("TOTA L") + 0/O ("T0TAL") +
+/// "1 tal"/"1tal" (kata "Total" rusak).
 bool _isTotalLine(String l) {
+  // Merek "TotalProtect"/"Total Protect" BUKAN baris total
+  // (OCR kadang memisahkan jadi "Total Protect").
+  if (RegExp(r'total\s*protect', caseSensitive: false).hasMatch(l)) {
+    return false;
+  }
   if (_totalKey.hasMatch(l)) return true;
   // OCR rusak ("T0TAL", "TOTA L"): spasi dibuang, 0 -> o. Suffix yang
   // diizinkan sempit (belanja/bayar/jumlah) supaya merek seperti
   // "TotalProtect" tetap lolos sebagai BUKAN total.
   final n = l.toLowerCase().replaceAll(' ', '').replaceAll('0', 'o');
-  return RegExp(r'(^|[^a-z])total(belanja|bayar|jumlah)?([^a-z]|$)')
-      .hasMatch(n);
+  if (RegExp(r'(^|[^a-z])total(belanja|bayar|jumlah)?([^a-z]|$)')
+      .hasMatch(n)) {
+    return true;
+  }
+  // "1 tal"/"1tal" = "Total" yang rusak berat.
+  return RegExp(r'(^|[^a-z0-9])1\s*tal([^a-z]|$)')
+      .hasMatch(l.toLowerCase());
 }
 final _rejectKey = RegExp(
   r'kembali|tunai|dpp|ppn|harga jual|purchase|hemat|trxid',
@@ -113,6 +141,51 @@ final _rejectKey = RegExp(
 );
 final _numRe = RegExp(r'\(?[\d.,]+\)?');
 final _dateRe = RegExp(r'(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})');
+
+/// Tanggal nama-bulan: "21 Jun 2026", "05 Desember 2026".
+/// Bulan singkat/panjang Indonesia + Inggris. Jam diabaikan.
+final _dateNameRe =
+    RegExp(r'(\d{1,2})\s+([A-Za-z]{3,9})\s*,?\s*(\d{2,4})');
+const _monthNum = <String, int>{
+  'jan': 1, 'januari': 1, 'january': 1,
+  'feb': 2, 'februari': 2, 'february': 2,
+  'mar': 3, 'maret': 3, 'march': 3,
+  'apr': 4, 'april': 4,
+  'mei': 5, 'may': 5,
+  'jun': 6, 'juni': 6, 'june': 6,
+  'jul': 7, 'juli': 7, 'july': 7,
+  'agu': 8, 'agustus': 8, 'aug': 8, 'august': 8,
+  'sep': 9, 'sept': 9, 'september': 9,
+  'okt': 10, 'oktober': 10, 'oct': 10, 'october': 10,
+  'nov': 11, 'november': 11,
+  'des': 12, 'desember': 12, 'dec': 12, 'december': 12,
+};
+
+/// Baris pembulatan: nilainya TAK PERNAH boleh jadi total.
+final _roundingKey = RegExp(r'pembulatan|rounding', caseSensitive: false);
+
+/// Baris pajak.
+final _taxKey = RegExp(r'\bpajak\b|\bppn\b', caseSensitive: false);
+
+/// Baris tender/pajak/pembulatan: BUKAN item dagangan.
+final _nonItemKey = RegExp(
+  r'pajak|pembulatan|tunai|cash|kembali|gopay|qris|ovo|dana|debit|kartu',
+  caseSensitive: false,
+);
+
+/// True bila baris ke-[i] berkaitan dengan pembulatan: labelnya sendiri,
+/// atau angka murni yang menempel <=2 baris dari label pembulatan tanpa
+/// angka (label telanjang yang nilainya nyasar ke baris berikut).
+bool _isRoundingValue(List<String> lines, int i) {
+  if (_roundingKey.hasMatch(lines[i])) return true;
+  for (var k = i - 2; k <= i + 2; k++) {
+    if (k < 0 || k >= lines.length || k == i) continue;
+    if (_roundingKey.hasMatch(lines[k]) && !_numRe.hasMatch(lines[k])) {
+      return true;
+    }
+  }
+  return false;
+}
 final _merchantLine = RegExp(r'^[A-Z0-9 .,&()/-]{4,30}$');
 final _knownMerchant = RegExp(
   r'indomaret|indomarco|alfamart|alfamidi',
@@ -198,6 +271,8 @@ double? _labelledTotal(List<String> lines) {
       }
       final v = _lastAmount(c);
       if (!_okAmount(v)) continue;
+      // Nilai pembulatan tak pernah jadi total.
+      if (_isRoundingValue(lines, j)) continue;
       for (var k = j + 1; k < lines.length && k <= j + 3; k++) {
         if (_cashKey.hasMatch(lines[k]) ||
             _changeKey.hasMatch(lines[k]) ||
@@ -342,19 +417,27 @@ ReceiptData parseReceipt(String raw) {
   double? grand;
   var seenTotal = false;
   var seenGrandMangled = false;
+  // Prioritas (2): komponen rakitan total.
+  double? subtotalVal;
+  var subtotalIncludesTax = false;
+  double? roundingVal;
+  var sawExplicitTotal = false;
   // Total terakhir SEBELUM tender pertama (diutamakan bila ada tender).
   double? preTenderTotal;
   var tenderSeen = false;
   // Suara angka nyasar (baris murni angka, bukan pengecoh, bukan "1 25000").
   // Voucher tak ikut suara (nominal promo bukan belanja).
   final votes = <double, int>{};
-  for (final l in lines) {
+  for (var vi = 0; vi < lines.length; vi++) {
+    final l = lines[vi];
     if (_rejectKey.hasMatch(l) ||
         _voucherKey.hasMatch(l) ||
         !_pureAmount.hasMatch(l)) {
       continue;
     }
     if (RegExp(r'^\d+\s+\d').hasMatch(l)) continue;
+    // Nilai pembulatan tak pernah jadi total.
+    if (_isRoundingValue(lines, vi)) continue;
     final v = _lastAmount(l);
     if (v != null) votes[v] = (votes[v] ?? 0) + 1;
   }
@@ -369,6 +452,15 @@ ReceiptData parseReceipt(String raw) {
         _payKey.hasMatch(l);
     // "TOTAL ITEM: 2" = cacah barang, bukan uang.
     if (isTotal && _countKey.hasMatch(l)) continue;
+    // Lacak subtotal untuk rakitan prioritas (2), walau barisnya kena
+    // _rejectKey (mis. "Subtotal (Termasuk PPN)").
+    if (isTotal && _subtotalKey.hasMatch(l)) {
+      final sv = _lastAmount(l);
+      if (_okAmount(sv)) {
+        subtotalVal = sv;
+        if (l.toLowerCase().contains('termasuk')) subtotalIncludesTax = true;
+      }
+    }
     if (!isTotal || _rejectKey.hasMatch(l)) {
       // Baris gabung ("TOTAL 41.250 TUNAI 50.000"): ambil angka sebelum
       // ekor tunai/kembali, jangan buang barisnya.
@@ -406,6 +498,17 @@ ReceiptData parseReceipt(String raw) {
         if (grand == null || v! > grand) grand = v;
       } else if (amount == null || v! > amount) {
         amount = v;
+      }
+      if (isTotal && !_subtotalKey.hasMatch(l)) {
+        sawExplicitTotal = true;
+      }
+      // Nilai pembulatan mandiri ("Pembulatan: -100") untuk rakitan.
+      if (_roundingKey.hasMatch(l) && !_isTotalLine(l)) {
+        final rv = _lastAmount(l);
+        if (rv != null) {
+          final neg = RegExp(r'-\s*\(?[\d.,]+').hasMatch(l);
+          roundingVal = neg ? -rv : rv;
+        }
       }
       if (!tenderSeen && _okAmount(v)) preTenderTotal = v;
     }
@@ -568,6 +671,23 @@ ReceiptData parseReceipt(String raw) {
       date = DateTime(y, mo, d);
     }
   }
+  // Tanggal nama-bulan ("21 Jun 2026"): fallback bila tak ada tanggal
+  // angka. Jam diabaikan; tanggal kalender harus valid.
+  if (date == null) {
+    for (final l in lines) {
+      for (final m in _dateNameRe.allMatches(l)) {
+        final d = int.tryParse(m.group(1)!);
+        final mo = _monthNum[m.group(2)!.toLowerCase()];
+        var y = int.tryParse(m.group(3)!);
+        if (d == null || mo == null || y == null) continue;
+        if (y < 100) y += 2000;
+        if (d < 1 || d > 31 || y < 2000 || y > nowYear + 1) continue;
+        final dt = DateTime(y, mo, d);
+        if (dt.day != d || dt.month != mo) continue;
+        date = dt;
+      }
+    }
+  }
 
   String? merchant;
   for (final l in lines) {
@@ -609,16 +729,33 @@ ReceiptData parseReceipt(String raw) {
     }
     if (_isTotalLine(l) ||
         _rejectKey.hasMatch(l) ||
+        _nonItemKey.hasMatch(l) ||
         _fragKey.hasMatch(l) ||
         _codeKey.hasMatch(l) ||
         _isNoLine(l) ||
         _phoneLine(l) ||
-        _dateRe.hasMatch(l)) {
+        _dateRe.hasMatch(l) ||
+        _dateNameRe.hasMatch(l)) {
       continue;
     }
     final nums = _numRe.allMatches(l).toList();
     if (nums.isEmpty) continue;
-    final name = l.substring(0, nums.first.start).trim();
+    var name = l.substring(0, nums.first.start).trim();
+    // Baris "2 x Rp35.909 Rp71.818*": nama produk ada di baris
+    // sebelumnya bila nama di baris ini kosong.
+    if (RegExp(r'[A-Za-z]').allMatches(name).length < 3 &&
+        RegExp(r'^\d+\s*x\b', caseSensitive: false).hasMatch(l) &&
+        i > 0) {
+      final prev = lines[i - 1];
+      if (!_isTotalLine(prev) &&
+          !_rejectKey.hasMatch(prev) &&
+          !_nonItemKey.hasMatch(prev) &&
+          !_fragKey.hasMatch(prev) &&
+          !_isNoLine(prev)) {
+        final pn = prev.replaceAll(_numRe, '').trim();
+        if (RegExp(r'[A-Za-z]').allMatches(pn).length >= 3) name = pn;
+      }
+    }
     // Nama produk betulan: minimal 3 huruf (kode "KK1"/"F1" gugur),
     // tanpa huruf-besar di tengah kata (ciri fragmen OCR rusak).
     if (RegExp(r'[A-Za-z]').allMatches(name).length < 3) continue;
@@ -628,8 +765,38 @@ ReceiptData parseReceipt(String raw) {
     if (!_okAmount(total)) continue;
     if (items.length >= 8) break;
     items.add('$name ${total!.toInt()}');
-    lineItems.add(_splitQty(l, name, total));
+    lineItems.add(_splitQty(l, name, total,
+        suspicious: amount != null && total > amount));
   }
+
+  // Pajak untuk cek konsistensi (bukan item).
+  double? tax;
+  for (final l in lines) {
+    if (_taxKey.hasMatch(l) && !_isTotalLine(l)) {
+      final v = _lastAmount(l);
+      if (_okAmount(v)) {
+        tax = v;
+        break;
+      }
+    }
+  }
+  // PRIORITAS (2): subtotal + pajak - diskon ± pembulatan — hanya bila
+  // tak ada total eksplisit (grand/total bayar/total belanja). Tak pernah
+  // menimpa total yang tertulis eksplisit di struk.
+  if (!sawExplicitTotal && grand == null && subtotalVal != null) {
+    final cand = subtotalVal +
+        (subtotalIncludesTax ? 0 : (tax ?? 0)) -
+        (voucher ?? 0) +
+        (roundingVal ?? 0);
+    if (_okAmount(cand)) amount = cand;
+  }
+
+  // Konsistensi: jumlah item (+pajak -diskon) vs total.
+  final itemSum = lineItems.fold(0.0, (s, e) => s + e.price);
+  final adjSum = itemSum + (tax ?? 0) - (voucher ?? 0);
+  final inconsistent = amount != null &&
+      lineItems.isNotEmpty &&
+      itemsMismatch([adjSum], amount);
 
   return ReceiptData(
     amount: amount,
@@ -645,13 +812,17 @@ ReceiptData parseReceipt(String raw) {
     receiptNo: _findReceiptNo(lines),
     time: _findTime(lines),
     payType: _findPayType(lines),
+    tax: tax,
+    dateFromReceipt: date != null,
+    inconsistent: inconsistent,
   );
 }
 
 /// Pecah baris item jadi terstruktur. Qty jujur hanya bila terbukti:
 /// 2 angka [q, total] (q 1..99) atau [.., q, unit, .., total] dengan
 /// unit*q == total. Selain itu qty 1 (tanpa karangan).
-ReceiptItem _splitQty(String line, String name, double total) {
+ReceiptItem _splitQty(String line, String name, double total,
+    {bool suspicious = false}) {
   final nums = [
     for (final m in _numRe.allMatches(line)) _toIdr(m.group(0)!),
   ].whereType<double>().toList();
@@ -661,7 +832,8 @@ ReceiptItem _splitQty(String line, String name, double total) {
         q >= 1 &&
         q <= 99 &&
         (nums[1] - total).abs() < 0.005) {
-      return ReceiptItem(name: name, qty: q.toInt(), price: total);
+      return ReceiptItem(
+          name: name, qty: q.toInt(), price: total, suspicious: suspicious);
     }
   } else if (nums.length >= 3) {
     for (var i = 0; i + 1 < nums.length; i++) {
@@ -671,11 +843,12 @@ ReceiptItem _splitQty(String line, String name, double total) {
           q >= 1 &&
           q <= 99 &&
           (unit * q - total).abs() < 0.005) {
-        return ReceiptItem(name: name, qty: q.toInt(), price: total);
+        return ReceiptItem(
+            name: name, qty: q.toInt(), price: total, suspicious: suspicious);
       }
     }
   }
-  return ReceiptItem(name: name, price: total);
+  return ReceiptItem(name: name, price: total, suspicious: suspicious);
 }
 
 /// Alamat: baris jalan/nomor/kecamatan pertama (maks 60 char).
@@ -869,7 +1042,7 @@ List<MirrorLine> mirrorReceipt(String raw, {bool pairOrphans = true}) {
     final isAddr = _findAddress([l]) != null;
     final isNo = _isNoLine(l);
     final isCashier = _cashierKey.hasMatch(l);
-    final isDate = _dateRe.hasMatch(l);
+    final isDate = _dateRe.hasMatch(l) || _dateNameRe.hasMatch(l);
     final isTime = _findTime([l]) != null;
     final isTelp = _telpKey.hasMatch(l);
     final isThanks = _thanksKey.hasMatch(l);
@@ -918,7 +1091,9 @@ List<MirrorLine> mirrorReceipt(String raw, {bool pairOrphans = true}) {
     final isTender = _payKey.hasMatch(l) ||
         _cashKey.hasMatch(l) ||
         _changeKey.hasMatch(l) ||
-        _voucherKey.hasMatch(l);
+        _voucherKey.hasMatch(l) ||
+        _taxKey.hasMatch(l) ||
+        _roundingKey.hasMatch(l);
     if ((isTotal || isTender) && !_countKey.hasMatch(l)) {
       var v = _lastAmount(l);
       var label = l;
@@ -963,7 +1138,12 @@ List<MirrorLine> mirrorReceipt(String raw, {bool pairOrphans = true}) {
       }
     }
     // Baris item: nama + nominal, qty terbukti.
-    if (_fragKey.hasMatch(l) || _rejectKey.hasMatch(l)) continue;
+    // Tender/pajak/pembulatan bukan item.
+    if (_fragKey.hasMatch(l) ||
+        _rejectKey.hasMatch(l) ||
+        _nonItemKey.hasMatch(l)) {
+      continue;
+    }
     if (nums.isEmpty) continue;
     final name = l.substring(0, nums.first.start).trim();
     if (RegExp(r'[A-Za-z]').allMatches(name).length < 3) continue;

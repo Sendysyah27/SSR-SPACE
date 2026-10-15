@@ -9,6 +9,13 @@ import 'package:ssr_space/utils/strings.dart';
 // font monospace sistem, tanpa kartu. Baris dihitung mirrorReceipt
 // (parseReceipt lama tetap untuk prefill, tak tersentuh).
 // Dipakai setelah scan sukses (prefill form tetap jalan seperti biasa).
+
+/// Baris tender/pajak/pembulatan: bukan item, tak masuk subtotal.
+final _tenderTxt = RegExp(
+  r'pajak|ppn|pembulatan|tunai|cash|kembali|gopay|qris|ovo|dana|debit|kartu',
+  caseSensitive: false,
+);
+
 class ReceiptResultSheet extends StatelessWidget {
   final ReceiptData data;
   final List<MirrorLine> mirror;
@@ -31,8 +38,10 @@ class ReceiptResultSheet extends StatelessWidget {
     final warn = !data.confident;
     final firstItem = mirror.indexWhere((e) => e.amount != null && !e.bold);
     final firstTotal = mirror.indexWhere((e) => e.bold && e.amount != null);
-    final items =
-        mirror.where((e) => e.amount != null && !e.bold).toList();
+    final items = mirror
+        .where((e) =>
+            e.amount != null && !e.bold && !_tenderTxt.hasMatch(e.text))
+        .toList();
     final subtotal =
         items.where((e) => e.amount! > 0).fold(0.0, (s, e) => s + e.amount!);
     final potongan = items

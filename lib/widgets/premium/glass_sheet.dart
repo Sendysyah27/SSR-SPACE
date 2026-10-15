@@ -29,24 +29,18 @@ class GlassSheetScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // BUG C fix: latar OPAK (surface solid) agar isi sheet tidak tembus
+    // pandang di mode terang maupun gelap. Warna ikut tema.
+    final surface = Theme.of(context).colorScheme.surface;
     return ClipRRect(
       borderRadius: _radius,
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: _radius,
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white.withValues(alpha: 0.18),
-              Colors.white.withValues(alpha: 0.12),
-              Colors.white.withValues(alpha: 0.08),
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
+          color: surface,
           border: Border(
             top: BorderSide(
-              color: Colors.white.withValues(alpha: 0.16),
+              color: Theme.of(context).colorScheme.outlineVariant,
               width: 1,
             ),
           ),
@@ -100,14 +94,13 @@ Future<T?> showGlassDialog<T>({
   return showDialog<T>(
     context: context,
     builder: (ctx) => Dialog(
-      backgroundColor: Colors.transparent,
+      // BUG C fix: Dialog bawaan sudah opak (surface solid ikut tema).
       insetPadding: const EdgeInsets.symmetric(
         horizontal: GlassSpace.lg,
         vertical: GlassSpace.xl,
       ),
-      child: GlassCard(
+      child: Padding(
         padding: const EdgeInsets.all(GlassSpace.lg),
-        borderRadius: GlassRadius.xl,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

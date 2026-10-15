@@ -61,7 +61,12 @@ String svgForCategory(String? category) {
   if (c.contains('sehat') || c.contains('obat') || c.contains('dokter')) {
     return 'assets/icons/coolicons/Heart_01.svg';
   }
-  if (c.contains('sekolah') || c.contains('kuliah') || c.contains('kursus') || c.contains('buku')) {
+  if (c.contains('pendidikan') ||
+      c.contains('didik') ||
+      c.contains('sekolah') ||
+      c.contains('kuliah') ||
+      c.contains('kursus') ||
+      c.contains('buku')) {
     return 'assets/icons/coolicons/Book_Open.svg';
   }
   if (c.contains('hiburan') || c.contains('film') || c.contains('game') || c.contains('musik')) {

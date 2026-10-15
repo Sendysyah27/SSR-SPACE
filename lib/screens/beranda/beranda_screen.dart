@@ -1140,7 +1140,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                       borderRadius: GlassRadius.md,
                       child: Row(
                         children: [
-                          Icon(AppIcons.arrowDown,
+                          DuoIcon(AppIcons.arrowDown,
                               size: 20, color: Colors.green.shade400),
                           const SizedBox(width: GlassSpace.sm),
                           Expanded(
@@ -1171,7 +1171,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                       borderRadius: GlassRadius.md,
                       child: Row(
                         children: [
-                          Icon(AppIcons.arrowUp,
+                          DuoIcon(AppIcons.arrowUp,
                               size: 20, color: scheme.error),
                           const SizedBox(width: GlassSpace.sm),
                           Expanded(

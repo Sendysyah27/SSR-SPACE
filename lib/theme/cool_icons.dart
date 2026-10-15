@@ -230,11 +230,13 @@ String? coolForNewCategory(String? category) {
       c.contains('suami')) {
     return CoolSvg.family;
   }
-  if (c.contains('olahraga') ||
-      c.contains('gym') ||
-      c.contains('lari') ||
-      c.contains('futsal') ||
-      c.contains('sport')) {
+  if ((c.contains('olahraga') ||
+          c.contains('gym') ||
+          c.contains('lari') ||
+          c.contains('futsal') ||
+          c.contains('sport')) &&
+      !c.contains('transport')) {
+    // 'transportasi' mengandung 'sport' -> kecualikan agar tetap ikon mobil
     return CoolSvg.sport;
   }
   if (c.contains('hewan') ||

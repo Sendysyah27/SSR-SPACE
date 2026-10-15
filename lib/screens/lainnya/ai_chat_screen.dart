@@ -42,6 +42,8 @@ class _ChatMsg {
   final TxDraft? action;
   final BillDraft? billAction;
   final BudgetDraft? budgetAction;
+  /// Aksi ditolak validasi tapi reply janji konfirmasi -> kartu perbaikan.
+  final PendingChatAction? pendingAction;
   const _ChatMsg({
     required this.mine,
     required this.text,
@@ -51,6 +53,7 @@ class _ChatMsg {
     this.action,
     this.billAction,
     this.budgetAction,
+    this.pendingAction,
   });
 
   bool get hasAction =>
@@ -227,11 +230,29 @@ class _AiChatScreenState extends State<AiChatScreen> {
       // Blok ```ingat``` (memori) dibuang dulu dari teks yang di-parse
       // agar jsonDecode tidak gagal; fitur ingat tetap jalan dari
       // r.text mentah pada addAiMemory di atas.
+      final walletNames = await _walletNames();
       final parsed = parseChatReply(
         stripIngatBlocks(r.text),
-        wallets: await _walletNames(),
+        wallets: walletNames,
         categories: appCategories.value,
       );
+      // Debug-only: kode alasan penolakan aksi (tanpa isi pesan/nominal).
+      debugPrint('ai_action: ${parsed.reason ?? 'ok'}');
+      // Fallback: aksi ditolak tapi reply janji konfirmasi -> kartu
+      // perbaikan (jangan buang diam-diam). Tanpa simpan otomatis.
+      PendingChatAction? pending;
+      if (shouldShowActionFallback(
+        action: parsed.action,
+        reason: parsed.reason,
+        reply: parsed.reply,
+      )) {
+        pending = buildPendingChatAction(
+          reason: parsed.reason!,
+          raw: parsed.actionRaw,
+          walletNames: walletNames,
+          categories: appCategories.value,
+        );
+      }
       // Map aksi tervalidasi -> TxDraft untuk kartu konfirmasi.
       // Uang tetap int dari parser; TxDraft pakai double (konversi aman).
       TxDraft? tx;
@@ -255,6 +276,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           action: tx,
           billAction: bill,
           budgetAction: budget,
+          pendingAction: pending,
         ));
         _sending = false;
       });
@@ -685,6 +707,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                 onRun: () => _runAction(m.action!),
                                 onCancel: () => _cancelActionCard(m),
                               ),
+                            if (m.pendingAction != null)
+                              _PendingActionCard(
+                                pending: m.pendingAction!,
+                                onRun: (d) => _runAction(d),
+                                onCancel: () => _cancelActionCard(m),
+                              ),
                             if (m.billAction != null)
                               _ActionCard(
                                 title:
@@ -1026,6 +1054,173 @@ class _ActionCard extends StatelessWidget {
                   child: FilledButton(
                     onPressed: onRun,
                     child: Text(tr('ai_run')),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Kartu fallback: aksi AI ditolak validasi padahal reply menjanjikan
+/// konfirmasi. Tampilkan data yang sudah terisi + dropdown untuk field
+/// bermasalah (dompet/kategori), atau pesan jelas apa yang kurang.
+/// Tanpa simpan otomatis: data hanya dipakai saat user tekan Jalankan.
+class _PendingActionCard extends StatefulWidget {
+  final PendingChatAction pending;
+  final void Function(TxDraft) onRun;
+  final VoidCallback onCancel;
+  const _PendingActionCard({
+    required this.pending,
+    required this.onRun,
+    required this.onCancel,
+  });
+
+  @override
+  State<_PendingActionCard> createState() => _PendingActionCardState();
+}
+
+class _PendingActionCardState extends State<_PendingActionCard> {
+  String? _wallet;
+  String? _category;
+
+  @override
+  void initState() {
+    super.initState();
+    _wallet = widget.pending.walletOk;
+    _category = widget.pending.categoryOk;
+  }
+
+  /// Pesan jelas (Indonesia) tentang apa yang kurang dari AI.
+  String _reasonMessage(PendingChatAction p) {
+    switch (p.reason) {
+      case 'wallet_tidak_cocok':
+        return 'Dompet "${p.walletBad ?? ''}" tidak dikenal. Pilih dompet yang benar:';
+      case 'wallet_kosong':
+        return 'Dompetnya belum jelas. Pilih dompet:';
+      case 'kategori_tidak_cocok':
+        return 'Kategori "${p.categoryBad ?? ''}" tidak dikenal. Pilih kategori:';
+      case 'kategori_kosong':
+        return 'Kategorinya belum jelas. Pilih kategori:';
+      case 'amount_invalid':
+        return 'Nominal dari AI tidak valid. Coba sebutkan nominalnya, mis. "catat keluar 16000".';
+      case 'type_invalid':
+        return 'Jenis transaksi dari AI tidak valid.';
+      case 'action_null':
+        return 'AI tidak menyertakan data transaksi. Coba sebutkan nominal, kategori, dan dompetnya.';
+      default:
+        return 'Data dari AI tidak lengkap. Coba kirim lagi.';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.pending;
+    final scheme = Theme.of(context).colorScheme;
+    final needWallet = p.fixable && p.walletOk == null;
+    final needCategory = p.fixable && p.categoryOk == null;
+    final canRun = p.fixable && _wallet != null && _category != null;
+    final typeLabel = p.type == 'in'
+        ? tr('tx_in')
+        : p.type == 'transfer'
+            ? tr('tx_transfer')
+            : tr('tx_out');
+    final summary = p.fixable
+        ? '$typeLabel \u00b7 ${p.amount}'
+            '${_category != null ? ' \u00b7 $_category' : ''}'
+            '${_wallet != null ? ' \u00b7 $_wallet' : ''}'
+        : typeLabel;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(top: 2, bottom: 4),
+        padding: const EdgeInsets.all(SsrSpace.md),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.82,
+        ),
+        decoration: BoxDecoration(
+          color: scheme.tertiaryContainer,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Lengkapi data \u00b7 $summary',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: scheme.onTertiaryContainer,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _reasonMessage(p),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onTertiaryContainer,
+                  ),
+            ),
+            if (needWallet) ...[
+              const SizedBox(height: SsrSpace.xs),
+              if (p.walletOptions.isNotEmpty)
+                DropdownButtonFormField<String>(
+                  value: _wallet,
+                  hint: const Text('Pilih dompet'),
+                  items: [
+                    for (final w in p.walletOptions)
+                      DropdownMenuItem(value: w, child: Text(w)),
+                  ],
+                  onChanged: (v) => setState(() => _wallet = v),
+                )
+              else
+                Text(
+                  'Daftar dompet tidak tersedia.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+            if (needCategory) ...[
+              const SizedBox(height: SsrSpace.xs),
+              if (p.categoryOptions.isNotEmpty)
+                DropdownButtonFormField<String>(
+                  value: _category,
+                  hint: const Text('Pilih kategori'),
+                  items: [
+                    for (final c in p.categoryOptions)
+                      DropdownMenuItem(value: c, child: Text(c)),
+                  ],
+                  onChanged: (v) => setState(() => _category = v),
+                )
+              else
+                Text(
+                  'Daftar kategori tidak tersedia.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+            const SizedBox(height: SsrSpace.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    onPressed: canRun
+                        ? () => widget.onRun(TxDraft(
+                              type: p.type,
+                              amount: p.amount.toDouble(),
+                              category: _category,
+                              wallet: _wallet,
+                              note: p.note,
+                            ))
+                        : null,
+                    child: Text(tr('ai_run')),
+                  ),
+                ),
+                const SizedBox(width: SsrSpace.sm),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: widget.onCancel,
+                    child: Text(tr('ai_cancel')),
                   ),
                 ),
               ],
