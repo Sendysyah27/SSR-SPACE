@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_zen_client.dart';
+import 'package:ssr_space/services/ai_cli_client.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
@@ -47,14 +48,33 @@ Future<({ReceiptData data, String provider})?> scanReceiptVision(
     String provider = '';
     AiFailure? last;
     // 1) Zen vision langsung (prompt vision + gambar).
+    // Cek provider: local (OpenCode) atau zen
+    final useLocal = await aiProviderId() == 'local';
     try {
-      final zkey = await readZenKey();
-      final r = await zenChatRaw(
-        apiKey: zkey,
-        prompt: aiVisionPrompt(),
-        imageBytes: bytes,
-        mimeType: mime,
-      ).timeout(const Duration(seconds: 90));
+      if (useLocal) {
+        // Pakai OpenCode lokal via MethodChannel (vision support)
+        final r = await aiChatViaCli(
+          aiVisionPrompt(),
+          imageBytes: bytes,
+          mimeType: mime,
+        ).timeout(const Duration(seconds: 30));
+        if (r.text.trim().isNotEmpty) {
+          text = r.text;
+          provider = 'OpenCode lokal';
+        }
+      } else {
+        final zkey = await readZenKey();
+        final r = await zenChatRaw(
+          apiKey: zkey,
+          prompt: aiVisionPrompt(),
+          imageBytes: bytes,
+          mimeType: mime,
+        ).timeout(const Duration(seconds: 90));
+        if (r.text.trim().isNotEmpty) {
+          text = r.text;
+          provider = 'Zen: ${r.provider}';
+        }
+      }
       if (r.text.trim().isNotEmpty) {
         text = r.text;
         provider = 'Zen: ${r.provider}';
