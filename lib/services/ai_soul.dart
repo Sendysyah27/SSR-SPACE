@@ -18,9 +18,16 @@ const aiSoul = 'Kamu asisten keuangan SSR SPACE: ramah, ringkas, '
     'bilangan bulat > 0. Jangan pernah mengeksekusi apapun sendiri; '
     'aplikasi yang menampilkan tombol konfirmasi. '
     'Untuk mengingat fakta user, tulis blok ```ingat fakta singkat``` '
-    'di baris terpisah SETELAH objek JSON.';
+    'di baris terpisah SETELAH objek JSON. '
+    'Untuk menyimpan ringkasan percakapan PENTING (keputusan finansial, '
+    'rencana, masalah yang dibahas sampai tuntas — bukan obrolan ringan), '
+    'tulis blok ```ringkas 1-2 kalimat ringkasan``` di baris terpisah '
+    'SETELAH objek JSON.';
 
 const aiMemoryCap = 20;
+
+/// Kapasitas ringkasan percakapan penting (Memori.md dalam app).
+const aiSummaryCap = 30;
 const aiHistoryTurns = 10;
 const aiHistoryChars = 300;
 
@@ -43,13 +50,21 @@ String chatHistoryBlock(List<({bool mine, String text})> history) {
   return buf.toString();
 }
 
-/// Blok konteks disuntik ke tiap prompt: soul + fakta user.
-String aiContextBlock(List<String> memory) {
+/// Blok konteks disuntik ke tiap prompt: soul + fakta user +
+/// ringkasan percakapan penting (Memori.md dalam app).
+String aiContextBlock(List<String> memory,
+    [List<String> summaries = const []]) {
   final buf = StringBuffer(aiSoul);
   if (memory.isNotEmpty) {
     buf.write('\nFakta tentang user:');
     for (final m in memory.take(aiMemoryCap)) {
       buf.write('\n- $m');
+    }
+  }
+  if (summaries.isNotEmpty) {
+    buf.write('\nRingkasan percakapan penting:');
+    for (final s in summaries.take(aiSummaryCap)) {
+      buf.write('\n- $s');
     }
   }
   return buf.toString();
@@ -72,6 +87,29 @@ List<String> parseIngatBlocks(String text) {
 String stripIngatBlocks(String text) {
   return text
       .replaceAll(RegExp(r'```ingat\s+.+?```', dotAll: true), '')
+      .trim();
+}
+
+/// Ambil semua isi blok ```ringkas ...``` dari balasan AI.
+/// Dipakai untuk Memori.md dalam app: ringkasan 1-2 kalimat atas
+/// percakapan penting (keputusan finansial, rencana, masalah yang
+/// dibahas sampai tuntas). Bukan untuk obrolan ringan.
+/// Murni agar testable.
+List<String> parseRingkasBlocks(String text) {
+  final out = <String>[];
+  final re = RegExp(r'```ringkas\s+(.+?)```', dotAll: true);
+  for (final m in re.allMatches(text)) {
+    final v = m.group(1)!.trim();
+    if (v.isNotEmpty && v.length <= 500) out.add(v);
+  }
+  return out;
+}
+
+/// Hapus semua blok ```ringkas ...``` dari teks (untuk parse kontrak
+/// JSON balasan chat). Murni agar testable.
+String stripRingkasBlocks(String text) {
+  return text
+      .replaceAll(RegExp(r'```ringkas\s+.+?```', dotAll: true), '')
       .trim();
 }
 

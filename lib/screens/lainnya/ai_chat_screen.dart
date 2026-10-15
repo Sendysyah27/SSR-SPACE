@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:ssr_space/services/ai_context.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
@@ -25,8 +27,9 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
 
 /// Room chat AI: tanya apa saja (+ lampiran gambar), jawab via provider
-/// aktif (Gemini -> OpenRouter -> Zen -> Firebase). Riwayat sesi ini
-/// saja (memori, tak disimpan). Fakta ```ingat``` tersimpan otomatis;
+/// aktif. Riwayat chat tersimpan di HP sampai user menghapusnya via
+/// menu "Mulai percakapan baru". Fakta ```ingat``` + ringkasan
+/// ```ringkas``` tersimpan otomatis ke Memori AI (bisa diubah user);
 /// aksi ```tx``` tampil kartu [Jalankan] -> form prefill (user simpan).
 class AiChatScreen extends StatefulWidget {
   const AiChatScreen({super.key});
@@ -73,6 +76,63 @@ class _AiChatScreenState extends State<AiChatScreen> {
   String _providerId = 'zen';
   int _animFrom = 0;
 
+  /// Kunci prefs arsip riwayat chat (teks saja, maks 50 pesan terakhir).
+  /// Session TIDAK dihapus saat keluar room; hanya dihapus lewat menu
+  /// "Mulai percakapan baru".
+  static const _kSession = 'ai_chat_session';
+  static const _kSessionCap = 50;
+
+  /// Simpan riwayat chat (teks saja) ke prefs. Kartu aksi tidak
+  /// dipulihkan (arsip teks percakapan saja). Tanpa simpan otomatis
+  /// ke database transaksi — ini arsip lokal percakapan.
+  Future<void> _saveSession() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final list = _items.take(_kSessionCap).map((m) => {
+            'mine': m.mine,
+            'text': m.text,
+            'provider': m.provider,
+            'err': m.isError,
+          }).toList();
+      await p.setString(_kSession, jsonEncode(list));
+    } catch (_) {}
+  }
+
+  /// Pulihkan riwayat chat terakhir saat room dibuka.
+  Future<void> _loadSession() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final raw = p.getString(_kSession);
+      if (raw == null || raw.isEmpty) return;
+      final d = jsonDecode(raw);
+      if (d is! List) return;
+      final restored = <_ChatMsg>[];
+      for (final e in d.take(_kSessionCap)) {
+        if (e is! Map) continue;
+        final t = e['text'];
+        if (t is! String || t.isEmpty) continue;
+        restored.add(_ChatMsg(
+          mine: e['mine'] == true,
+          text: t,
+          provider: e['provider'] as String?,
+          isError: e['err'] == true,
+        ));
+      }
+      if (restored.isNotEmpty && mounted) {
+        setState(() => _items.addAll(restored));
+        _toBottom();
+      }
+    } catch (_) {}
+  }
+
+  /// Hapus arsip riwayat chat (dipanggil dari "Mulai percakapan baru").
+  Future<void> _clearSession() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.remove(_kSession);
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
@@ -80,6 +140,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
     aiProviderId().then((v) {
       if (mounted) setState(() => _providerId = v);
     });
+    // Pulihkan riwayat chat terakhir (tidak dihapus saat keluar room).
+    _loadSession();
   }
 
   /// Izin akses data sekali (awal penggunaan): ya = AI baca snapshot
@@ -198,9 +260,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
     if ((text.isEmpty && img == null) || _sending) return;
     final memory = await loadAiMemory();
     if (!mounted) return;
+    final summaries = await loadAiSummaries();
+    if (!mounted) return;
     final prompt = text.isEmpty
-        ? '${aiContextBlock(memory)}\nJelaskan gambar terlampir.'
-        : '${aiContextBlock(memory)}\nUser: $text';
+        ? '${aiContextBlock(memory, summaries)}\nJelaskan gambar terlampir.'
+        : '${aiContextBlock(memory, summaries)}\nUser: $text';
     setState(() {
       _animFrom = _items.length;
       _items.add(_ChatMsg(mine: true, text: text.isEmpty ? '(gambar)' : text,
@@ -210,6 +274,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
       _pendingMime = null;
       _sending = true;
     });
+    unawaited(_saveSession());
     _toBottom();
     // Riwayat sesi sebagai konteks (maks 10 turn terakhir).
     final history = [
@@ -228,13 +293,19 @@ class _AiChatScreenState extends State<AiChatScreen> {
         final n = await loadAiMemory();
         debugPrint('ai memori: ${n.length} fakta');
       }));
+      // Memori.md dalam app: simpan ringkasan percakapan penting.
+      // Hanya jumlah yang di-log, bukan isi ringkasan.
+      unawaited(addAiSummary(parseRingkasBlocks(r.text)).then((_) async {
+        final n = await loadAiSummaries();
+        debugPrint('ai memori: ${n.length} ringkasan');
+      }));
       // Kontrak JSON baru: ekstrak reply + action tervalidasi.
-      // Blok ```ingat``` (memori) dibuang dulu dari teks yang di-parse
-      // agar jsonDecode tidak gagal; fitur ingat tetap jalan dari
-      // r.text mentah pada addAiMemory di atas.
+      // Blok ```ingat```/```ringkas``` (memori) dibuang dulu dari teks
+      // yang di-parse agar jsonDecode tidak gagal; fitur ingat+ringkas
+      // tetap jalan dari r.text mentah pada addAiMemory/addAiSummary.
       final walletNames = await _walletNames();
       final parsed = parseChatReply(
-        stripIngatBlocks(r.text),
+        stripRingkasBlocks(stripIngatBlocks(r.text)),
         wallets: walletNames,
         categories: appCategories.value,
       );
@@ -296,69 +367,165 @@ class _AiChatScreenState extends State<AiChatScreen> {
         _sending = false;
       });
     }
+    unawaited(_saveSession());
     _toBottom();
   }
 
   Future<void> _openMemory() async {
     final facts = await loadAiMemory();
+    final summaries = await loadAiSummaries();
     if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
+      isScrollControlled: true,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(SsrSpace.md),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(tr('chat_mem_t'),
-                  style: Theme.of(ctx).textTheme.titleMedium),
-              const SizedBox(height: SsrSpace.sm),
-              if (facts.isEmpty)
-                Text(tr('chat_mem_empty'),
-                    style: Theme.of(ctx).textTheme.bodyMedium),
-              for (final f in facts)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  title: Text(f,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(tr('chat_mem_t'),
+                    style: Theme.of(ctx).textTheme.titleMedium),
+                const SizedBox(height: SsrSpace.sm),
+                Text(tr('chat_mem_facts_t'),
+                    style: Theme.of(ctx).textTheme.titleSmall),
+                if (facts.isEmpty)
+                  Text(tr('chat_mem_empty'),
                       style: Theme.of(ctx).textTheme.bodyMedium),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () async {
-                      await removeAiMemory(f);
-                      if (ctx.mounted) Navigator.pop(ctx);
-                      _openMemory();
-                    },
+                for (final f in facts)
+                  _memoryTile(
+                    ctx,
+                    text: f,
+                    onEdit: () => _editMemoryItem(
+                      ctx,
+                      initial: f,
+                      onSave: (v) => updateAiMemory(f, v),
+                    ),
+                    onDelete: () => removeAiMemory(f),
                   ),
+                const SizedBox(height: SsrSpace.sm),
+                Text(tr('chat_mem_sum_t'),
+                    style: Theme.of(ctx).textTheme.titleSmall),
+                if (summaries.isEmpty)
+                  Text(tr('chat_mem_empty'),
+                      style: Theme.of(ctx).textTheme.bodyMedium),
+                for (final s in summaries)
+                  _memoryTile(
+                    ctx,
+                    text: s,
+                    onEdit: () => _editMemoryItem(
+                      ctx,
+                      initial: s,
+                      onSave: (v) => updateAiSummary(s, v),
+                    ),
+                    onDelete: () => removeAiSummary(s),
+                  ),
+                const SizedBox(height: SsrSpace.sm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          await clearAiMemory();
+                          await clearAiSummaries();
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        },
+                        child: Text(tr('chat_mem_clear')),
+                      ),
+                    ),
+                    const SizedBox(width: SsrSpace.sm),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text(tr('rcp_raw_close')),
+                      ),
+                    ),
+                  ],
                 ),
-              const SizedBox(height: SsrSpace.sm),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () async {
-                        await clearAiMemory();
-                        if (ctx.mounted) Navigator.pop(ctx);
-                      },
-                      child: Text(tr('chat_mem_clear')),
-                    ),
-                  ),
-                  const SizedBox(width: SsrSpace.sm),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(tr('rcp_raw_close')),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  /// Satu baris ingatan: teks + tombol ubah + hapus.
+  Widget _memoryTile(
+    BuildContext ctx, {
+    required String text,
+    required Future<void> Function() onEdit,
+    required Future<void> Function() onDelete,
+  }) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      title: Text(text, style: Theme.of(ctx).textTheme.bodyMedium),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: tr('chat_mem_edit'),
+            onPressed: () async {
+              await onEdit();
+              if (ctx.mounted) Navigator.pop(ctx);
+              _openMemory();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () async {
+              await onDelete();
+              if (ctx.mounted) Navigator.pop(ctx);
+              _openMemory();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Dialog ubah teks satu ingatan (fakta / ringkasan).
+  Future<void> _editMemoryItem(
+    BuildContext ctx, {
+    required String initial,
+    required Future<void> Function(String) onSave,
+  }) async {
+    final c = TextEditingController(text: initial);
+    final ok = await showDialog<bool>(
+      context: ctx,
+      builder: (dctx) => AlertDialog(
+        title: Text(tr('chat_mem_edit')),
+        content: TextField(
+          controller: c,
+          maxLines: 4,
+          minLines: 1,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dctx, false),
+            child: Text(tr('ai_cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dctx, true),
+            child: Text(tr('chat_mem_save')),
+          ),
+        ],
+      ),
+    );
+    final newText = c.text;
+    c.dispose();
+    if (ok == true) {
+      await onSave(newText);
+    }
   }
 
   /// Pilih provider AI (Zen API / OpenCode lokal) + baseUrl + password.
@@ -742,6 +909,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
               );
               if (ok == true && mounted) {
                 setState(() => _items.clear());
+                unawaited(_clearSession());
               }
             },
             itemBuilder: (ctx) => [

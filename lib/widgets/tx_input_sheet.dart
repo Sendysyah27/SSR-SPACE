@@ -266,7 +266,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
             _pickScanSource();
             break;
           case TxInputMode.scanVision:
-            _pickVisionSource();
+            _pickVisionSource(strict: true);
             break;
           case TxInputMode.voice:
             _toggleMic();
@@ -544,7 +544,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
 
   /// Scan AI: foto -> model vision LANGSUNG tanpa OCR. Hasil prefill
   /// + replika; baris dibangun dari item (bisa edit penuh di form).
-  Future<void> _pickVisionSource() async {
+  Future<void> _pickVisionSource({bool strict = false}) async {
     final src = await showGlassDialog<ImageSource>(
       context: context,
       title: Text(tr('rcp_scan')),
@@ -566,7 +566,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
       _scanErr = null;
     });
     try {
-      final out = await scanReceiptVision(src);
+      final out = await scanReceiptVision(src, strictVision: strict);
       if (!mounted) return;
       setState(() => _scanning = false);
       if (out == null) return;
@@ -926,6 +926,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
                 scanning: _scanning,
                 error: _scanErr,
                 onScan: _scanning ? null : _pickScanSource,
+                onScanVision:
+                    _scanning ? null : () => _pickVisionSource(strict: true),
               ),
               const SizedBox(height: SsrSpace.md),
               PremiumButton(
@@ -1219,11 +1221,13 @@ class _ScanRow extends StatelessWidget {
   final bool scanning;
   final String? error;
   final VoidCallback? onScan;
+  final VoidCallback? onScanVision;
 
   const _ScanRow({
     required this.scanning,
     required this.error,
     required this.onScan,
+    this.onScanVision,
   });
 
   @override
@@ -1261,13 +1265,52 @@ class _ScanRow extends StatelessWidget {
             ),
           ),
           const SizedBox(height: SsrSpace.md),
-          FilledButton.icon(
-            onPressed: onScan,
-            icon: const DuoIcon(AppIcons.scan, size: 20),
-            label: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text(error != null ? tr('ai_rescan') : tr('rcp_scan')),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: onScan,
+                  icon: const DuoIcon(AppIcons.scan, size: 20),
+                  label: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(error != null ? tr('ai_rescan') : tr('scan_mode_ocr')),
+                        Text(
+                          tr('scan_mode_ocr_s'),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: scheme.onPrimary.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: SsrSpace.sm),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: onScanVision,
+                  icon: const DuoIcon(AppIcons.autoBadge, size: 20),
+                  label: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(tr('scan_mode_vision')),
+                        Text(
+                          tr('scan_mode_vision_s'),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: scheme.onPrimary.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           if (scanning) ...[
             const SizedBox(height: SsrSpace.md),

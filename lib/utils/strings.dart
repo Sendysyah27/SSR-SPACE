@@ -2383,8 +2383,8 @@ const _t = <String, Map<String, String>>{
   'chat_thinking': {'id': 'Mengetik...', 'en': 'Typing...'},
   'chat_reset': {'id': 'Reset sesi', 'en': 'Reset session'},
   'chat_empty': {
-    'id': 'Mulai percakapan dengan AI. Riwayat hanya sesi ini.',
-    'en': 'Start chatting with AI. History lasts this session only.',
+    'id': 'Mulai percakapan dengan AI.',
+    'en': 'Start a conversation with AI.',
   },
   'chat_attach': {'id': 'Lampirkan gambar', 'en': 'Attach image'},
   'chat_mem_t': {'id': 'Memori AI', 'en': 'AI memory'},
@@ -2393,6 +2393,13 @@ const _t = <String, Map<String, String>>{
     'en': 'Nothing remembered yet.',
   },
   'chat_mem_clear': {'id': 'Hapus semua', 'en': 'Clear all'},
+  'chat_mem_facts_t': {'id': 'Fakta tentang kamu', 'en': 'Facts about you'},
+  'chat_mem_sum_t': {
+    'id': 'Ringkasan percakapan',
+    'en': 'Conversation summaries',
+  },
+  'chat_mem_edit': {'id': 'Ubah ingatan', 'en': 'Edit memory'},
+  'chat_mem_save': {'id': 'Simpan', 'en': 'Save'},
   'ai_run': {'id': 'Jalankan', 'en': 'Run'},
   'ai_key_invalid': {
     'id': 'Kunci API tidak valid, cek di Pengaturan.',
@@ -2400,6 +2407,10 @@ const _t = <String, Map<String, String>>{
   },
   'ai_rescan': {'id': 'Scan ulang', 'en': 'Rescan'},
   'ai_scan_title': {'id': 'AI Struk', 'en': 'AI Receipt'},
+  'scan_mode_ocr': {'id': 'OCR', 'en': 'OCR'},
+  'scan_mode_ocr_s': {'id': 'Hanya OCR', 'en': 'OCR only'},
+  'scan_mode_vision': {'id': 'AI Vision', 'en': 'AI Vision'},
+  'scan_mode_vision_s': {'id': 'Tanpa OCR', 'en': 'No OCR'},
   'ai_busy': {
     'id': 'Model AI lagi sibuk, coba lagi sebentar.',
     'en': 'The AI model is busy, retry in a moment.',

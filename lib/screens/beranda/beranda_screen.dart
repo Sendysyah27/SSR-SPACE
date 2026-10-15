@@ -560,6 +560,13 @@ class BerandaScreenState extends State<BerandaScreen> {
     );
   }
 
+  void _goMangAi() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AiChatScreen()),
+    );
+  }
+
   void _goBudget() {
     final cb = widget.onBudget;
     if (cb != null) {
@@ -840,7 +847,7 @@ class BerandaScreenState extends State<BerandaScreen> {
         title: Text(tr('nav_beranda')),
         actions: [
           IconButton(
-            icon: const Icon(Icons.chat_outlined),
+            icon: const Icon(Icons.smart_toy_outlined),
             tooltip: tr('chat_title'),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AiChatScreen()),
@@ -882,6 +889,39 @@ class BerandaScreenState extends State<BerandaScreen> {
     return _content(key: const ValueKey('beranda-content'));
   }
 
+  /// Sapaan hangat berdasarkan waktu, ganti tiap jam (deterministik).
+  String _greeting() {
+    final now = DateTime.now();
+    final h = now.hour;
+    late final List<String> pool;
+    if (h >= 5 && h < 11) {
+      pool = const [
+        "Selamat pagi! Semoga harimu menyenangkan ya.",
+        "Pagi! Yuk mulai hari dengan cek keuangan.",
+        "Selamat pagi! Hari baru, rezeki baru.",
+      ];
+    } else if (h >= 11 && h < 15) {
+      pool = const [
+        "Selamat siang! Jangan lupa istirahat dan makan siang ya.",
+        "Siang! Gimana kabar keuanganmu hari ini?",
+        "Selamat siang! Sempatkan catat pengeluaran ya.",
+      ];
+    } else if (h >= 15 && h < 18) {
+      pool = const [
+        "Selamat sore! Hari yang produktif ya.",
+        "Sore! Udah catat pengeluaran hari ini belum?",
+        "Selamat sore! Santai dulu, cek keuangan bentar.",
+      ];
+    } else {
+      pool = const [
+        "Selamat malam! Waktunya rekap keuangan hari ini.",
+        "Malam! Jangan lupa catat pengeluaran terakhir ya.",
+        "Selamat malam! Istirahat yang cukup ya.",
+      ];
+    }
+    return pool[(now.day * 24 + h) % pool.length];
+  }
+
   Widget _content({Key? key}) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -906,6 +946,13 @@ class BerandaScreenState extends State<BerandaScreen> {
         96,
       ),
       children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: SsrSpace.sm),
+          child: Text(
+            _greeting(),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
         if (orgName.isNotEmpty && orgName != '-') ...[
           Row(
             children: [
@@ -990,6 +1037,11 @@ class BerandaScreenState extends State<BerandaScreen> {
               icon: AppIcons.add,
               label: tr('act_catat'),
               onTap: _goCatat,
+            ),
+            _QuickAction(
+              icon: Icons.smart_toy_outlined,
+              label: tr('chat_title'),
+              onTap: _goMangAi,
             ),
             _QuickAction(
               icon: AppIcons.scan,

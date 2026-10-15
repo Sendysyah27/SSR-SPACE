@@ -81,7 +81,9 @@ object AiFlutterBridge {
                             )
                             return@setMethodCallHandler
                         }
-                        runProvider(LocalOpenCodeProvider(base, pass), prompt, result)
+                        val tmo = (call.argument<Int>("timeoutMs") ?: 30_000)
+                            .coerceIn(5_000, 300_000)
+                        runProvider(LocalOpenCodeProvider(base, pass, tmo), prompt, result)
                         return@setMethodCallHandler
                     }
                     val config = keyStore.toAiConfig()
@@ -109,7 +111,9 @@ object AiFlutterBridge {
                             result.error("NO_LOCAL_PASS", "Belum ada password OpenCode lokal.", null)
                             return@setMethodCallHandler
                         }
-                        runProviderWithImage(LocalOpenCodeProvider(base, pass), prompt, imageBytes, mimeType, system, result)
+                        val tmoImg = (call.argument<Int>("timeoutMs") ?: 30_000)
+                            .coerceIn(5_000, 300_000)
+                        runProviderWithImage(LocalOpenCodeProvider(base, pass, tmoImg), prompt, imageBytes, mimeType, system, result)
                         return@setMethodCallHandler
                     }
                     result.error("UNSUPPORTED", "Vision hanya untuk OpenCode lokal.", null)

@@ -1,5 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/budget_service.dart';
+import 'package:ssr_space/services/debt_store.dart';
+import 'package:ssr_space/services/debt_track.dart';
+import 'package:ssr_space/services/goal_store.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -97,8 +100,39 @@ Future<String> buildAiDataContext() async {
       }
     }
   } catch (_) {}
+  // Target nabung (baca saja).
+  try {
+    final goals = await loadGoals();
+    final act = goals.take(6).toList();
+    if (act.isNotEmpty) {
+      buf.writeln('Target nabung:');
+      for (final g in act) {
+        buf.writeln('- ${g.name}: '
+            '${g.savedManual.toStringAsFixed(0)}/${g.target.toStringAsFixed(0)}');
+      }
+    }
+  } catch (_) {}
+  // Utang & piutang aktif (baca saja).
+  try {
+    final debts = await loadDebts();
+    final act = debts.where((d) => d.remaining() > 0).take(6).toList();
+    if (act.isNotEmpty) {
+      buf.writeln('Utang & piutang aktif:');
+      for (final d in act) {
+        final kind = d.kind == debtKindDebt ? 'Utang' : 'Piutang';
+        buf.writeln(
+            '- $kind ${d.name}: sisa ${d.remaining().toStringAsFixed(0)}');
+      }
+    }
+  } catch (_) {}
+  // Daftar fitur aplikasi agar AI bisa mengarahkan user ke fitur yang
+  // tepat (pengetahuan fitur, bukan eksekusi).
+  buf.writeln('Fitur SSR SPACE: Dompet, Tagihan rutin, Target nabung, '
+      'Utang & Piutang, E-Money NFC, Patungan, Budget, Laporan, '
+      'Langganan terdeteksi, Pelacakan otomatis. Arahkan user ke fitur '
+      'yang relevan bila bertanya soal fitur; jangan eksekusi apa pun.');
   final s = buf.toString().trim();
   if (s.isEmpty) return '';
-  final capped = s.length <= 2000 ? s : s.substring(0, 2000);
+  final capped = s.length <= 3000 ? s : s.substring(0, 3000);
   return 'DATA USER (baca saja, akurat per saat ini):\n$capped';
 }

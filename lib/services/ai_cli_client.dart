@@ -32,6 +32,11 @@ const localProviderName = 'opencode-lokal';
 
 const cliTimeout = Duration(seconds: 30);
 
+/// Timeout khusus vision scan (gambar): output JSON bisa sangat panjang
+/// (puluhan item struk) + upload base64. 120 dtk memberi ruang untuk
+/// model yang lambat tanpa menggantung selamanya.
+const visionScanTimeout = Duration(seconds: 120);
+
 String _snip(String s, [int max = 300]) =>
     s.length <= max ? s : '${s.substring(0, max)}...';
 
@@ -65,6 +70,9 @@ Future<({String text, String provider})> aiChatViaCli(
   String? system,
   // Paksa provider lokal tanpa melihat prefs (untuk scan struk).
   bool forceLocal = false,
+  // Timeout kustom; null = cliTimeout (30 dtk). Vision scan pakai
+  // visionScanTimeout (120 dtk) karena output item bisa sangat panjang.
+  Duration? timeout,
 }) async {
   if (prompt.trim().isEmpty) {
     throw const AiFailure('empty', 'prompt kosong');
@@ -86,6 +94,10 @@ Future<({String text, String provider})> aiChatViaCli(
   // Provider lokal: baseUrl + password per-call (password tak pernah di-log).
   final useLocal = forceLocal || await aiProviderId() == 'local';
   final args = <String, dynamic>{'prompt': masked};
+  final effectiveTimeout = timeout ?? cliTimeout;
+  // Sampaikan ke native agar HttpURLConnection ikut longgar (bukan cuma
+  // dinding Dart). Native default 30 dtk bila argumen tak ada.
+  args['timeoutMs'] = effectiveTimeout.inMilliseconds;
   if (system != null && system.trim().isNotEmpty) {
     args['system'] = system;
   }
@@ -110,7 +122,7 @@ Future<({String text, String provider})> aiChatViaCli(
   try {
     final text = await _aiChannel
         .invokeMethod<String>(method, args)
-        .timeout(cliTimeout);
+        .timeout(effectiveTimeout);
     if (text == null || text.trim().isEmpty) {
       throw const AiFailure('server', '[AI] response kosong');
     }

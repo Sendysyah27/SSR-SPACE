@@ -22,13 +22,16 @@ class VisionScanException implements Exception {
 
 /// Foto struk (kamera/galeri) -> OpenCode LOKAL vision langsung, TANPA OCR.
 /// TIDAK ADA fallback ke Zen langsung (free tier 403).
-/// Gagal vision -> OCR lokal -> OpenCode lokal (teks).
+/// Gagal vision -> OCR lokal -> OpenCode lokal (teks), KECUALI [strictVision]
+/// true (mode "AI Vision" eksplisit pilihan user): tanpa fallback diam-diam,
+/// error vision dilempar apa adanya agar user tahu mode yang dipakai gagal.
 /// File foto dihapus. Null = user batal.
 /// Return [ReceiptData] + nama provider + kategori AI (untuk prefill form).
 /// Hasil HANYA mengisi form; tidak ada simpan otomatis.
 Future<({ReceiptData data, String provider, String? category})?> scanReceiptVision(
-  ImageSource source,
-) async {
+  ImageSource source, {
+  bool strictVision = false,
+}) async {
   if (!Platform.isAndroid && !Platform.isIOS) {
     throw const VisionScanException('rcp_fail');
   }
@@ -70,6 +73,8 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
         mimeType: mime,
         system: system,
         forceLocal: true,
+        // Struk 43 item -> JSON ribuan token; 30 dtk terlalu sempit.
+        timeout: visionScanTimeout,
       );
       scanned = parseReceiptScanJson(_stripFence(r.text), categories);
       if (scanned == null) {
@@ -82,7 +87,9 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
     }
 
     // 2) OCR lokal -> OpenCode lokal (teks), untuk model yang buta gambar.
-    if (scanned == null) {
+    // Dilewati bila strictVision: user memilih "AI Vision" eksplisit, jadi
+    // kegagalan vision dilaporkan jujur tanpa pindah mode diam-diam.
+    if (scanned == null && !strictVision) {
       try {
         final ocr = await ocrBytesToText(bytes);
         if (ocr.trim().isNotEmpty) {
