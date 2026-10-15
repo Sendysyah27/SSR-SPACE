@@ -44,7 +44,7 @@ import java.net.UnknownHostException
 class LocalOpenCodeProvider(
     baseUrl: String,
     private val password: String,
-    private val timeoutMs: Int = 7_000,
+    private val timeoutMs: Int = 30_000,
     private val systemPrompt: String = DEFAULT_SYSTEM,
 ) : AiProvider {
 
