@@ -145,20 +145,7 @@ jobs:
           </service>
           '''
               s = s.replace('</application>', svc + '</application>')
-              # 2.61.5+175 FIX: template flutter sudah punya
-          # android:name="${applicationName}". GANTI jadi .SsrApp
-          # (tambah atribut baru = duplikat = XML error).
-          if 'android:name="${applicationName}"' in s:
-              s = s.replace('android:name="${applicationName}"',
-                            'android:name=".SsrApp"', 1)
-          elif 'android:name=".SsrApp"' not in s:
-              s = s.replace(
-                  '<application android:requestLegacyExternalStorage="true"',
-                  '<application android:name=".SsrApp" '
-                  'android:requestLegacyExternalStorage="true"',
-                  1,
-              )
-          m.write_text(s)
+              m.write_text(s)
           assert 'NotificationListenerService' in m.read_text()
           EOF
       - run: |
@@ -594,7 +581,7 @@ jobs:
           m.write_text(s)
           t = m.read_text()
           assert 'TodayWidgetProvider' in t, 'receiver widget hilang'
-          assert 'android:name=".SsrApp"' in t, 'SsrApp belum di manifest'
+          assert 'android:name=".SsrApp"' not in t, 'SsrApp masih di manifest (hotfix)'
           assert 'SsrQsTile' in t, 'qs tile hilang'
           assert (pkgdir / 'TodayWidgetProvider.java').exists()
           # --- 2.61.5+175: SsrApp Application penangkap crash Java ---
