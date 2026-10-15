@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.68.0+213.
+Versi terpasang: 2.68.0+214.
+
+## Yang baru di 2.68.0+214
+
+1. Perbaikan kecil: kembalikan import token yang salah hapus di glass sheet. Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.68.0+213
 
