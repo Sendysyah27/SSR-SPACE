@@ -2,12 +2,12 @@ package com.ssr.space.ssr_space.ai
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 
 /**
- * Penyimpanan aman untuk API key AI.
- * Menggunakan EncryptedSharedPreferences (AES256-GCM) dengan MasterKey di Android Keystore.
+ * Penyimpanan untuk API key AI.
+ *
+ * CATATAN: Saat ini pakai SharedPreferences biasa (MODE_PRIVATE).
+ * TODO: Upgrade ke EncryptedSharedPreferences jika dependency tersedia.
  *
  * Key TIDAK BOLEH:
  * - Muncul di log (jangan pernah log nilainya)
@@ -25,21 +25,11 @@ class AiKeyStore(context: Context) {
         const val DEFAULT_MODEL_ID = "muse-spark-1.3-contributor-free"
     }
 
-    private val prefs: SharedPreferences by lazy {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        EncryptedSharedPreferences.create(
-            context,
-            PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-    }
+    private val prefs: SharedPreferences =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     /**
-     * Simpan API key (terenkripsi).
+     * Simpan API key.
      * @param apiKey Key yang akan disimpan. Kosong/null akan diabaikan.
      */
     fun saveApiKey(apiKey: String) {
