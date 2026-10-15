@@ -133,7 +133,7 @@ class LocalOpenCodeProvider(
             if (code < 200 || code >= 300) {
                 throw AiFailure.Unknown("HTTP $code: ${readErr(conn).take(200)}")
             }
-            return LocalOpenCodeParser.parseMessage(readOk(conn)).getOrThrow()
+            return LocalOpenCodeParser.parseResponseBody(readOk(conn)).getOrThrow()
         } catch (e: AiFailure) {
             throw e
         } catch (e: Exception) {
