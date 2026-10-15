@@ -9,7 +9,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import android.app.Activity
 import androidx.core.text.HtmlCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +33,7 @@ import kotlinx.coroutines.withContext
  * - Key disimpan di EncryptedSharedPreferences
  * - Key tidak ikut backup (via backup rules)
  */
-class AiSettingsActivity : AppCompatActivity() {
+class AiSettingsActivity : Activity() {
 
     private lateinit var keyStore: AiKeyStore
     private lateinit var etApiKey: EditText
