@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.59.0+162.
+Versi terpasang: 2.64.1+189.
+
+## Yang baru di 2.64.1+189
+
+1. Perbaikan kecil Pengaturan: bersihkan import dan variabel tak terpakai (CI analyze hijau lagi). Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.59.0+162
 

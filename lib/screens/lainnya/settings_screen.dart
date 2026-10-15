@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
-import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/ai_cli_client.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/biometric_auth.dart';
@@ -1105,8 +1104,6 @@ class _AiCardState extends State<_AiCard> {
       _busy = true;
       _msg = tr('ai_working');
     });
-    final key = await readZenKey();
-    if (!mounted) return;
     String out;
     try {
       final r = await aiChatViaCli('Halo')
