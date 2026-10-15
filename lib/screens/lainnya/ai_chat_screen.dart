@@ -15,6 +15,8 @@ import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -559,6 +561,78 @@ class _AiChatScreenState extends State<AiChatScreen> {
     _toBottom();
   }
 
+  /// Simpan langsung satu ketuk dari kartu konfirmasi (inisiatif user,
+  /// bukan otomatis). Tanggal = hari ini; dompet dicocokkan dari nama.
+  Future<void> _saveAction(TxDraft d) async {
+    String? walletId;
+    String orgId = '';
+    try {
+      orgId = await activeOrgId();
+      if (orgId.isNotEmpty && d.wallet != null) {
+        final ws = await WalletService().list(orgId);
+        final hit = matchWalletName(
+          d.wallet!,
+          [for (final w in ws) w.name],
+        );
+        if (hit != null) {
+          for (final w in ws) {
+            if (w.name == hit) walletId = w.id;
+          }
+        }
+      }
+    } catch (_) {}
+    if (!mounted) return;
+    if (orgId.isEmpty) {
+      setState(() {
+        _items.add(_ChatMsg(
+          mine: false,
+          text: tr('ai_save_no_org'),
+          isError: true,
+          provider: 'Mang AI',
+        ));
+      });
+      _toBottom();
+      return;
+    }
+    try {
+      final when = txWhen(DateTime.now());
+      await TransactionService().add(
+        orgId: orgId,
+        type: d.type,
+        amount: d.amount,
+        walletId: walletId,
+        category: d.category,
+        note: d.note,
+        date: when.date,
+        createdAt: when.createdAt,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _items.add(_ChatMsg(
+          mine: false,
+          text: tr('ai_save_fail'),
+          isError: true,
+          provider: 'Mang AI',
+        ));
+      });
+      _toBottom();
+      return;
+    }
+    if (!mounted) return;
+    final sign = d.type == 'in' ? '+' : '-';
+    final amt = d.amount.toStringAsFixed(0);
+    final cat = d.category == null ? '' : ' \u00b7 ' + d.category!;
+    setState(() {
+      _items.add(_ChatMsg(
+        mine: false,
+        text: 'Tersimpan \u2713 ' + sign + amt + cat,
+        provider: 'Mang AI',
+      ));
+    });
+    _toBottom();
+  }
+
   Future<void> _runBill(BillDraft d) async {
     try {
       final bills = await loadBills();
@@ -644,14 +718,38 @@ class _AiChatScreenState extends State<AiChatScreen> {
             tooltip: tr('chat_mem_t'),
             onPressed: _openMemory,
           ),
-          IconButton(
-            icon: const Icon(Icons.restart_alt_outlined),
-            tooltip: tr('chat_reset'),
-            onPressed: _sending
-                ? null
-                : () => setState(() {
-                      _items.clear();
-                    }),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_outlined),
+            tooltip: tr('chat_menu'),
+            onSelected: (v) async {
+              if (v != 'new' || _sending) return;
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(tr('chat_new_t')),
+                  content: Text(tr('chat_new_m')),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(tr('ai_cancel')),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(tr('chat_new_ok')),
+                    ),
+                  ],
+                ),
+              );
+              if (ok == true && mounted) {
+                setState(() => _items.clear());
+              }
+            },
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'new',
+                child: Text(tr('chat_new')),
+              ),
+            ],
           ),
         ],
       ),
@@ -705,6 +803,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                 title: _actionTitle(m.action!),
                                 note: _actionNote(m.action!),
                                 onRun: () => _runAction(m.action!),
+                                onSave: () => _saveAction(m.action!),
                                 onCancel: () => _cancelActionCard(m),
                               ),
                             if (m.pendingAction != null)
@@ -995,11 +1094,13 @@ class _ActionCard extends StatelessWidget {
   final String title;
   final String? note;
   final VoidCallback onRun;
+  final VoidCallback? onSave;
   final VoidCallback? onCancel;
   const _ActionCard({
     required this.title,
     this.note,
     required this.onRun,
+    this.onSave,
     this.onCancel,
   });
 
@@ -1046,6 +1147,16 @@ class _ActionCard extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: onCancel,
                       child: Text(tr('ai_cancel')),
+                    ),
+                  ),
+                  const SizedBox(width: SsrSpace.sm),
+                ],
+                if (onSave != null) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onSave,
+                      icon: const Icon(Icons.save_outlined, size: 18),
+                      label: Text(tr('ai_tx_save')),
                     ),
                   ),
                   const SizedBox(width: SsrSpace.sm),

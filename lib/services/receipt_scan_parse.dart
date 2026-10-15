@@ -5,6 +5,20 @@
 
 import 'dart:convert';
 
+/// Satu baris item dari hasil vision (tanpa OCR): nama + qty + harga.
+/// Uang = int (rupiah). Bounding box TIDAK diminta: model teks via
+/// OpenCode chat completions tidak bisa mengembalikan koordinat piksel
+/// yang dapat diandalkan (hasilnya halusinasi bila dipaksa).
+class ReceiptScanItem {
+  /// Nama produk sesuai tertulis di struk.
+  final String name;
+  /// Jumlah pcs (default 1 bila tak disebut).
+  final int qty;
+  /// Harga TOTAL baris ini (qty x harga satuan), rupiah, integer >= 0.
+  final int price;
+  const ReceiptScanItem({required this.name, this.qty = 1, required this.price});
+}
+
 /// Hasil scan struk yang lolos validasi ketat.
 class ReceiptScanResult {
   /// Nama gerai (opsional).
@@ -19,11 +33,16 @@ class ReceiptScanResult {
   /// Kategori dalam bentuk kanonis dari daftar kategori app.
   final String category;
 
+  /// SEMUA baris item/produk dari atas sampai bawah struk (bisa kosong
+  /// bila model tidak mengembalikannya; hasil tetap valid).
+  final List<ReceiptScanItem> items;
+
   const ReceiptScanResult({
     this.merchant,
     required this.date,
     required this.total,
     required this.category,
+    this.items = const [],
   });
 }
 
@@ -35,11 +54,17 @@ String scanReceiptSystemPrompt(List<String> categories) {
   return 'Kamu pengurai struk belanja Indonesia. Baca gambar struk dengan teliti '
       'dari atas sampai bawah. Balas HANYA satu objek JSON valid dengan kunci persis: '
       '{"merchant":"nama gerai atau string kosong","date":"YYYY-MM-DD",'
-      '"total":<integer>,"category":"..."}. '
+      '"total":<integer>,"category":"...",'
+      '"items":[{"name":"nama produk","qty":<integer>,"price":<integer>}]}. '
       'Aturan: total = GRAND TOTAL yang dibayar (SETELAH diskon), dalam rupiah '
       'sebagai integer murni (contoh 16000; bukan "16000", bukan 16000.0). '
       'date = tanggal transaksi format YYYY-MM-DD. '
       'category = salah satu dari: $cats. '
+      'items = SEMUA baris produk dari atas sampai bawah struk, lengkap '
+      'jangan diringkas: name = nama produk sesuai struk, qty = jumlah pcs '
+      '(1 bila tak disebut), price = harga TOTAL baris itu (qty x harga satuan) '
+      'dalam rupiah integer. Abaikan baris subtotal/pajak/diskon/pembulatan/'
+      'tunai/kembalian/metode bayar (bukan produk). '
       'Jangan pakai tool. Jangan karang angka bila ragu.';
 }
 
@@ -56,6 +81,8 @@ String scanReceiptOcrPrompt(String ocrText, List<String> categories) {
 /// - date HARUS YYYY-MM-DD dan tanggal kalender valid
 /// - category HARUS cocok (tak sensitif huruf-besar) dengan [categories]
 /// - merchant opsional
+/// - items opsional; tiap item: name non-kosong, price int >= 0,
+///   qty int > 0 (default 1). Item tak valid dilewati.
 ReceiptScanResult? parseReceiptScanJson(String raw, List<String> categories) {
   var s = raw.trim();
   if (s.isEmpty) return null;
@@ -100,6 +127,26 @@ ReceiptScanResult? parseReceiptScanJson(String raw, List<String> categories) {
   }
   if (canonical == null || canonical.isEmpty) return null;
 
+  // items: daftar produk, toleran (item tak valid -> dilewati).
+  final scanItems = <ReceiptScanItem>[];
+  final iv = m['items'];
+  if (iv is List) {
+    for (final e in iv.take(200)) {
+      if (e is! Map) continue;
+      final im = Map<String, dynamic>.from(e);
+      final nm = im['name'];
+      final pr = im['price'];
+      if (nm is! String || nm.trim().isEmpty) continue;
+      if (pr is! int || pr < 0) continue;
+      var q = 1;
+      final qv = im['qty'];
+      if (qv is int && qv > 0 && qv <= 10000) q = qv;
+      var nmS = nm.trim();
+      if (nmS.length > 120) nmS = nmS.substring(0, 120);
+      scanItems.add(ReceiptScanItem(name: nmS, qty: q, price: pr));
+    }
+  }
+
   // merchant: opsional.
   String? merchant;
   final mv = m['merchant'];
@@ -115,5 +162,6 @@ ReceiptScanResult? parseReceiptScanJson(String raw, List<String> categories) {
     date: ds,
     total: tv,
     category: canonical,
+    items: scanItems,
   );
 }

@@ -55,7 +55,18 @@ class GlassSheetScaffold extends StatelessWidget {
                 const SizedBox(height: GlassSpace.sm),
                 const _GlassDragHandle(),
               ],
-              child,
+              // BUG 1 fix: batasi tinggi maksimum sheet. Column(mainAxisSize.min)
+              // memberi child tinggi TAK TERBATAS sehingga SingleChildScrollView
+              // di dalam child mengembang penuh mengikuti isi -> sheet kepotong
+              // layar dan tidak bisa scroll. Dengan batas ini scroll view dapat
+              // constraint terbatas dan berfungsi normal; sheet pendek tak
+              // terpengaruh (Column tetap shrink-wrap).
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.92,
+                ),
+                child: child,
+              ),
             ],
           ),
         ),

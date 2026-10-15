@@ -136,5 +136,59 @@ void main() {
       expect(p.contains('"total"'), isTrue);
       expect(p.contains('Makanan'), isTrue);
     });
+
+    test('meminta daftar item lengkap (bukan ringkasan)', () {
+      final p = scanReceiptSystemPrompt(_cats);
+      expect(p.contains('"items"'), isTrue);
+      expect(p.contains('SEMUA baris produk'), isTrue);
+    });
+  });
+
+  group('parseReceiptScanJson items', () {
+    test('items lengkap -> terparse semua', () {
+      final r = parseReceiptScanJson(
+        '{"merchant":"SANCHA","date":"2026-09-08","total":32000,"category":"Makanan",'
+        '"items":[{"name":"Da Hong Pao Milk Tea","qty":2,"price":32000},{"name":"Kantong","price":0}]}',
+        _cats,
+      );
+      expect(r, isNotNull);
+      expect(r!.items.length, 2);
+      expect(r.items[0].name, 'Da Hong Pao Milk Tea');
+      expect(r.items[0].qty, 2);
+      expect(r.items[0].price, 32000);
+      expect(r.items[1].qty, 1); // default bila tak disebut
+      expect(r.items[1].price, 0);
+    });
+
+    test('tanpa items -> tetap valid, list kosong', () {
+      final r = parseReceiptScanJson(
+        '{"merchant":"A","date":"2026-10-01","total":5000,"category":"Belanja"}',
+        _cats,
+      );
+      expect(r, isNotNull);
+      expect(r!.items, isEmpty);
+    });
+
+    test('item tak valid dilewati, hasil tetap valid', () {
+      final r = parseReceiptScanJson(
+        '{"merchant":"A","date":"2026-10-01","total":5000,"category":"Belanja",'
+        '"items":[{"name":"","price":100},{"name":"X","price":"100"},'
+        '{"name":"Bagus","qty":3,"price":3000},42]}',
+        _cats,
+      );
+      expect(r, isNotNull);
+      expect(r!.items.length, 1);
+      expect(r.items[0].name, 'Bagus');
+      expect(r.items[0].qty, 3);
+    });
+
+    test('items bukan list -> list kosong', () {
+      final r = parseReceiptScanJson(
+        '{"merchant":"A","date":"2026-10-01","total":5000,"category":"Belanja","items":"x"}',
+        _cats,
+      );
+      expect(r, isNotNull);
+      expect(r!.items, isEmpty);
+    });
   });
 }

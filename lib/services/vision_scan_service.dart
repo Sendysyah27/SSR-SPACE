@@ -108,11 +108,24 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
           'rcp_fail', (lastDetail ?? 'Struk tak terbaca.').trim());
     }
     final s = scanned;
+    // Petakan item vision -> lineItems agar ReceiptResultSheet menampilkan
+    // replika struk lengkap (nama + qty + harga per baris).
+    final lineItems = <ReceiptItem>[
+      for (final it in s.items)
+        ReceiptItem(
+          name: it.name,
+          qty: it.qty,
+          price: it.price.toDouble(),
+          suspicious: it.price > s.total,
+        ),
+    ];
     return (
       data: ReceiptData(
         amount: s.total.toDouble(),
         date: DateTime.tryParse(s.date),
         merchant: s.merchant,
+        items: [for (final it in s.items) it.name],
+        lineItems: lineItems,
         confident: true,
       ),
       provider: 'OpenCode lokal',

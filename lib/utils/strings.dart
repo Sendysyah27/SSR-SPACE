@@ -2429,6 +2429,23 @@ const _t = <String, Map<String, String>>{
     'en': 'AI usage limit reached. Wait a moment, then retry.',
   },
   'ai_cancel': {'id': 'Batal', 'en': 'Cancel'},
+  'ai_tx_save': {'id': 'Simpan', 'en': 'Save'},
+  'ai_save_fail': {'id': 'Gagal menyimpan.', 'en': 'Failed to save.'},
+  'ai_save_no_org': {
+    'id': 'Belum ada organisasi aktif.',
+    'en': 'No active organization.',
+  },
+  'chat_menu': {'id': 'Opsi percakapan', 'en': 'Conversation options'},
+  'chat_new': {
+    'id': 'Mulai percakapan baru',
+    'en': 'Start new conversation',
+  },
+  'chat_new_t': {'id': 'Mulai baru?', 'en': 'Start new?'},
+  'chat_new_m': {
+    'id': 'Percakapan saat ini akan dihapus dari layar.',
+    'en': 'The current conversation will be cleared from the screen.',
+  },
+  'chat_new_ok': {'id': 'Mulai baru', 'en': 'Start new'},
   'ai_quota_info': {
     'id': 'Paket gratis AI terbatas (±20 permintaan); hemat dengan scan seperlunya.',
     'en': 'Free AI quota is limited (±20 requests); scan only as needed.',
