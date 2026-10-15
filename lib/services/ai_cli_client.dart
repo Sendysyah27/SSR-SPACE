@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'ai_soul.dart';
@@ -19,16 +18,15 @@ import 'firebase_ai_parser.dart';
 // (android/app/src/main/jniLibs/arm64-v8a/libopencode.so).
 // Alasan: Android 10+ memblokir eksekusi binary dari app-private dir
 // (SELinux). Native lib dir (/data/app/.../lib/arm64/) BISA dieksekusi.
-// Path didapat via MethodChannel "ssr_space/native" -> getNativeLibDir.
+// Path ditemukan via /proc/self/maps (cari libflutter.so yang selalu
+// ter-load, ambil direktorinya).
 //
 // Cara kerja:
-//  1. ensureCliBinary(): ambil nativeLibDir via MethodChannel,
+//  1. ensureCliBinary(): parse /proc/self/maps -> nativeLibDir,
 //     path = <nativeLibDir>/libopencode.so, chmod +x (best effort).
 //  2. aiChatViaCli(): bangun prompt, Process.run binary.
 //  3. Parse stdout JSONL, kumpulkan event text.
 // Throw [AiFailure] jujur (kode: empty | timeout | denied | server).
-
-const _nativeChannel = MethodChannel('ssr_space/native');
 
 /// Model utama (format provider/model untuk flag -m).
 const cliModelPrimary = 'opencode/muse-spark-1.3-contributor-free';
@@ -46,25 +44,37 @@ const cliTimeout = Duration(seconds: 120);
 String _snip(String s, [int max = 300]) =>
     s.length <= max ? s : '${s.substring(0, max)}...';
 
-/// Path binary opencode yang di-bundle di APK (native lib dir).
-/// Throw [AiFailure] bila tidak ketemu / tidak bisa dieksekusi.
-Future<String> ensureCliBinary() async {
-  String nativeLibDir;
+/// Cari native library directory via /proc/self/maps.
+/// libflutter.so selalu ter-load; direktorinya = tempat libopencode.so.
+Future<String> _findNativeLibDir() async {
   try {
-    nativeLibDir =
-        await _nativeChannel.invokeMethod<String>('getNativeLibDir') ?? '';
-  } on PlatformException catch (e) {
-    throw AiFailure('server', '[CLI] getNativeLibDir gagal: $e');
-  }
-  if (nativeLibDir.isEmpty) {
-    throw const AiFailure('server', '[CLI] nativeLibDir kosong');
-  }
+    final maps = await File('/proc/self/maps').readAsString();
+    for (final line in maps.split('\n')) {
+      // Format: address perms offset dev inode pathname
+      // Contoh: ... /data/app/~~hash==/com.ssr.space.ssr_space-xxx==/lib/arm64/libflutter.so
+      if (line.contains('libflutter.so')) {
+        final parts = line.trim().split(RegExp(r'\s+'));
+        if (parts.isNotEmpty) {
+          final path = parts.last;
+          final dir = path.substring(0, path.lastIndexOf('/'));
+          if (dir.contains('/lib/') || dir.endsWith('/lib')) {
+            return dir;
+          }
+        }
+      }
+    }
+  } catch (_) {}
+  throw const AiFailure('server', '[CLI] native lib dir tidak ketemu');
+}
+
+/// Path binary opencode yang di-bundle di APK (native lib dir).
+Future<String> ensureCliBinary() async {
+  final nativeLibDir = await _findNativeLibDir();
   final bin = File('$nativeLibDir/libopencode.so');
   if (!await bin.exists()) {
     throw AiFailure(
         'server', '[CLI] binary tidak ketemu di $nativeLibDir');
   }
-  // Pastikan executable (best effort; native lib dir biasanya sudah +x).
   try {
     await Process.run('chmod', ['+x', bin.path]);
   } catch (_) {}
@@ -100,7 +110,6 @@ String parseCliJsonl(String out) {
 }
 
 /// Satu pemanggilan CLI untuk satu model. Return teks jawaban.
-/// Throw [AiFailure] bila gagal (pemanggil memutuskan fallback).
 Future<String> runCliOnce({
   required String bin,
   required String model,

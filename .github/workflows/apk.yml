@@ -632,28 +632,6 @@ jobs:
           ''' % dotted)
           assert app_cls.exists()
           print('SsrApp.java ok')
-          # --- 2.63.0: Overwrite MainActivity.kt + MethodChannel getNativeLibDir ---
-          main_kt = pkgdir / 'MainActivity.kt'
-          main_kt.write_text('''package %s;
-
-          import io.flutter.embedding.android.FlutterActivity
-          import io.flutter.embedding.engine.FlutterEngine
-          import io.flutter.plugin.common.MethodChannel
-
-          class MainActivity : FlutterActivity() {
-              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-                  super.configureFlutterEngine(flutterEngine)
-                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "ssr_space/native").setMethodCallHandler { call, result ->
-                      if (call.method == "getNativeLibDir") {
-                          result.success(applicationInfo.nativeLibraryDir)
-                      } else {
-                          result.notImplemented()
-                      }
-                  }
-              }
-          }
-          ''' % dotted)
-          print('MainActivity.kt overwritten ok')
 
 
           assert (pkgdir / 'SsrQsTile.java').exists()
