@@ -29,7 +29,22 @@ sealed class AiFailure(message: String) : Exception(message) {
 
     /** Network error atau timeout. */
     class NetworkError(cause: Throwable? = null) :
-        AiFailure("Gagal terhubung ke AI.${cause?.message?.let { " ($it)" } ?: ""}")
+        AiFailure(buildNetworkMessage(cause))
+
+    companion object {
+        private fun buildNetworkMessage(cause: Throwable?): String {
+            val msg = cause?.message ?: ""
+            // Cleartext atau koneksi ditolak -> server lokal bermasalah
+            if (msg.contains("Cleartext", ignoreCase = true) ||
+                msg.contains("127.0.0.1", ignoreCase = true) ||
+                msg.contains("localhost", ignoreCase = true) ||
+                msg.contains("Connection refused", ignoreCase = true) ||
+                msg.contains("Failed to connect", ignoreCase = true)) {
+                return "Tidak bisa terhubung ke server lokal (cek Termux)."
+            }
+            return "Gagal terhubung ke AI."
+        }
+    }
 
     /** Response tidak valid atau parsing gagal. */
     class InvalidResponse(reason: String) :

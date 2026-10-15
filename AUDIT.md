@@ -627,3 +627,4 @@ Manifest manggil  yang tidak ada -> FC pas launch.
 
 **Status**: Sudah di-hotfix via 2.62.1+177 (revert dari manifest). Tidak dipakai lagi.
 - **2.67.0+193** (2026-10-15): HAPUS native binary - ai_cli_client.dart pakai HTTP via MethodChannel ke Kotlin ZenProvider (key dari EncryptedSharedPreferences).
+- **2.68.0+199** (2026-10-15): LocalOpenCodeProvider di Mang AI (Zen/lokal + baseUrl + password; sesi baru per request; parser text-only + token log; TDD kotlinc 56/56; run 38721435070 hijau).

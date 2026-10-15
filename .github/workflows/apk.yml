@@ -1244,6 +1244,37 @@ jobs:
       - name: Patch MainActivity (AiFlutterBridge)
         run: python3 patch_ma.py
 
+      - name: Copy network_security_config
+        run: |
+          mkdir -p android/app/src/main/res/xml
+          cp android-native/ai/res/xml/network_security_config.xml android/app/src/main/res/xml/
+          echo "network_security_config.xml copied"
+
+      - name: Patch manifest networkSecurityConfig
+        run: |
+          python3 - <<'PYEOF'
+          import pathlib
+          m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
+          s = m.read_text()
+          if 'networkSecurityConfig' in s:
+              print('networkSecurityConfig sudah ada, skip')
+          else:
+              assert '<application' in s, 'FAIL: tag application tidak ketemu!'
+              # Tambah atribut ke tag <application
+              s = s.replace('<application', '<application\n        android:networkSecurityConfig="@xml/network_security_config"', 1)
+              m.write_text(s)
+              assert 'networkSecurityConfig' in m.read_text(), 'FAIL: patch gagal!'
+              print('networkSecurityConfig ditambahkan ke manifest')
+          PYEOF
+
+      - name: Verifikasi networkSecurityConfig
+        run: |
+          if ! grep -q "networkSecurityConfig" android/app/src/main/AndroidManifest.xml; then
+            echo "ERROR: networkSecurityConfig tidak ketemu di manifest!"
+            exit 1
+          fi
+          echo "Verifikasi OK"
+
       - name: Verifikasi AiFlutterBridge terdaftar
         run: |
           if ! grep -rq "AiFlutterBridge.setup" android/app/src/main/kotlin/ android/app/src/main/java/ 2>/dev/null; then
