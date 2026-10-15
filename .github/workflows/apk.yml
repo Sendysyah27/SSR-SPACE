@@ -140,7 +140,7 @@ jobs:
           ls -lh android/app/src/main/jniLibs/arm64-v8a/libopencode.so
       - run: |
           if ! grep -rq "doNotStrip" android/app/build.gradle*; then
-            python3 -c "import pathlib,glob,re;f=glob.glob('android/app/build.gradle*');p=pathlib.Path(f[0]);t=p.read_text();kts=f[0].endswith('.kts');m=re.search(r'(?m)^(\s*)buildTypes\s*\{',t);assert m;ind=m.group(1);nl=chr(10);q=chr(39);lib='*/arm64-v8a/libopencode.so';add=(ind+'packagingOptions{'+nl+ind+'    doNotStrip.add('+q+lib+q+')'+nl+ind+'}'+nl) if kts else (ind+'packagingOptions {'+nl+ind+'    doNotStrip '+q+lib+q+nl+ind+'}'+nl);t=t[:m.start()]+add+t[m.start():];p.write_text(t);print('doNotStrip ok');"
+            python3 -c "import pathlib,glob,re;f=glob.glob('android/app/build.gradle*');p=pathlib.Path(f[0]);t=p.read_text();kts=f[0].endswith('.kts');m=re.search(r'(?m)^(\s*)buildTypes\s*\{',t);assert m;ind=m.group(1);nl=chr(10);q=chr(34);lib='*/arm64-v8a/libopencode.so';add=(ind+'packagingOptions{'+nl+ind+'    doNotStrip.add('+q+lib+q+')'+nl+ind+'}'+nl) if kts else (ind+'packagingOptions {'+nl+ind+'    doNotStrip '+q+lib+q+nl+ind+'}'+nl);t=t[:m.start()]+add+t[m.start():];p.write_text(t);print('doNotStrip ok');"
           fi
       - run: |
       - run: |
