@@ -76,9 +76,11 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
         // Struk 43 item -> JSON ribuan token; 30 dtk terlalu sempit.
         timeout: visionScanTimeout,
       );
-      scanned = parseReceiptScanJson(_stripFence(r.text), categories);
+      // Format baris teks dulu (robust utk banyak item); fallback JSON lama.
+      scanned = parseReceiptScanText(_stripFence(r.text), categories) ??
+          parseReceiptScanJson(_stripFence(r.text), categories);
       if (scanned == null) {
-        lastDetail = 'AI tidak mengembalikan JSON struk yang valid.';
+        lastDetail = 'AI tidak mengembalikan data struk yang valid.';
       }
     } on AiFailure catch (e) {
       lastDetail = (e.detail ?? e.code).trim();
@@ -98,9 +100,10 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
             system: system,
             forceLocal: true,
           );
-          scanned = parseReceiptScanJson(_stripFence(r.text), categories);
+          scanned = parseReceiptScanText(_stripFence(r.text), categories) ??
+              parseReceiptScanJson(_stripFence(r.text), categories);
           if (scanned == null) {
-            lastDetail = 'AI tidak mengembalikan JSON struk yang valid.';
+            lastDetail = 'AI tidak mengembalikan data struk yang valid.';
           }
         }
       } on AiFailure catch (e) {
@@ -115,6 +118,9 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
           'rcp_fail', (lastDetail ?? 'Struk tak terbaca.').trim());
     }
     final s = scanned;
+    // Teks detail gaya struk -> disimpan sebagai catatan transaksi
+    // (terlihat lengkap di detail transaksi).
+    final detailText = receiptDetailText(s);
     // Petakan item vision -> lineItems agar ReceiptResultSheet menampilkan
     // replika struk lengkap (nama + qty + harga per baris).
     final lineItems = <ReceiptItem>[
@@ -134,6 +140,7 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
         items: [for (final it in s.items) it.name],
         lineItems: lineItems,
         confident: true,
+        detailText: detailText,
       ),
       provider: 'OpenCode lokal',
       category: s.category,

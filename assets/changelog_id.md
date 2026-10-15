@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.69.0+216.
+Versi terpasang: 2.71.0+218.
+
+## Yang baru di 2.71.0+218
+
+1. Scan struk AI pakai format baris teks (lebih tahan untuk struk panjang), detail struk tersimpan di catatan & tampil gaya struk di detail, swipe kanan-edit / kiri-hapus di riwayat.
 
 ## Yang baru di 2.69.0+216
 

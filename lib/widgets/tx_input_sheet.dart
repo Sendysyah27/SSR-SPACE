@@ -633,7 +633,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
         );
       }
       if (r.date != null) day = r.date!;
-      noteC.text = receiptNote(r);
+      // Vision: simpan detail struk lengkap sebagai catatan (terlihat utuh
+      // di detail transaksi). OCR/rule: ringkasan seperti sebelumnya.
+      final dt = r.detailText;
+      noteC.text = (dt != null && dt.trim().isNotEmpty) ? dt : receiptNote(r);
       if (_selCat == null || _selCat!.trim().isEmpty) {
         final cats = appCategories.value;
         _selCat = cats.contains('Belanja')

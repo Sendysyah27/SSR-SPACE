@@ -7,6 +7,7 @@ import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/premium/glass_sheet.dart';
 import 'package:ssr_space/widgets/premium/premium_button.dart';
+import 'package:ssr_space/services/receipt_scan_parse.dart';
 
 /// Detail transaksi read-only dari ketuk notif tersimpan.
 /// Kembalikan true bila user pilih Lihat di Transaksi.
@@ -80,11 +81,7 @@ class _TxDetailSheet extends StatelessWidget {
                   tr('tx_f_cat'),
                   (tx.category?.isEmpty ?? true) ? '-' : tx.category!,
                 ),
-                _row(
-                  context,
-                  tr('tx_f_note'),
-                  (tx.note?.isEmpty ?? true) ? '-' : tx.note!,
-                ),
+                _receiptNoteRow(context, tx),
                 _row(
                   context,
                   tr('tx_f_date'),
@@ -107,6 +104,32 @@ class _TxDetailSheet extends StatelessWidget {
           );
         },
       );
+  }
+
+  Widget _receiptNoteRow(BuildContext context, SaasTransaction tx) {
+    final theme = Theme.of(context);
+    final note = (tx.note?.isEmpty ?? true) ? '-' : tx.note!;
+    final receipt = isReceiptDetailNote(tx.note);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(tr('tx_f_note'), style: theme.textTheme.bodySmall),
+          ),
+          Expanded(
+            child: Text(
+              note,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontFamily: receipt ? 'monospace' : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _row(BuildContext context, String label, String value) {

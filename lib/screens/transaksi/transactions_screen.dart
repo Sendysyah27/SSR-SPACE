@@ -200,6 +200,28 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     if (await openTxInputSheet(context, editing: t)) await _load();
   }
 
+  /// Hapus transaksi via swipe kanan-ke-kiri (sudah dikonfirmasi di TxRow).
+  Future<void> _deleteTx(SaasTransaction t) async {
+    try {
+      final orgId = await activeOrgId();
+      if (orgId.isEmpty || !mounted) return;
+      await TransactionService().delete(t.id, orgId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('tx_deleted'))),
+      );
+      await _load();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              tr('tx_err_generic').replaceFirst('{a}', tr('tx_act_del'))),
+        ),
+      );
+    }
+  }
+
   void _onMonthChanged(String m) {
     setState(() {
       month = m;
@@ -358,6 +380,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         onMonthChanged: _onMonthChanged,
         items: items,
         onTap: _openEdit,
+        onDelete: _deleteTx,
         onEmptyAction: _openAdd,
         onlyNoWallet: onlyNoWallet,
         onToggleNoWallet: () =>
@@ -384,6 +407,7 @@ class _TxHistorySection {
   final String month;
   final List<SaasTransaction> items;
   final ValueChanged<SaasTransaction> onTap;
+  final ValueChanged<SaasTransaction> onDelete;
   final VoidCallback onEmptyAction;
   final bool onlyNoWallet;
   final VoidCallback onToggleNoWallet;
@@ -394,6 +418,7 @@ class _TxHistorySection {
     required this.month,
     required this.items,
     required this.onTap,
+    required this.onDelete,
     required this.onEmptyAction,
     required this.onlyNoWallet,
     required this.onToggleNoWallet,
@@ -457,7 +482,12 @@ class _TxHistorySection {
         padding: const EdgeInsets.symmetric(horizontal: SsrSpace.lg),
         sliver: txDaySliverList(
           items: shown,
-          buildRow: (t) => TxRow(tx: t, onTap: () => onTap(t)),
+          buildRow: (t) => TxRow(
+            tx: t,
+            onTap: () => onTap(t),
+            onEdit: () => onTap(t),
+            onDelete: () => onDelete(t),
+          ),
           dividersBetween: false,
         ),
       ),
@@ -560,6 +590,7 @@ class _TxListBody extends StatelessWidget {
   final ValueChanged<String> onMonthChanged;
   final List<SaasTransaction> items;
   final ValueChanged<SaasTransaction> onTap;
+  final ValueChanged<SaasTransaction> onDelete;
   final VoidCallback onEmptyAction;
   final bool onlyNoWallet;
   final VoidCallback onToggleNoWallet;
@@ -580,6 +611,7 @@ class _TxListBody extends StatelessWidget {
     required this.onMonthChanged,
     required this.items,
     required this.onTap,
+    required this.onDelete,
     required this.onEmptyAction,
     required this.onlyNoWallet,
     required this.onToggleNoWallet,
@@ -647,6 +679,7 @@ class _TxListBody extends StatelessWidget {
           month: month,
           items: items,
           onTap: onTap,
+          onDelete: onDelete,
           onEmptyAction: onEmptyAction,
           onlyNoWallet: onlyNoWallet,
           onToggleNoWallet: onToggleNoWallet,

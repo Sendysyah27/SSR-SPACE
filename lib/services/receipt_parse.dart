@@ -38,6 +38,9 @@ class ReceiptData {
   final bool dateFromReceipt;
   /// True bila jumlah item (+pajak -diskon) tak cocok dengan total.
   final bool inconsistent;
+  /// Teks detail struk (format struk) dari vision scan, untuk disimpan
+  /// sebagai catatan transaksi. Null bila tidak ada.
+  final String? detailText;
   const ReceiptData({
     this.amount,
     this.date,
@@ -55,6 +58,7 @@ class ReceiptData {
     this.tax,
     this.dateFromReceipt = true,
     this.inconsistent = false,
+    this.detailText,
   });
 }
 

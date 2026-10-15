@@ -13,6 +13,7 @@ import 'package:ssr_space/theme/category_emoji.dart';
 import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/widgets/premium/glass_sheet.dart';
+import 'package:ssr_space/services/receipt_scan_parse.dart';
 
 class TxRow extends StatelessWidget {
   final SaasTransaction tx;
@@ -121,9 +122,22 @@ class TxRow extends StatelessWidget {
     return Dismissible(
       key: Key(tx.id),
       direction: DismissDirection.horizontal,
-      onDismissed: (_) => _showDeleteConfirm(context),
-      background: _buildSwipeLeft(context, scheme),
-      secondaryBackground: _buildSwipeRight(context, scheme),
+      // Geser kiri-ke-kanan = edit; geser kanan-ke-kiri = hapus.
+      // confirmDismiss=false selalu: aksi dijalankan manual, tidak ada
+      // animasi hapus yang merusak state list.
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          if (onEdit == null) return false;
+          onEdit!();
+          return false;
+        }
+        if (onDelete == null) return false;
+        final ok = await _confirmDelete(context);
+        if (ok == true) onDelete!();
+        return false;
+      },
+      background: _buildEditBg(context, scheme),
+      secondaryBackground: _buildDeleteBg(context, scheme),
       child: GlassCard(
         margin: const EdgeInsets.symmetric(
             vertical: GlassSpace.xs, horizontal: GlassSpace.xs),
@@ -164,33 +178,40 @@ class TxRow extends StatelessWidget {
     );
   }
 
-  Widget _buildSwipeLeft(BuildContext context, ColorScheme scheme) {
-    return Container(
-      color: scheme.error,
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: const Text('Hapus', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
-    );
-  }
-
-  Widget _buildSwipeRight(BuildContext context, ColorScheme scheme) {
+  /// Latar saat geser kiri-ke-kanan: edit.
+  Widget _buildEditBg(BuildContext context, ColorScheme scheme) {
     return Container(
       color: scheme.primary,
-      alignment: Alignment.centerRight,
+      alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: const Text('Edit', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
     );
   }
 
-  void _showDeleteConfirm(BuildContext context) {
-    showDialog(
+  /// Latar saat geser kanan-ke-kiri: hapus.
+  Widget _buildDeleteBg(BuildContext context, ColorScheme scheme) {
+    return Container(
+      color: scheme.error,
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Text(tr('tx_delete'), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
+    );
+  }
+
+  /// Dialog konfirmasi hapus. True = user setuju.
+  Future<bool?> _confirmDelete(BuildContext context) {
+    return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(tr('tx_del_title')),
         content: Text(tr('tx_del_body')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('cancel'))),
-          TextButton(onPressed: () => onDelete?.call(), child: Text(tr('tx_delete'))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(tr('cancel'))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(tr('tx_delete'))),
         ],
       ),
     );
@@ -198,11 +219,18 @@ class TxRow extends StatelessWidget {
 }
 
 /// Tampilkan dialog baca catatan transaksi (teks penuh).
+/// Catatan detail struk ([STRUK]) dirender monospace gaya struk.
 void showNoteDialog(BuildContext context, String note) {
+  final receipt = isReceiptDetailNote(note);
   showGlassDialog(
     context: context,
     title: Text(tr('tx_f_note')),
-    content: SingleChildScrollView(child: Text(note)),
+    content: SingleChildScrollView(
+      child: Text(
+        note,
+        style: receipt ? const TextStyle(fontFamily: 'monospace') : null,
+      ),
+    ),
     actions: [
       TextButton(
           onPressed: () => Navigator.pop(context), child: Text(tr('close'))),
