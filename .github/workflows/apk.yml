@@ -142,6 +142,52 @@ jobs:
           if ! grep -rq "doNotStrip" android/app/build.gradle*; then
             python3 -c "import pathlib,glob,re;f=glob.glob('android/app/build.gradle*');p=pathlib.Path(f[0]);t=p.read_text();kts=f[0].endswith('.kts');m=re.search(r'(?m)^(\s*)buildTypes\s*\{',t);assert m;ind=m.group(1);nl=chr(10);q=chr(34);lib='*/arm64-v8a/libopencode.so';add=(ind+'packagingOptions{'+nl+ind+'    doNotStrip.add('+q+lib+q+')'+nl+ind+'}'+nl) if kts else (ind+'packagingOptions {'+nl+ind+'    doNotStrip '+q+lib+q+nl+ind+'}'+nl);t=t[:m.start()]+add+t[m.start():];p.write_text(t);print('doNotStrip ok');"
           fi
+      - name: Integrasi AI native (Kotlin)
+        run: |
+          python3 << 'PYEOF'
+          import pathlib, shutil, glob, re
+          mains = glob.glob('android/app/src/main/kotlin/**/MainActivity.*', recursive=True)
+          mains += glob.glob('android/app/src/main/java/**/MainActivity.*', recursive=True)
+          assert len(mains) == 1, f'MainActivity tak ketemu: {mains}'
+          pkgdir = pathlib.Path(mains[0]).parent
+          ai_dest = pkgdir / 'ai'
+          ai_dest.mkdir(exist_ok=True)
+          ai_src = pathlib.Path('android-native/ai')
+          for kt in ai_src.glob('*.kt'):
+              if 'Test' in kt.name:
+                  continue
+              shutil.copy2(kt, ai_dest / kt.name)
+              print(f'copied {kt.name}')
+          xml_dest = pathlib.Path('android/app/src/main/res/xml')
+          xml_dest.mkdir(parents=True, exist_ok=True)
+          for xml in ['backup_rules.xml', 'data_extraction_rules.xml']:
+              src = ai_src / xml
+              if src.exists():
+                  shutil.copy2(src, xml_dest / xml)
+                  print(f'copied {xml}')
+          gradle_files = glob.glob('android/app/build.gradle*')
+          assert gradle_files, 'build.gradle tak ketemu'
+          gf = pathlib.Path(gradle_files[0])
+          gt = gf.read_text()
+          for dep in ['implementation "androidx.security:security-crypto:1.1.0-alpha06"', 'implementation "androidx.appcompat:appcompat:1.6.1"']:
+              artifact = dep.split(':')[1]
+              if artifact not in gt:
+                  m2 = re.search(r'dependencies\s*\{', gt)
+                  if m2:
+                      gt = gt[:m2.end()] + f'\n    {dep}' + gt[m2.end():]
+                      print(f'added dep: {artifact}')
+          gf.write_text(gt)
+          mf = pathlib.Path('android/app/src/main/AndroidManifest.xml')
+          mt = mf.read_text()
+          if 'android:fullBackupContent' not in mt:
+              mt = mt.replace('<application', '<application android:fullBackupContent="@xml/backup_rules" android:dataExtractionRules="@xml/data_extraction_rules"', 1)
+              print('manifest: backup rules added')
+          if 'AiSettingsActivity' not in mt:
+              mt = mt.replace('</application>', '        <activity android:name=".ai.AiSettingsActivity" android:exported="false" />\n    </application>')
+              print('manifest: AiSettingsActivity added')
+          mf.write_text(mt)
+          print('AI native integration OK')
+          PYEOF
       - run: |
       - run: |
           python3 - <<'EOF'
