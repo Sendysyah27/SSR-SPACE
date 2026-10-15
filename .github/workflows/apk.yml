@@ -139,9 +139,8 @@ jobs:
           echo "622c01ffee1f9b38cb334282cd4795ad997d470357a263da9405727458bb72ce  android/app/src/main/jniLibs/arm64-v8a/libopencode.so" | sha256sum -c -
           ls -lh android/app/src/main/jniLibs/arm64-v8a/libopencode.so
       - run: |
-          BG=android/app/build.gradle
-          if ! grep -q "doNotStrip" "$BG"; then
-            python3 -c "import pathlib; p=pathlib.Path('android/app/build.gradle'); t=p.read_text(); old='    buildTypes {'; add='    packagingOptions {\n        doNotStrip "*/arm64-v8a/libopencode.so"\n    }\n'; assert old in t; t=t.replace(old,add+old,1); p.write_text(t); print('doNotStrip ok')"
+          if ! grep -rq "doNotStrip" android/app/build.gradle*; then
+            python3 -c "import pathlib,glob; f=glob.glob('android/app/build.gradle*'); assert len(f)==1,f; p=pathlib.Path(f[0]); t=p.read_text(); print('file:',f[0]); kts=f[0].endswith('.kts'); old='    buildTypes {' if not kts else '    buildTypes{'; add=('    packagingOptions {\n        doNotStrip "*/arm64-v8a/libopencode.so"\n    }\n' if not kts else '    packagingOptions{\n        doNotStrip+="*/arm64-v8a/libopencode.so"\n    }\n'); assert old in t,old; t=t.replace(old,add+old,1); p.write_text(t); print('doNotStrip ok')"
           fi
       - run: |
           python3 - <<'EOF'
