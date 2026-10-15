@@ -159,14 +159,30 @@ jobs:
           assert gradle_files, 'build.gradle tak ketemu'
           gf = pathlib.Path(gradle_files[0])
           gt = gf.read_text()
-          for dep in ['implementation "androidx.security:security-crypto:1.1.0-alpha06"', 'implementation "androidx.appcompat:appcompat:1.6.1"']:
-              artifact = dep.split(':')[1]
-              if artifact not in gt:
-                  m2 = re.search(r'dependencies\s*\{', gt)
-                  if m2:
-                      gt = gt[:m2.end()] + f'\n    {dep}' + gt[m2.end():]
-                      print(f'added dep: {artifact}')
+          # security-crypto (EncryptedSharedPreferences/MasterKey di
+          # AiKeyStore.kt). Pernah SKIP DIAM (tak ada print added-dep di
+          # log -> compile gagal unresolved security): guard substring
+          # 'artifact not in gt' + regex tanpa else = gagal sunyi.
+          # Kini: tiap cabang print + blok dependencies dibuat bila tak
+          # ada + assert keras di akhir (gagal di sini, bukan di Kotlin).
+          # Sintaks implementation("...") valid Groovy maupun KTS.
+          # appcompat SENGAJA tak disuntik: nol source mengimpornya
+          # (AiSettingsActivity pakai base Activity) — hemat ukuran APK.
+          need = {'security-crypto':
+                  'implementation("androidx.security:security-crypto:1.1.0-alpha06")'}
+          for artifact, line in need.items():
+              if artifact in gt:
+                  print(f'dep sudah ada: {artifact}')
+                  continue
+              m2 = re.search(r'dependencies\s*\{', gt)
+              if m2:
+                  gt = gt[:m2.end()] + f'\n    {line}' + gt[m2.end():]
+              else:
+                  gt = gt.rstrip() + f'\n\ndependencies {{\n    {line}\n}}\n'
+              print(f'added dep: {artifact}')
           gf.write_text(gt)
+          t = gf.read_text()
+          assert 'security-crypto' in t, 'dep security-crypto gagal disuntik'
           mf = pathlib.Path('android/app/src/main/AndroidManifest.xml')
           mt = mf.read_text()
           if 'android:fullBackupContent' not in mt:

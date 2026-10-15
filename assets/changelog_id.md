@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.67.0+194.
+Versi terpasang: 2.67.0+195.
+
+## Yang baru di 2.67.0+195
+
+1. Perbaikan build: dependency security-crypto kini disuntik dengan assert keras (gagal inject = gagal cepat di step CI, bukan error Kotlin samar). Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.67.0+194
 
