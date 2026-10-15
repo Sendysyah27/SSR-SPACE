@@ -133,6 +133,12 @@ jobs:
           fi
           grep -q "android.permission.INTERNET" "$M"
       - run: |
+          mkdir -p android/app/src/main/jniLibs/arm64-v8a
+          curl -sL -o android/app/src/main/jniLibs/arm64-v8a/libopencode.so \
+            https://github.com/Sendysyah27/SSR-SPACE/releases/download/opencode-bin-v1.18.9/opencode
+          echo "622c01ffee1f9b38cb334282cd4795ad997d470357a263da9405727458bb72ce  android/app/src/main/jniLibs/arm64-v8a/libopencode.so" | sha256sum -c -
+          ls -lh android/app/src/main/jniLibs/arm64-v8a/libopencode.so
+      - run: |
           python3 - <<'EOF'
           import pathlib
           m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
@@ -626,6 +632,29 @@ jobs:
           ''' % dotted)
           assert app_cls.exists()
           print('SsrApp.java ok')
+          # --- 2.63.0: Overwrite MainActivity.kt + MethodChannel getNativeLibDir ---
+          main_kt = pkgdir / 'MainActivity.kt'
+          main_kt.write_text('''package %s;
+
+          import io.flutter.embedding.android.FlutterActivity
+          import io.flutter.embedding.engine.FlutterEngine
+          import io.flutter.plugin.common.MethodChannel
+
+          class MainActivity : FlutterActivity() {
+              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+                  super.configureFlutterEngine(flutterEngine)
+                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "ssr_space/native").setMethodCallHandler { call, result ->
+                      if (call.method == "getNativeLibDir") {
+                          result.success(applicationInfo.nativeLibraryDir)
+                      } else {
+                          result.notImplemented()
+                      }
+                  }
+              }
+          }
+          ''' % dotted)
+          print('MainActivity.kt overwritten ok')
+
 
           assert (pkgdir / 'SsrQsTile.java').exists()
           assert lay.exists() and info.exists()
