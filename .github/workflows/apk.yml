@@ -362,7 +362,7 @@ jobs:
               if '<application' in s:
                   s = s.replace(
                       '<application',
-                      '<application android:requestLegacyExternalStorage="true"',
+                      '<application android:name=".SsrApp" android:requestLegacyExternalStorage="true"',
                       1,
                   )
           m.write_text(s)
@@ -581,8 +581,52 @@ jobs:
           m.write_text(s)
           t = m.read_text()
           assert 'TodayWidgetProvider' in t, 'receiver widget hilang'
+          assert 'android:name=".SsrApp"' in t, 'SsrApp belum di manifest'
           assert 'SsrQsTile' in t, 'qs tile hilang'
           assert (pkgdir / 'TodayWidgetProvider.java').exists()
+          # --- 2.61.5+175: SsrApp Application penangkap crash Java ---
+          app_cls = pkgdir / 'SsrApp.java'
+          app_cls.write_text('''package %s;
+
+          import android.app.Application;
+          import java.io.FileWriter;
+          import java.io.PrintWriter;
+          import java.io.StringWriter;
+          import java.text.SimpleDateFormat;
+          import java.util.Date;
+          import java.util.Locale;
+
+          public class SsrApp extends Application {
+              @Override
+              public void onCreate() {
+                  super.onCreate();
+                  final Thread.UncaughtExceptionHandler def =
+                      Thread.getDefaultUncaughtExceptionHandler();
+                  Thread.setDefaultUncaughtExceptionHandler((thread, ex) -> {
+                      try {
+                          FileWriter w = new FileWriter("/sdcard/ssr_crash.log", true);
+                          String ts = new SimpleDateFormat(
+                              "yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.US).format(new Date());
+                          w.write("[" + ts + "] CRASH thread=" + thread.getName()
+                              + " ex=" + ex.toString() + "\n");
+                          StringWriter sw = new StringWriter();
+                          ex.printStackTrace(new PrintWriter(sw));
+                          w.write(sw.toString() + "\n");
+                          w.close();
+                      } catch (Throwable ignored) {}
+                      if (def != null) {
+                          def.uncaughtException(thread, ex);
+                      } else {
+                          android.os.Process.killProcess(android.os.Process.myPid());
+                          System.exit(10);
+                      }
+                  });
+              }
+          }
+          ''' % dotted)
+          assert app_cls.exists()
+          print('SsrApp.java ok')
+
           assert (pkgdir / 'SsrQsTile.java').exists()
           assert lay.exists() and info.exists()
           print('widget+qs-tile inject ok:', dotted)
