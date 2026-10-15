@@ -75,10 +75,6 @@ Future<({ReceiptData data, String provider})?> scanReceiptVision(
           provider = 'Zen: ${r.provider}';
         }
       }
-      if (r.text.trim().isNotEmpty) {
-        text = r.text;
-        provider = 'Zen: ${r.provider}';
-      }
     } on AiFailure catch (e) {
       last = e;
       if (e.code == 'quota') unawaited(noteQuotaHit());
