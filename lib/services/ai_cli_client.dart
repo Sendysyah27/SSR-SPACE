@@ -61,6 +61,10 @@ Future<({String text, String provider})> aiChatViaCli(
   String? mimeType,
   List<({bool mine, String text})>? history,
   String? dataContext,
+  // System prompt kustom untuk native (mis. scan struk). null = default.
+  String? system,
+  // Paksa provider lokal tanpa melihat prefs (untuk scan struk).
+  bool forceLocal = false,
 }) async {
   if (prompt.trim().isEmpty) {
     throw const AiFailure('empty', 'prompt kosong');
@@ -80,8 +84,11 @@ Future<({String text, String provider})> aiChatViaCli(
   final masked = _maskLongNumbers(full);
 
   // Provider lokal: baseUrl + password per-call (password tak pernah di-log).
-  final useLocal = await aiProviderId() == 'local';
+  final useLocal = forceLocal || await aiProviderId() == 'local';
   final args = <String, dynamic>{'prompt': masked};
+  if (system != null && system.trim().isNotEmpty) {
+    args['system'] = system;
+  }
   if (useLocal) {
     final pass = await readLocalPass();
     if (pass == null || pass.isEmpty) {

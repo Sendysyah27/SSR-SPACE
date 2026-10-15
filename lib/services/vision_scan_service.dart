@@ -3,13 +3,13 @@ import 'dart:io';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
-import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/ai_cli_client.dart';
+import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
-import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
-import 'ai_draft.dart';
+import 'package:ssr_space/services/receipt_scan_parse.dart';
+import 'package:ssr_space/services/firebase_ai_parser.dart';
 
 export 'package:image_picker/image_picker.dart' show ImageSource;
 
@@ -20,21 +20,26 @@ class VisionScanException implements Exception {
   const VisionScanException(this.trKey, [this.detail]);
 }
 
-/// Foto struk (kamera/galeri) -> Zen VISION langsung, TANPA OCR.
-/// Anonim bila tanpa kunci. Gagal vision -> OCR lokal -> Zen teks.
+/// Foto struk (kamera/galeri) -> OpenCode LOKAL vision langsung, TANPA OCR.
+/// TIDAK ADA fallback ke Zen langsung (free tier 403).
+/// Gagal vision -> OCR lokal -> OpenCode lokal (teks).
 /// File foto dihapus. Null = user batal.
-/// Return [ReceiptData] + nama provider pemenang.
-Future<({ReceiptData data, String provider})?> scanReceiptVision(
+/// Return [ReceiptData] + nama provider + kategori AI (untuk prefill form).
+/// Hasil HANYA mengisi form; tidak ada simpan otomatis.
+Future<({ReceiptData data, String provider, String? category})?> scanReceiptVision(
   ImageSource source,
 ) async {
   if (!Platform.isAndroid && !Platform.isIOS) {
     throw const VisionScanException('rcp_fail');
   }
   final picker = ImagePicker();
+  // Kecilkan dulu: sisi terpanjang ~1280px, JPEG kualitas 80
+  // (cepat + hemat token, tanpa dependency baru).
   final shot = await picker.pickImage(
     source: source,
-    maxWidth: 1600,
-    imageQuality: 85,
+    maxWidth: 1280,
+    maxHeight: 1280,
+    imageQuality: 80,
   );
   if (shot == null) return null;
   final path = shot.path;
@@ -44,83 +49,75 @@ Future<({ReceiptData data, String provider})?> scanReceiptVision(
     final mime = path.toLowerCase().endsWith('.png')
         ? 'image/png'
         : 'image/jpeg';
-    String? text;
-    String provider = '';
-    AiFailure? last;
-    // 1) Zen vision langsung (prompt vision + gambar).
-    // Coba OpenCode lokal dulu kalau ada password (agresif, tanpa cek provider)
-    // Kalau gagal, baru coba Zen
-    final localPass = await readLocalPass();
-    final useLocal = localPass != null && localPass.isNotEmpty;
+
+    // WAJIB OpenCode lokal — tidak ada jalur Zen langsung di scan struk.
+    final pass = await readLocalPass();
+    if (pass == null || pass.isEmpty) {
+      throw const VisionScanException('rcp_fail',
+          'Butuh OpenCode lokal: jalankan opencode serve di Termux dan isi password di Mang AI.');
+    }
+    final categories = appCategories.value;
+    final system = scanReceiptSystemPrompt(categories);
+
+    ReceiptScanResult? scanned;
+    String? lastDetail;
+
+    // 1) Vision langsung via OpenCode lokal (part file, skema /doc).
     try {
-      if (useLocal) {
-        // Pakai OpenCode lokal via MethodChannel (vision support)
-        final r = await aiChatViaCli(
-          aiVisionPrompt(),
-          imageBytes: bytes,
-          mimeType: mime,
-        ).timeout(const Duration(seconds: 30));
-        if (r.text.trim().isNotEmpty) {
-          text = r.text;
-          provider = 'OpenCode lokal';
-        }
-      } else {
-        final zkey = await readZenKey();
-        final r = await zenChatRaw(
-          apiKey: zkey,
-          prompt: aiVisionPrompt(),
-          imageBytes: bytes,
-          mimeType: mime,
-        ).timeout(const Duration(seconds: 90));
-        if (r.text.trim().isNotEmpty) {
-          text = r.text;
-          provider = 'Zen: ${r.provider}';
-        }
+      final r = await aiChatViaCli(
+        'Uraikan struk pada gambar terlampir.',
+        imageBytes: bytes,
+        mimeType: mime,
+        system: system,
+        forceLocal: true,
+      );
+      scanned = parseReceiptScanJson(_stripFence(r.text), categories);
+      if (scanned == null) {
+        lastDetail = 'AI tidak mengembalikan JSON struk yang valid.';
       }
     } on AiFailure catch (e) {
-      last = e;
-      if (e.code == 'quota') unawaited(noteQuotaHit());
+      lastDetail = (e.detail ?? e.code).trim();
     } catch (e) {
-      last = AiFailure('network', '[Zen] $e');
+      lastDetail = _snip(e.toString());
     }
-    // 2) Jatuh ke OCR lokal -> Zen teks (untuk model buta gambar).
-    if (text == null || text.trim().isEmpty) {
+
+    // 2) OCR lokal -> OpenCode lokal (teks), untuk model yang buta gambar.
+    if (scanned == null) {
       try {
         final ocr = await ocrBytesToText(bytes);
         if (ocr.trim().isNotEmpty) {
-          final zkey = await readZenKey();
-          final draft = await parseReceiptZen(
-            apiKey: zkey,
-            ocrText: ocr,
+          final r = await aiChatViaCli(
+            scanReceiptOcrPrompt(ocr, categories),
+            system: system,
+            forceLocal: true,
           );
-          if (draft != null) {
-            return (data: draft.toReceiptData(), provider: 'Zen (OCR)');
+          scanned = parseReceiptScanJson(_stripFence(r.text), categories);
+          if (scanned == null) {
+            lastDetail = 'AI tidak mengembalikan JSON struk yang valid.';
           }
         }
       } on AiFailure catch (e) {
-        last = e;
-        if (e.code == 'quota') unawaited(noteQuotaHit());
+        lastDetail = (e.detail ?? e.code).trim();
       } catch (e) {
-        last = AiFailure('network', '[OCR] $e');
+        lastDetail = _snip(e.toString());
       }
     }
-    if (text == null || text.trim().isEmpty) {
-      final e = last;
-      if (e != null && e.code == 'quota') {
-        throw AiFailure('quota', e.detail);
-      }
-      if (e != null) {
-        throw VisionScanException(
-            'rcp_fail', '(${e.code}) ${e.detail ?? ''}'.trim());
-      }
-      throw const VisionScanException(
-          'rcp_fail', '(butuh kunci Gemini / login Firebase)');
+
+    if (scanned == null) {
+      throw VisionScanException(
+          'rcp_fail', (lastDetail ?? 'Struk tak terbaca.').trim());
     }
-    final draft = parseAiDraft(_stripFence(text));
-    if (draft == null) {
-      throw const VisionScanException('rcp_partial');
-    }
-    return (data: draft.toReceiptData(), provider: provider);
+    final s = scanned;
+    return (
+      data: ReceiptData(
+        amount: s.total.toDouble(),
+        date: DateTime.tryParse(s.date),
+        merchant: s.merchant,
+        confident: true,
+      ),
+      provider: 'OpenCode lokal',
+      category: s.category,
+    );
   } catch (e, st) {
     if (e is VisionScanException || e is AiFailure) rethrow;
     unawaited(ErrorReporter.capture(e, st, context: 'vision_scan'));
@@ -141,3 +138,6 @@ String _stripFence(String s) {
   t = t.replaceAll(RegExp(r'\s*```$'), '');
   return t;
 }
+
+String _snip(String s, [int max = 220]) =>
+    s.length <= max ? s : s.substring(0, max);

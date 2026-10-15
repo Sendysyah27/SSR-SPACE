@@ -572,7 +572,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
       if (!mounted) return;
       setState(() => _scanning = false);
       if (out == null) return;
-      _applyReceiptPrefill(out.data);
+      _applyReceiptPrefill(out.data, aiCategory: out.category);
       setState(() {
         _scanOrigin = '${out.provider} · ${_scanOrigin ?? ''}';
       });
@@ -623,7 +623,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
   }
 
   /// Prefill form dari hasil struk (rule maupun draft AI yang diedit).
-  void _applyReceiptPrefill(ReceiptData r) {
+  /// [aiCategory]: kategori dari AI scan struk (sudah divalidasi ketat);
+  /// bila ada, dipakai langsung tanpa saran heuristik.
+  void _applyReceiptPrefill(ReceiptData r, {String? aiCategory}) {
     setState(() {
       if (r.amount != null && r.amount! > 0) {
         type = 'out';
@@ -641,15 +643,26 @@ class _TxInputSheetState extends State<TxInputSheet> {
             : (cats.isEmpty ? 'Belanja' : cats.first);
       }
       catC.text = _selCat!.trim();
-      final sug = suggestReceiptCategory(
-        merchant: r.merchant,
-        items: r.items,
-        raw: lastRawOcrText,
-        categories: appCategories.value,
-      );
-      if (sug != null) {
-        _selCat = sug;
-        catC.text = sug;
+      final aiCat = aiCategory?.trim();
+      final cats2 = appCategories.value;
+      if (aiCat != null &&
+          aiCat.isNotEmpty &&
+          cats2.any((c) => c.trim().toLowerCase() == aiCat.toLowerCase())) {
+        _selCat = cats2
+            .firstWhere((c) => c.trim().toLowerCase() == aiCat.toLowerCase())
+            .trim();
+        catC.text = _selCat!.trim();
+      } else {
+        final sug = suggestReceiptCategory(
+          merchant: r.merchant,
+          items: r.items,
+          raw: lastRawOcrText,
+          categories: appCategories.value,
+        );
+        if (sug != null) {
+          _selCat = sug;
+          catC.text = sug;
+        }
       }
       _scanOrigin = _scanOriginText(r);
       if (!r.confident) formErr = tr('rcp_partial');
@@ -657,65 +670,13 @@ class _TxInputSheetState extends State<TxInputSheet> {
     });
   }
 
-  /// AI native OpenCode Zen (satu-satunya provider).
-  /// Teks OCR -> draft, gagal jujur (null = manual).
-  Future<AiDraft?> _tryAiDraft(String raw) async {
-    if (!await aiEnabled()) return null;
-    setState(() {
-      _scanning = true;
-      _scanErr = tr('ai_working');
-      _aiErrDetail = null;
-    });
-    final zkey = await readZenKey();
-    if (mounted) {
-      try {
-        final draft = await parseReceiptZen(
-          apiKey: zkey,
-          ocrText: raw,
-        );
-        if (!mounted) return null;
-        if (draft != null) {
-          setState(() {
-            _scanning = false;
-            _scanErr = null;
-          });
-          return draft;
-        }
-      } on AiFailure catch (e) {
-        if (e.code == 'quota') await noteQuotaHit();
-        if (!mounted) return null;
-        // Log lengkap (kode + pesan asli) — user hanya lihat yang ramah.
-        debugPrint('ai scan gagal: $e');
-        setState(() {
-          _scanning = false;
-          if (e.code == 'quota') {
-            _scanErr = quotaWaitLine(e.detail);
-            _aiErrDetail = 'AI (quota) ${e.detail ?? ''}';
-          } else {
-            _scanErr = tr(aiMessageKey(e.code));
-            _aiErrDetail = 'AI (${e.code}) ${e.detail ?? ''}';
-          }
-        });
-        return null;
-      } catch (e) {
-        if (!mounted) return null;
-        debugPrint('ai scan gagal: $e');
-        setState(() {
-          _scanning = false;
-          _scanErr = tr('ai_fail');
-          _aiErrDetail = 'AI $e';
-        });
-        return null;
-      }
-    }
-    if (!mounted) return null;
-    setState(() {
-      _scanning = false;
-      _scanErr = tr('ai_fail');
-      _aiErrDetail = null;
-    });
-    return null;
-  }
+  /// AI fallback untuk scan struk berbasis aturan.
+  ///
+  /// DINONAKTIFKAN 2026-10-15: jalur ini memanggil Zen API langsung yang
+  /// free tier-nya 403 ("can only be used from within OpenCode").
+  /// Pengganti: scan vision via OpenCode lokal (_pickVisionSource).
+  /// null = isi manual (jujur, tanpa fallback diam-diam).
+  Future<AiDraft?> _tryAiDraft(String raw) async => null;
 
   /// Ringkasan asal prefill struk: nominal + tanggal + kategori.
   String _scanOriginText(ReceiptData r) {

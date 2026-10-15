@@ -52,9 +52,33 @@ class LocalOpenCodeProvider(
         private const val TAG = "LocalOpenCode"
         private const val USER_AGENT = "SSR-SPACE LocalOpenCode/1.0"
 
-        /** System prompt parser transaksi (sama untuk semua request). */
-        const val DEFAULT_SYSTEM =
-            "Kamu parser transaksi. Balas JSON saja. Jangan pakai tool."
+        /**
+         * System prompt chat Mang AI (sama untuk semua request).
+         *
+         * Kontrak output WAJIB — balas HANYA satu objek JSON, tanpa
+         * markdown fence, tanpa teks di luar JSON:
+         * - Tanpa aksi: {"reply":"<teks untuk user>","action":null}
+         * - Dengan aksi: {"reply":"...","action":{"type":"in|out|transfer",
+         *   "amount":<integer>,"category":"...","wallet":"...","note":"..."}}
+         * Aturan field:
+         * - "reply": teks Bahasa Indonesia yang tampil ke user, ringkas.
+         * - "action": null bila tidak ada transaksi yang perlu dicatat.
+         * - "type": hanya "in" (masuk), "out" (keluar), atau "transfer".
+         * - "amount": HARUS bilangan bulat > 0 dalam rupiah, tanpa
+         *   titik/koma/pemisah (contoh: 16000). Jangan desimal, jangan string.
+         * - "category": HARUS salah satu dari: Makanan, Transportasi,
+         *   Belanja, Tagihan, Kesehatan, Pendidikan, Hiburan,
+         *   Pulsa & Internet, Tabungan, Lainnya.
+         * - "wallet": nama dompet persis seperti di DATA USER; bila tidak
+         *   tahu, isi string kosong (aplikasi menolak aksi tanpa dompet).
+         * - Jangan pakai tool. Jangan mengeksekusi apa pun sendiri;
+         *   aplikasi yang menampilkan tombol konfirmasi ke user.
+         */
+        const val DEFAULT_SYSTEM = """
+            Kamu asisten keuangan. Balas HANYA satu objek JSON, tanpa markdown fence, tanpa teks di luar JSON.
+            Bentuk: {"reply":"<teks Bahasa Indonesia untuk user>","action":null} atau {"reply":"...","action":{"type":"in|out|transfer","amount":<bilangan bulat>,"category":"...","wallet":"...","note":"..."}}.
+            Aturan: "action" null bila tidak ada transaksi yang perlu dicatat. "type" hanya in, out, atau transfer. "amount" HARUS bilangan bulat lebih dari 0 dalam rupiah tanpa titik/koma (contoh 16000); jangan desimal, jangan string. "category" HARUS salah satu dari: Makanan, Transportasi, Belanja, Tagihan, Kesehatan, Pendidikan, Hiburan, Pulsa & Internet, Tabungan, Lainnya. "wallet" adalah nama dompet persis seperti di DATA USER; bila tidak tahu isi "". Jangan pakai tool. Jangan mengeksekusi apa pun sendiri; aplikasi yang menampilkan tombol konfirmasi ke user.
+            """.trimIndent()
     }
 
     private val base = baseUrl.trim().trimEnd('/')
@@ -83,12 +107,24 @@ class LocalOpenCodeProvider(
         prompt: String,
         imageBytes: ByteArray,
         mimeType: String
+    ): Result<String> = completeWithImage(prompt, imageBytes, mimeType, systemPrompt)
+
+    /**
+     * Varian dengan system prompt kustom (mis. untuk scan struk).
+     * Tools tetap dimatikan; format part gambar ikut skema FilePartInput
+     * dari /doc opencode serve: {"type":"file","mime":...,"url":"data:..."}.
+     */
+    suspend fun completeWithImage(
+        prompt: String,
+        imageBytes: ByteArray,
+        mimeType: String,
+        system: String
     ): Result<String> = withContext(Dispatchers.IO) {
         val maskedPrompt = DataMasker.mask(prompt)
         var sessionId: String? = null
         try {
             sessionId = createSession()
-            val parsed = sendMessageWithImage(sessionId, maskedPrompt, imageBytes, mimeType)
+            val parsed = sendMessageWithImage(sessionId, maskedPrompt, imageBytes, mimeType, system)
             Log.d(TAG, "tokens_in=${parsed.inputTokens}")
             Result.success(parsed.text)
         } catch (e: AiFailure) {
@@ -100,27 +136,33 @@ class LocalOpenCodeProvider(
         }
     }
 
-    /** POST /session/{id}/message dengan gambar (vision). */
+    /**
+     * POST /session/{id}/message dengan gambar (vision).
+     * Part gambar ikut skema FilePartInput dari /doc opencode serve
+     * (terverifikasi 2026-10-15):
+     * {"type":"file","mime":"image/jpeg","url":"data:image/jpeg;base64,..."}.
+     */
     private fun sendMessageWithImage(
         sessionId: String,
         maskedPrompt: String,
         imageBytes: ByteArray,
         mimeType: String,
+        system: String,
     ): LocalOpenCodeParser.ParsedResult {
         val conn = open("POST", "$base/session/$sessionId/message")
         try {
             val base64Img = Base64.encodeToString(imageBytes, Base64.NO_WRAP)
             val body = JSONObject().apply {
-                put("system", systemPrompt)
+                put("system", system)
                 put("parts", JSONArray().apply {
                     put(JSONObject().apply {
                         put("type", "text")
                         put("text", maskedPrompt)
                     })
                     put(JSONObject().apply {
-                        put("type", "image")
-                        put("mimeType", mimeType)
-                        put("data", base64Img)
+                        put("type", "file")
+                        put("mime", mimeType)
+                        put("url", "data:$mimeType;base64,$base64Img")
                     })
                 })
             }

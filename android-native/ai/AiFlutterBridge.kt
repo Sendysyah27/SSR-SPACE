@@ -95,6 +95,8 @@ object AiFlutterBridge {
                     val prompt = call.argument<String>("prompt")
                     val imageBytes = call.argument<ByteArray>("imageBytes")
                     val mimeType = call.argument<String>("mimeType") ?: "image/jpeg"
+                    // System prompt kustom opsional (mis. scan struk); null = default chat.
+                    val system = call.argument<String>("system")
                     if (prompt.isNullOrBlank() || imageBytes == null || imageBytes.isEmpty()) {
                         result.error("INVALID", "prompt atau gambar kosong", null)
                         return@setMethodCallHandler
@@ -107,7 +109,7 @@ object AiFlutterBridge {
                             result.error("NO_LOCAL_PASS", "Belum ada password OpenCode lokal.", null)
                             return@setMethodCallHandler
                         }
-                        runProviderWithImage(LocalOpenCodeProvider(base, pass), prompt, imageBytes, mimeType, result)
+                        runProviderWithImage(LocalOpenCodeProvider(base, pass), prompt, imageBytes, mimeType, system, result)
                         return@setMethodCallHandler
                     }
                     result.error("UNSUPPORTED", "Vision hanya untuk OpenCode lokal.", null)
@@ -122,16 +124,21 @@ object AiFlutterBridge {
     }
 
     private fun runProviderWithImage(
-        provider: AiProvider,
+        provider: LocalOpenCodeProvider,
         prompt: String,
         imageBytes: ByteArray,
         mimeType: String,
+        system: String?,
         result: MethodChannel.Result,
     ) {
         scope.launch {
             try {
                 val aiResult = withContext(Dispatchers.IO) {
-                    provider.completeWithImage(prompt, imageBytes, mimeType)
+                    if (system.isNullOrBlank()) {
+                        provider.completeWithImage(prompt, imageBytes, mimeType)
+                    } else {
+                        provider.completeWithImage(prompt, imageBytes, mimeType, system)
+                    }
                 }
                 aiResult.fold(
                     onSuccess = { text -> result.success(text) },

@@ -8,7 +8,9 @@ import 'package:uuid/uuid.dart';
 import 'package:ssr_space/services/ai_context.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_memory.dart';
+import 'package:ssr_space/services/ai_chat_parse.dart';
 import 'package:ssr_space/services/ai_soul.dart';
+import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/budget_service.dart';
 import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
@@ -126,16 +128,43 @@ class _AiChatScreenState extends State<AiChatScreen> {
     });
   }
 
+  /// Pesan error sesuai penyebab nyata (jangan semua "sibuk").
+  /// Detail dari native tak memuat kunci/data user (mask di hulu).
   String _friendly(AiFailure e) {
     if (e.code == 'quota') return quotaWaitLine(e.detail);
     final d = e.detail ?? '';
     if (d.startsWith('[Gambar]')) return d;
-    // DEBUG: tampilkan detail error biar bisa diagnosa
-    final base = tr(aiMessageKey(e.code));
-    if (d.isNotEmpty && d.length < 200) {
-      return '$base\n[Debug: $d]';
+    final low = d.toLowerCase();
+    // Server OpenCode lokal mati / tak terjangkau.
+    if (low.contains('server lokal') ||
+        low.contains('opencode serve') ||
+        low.contains('connection refused') ||
+        low.contains('failed to connect') ||
+        low.contains('127.0.0.1') ||
+        low.contains('localhost')) {
+      return tr('ai_err_local_down');
     }
-    return base;
+    // Timeout (Dart) maupun timeout native.
+    if (e.code == 'timeout' || low.contains('timeout')) {
+      return tr('ai_err_timeout');
+    }
+    // Password OpenCode lokal belum diisi.
+    if (low.contains('belum ada password')) {
+      return tr('ai_err_local_pass');
+    }
+    if (e.code == 'denied') return tr('ai_key_invalid');
+    // Respons kosong / tak valid dari model.
+    if (low.contains('response kosong') ||
+        low.contains('tidak mengembalikan teks')) {
+      return tr('ai_err_bad_response');
+    }
+    // Limit provider.
+    if (low.contains('limit terlampaui')) {
+      return tr('ai_err_rate_limit');
+    }
+    if (e.code == 'empty') return tr('ai_fail');
+    // Selain itu: model benar-benar sibuk.
+    return tr('ai_busy');
   }
 
   Future<void> _pickImage() async {
@@ -194,13 +223,34 @@ class _AiChatScreenState extends State<AiChatScreen> {
         final n = await loadAiMemory();
         debugPrint('ai memori: ${n.length} fakta');
       }));
-      final tx = parseTxDraft(parseTxBlock(r.text));
+      // Kontrak JSON baru: ekstrak reply + action tervalidasi.
+      // Blok ```ingat``` (memori) dibuang dulu dari teks yang di-parse
+      // agar jsonDecode tidak gagal; fitur ingat tetap jalan dari
+      // r.text mentah pada addAiMemory di atas.
+      final parsed = parseChatReply(
+        stripIngatBlocks(r.text),
+        wallets: await _walletNames(),
+        categories: appCategories.value,
+      );
+      // Map aksi tervalidasi -> TxDraft untuk kartu konfirmasi.
+      // Uang tetap int dari parser; TxDraft pakai double (konversi aman).
+      TxDraft? tx;
+      final aMap = parsed.action;
+      if (aMap != null) {
+        tx = TxDraft(
+          type: aMap['type'] as String,
+          amount: (aMap['amount'] as int).toDouble(),
+          category: aMap['category'] as String?,
+          note: aMap['note'] as String?,
+          wallet: aMap['wallet'] as String?,
+        );
+      }
       final bill = parseBillDraft(parseNamedBlock(r.text, 'tagihan'));
       final budget = parseBudgetDraft(parseNamedBlock(r.text, 'budget'));
       setState(() {
         _items.add(_ChatMsg(
           mine: false,
-          text: r.text,
+          text: parsed.reply, // HANYA reply; JSON mentah tak pernah tampil
           provider: r.provider,
           action: tx,
           billAction: bill,
@@ -400,6 +450,52 @@ class _AiChatScreenState extends State<AiChatScreen> {
     passC.dispose();
   }
 
+  /// Nama-nama dompet workspace aktif, untuk validasi aksi AI.
+  /// Kosong = validasi longgar (string non-empty diterima).
+  Future<List<String>> _walletNames() async {
+    try {
+      final orgId = await activeOrgId();
+      if (orgId.isEmpty) return const [];
+      final ws = await WalletService().list(orgId);
+      return [for (final w in ws) w.name];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Ringkasan kartu konfirmasi dari DATA aksi tervalidasi (bukan teks model):
+  /// jenis, nominal, kategori.
+  String _actionTitle(TxDraft d) {
+    final typeLabel = d.type == 'in'
+        ? tr('tx_in')
+        : d.type == 'transfer'
+            ? tr('tx_transfer')
+            : tr('tx_out');
+    final cat = d.category == null ? '' : ' \u00b7 ${d.category}';
+    return '$typeLabel \u00b7 ${d.amount.toStringAsFixed(0)}$cat';
+  }
+
+  /// Dompet + catatan untuk kartu konfirmasi.
+  String? _actionNote(TxDraft d) {
+    final parts = <String>[];
+    if (d.wallet != null && d.wallet!.isNotEmpty) parts.add(d.wallet!);
+    if (d.note != null && d.note!.isNotEmpty) parts.add(d.note!);
+    return parts.isEmpty ? null : parts.join(' \u00b7 ');
+  }
+
+  /// Batalkan kartu aksi: hapus kartunya, pertahankan bubble teks.
+  void _cancelActionCard(_ChatMsg m) {
+    final idx = _items.indexOf(m);
+    if (idx < 0 || !mounted) return;
+    setState(() {
+      _items[idx] = _ChatMsg(
+        mine: false,
+        text: m.text,
+        provider: m.provider,
+      );
+    });
+  }
+
   Future<void> _runAction(TxDraft d) async {
     String? walletId;
     if (d.wallet != null) {
@@ -584,12 +680,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
                             _Bubble(msg: m),
                             if (m.action != null)
                               _ActionCard(
-                                title:
-                                    '${m.action!.type == 'in' ? '+' : '-'}'
-                                    '${m.action!.amount.toStringAsFixed(0)}'
-                                    '${m.action!.category == null ? '' : ' · ${m.action!.category}'}',
-                                note: m.action!.note,
+                                title: _actionTitle(m.action!),
+                                note: _actionNote(m.action!),
                                 onRun: () => _runAction(m.action!),
+                                onCancel: () => _cancelActionCard(m),
                               ),
                             if (m.billAction != null)
                               _ActionCard(
@@ -597,6 +691,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                     '${m.billAction!.label} · ${m.billAction!.amount.toStringAsFixed(0)}',
                                 note: tr('mode_bill_s'),
                                 onRun: () => _runBill(m.billAction!),
+                                onCancel: () => _cancelActionCard(m),
                               ),
                             if (m.budgetAction != null)
                               _ActionCard(
@@ -604,6 +699,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                     '${m.budgetAction!.category} · ${m.budgetAction!.limit.toStringAsFixed(0)}',
                                 note: tr('mode_budget_s'),
                                 onRun: () => _runBudget(m.budgetAction!),
+                                onCancel: () => _cancelActionCard(m),
                               ),
                             ],
                           ),
@@ -871,10 +967,12 @@ class _ActionCard extends StatelessWidget {
   final String title;
   final String? note;
   final VoidCallback onRun;
+  final VoidCallback? onCancel;
   const _ActionCard({
     required this.title,
     this.note,
     required this.onRun,
+    this.onCancel,
   });
 
   @override
@@ -913,12 +1011,24 @@ class _ActionCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: SsrSpace.sm),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: onRun,
-                child: Text(tr('ai_run')),
-              ),
+            Row(
+              children: [
+                if (onCancel != null) ...[
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onCancel,
+                      child: Text(tr('ai_cancel')),
+                    ),
+                  ),
+                  const SizedBox(width: SsrSpace.sm),
+                ],
+                Expanded(
+                  child: FilledButton(
+                    onPressed: onRun,
+                    child: Text(tr('ai_run')),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

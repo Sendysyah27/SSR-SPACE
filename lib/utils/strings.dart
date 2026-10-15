@@ -2404,6 +2404,31 @@ const _t = <String, Map<String, String>>{
     'id': 'Model AI lagi sibuk, coba lagi sebentar.',
     'en': 'The AI model is busy, retry in a moment.',
   },
+  'ai_err_local_down': {
+    'id':
+        'Server OpenCode lokal tidak jalan. Jalankan `opencode serve` di Termux, lalu coba lagi.',
+    'en':
+        'The local OpenCode server is not running. Start `opencode serve` in Termux, then retry.',
+  },
+  'ai_err_timeout': {
+    'id': 'AI terlalu lama merespons. Coba lagi dengan kalimat lebih pendek.',
+    'en': 'The AI took too long to respond. Retry with a shorter message.',
+  },
+  'ai_err_local_pass': {
+    'id':
+        'Belum ada password OpenCode lokal. Ketuk ikon kunci di Mang AI untuk mengisinya.',
+    'en':
+        'No local OpenCode password yet. Tap the key icon in Mang AI to fill it in.',
+  },
+  'ai_err_bad_response': {
+    'id': 'Respons AI tidak valid. Coba lagi.',
+    'en': 'Invalid AI response. Please retry.',
+  },
+  'ai_err_rate_limit': {
+    'id': 'Batas pemakaian AI tercapai. Tunggu sebentar, lalu coba lagi.',
+    'en': 'AI usage limit reached. Wait a moment, then retry.',
+  },
+  'ai_cancel': {'id': 'Batal', 'en': 'Cancel'},
   'ai_quota_info': {
     'id': 'Paket gratis AI terbatas (±20 permintaan); hemat dengan scan seperlunya.',
     'en': 'Free AI quota is limited (±20 requests); scan only as needed.',

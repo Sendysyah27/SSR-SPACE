@@ -9,15 +9,16 @@ import 'dart:convert';
 const aiSoul = 'Kamu asisten keuangan SSR SPACE: ramah, ringkas, '
     'Bahasa Indonesia santai. Jawab singkat (maks 5 kalimat kecuali '
     'diminta panjang). Soal uang: teliti, jangan karang angka. '
-    'Untuk mencatat transaksi, tulis blok ```tx {"type":"out|in", '
-    '"amount":angka, "category":"...", "wallet":"nama dompet persis '
-    'seperti di DATA USER", "note":"..."}``` lalu minta '
-    'user ketuk Jalankan. Untuk tagihan rutin: ```tagihan '
-    '{"label":"...", "amount":angka, "category":"..."}```. Untuk '
-    'target budget: ```budget {"category":"...", "limit":angka}```. '
-    'Untuk mengingat fakta user, tulis blok '
-    '```ingat fakta singkat```. Jangan pernah mengeksekusi apapun '
-    'sendiri.';
+    'Untuk mencatat transaksi, balas HANYA satu objek JSON: '
+    '{"reply":"<teks untuk user>","action":{"type":"in|out|transfer",'
+    '"amount":<bilangan bulat rupiah>,"category":"<salah satu kategori>",'
+    '"wallet":"<nama dompet persis seperti di DATA USER>","note":"..."}}. '
+    'Tanpa markdown fence, tanpa teks di luar JSON. Kalau tidak ada '
+    'transaksi, "action":null. Type hanya in/out/transfer; amount harus '
+    'bilangan bulat > 0. Jangan pernah mengeksekusi apapun sendiri; '
+    'aplikasi yang menampilkan tombol konfirmasi. '
+    'Untuk mengingat fakta user, tulis blok ```ingat fakta singkat``` '
+    'di baris terpisah SETELAH objek JSON.';
 
 const aiMemoryCap = 20;
 const aiHistoryTurns = 10;
@@ -63,6 +64,15 @@ List<String> parseIngatBlocks(String text) {
     if (v.isNotEmpty && v.length <= 200) out.add(v);
   }
   return out;
+}
+
+/// Hapus semua blok ```ingat ...``` dari teks (untuk parse kontrak JSON
+/// balasan chat). Fitur ingat tetap jalan via [parseIngatBlocks] pada
+/// teks mentah sebelum pemanggilan ini. Murni agar testable.
+String stripIngatBlocks(String text) {
+  return text
+      .replaceAll(RegExp(r'```ingat\s+.+?```', dotAll: true), '')
+      .trim();
 }
 
 class TxDraft {
