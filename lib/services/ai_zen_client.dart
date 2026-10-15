@@ -4,8 +4,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'ai_draft.dart';
-import 'ai_key_store.dart';
-import 'ai_soul.dart';
 import 'firebase_ai_parser.dart';
 import 'ai_cli_client.dart';
 
