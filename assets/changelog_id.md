@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.67.0+196.
+Versi terpasang: 2.67.0+198.
+
+## Yang baru di 2.67.0+198
+
+1. Perbaikan kecil: hapus import tak perlu di layar chat AI (CI analyze hijau lagi). Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.67.0+196
 
