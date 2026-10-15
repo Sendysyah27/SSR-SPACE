@@ -67,7 +67,6 @@ Future<String> _findNativeLibDir() async {
 
   // Strategi 2: scan /data/app untuk direktori package ini
   try {
-    const pkg = 'com.ssr.space.ssr_space';
     final appDir = Directory('/data/app');
     if (await appDir.exists()) {
       await for (final ent in appDir.list()) {

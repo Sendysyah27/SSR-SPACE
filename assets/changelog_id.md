@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.64.1+189.
+Versi terpasang: 2.65.0+191.
+
+## Yang baru di 2.65.0+191
+
+1. Perbaikan kecil: hapus variabel tak terpakai di pencari native lib (CI analyze hijau lagi). Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.64.1+189
 
