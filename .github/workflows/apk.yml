@@ -148,6 +148,14 @@ jobs:
                   continue
               shutil.copy2(kt, ai_dest / kt.name)
               print(f'copied {kt.name}')
+          # Copy test files ke android/app/src/test/
+          test_src = pathlib.Path('android-native/ai-test')
+          if test_src.exists():
+              test_dest = pathlib.Path('android/app/src/test/java/com/ssr/space/ssr_space/ai')
+              test_dest.mkdir(parents=True, exist_ok=True)
+              for tf in test_src.glob('*.kt'):
+                  shutil.copy2(tf, test_dest / tf.name)
+                  print(f'copied test {tf.name}')
           xml_dest = pathlib.Path('android/app/src/main/res/xml')
           xml_dest.mkdir(parents=True, exist_ok=True)
           for xml in ['backup_rules.xml', 'data_extraction_rules.xml']:
@@ -1441,6 +1449,10 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+      - name: Android unit tests (AiKeyStore)
+        run: |
+          cd android
+          ./gradlew testDebugUnitTest --tests "com.ssr.space.ssr_space.ai.AiKeyStoreTest" 2>&1 | tail -50
       - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         env:
           SSR_KEYSTORE_PASS: ${{ secrets.SSR_KEYSTORE_PASS }}
