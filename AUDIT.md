@@ -628,3 +628,7 @@ Manifest manggil  yang tidak ada -> FC pas launch.
 **Status**: Sudah di-hotfix via 2.62.1+177 (revert dari manifest). Tidak dipakai lagi.
 - **2.67.0+193** (2026-10-15): HAPUS native binary - ai_cli_client.dart pakai HTTP via MethodChannel ke Kotlin ZenProvider (key dari EncryptedSharedPreferences).
 - **2.68.0+199** (2026-10-15): LocalOpenCodeProvider di Mang AI (Zen/lokal + baseUrl + password; sesi baru per request; parser text-only + token log; TDD kotlinc 56/56; run 38721435070 hijau).
+- **2.68.0+211** (2026-10-15): Fix 3 bug laporan user.
+  - Bug A: kartu konfirmasi chat tidak muncul. Root cause: wallet_tidak_cocok ("QRIS BCA" = metode bayar, bukan nama dompet) → action dibuang diam-diam. Fix: reason codes debug-only, system prompt diperkuat, kartu fallback dengan dropdown dompet/kategori.
+  - Bug B: parser OCR - tanggal nama-bulan ID/EN (dd Mmm yyyy), baris non-item (subtotal/pajak/pembayaran) tidak jadi item, "Grand Total: 0" fallback ke baris pembayaran, pembulatan tidak pernah jadi total, flag inconsistent/suspicious. Struk 1: total 81000, tanggal 2026-06-21, item burger+nugget.
+  - Bug C: sheet/dialog opak (glass_sheet solid surface), ikon Masuk/Keluar Icon→DuoIcon (font PhosphorDuotone hilang sejak 2.8.0+58), ikon kategori diperbaiki.
