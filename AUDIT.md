@@ -626,3 +626,4 @@ Manifest manggil  yang tidak ada -> FC pas launch.
 - Konfigurasi sourceSets di build.gradle untuk include Java di kotlin dir.
 
 **Status**: Sudah di-hotfix via 2.62.1+177 (revert dari manifest). Tidak dipakai lagi.
+- **2.67.0+193** (2026-10-15): HAPUS native binary - ai_cli_client.dart pakai HTTP via MethodChannel ke Kotlin ZenProvider (key dari EncryptedSharedPreferences).

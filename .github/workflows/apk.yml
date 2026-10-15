@@ -132,16 +132,6 @@ jobs:
             sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>' "$M"
           fi
           grep -q "android.permission.INTERNET" "$M"
-      - run: |
-          mkdir -p android/app/src/main/jniLibs/arm64-v8a
-          curl -sL -o android/app/src/main/jniLibs/arm64-v8a/libopencode.so \
-            https://github.com/Sendysyah27/SSR-SPACE/releases/download/opencode-bin-v1.18.9/opencode
-          echo "622c01ffee1f9b38cb334282cd4795ad997d470357a263da9405727458bb72ce  android/app/src/main/jniLibs/arm64-v8a/libopencode.so" | sha256sum -c -
-          ls -lh android/app/src/main/jniLibs/arm64-v8a/libopencode.so
-      - run: |
-          if ! grep -rq "doNotStrip" android/app/build.gradle*; then
-            python3 -c "import pathlib,glob,re;f=glob.glob('android/app/build.gradle*');p=pathlib.Path(f[0]);t=p.read_text();kts=f[0].endswith('.kts');m=re.search(r'(?m)^(\s*)buildTypes\s*\{',t);assert m;ind=m.group(1);nl=chr(10);q=chr(34);lib='*/arm64-v8a/libopencode.so';add=(ind+'packagingOptions{'+nl+ind+'    doNotStrip.add('+q+lib+q+')'+nl+ind+'}'+nl) if kts else (ind+'packagingOptions {'+nl+ind+'    doNotStrip '+q+lib+q+nl+ind+'}'+nl);t=t[:m.start()]+add+t[m.start():];p.write_text(t);print('doNotStrip ok');"
-          fi
       - name: Integrasi AI native (Kotlin)
         run: |
           python3 << 'PYEOF'
