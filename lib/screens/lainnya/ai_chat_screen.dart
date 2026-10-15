@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import 'package:ssr_space/services/ai_context.dart';
@@ -394,6 +395,15 @@ class _AiChatScreenState extends State<AiChatScreen> {
       appBar: AppBar(
         title: Text(tr('chat_title')),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.vpn_key_outlined),
+            tooltip: 'Pengaturan AI',
+            onPressed: () async {
+              try {
+                await const MethodChannel('ssr_space/ai').invokeMethod('openSettings');
+              } catch (_) {}
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.psychology_outlined),
             tooltip: tr('chat_mem_t'),
