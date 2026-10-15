@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_zen_client.dart';
+import 'package:ssr_space/services/ai_cli_client.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/biometric_auth.dart';
 import 'package:ssr_space/services/currency.dart';
@@ -1108,20 +1109,20 @@ class _AiCardState extends State<_AiCard> {
     if (!mounted) return;
     String out;
     try {
-      final r = await zenChatRaw(apiKey: key, prompt: 'Halo')
-          .timeout(const Duration(seconds: 60));
-      out = '[Zen: ${r.provider}]\n'
+      final r = await aiChatViaCli('Halo')
+          .timeout(const Duration(seconds: 120));
+      out = '[CLI: ${r.provider}]\n'
           '${r.text.trim().isEmpty ? 'AI: (kosong)' : r.text}';
     } on AiFailure catch (e) {
       if (e.code == 'quota') await noteQuotaHit();
       out = e.code == 'quota'
-          ? '[Zen] ${quotaWaitLine(e.detail)}'
-          : '[Zen] AI gagal (${e.code})'
+          ? '[CLI] ${quotaWaitLine(e.detail)}'
+          : '[CLI] AI gagal (${e.code})'
               '${e.detail == null ? '' : '\n${e.detail}'}';
     } on TimeoutException catch (e) {
-      out = '[Zen] AI gagal (timeout)\n$e';
+      out = '[CLI] AI gagal (timeout)\n$e';
     } catch (e) {
-      out = '[Zen] AI gagal (tak dikenal)\n$e';
+      out = '[CLI] AI gagal (tak dikenal)\n$e';
     }
     if (!mounted) return;
     setState(() {

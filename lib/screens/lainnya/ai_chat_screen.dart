@@ -125,7 +125,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
     if (e.code == 'quota') return quotaWaitLine(e.detail);
     final d = e.detail ?? '';
     if (d.startsWith('[Gambar]')) return d;
-    return tr(aiMessageKey(e.code));
+    // DEBUG: tampilkan detail error biar bisa diagnosa
+    final base = tr(aiMessageKey(e.code));
+    if (d.isNotEmpty && d.length < 200) {
+      return '$base\n[Debug: $d]';
+    }
+    return base;
   }
 
   Future<void> _pickImage() async {
