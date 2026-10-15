@@ -66,11 +66,7 @@ Future<({String text, String provider})> aiChatViaCli(
     throw const AiFailure('empty', 'prompt kosong');
   }
 
-  // Catatan: imageBytes belum didukung via MethodChannel (butuh base64).
-  // Untuk sekarang, abaikan gambar jika ada.
-  if (imageBytes != null && imageBytes.isNotEmpty) {
-    // TODO: encode base64 dan kirim via channel jika dibutuhkan
-  }
+  final hasImage = imageBytes != null && imageBytes.isNotEmpty;
 
   final convo = (history == null || history.isEmpty)
       ? ''
@@ -97,9 +93,16 @@ Future<({String text, String provider})> aiChatViaCli(
     args['localPassword'] = pass;
   }
 
+  // Vision: pakai completeWithImage jika ada gambar + provider lokal
+  final method = (hasImage && useLocal) ? 'completeWithImage' : 'complete';
+  if (hasImage && useLocal) {
+    args['imageBytes'] = imageBytes;
+    args['mimeType'] = mimeType ?? 'image/jpeg';
+  }
+
   try {
     final text = await _aiChannel
-        .invokeMethod<String>('complete', args)
+        .invokeMethod<String>(method, args)
         .timeout(cliTimeout);
     if (text == null || text.trim().isEmpty) {
       throw const AiFailure('server', '[AI] response kosong');

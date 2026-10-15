@@ -1155,6 +1155,9 @@ class _AiCardState extends State<_AiCard> {
 
   @override
   Widget build(BuildContext context) {
+    // AI Parser di-hide: sudah ada OpenCode lokal di Mang AI
+    return const SizedBox.shrink();
+    // ignore: dead_code
     return GlassLabeledCard(
       label: tr('ai_title'),
       icon: AppIcons.autoBadge,
