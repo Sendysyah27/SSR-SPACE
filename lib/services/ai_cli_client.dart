@@ -44,27 +44,67 @@ const cliTimeout = Duration(seconds: 120);
 String _snip(String s, [int max = 300]) =>
     s.length <= max ? s : '${s.substring(0, max)}...';
 
-/// Cari native library directory via /proc/self/maps.
-/// libflutter.so selalu ter-load; direktorinya = tempat libopencode.so.
+/// Cari native library directory dengan fallback berlapis.
+/// libopencode.so ada di dir yang sama dengan libflutter.so.
 Future<String> _findNativeLibDir() async {
+  // Strategi 1: /proc/self/maps (cari libflutter.so)
   try {
     final maps = await File('/proc/self/maps').readAsString();
     for (final line in maps.split('\n')) {
-      // Format: address perms offset dev inode pathname
-      // Contoh: ... /data/app/~~hash==/com.ssr.space.ssr_space-xxx==/lib/arm64/libflutter.so
-      if (line.contains('libflutter.so')) {
+      if (line.contains('libflutter.so') && line.contains('/')) {
         final parts = line.trim().split(RegExp(r'\s+'));
         if (parts.isNotEmpty) {
           final path = parts.last;
-          final dir = path.substring(0, path.lastIndexOf('/'));
-          if (dir.contains('/lib/') || dir.endsWith('/lib')) {
-            return dir;
+          if (path.startsWith('/')) {
+            final dir = path.substring(0, path.lastIndexOf('/'));
+            final test = File('$dir/libopencode.so');
+            if (await test.exists()) return dir;
           }
         }
       }
     }
   } catch (_) {}
-  throw const AiFailure('server', '[CLI] native lib dir tidak ketemu');
+
+  // Strategi 2: scan /data/app untuk direktori package ini
+  try {
+    const pkg = 'com.ssr.space.ssr_space';
+    final appDir = Directory('/data/app');
+    if (await appDir.exists()) {
+      await for (final ent in appDir.list()) {
+        final name = ent.path.split('/').last;
+        if (name.contains('ssr_space') || name.contains('ssr.space')) {
+          // Coba lib/arm64 dan lib/arm64-v8a
+          for (final abi in ['arm64', 'arm64-v8a']) {
+            final dir = '${ent.path}/lib/$abi';
+            final test = File('$dir/libopencode.so');
+            if (await test.exists()) return dir;
+          }
+          // Coba juga tanpa subdir lib (beberapa device)
+          final test2 = File('${ent.path}/libopencode.so');
+          if (await test2.exists()) return ent.path;
+        }
+      }
+    }
+  } catch (_) {}
+
+  // Strategi 3: coba path umum langsung
+  try {
+    for (final abi in ['arm64-v8a', 'arm64']) {
+      // Path tanpa /data/app prefix (kadang symlink)
+      final candidates = [
+        '/data/app/com.ssr.space.ssr_space/lib/$abi',
+        '/data/app/com.ssr.space.ssr_space-1/lib/$abi',
+        '/data/app/com.ssr.space.ssr_space-2/lib/$abi',
+      ];
+      for (final dir in candidates) {
+        final test = File('$dir/libopencode.so');
+        if (await test.exists()) return dir;
+      }
+    }
+  } catch (_) {}
+
+  throw const AiFailure(
+      'server', '[CLI] native lib dir tidak ketemu (3 strategi gagal)');
 }
 
 /// Path binary opencode yang di-bundle di APK (native lib dir).
