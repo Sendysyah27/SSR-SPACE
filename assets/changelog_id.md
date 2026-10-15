@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.68.0+209.
+Versi terpasang: 2.68.0+210.
+
+## Yang baru di 2.68.0+210
+
+1. Perbaikan build: system prompt lokal jadi val biasa (trimIndent bukan konstanta). Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.68.0+209
 

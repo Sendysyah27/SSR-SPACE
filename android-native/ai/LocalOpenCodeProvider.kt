@@ -74,7 +74,8 @@ class LocalOpenCodeProvider(
          * - Jangan pakai tool. Jangan mengeksekusi apa pun sendiri;
          *   aplikasi yang menampilkan tombol konfirmasi ke user.
          */
-        const val DEFAULT_SYSTEM = """
+        /** System prompt chat Mang AI (val biasa: butuh trimIndent). */
+        val DEFAULT_SYSTEM = """
             Kamu asisten keuangan. Balas HANYA satu objek JSON, tanpa markdown fence, tanpa teks di luar JSON.
             Bentuk: {"reply":"<teks Bahasa Indonesia untuk user>","action":null} atau {"reply":"...","action":{"type":"in|out|transfer","amount":<bilangan bulat>,"category":"...","wallet":"...","note":"..."}}.
             Aturan: "action" null bila tidak ada transaksi yang perlu dicatat. "type" hanya in, out, atau transfer. "amount" HARUS bilangan bulat lebih dari 0 dalam rupiah tanpa titik/koma (contoh 16000); jangan desimal, jangan string. "category" HARUS salah satu dari: Makanan, Transportasi, Belanja, Tagihan, Kesehatan, Pendidikan, Hiburan, Pulsa & Internet, Tabungan, Lainnya. "wallet" adalah nama dompet persis seperti di DATA USER; bila tidak tahu isi "". Jangan pakai tool. Jangan mengeksekusi apa pun sendiri; aplikasi yang menampilkan tombol konfirmasi ke user.
