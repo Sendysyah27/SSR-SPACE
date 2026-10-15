@@ -25,27 +25,37 @@ idx = parts.index('kotlin' if 'kotlin' in parts else 'java')
 pkg = '.'.join(parts[idx+1:])
 ai_pkg = pkg + '.ai'
 
-# 1. Tambah import (FAIL KERAS jika tidak ada import)
-if 'import io.flutter.plugin.common.MethodChannel' not in ms:
+# 1. Tambah import MethodChannel HANYA jika belum ada (cek semua varian)
+has_methodchannel = (
+    'import io.flutter.plugin.common.MethodChannel' in ms or
+    'import io.flutter.plugin.common.*' in ms
+)
+if not has_methodchannel:
     import_lines = [l for l in ms.split('\n') if l.strip().startswith('import ')]
     assert import_lines, 'FAIL: Tidak ada baris import di MainActivity!'
     last_import = import_lines[-1]
     ms = ms.replace(
         last_import,
-        last_import + '\nimport io.flutter.plugin.common.MethodChannel\nimport ' + ai_pkg + '.AiFlutterBridge',
+        last_import + '\nimport io.flutter.plugin.common.MethodChannel',
         1
     )
-    print('Import ditambahkan')
+    print('Import MethodChannel ditambahkan')
+else:
+    print('Import MethodChannel sudah ada, skip')
+
+# Tambah import AiFlutterBridge jika belum ada
+ai_import = f'import {ai_pkg}.AiFlutterBridge'
+if ai_import not in ms:
+    import_lines = [l for l in ms.split('\n') if l.strip().startswith('import ')]
+    last_import = import_lines[-1]
+    ms = ms.replace(last_import, last_import + '\n' + ai_import, 1)
+    print('Import AiFlutterBridge ditambahkan')
 
 # 2. Tambah/kembangkan configureFlutterEngine
-# Cari class MainActivity - bisa dengan atau tanpa body { }
-# Format 1: class MainActivity: FlutterActivity() { ... }
-# Format 2: class MainActivity: FlutterActivity()  (tanpa body)
 class_match = re.search(r'class MainActivity\s*:[^{]*', ms)
 assert class_match, 'FAIL: Class MainActivity tidak ketemu!'
 
 if 'override fun configureFlutterEngine' in ms:
-    # Sudah ada -> inject setelah super.configureFlutterEngine(...)
     pattern = r'(override fun configureFlutterEngine[^{]*\{[^}]*super\.configureFlutterEngine\([^)]*\))'
     sm = re.search(pattern, ms)
     assert sm, 'FAIL: configureFlutterEngine ada tapi tidak panggil super!'
@@ -53,11 +63,7 @@ if 'override fun configureFlutterEngine' in ms:
     ms = ms[:sm.start()] + inject + ms[sm.end():]
     print('Inject ke configureFlutterEngine yang ada')
 else:
-    # Belum ada -> buat method baru
-    # Jika class tanpa body, tambah body dengan method di dalamnya
-    # Jika class dengan body, tambah method di dalam body
     class_decl_end = class_match.end()
-    # Cek apakah ada { setelah class declaration
     after_class = ms[class_decl_end:class_decl_end+10].strip()
     method = (
         '\n    override fun configureFlutterEngine('
@@ -70,12 +76,10 @@ else:
         '    }'
     )
     if after_class.startswith('{'):
-        # Ada body, insert setelah {
         brace_pos = ms.find('{', class_decl_end)
         ms = ms[:brace_pos+1] + method + ms[brace_pos+1:]
         print('configureFlutterEngine ditambahkan ke class body yang ada')
     else:
-        # Tidak ada body, buat body baru
         ms = ms[:class_decl_end] + ' {' + method + '\n}' + ms[class_decl_end:]
         print('configureFlutterEngine baru dibuat dengan class body')
 
@@ -86,4 +90,7 @@ final = mp.read_text()
 assert 'AiFlutterBridge.setup' in final, 'FAIL: Patch gagal!'
 assert 'flutterEngine.dartExecutor.binaryMessenger' in final, 'FAIL: binaryMessenger tidak ada!'
 assert 'super.configureFlutterEngine' in final, 'FAIL: super call hilang!'
+# Pastikan tidak ada duplikat import
+mc_count = final.count('import io.flutter.plugin.common.MethodChannel')
+assert mc_count <= 1, f'FAIL: Duplikat import MethodChannel ({mc_count}x)!'
 print('MainActivity patch OK')
