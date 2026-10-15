@@ -130,16 +130,16 @@ void main() {
   });
 
   group('scanReceiptSystemPrompt', () {
-    test('memuat kunci JSON dan daftar kategori', () {
+    test('memuat kunci baris dan daftar kategori', () {
       final p = scanReceiptSystemPrompt(_cats);
-      expect(p.contains('"merchant"'), isTrue);
-      expect(p.contains('"total"'), isTrue);
+      expect(p.contains('MERCHANT:'), isTrue);
+      expect(p.contains('TOTAL:'), isTrue);
       expect(p.contains('Makanan'), isTrue);
     });
 
     test('meminta daftar item lengkap (bukan ringkasan)', () {
       final p = scanReceiptSystemPrompt(_cats);
-      expect(p.contains('"items"'), isTrue);
+      expect(p.contains('ITEMS:'), isTrue);
       expect(p.contains('SEMUA baris produk'), isTrue);
     });
   });

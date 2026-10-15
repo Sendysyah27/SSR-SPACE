@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.71.0+218.
+Versi terpasang: 2.71.0+219.
+
+## Yang baru di 2.71.0+219
+
+1. Perbaikan test: 2 test prompt struk ikut format baris baru. Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.71.0+218
 
