@@ -622,11 +622,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
     if (!mounted) return;
     final sign = d.type == 'in' ? '+' : '-';
     final amt = d.amount.toStringAsFixed(0);
-    final cat = d.category == null ? '' : ' \u00b7 ' + d.category!;
+    final cat = d.category == null ? '' : ' \u00b7 ${d.category!}';
     setState(() {
       _items.add(_ChatMsg(
         mine: false,
-        text: 'Tersimpan \u2713 ' + sign + amt + cat,
+        text: 'Tersimpan \u2713 $sign$amt$cat',
         provider: 'Mang AI',
       ));
     });

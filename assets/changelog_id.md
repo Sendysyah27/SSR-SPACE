@@ -1,6 +1,14 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.68.0+214.
+Versi terpasang: 2.69.0+216.
+
+## Yang baru di 2.69.0+216
+
+1. Perbaikan kecil: string concatenation jadi interpolasi di chat (CI analyze hijau lagi). Tanpa perubahan tampilan/fitur.
+
+## Yang baru di 2.69.0+215
+
+1. Memori AI, kontrol sesi chat, fix scroll Mode Catat, vision baca struk lengkap.
 
 ## Yang baru di 2.68.0+214
 
