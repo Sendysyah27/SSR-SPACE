@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+236.
+Versi terpasang: 2.72.0+237.
+
+## Yang baru di 2.72.0+237
+
+1. Perbaikan build: kembalikan import chart (dipakai grafik tahunan). Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.72.0+236
 
