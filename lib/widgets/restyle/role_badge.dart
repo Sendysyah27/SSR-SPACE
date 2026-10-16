@@ -34,7 +34,7 @@ class RoleBadge extends StatelessWidget {
       ),
       child: Text(
         role,
-        style: TextStyle(
+        style: const TextStyle(
           color: fg,
           fontSize: 11,
           fontWeight: FontWeight.w700,
