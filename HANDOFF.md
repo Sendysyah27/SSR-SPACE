@@ -1,6 +1,6 @@
 # HANDOFF — Adaptasi Ollo ke SSR SPACE (Fase 1: Entitlement + Limit)
 
-> Dibuat: 2026-10-16 · Status: **SESI PAUSE — menunggu approval desain Bagian 1**
+> Dibuat: 2026-10-16 · Status: **SELESAI 2026-10-16 — branch `feat/entitlement-vip`, CI hijau, APK ada, menunggu merge + migration_20 oleh owner**
 > Baca file ini DI AWAL sesi baru. Semua konteks sesi sebelumnya ada di sini.
 
 ## 0. Cara lanjut di sesi baru
@@ -120,12 +120,16 @@ Isi yang direncanakan (sudah riset, tinggal ditulis rapi):
 
 ## 6. Langkah berikutnya (checklist sesi baru)
 
-- [ ] Konfirmasi owner atas desain Bagian 1 (angka 7/7/30/3/5/5 + semantik VIP owner + kode dibuat via SQL Editor).
-- [ ] Presentasikan Bagian 2 (klien/UX/test/rilis) → approval.
-- [ ] Tulis spec: `docs/superpowers/specs/2026-10-16-ollo-fase1-entitlement-design.md` (self-review placeholders/konsistensi/scope/ambiguitas).
-- [ ] Review spec oleh owner → lalu skill **writing-plans** → `docs/superpowers/plans/2026-10-16-ollo-fase1-entitlement.md`.
-- [ ] Eksekusi per fase (setelah plan disetujui): migration_20 + RLS test + kode klien + CI hijau + APK arm64 + instruksi user jalankan migration.
-- [ ] Update file ini / hapus saat fase 1 selesai; fase berikutnya bikin file kickoff/handoff baru.
+SELESAI 2026-10-16 (semua dicentang):
+
+- [x] Konfirmasi owner atas desain Bagian 1 (angka 7/7/30/3/5/5 + semantik VIP owner + kode dibuat via SQL Editor).
+- [x] Presentasikan Bagian 2 (klien/UX/test/rilis) → approval.
+- [x] Tulis spec: `docs/superpowers/specs/2026-10-16-ollo-fase1-entitlement-design.md` (self-review placeholders/konsistensi/scope/ambiguitas).
+- [x] Review spec oleh owner → skill **writing-plans** → `docs/superpowers/plans/2026-10-16-ollo-fase1-entitlement.md`.
+- [x] Eksekusi SDD (9 task + T8/T9, review per task + final review + 2 fix wave) → branch `feat/entitlement-vip`, CI hijau (rls-test run `38917562148`, build-apk run `38917934095`), APK `SSR-SPACE-2.73.0-251-arm64.apk` (41.160.963 byte) di `/sdcard/Download/SSR-SPACE/`.
+- [ ] OWNER: jalankan `supabase/migration_20_entitlement.sql` sekali di Dashboard → SQL Editor (idempotent).
+- [ ] OWNER: putuskan merge — PR `feat/entitlement-vip` → `main` (buat via `gh pr create`, CI PR jalan otomatis) atau merge langsung. Setelah merge: device-check (redeem → masa Pro, dompet-8/budget-8/AI-31 → paywall, edit-budget lolos, offline → stale-allow).
+- [ ] Fase berikutnya (fase 2 widget+quick-entry) bikin kickoff/handoff baru; file ini arsip.
 
 ## 7. Referensi bahan
 
