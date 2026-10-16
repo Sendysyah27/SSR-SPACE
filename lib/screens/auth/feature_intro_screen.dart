@@ -184,7 +184,7 @@ class _SlideDonut extends StatelessWidget {
     return _SlideShell(
       title: tr('fi_t1'),
       sub: tr('fi_s1'),
-      demo: DribCard(
+      demo: const DribCard(
         child: DonutChart(
           centerText: '40%',
           slices: const [
