@@ -13,6 +13,7 @@ class PremiumButton extends StatefulWidget {
     this.fullWidth = true,
     this.height = 52,
     this.loading = false,
+    this.foreground = Colors.white,
   });
 
   final String label;
@@ -22,6 +23,10 @@ class PremiumButton extends StatefulWidget {
   final bool fullWidth;
   final double height;
   final bool loading;
+
+  /// Warna teks/spinner. Default putih (kompatibel gradient gelap lama);
+  /// isi navy bila gradient biru muda Dribbble (kontras 5.05:1).
+  final Color foreground;
 
   @override
   State<PremiumButton> createState() => _PremiumButtonState();
@@ -84,12 +89,12 @@ class _PremiumButtonState extends State<PremiumButton>
           ),
           alignment: Alignment.center,
           child: widget.loading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.4,
-                    color: Colors.white,
+                    color: widget.foreground,
                   ),
                 )
               : Row(
@@ -102,7 +107,7 @@ class _PremiumButtonState extends State<PremiumButton>
                     Text(
                       widget.label,
                       style: theme.textTheme.labelLarge?.copyWith(
-                        color: Colors.white,
+                        color: widget.foreground,
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                       ),

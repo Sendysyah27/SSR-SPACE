@@ -267,7 +267,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         heroTag: 'catat',
         onPressed: _openInput,
         backgroundColor: DribTokens.primary,
-        foregroundColor: DribTokens.onNavy,
+        foregroundColor: DribTokens.navy,
         tooltip: tr('act_catat'),
         child: const DuoIcon(AppIcons.add),
       ),

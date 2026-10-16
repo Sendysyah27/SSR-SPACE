@@ -114,6 +114,7 @@ class _TxDetailSheet extends StatelessWidget {
                       DribTokens.primary
                     ],
                   ),
+                  foreground: DribTokens.navy,
                 ),
                 const SizedBox(height: SsrSpace.sm),
                 TextButton(

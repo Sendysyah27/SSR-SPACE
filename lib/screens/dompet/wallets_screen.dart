@@ -391,6 +391,7 @@ class _NewWalletForm extends StatelessWidget {
             gradient: const LinearGradient(
               colors: [DribTokens.primary, DribTokens.primary],
             ),
+              foreground: DribTokens.navy,
           ),
         ],
       ),

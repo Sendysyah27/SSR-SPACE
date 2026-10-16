@@ -63,7 +63,7 @@ class MemberAvatarRow extends StatelessWidget {
                   left: shown.length * 24.0,
                   child: _Avatar(
                     initials: '+$rest',
-                    color: DribTokens.navy.withValues(alpha: 0.4),
+                    color: DribTokens.navy.withValues(alpha: 0.15),
                   ),
                 ),
             ],
@@ -88,6 +88,15 @@ class _Avatar extends StatelessWidget {
   final Color color;
   const _Avatar({required this.initials, required this.color});
 
+  /// Kontras AA: putih hanya di atas navy (10.19); di atas biru/oranye
+  /// muda pakai teks navy (5.05 / 7.05).
+  bool get _lightText {
+    if (color == DribTokens.navy || color == DribTokens.navyBright) {
+      return true;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -101,8 +110,8 @@ class _Avatar extends StatelessWidget {
       child: Center(
         child: Text(
           initials,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: _lightText ? Colors.white : DribTokens.navy,
             fontSize: 11,
             fontWeight: FontWeight.w700,
           ),

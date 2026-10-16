@@ -1013,6 +1013,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
               gradient: const LinearGradient(
                 colors: [DribTokens.primary, DribTokens.primary],
               ),
+              foreground: DribTokens.navy,
             ),
             if (_isEdit) ...[
               const SizedBox(height: SsrSpace.sm),

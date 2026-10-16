@@ -1475,6 +1475,7 @@ class _MonthlySummary extends StatelessWidget {
         gradient: const LinearGradient(
           colors: [DribTokens.primary, DribTokens.primary],
         ),
+              foreground: DribTokens.navy,
         label: tr('r_dl').replaceFirst('{l}', label),
       ),
     );

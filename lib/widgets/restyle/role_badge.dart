@@ -20,10 +20,12 @@ class RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pending = _isPending;
-    final bg =
-        pending ? DribTokens.accentOrange : DribTokens.navy.withValues(alpha: 0.08);
-    final fg = pending ? Colors.white : DribTokens.navy;
+    // Kontras AA: putih di atas oranye hanya 2.02 -> teks selalu navy
+    // (navy/oranye 7.05, navy/navy-8% ~10).
+    const fg = DribTokens.navy;
+    final bg = _isPending
+        ? DribTokens.accentOrange
+        : DribTokens.navy.withValues(alpha: 0.08);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(

@@ -122,7 +122,7 @@ class _FeatureIntroScreenState extends State<FeatureIntroScreen> {
                         ? tr('fi_done')
                         : tr('fi_next'),
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: DribTokens.navy,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

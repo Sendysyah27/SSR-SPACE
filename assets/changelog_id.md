@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+246.
+Versi terpasang: 2.72.0+247.
+
+## Yang baru di 2.72.0+247
+
+1. Keterbacaan: teks tombol biru, badge, dan avatar kini kontras aman (AA).
 
 ## Yang baru di 2.72.0+246
 
