@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+240.
+Versi terpasang: 2.72.0+241.
+
+## Yang baru di 2.72.0+241
+
+1. Perbaikan build: kembalikan import dekorasi sliver. Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.72.0+240
 

@@ -36,6 +36,7 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
+import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/widgets/day_header.dart';
