@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+250.
+Versi terpasang: 2.73.0+251.
+
+## Yang baru di 2.73.0+251
+
+1. Batas paket Gratis kini ditegakkan: dompet 7, budget 7/bulan, AI 30/bulan, target 3, utang 5, tagihan 5 — lebih dari itu perlu Pro.
+2. Kode VIP: tukar kode di Billing untuk jadi Pro, masa Pro tampil di layar (bisa permanen).
+3. Perlu migration_20 di Supabase (sekali saja, aman diulang); tanpa internet gate tak blokir buta.
 
 ## Yang baru di 2.72.0+250
 
