@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/premium/glass_sheet.dart';
 import 'package:ssr_space/widgets/premium/premium_button.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
 import 'package:ssr_space/services/receipt_scan_parse.dart';
 
 /// Detail transaksi read-only dari ketuk notif tersimpan.
@@ -71,28 +73,47 @@ class _TxDetailSheet extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: SsrSpace.sm),
-                Text('$dir ${amt(tx.amount)}', style: AppTheme.moneyLarge),
-                const SizedBox(height: SsrSpace.md),
-                _row(context, tr('td_wallet'), wallet),
-                if (toWallet != null)
-                  _row(context, tr('td_towallet'), toWallet),
-                _row(
-                  context,
-                  tr('tx_f_cat'),
-                  (tx.category?.isEmpty ?? true) ? '-' : tx.category!,
+                DribCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        '$dir ${amt(tx.amount)}',
+                        style: DribTokens.bigNumber(
+                            size: 26, color: DribTokens.navy),
+                      ),
+                      const SizedBox(height: SsrSpace.sm),
+                      _row(context, tr('td_wallet'), wallet),
+                      if (toWallet != null)
+                        _row(context, tr('td_towallet'), toWallet),
+                      _row(
+                        context,
+                        tr('tx_f_cat'),
+                        (tx.category?.isEmpty ?? true)
+                            ? '-'
+                            : tx.category!,
+                      ),
+                      _receiptNoteRow(context, tx),
+                      _row(
+                        context,
+                        tr('tx_f_date'),
+                        txWhenLabel(tx.date, tx.createdAt),
+                      ),
+                      if (tx.code != null && tx.code!.isNotEmpty)
+                        _row(context, 'TX', tx.code!),
+                    ],
+                  ),
                 ),
-                _receiptNoteRow(context, tx),
-                _row(
-                  context,
-                  tr('tx_f_date'),
-                  txWhenLabel(tx.date, tx.createdAt),
-                ),
-                if (tx.code != null && tx.code!.isNotEmpty)
-                  _row(context, 'TX', tx.code!),
                 const SizedBox(height: SsrSpace.md),
                 PremiumButton(
                   label: tr('td_view'),
                   onPressed: () => Navigator.pop(context, true),
+                  gradient: const LinearGradient(
+                    colors: [
+                      DribTokens.primary,
+                      DribTokens.primary
+                    ],
+                  ),
                 ),
                 const SizedBox(height: SsrSpace.sm),
                 TextButton(

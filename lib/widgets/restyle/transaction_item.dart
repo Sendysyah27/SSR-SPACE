@@ -25,6 +25,9 @@ class TransactionItem extends StatelessWidget {
   /// True = pemasukan (hijau), false = pengeluaran (merah).
   final bool isIncome;
 
+  /// True = netral navy (mis. transfer). Mengalahkan [isIncome].
+  final bool neutral;
+
   final VoidCallback? onTap;
 
   const TransactionItem({
@@ -35,6 +38,7 @@ class TransactionItem extends StatelessWidget {
     required this.date,
     required this.amount,
     required this.isIncome,
+    this.neutral = false,
     this.onTap,
   });
 
@@ -93,9 +97,11 @@ class TransactionItem extends StatelessWidget {
                 amount,
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: isIncome
-                      ? Colors.green.shade700
-                      : Colors.red.shade700,
+                  color: neutral
+                      ? DribTokens.navy
+                      : isIncome
+                          ? Colors.green.shade700
+                          : Colors.red.shade700,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),

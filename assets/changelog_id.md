@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+234.
+Versi terpasang: 2.72.0+235.
+
+## Yang baru di 2.72.0+235
+
+1. Riwayat transaksi gaya baru: ikon pastel + nominal tabular; hapus pakai geser-konfirmasi; detail kartu putih.
 
 ## Yang baru di 2.72.0+234
 

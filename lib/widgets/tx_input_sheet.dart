@@ -43,6 +43,7 @@ import 'package:ssr_space/widgets/premium/premium_button.dart';
 import 'package:ssr_space/widgets/receipt_result_sheet.dart';
 import 'package:ssr_space/widgets/scan_overlay.dart';
 import 'package:ssr_space/widgets/success_lottie.dart';
+import 'package:ssr_space/widgets/restyle/swipe_to_confirm.dart';
 import 'package:ssr_space/widgets/tx_numpad.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
@@ -860,25 +861,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
     return tr('tx_err_generic').replaceFirst('{a}', tr('tx_act_save'));
   }
 
-  Future<void> _confirmDelete() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(tr('tx_del_title')),
-        content: Text(tr('tx_del_body')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(tr('cancel')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(tr('tx_delete')),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
+  /// Hapus langsung (dipanggil SwipeToConfirmButton — geser = setuju,
+  /// tanpa dialog lagi). Keputusan user TAHAP 4e.
+  Future<void> _deleteDirect() async {
     try {
       await TransactionService().delete(widget.editing!.id, widget.orgId);
       if (!mounted) return;
@@ -1031,19 +1016,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
             ),
             if (_isEdit) ...[
               const SizedBox(height: SsrSpace.sm),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: OutlinedButton(
-                  onPressed: _confirmDelete,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                  child: Text(tr('tx_delete')),
-                ),
+              SwipeToConfirmButton(
+                label: tr('tx_delete'),
+                onConfirm: _deleteDirect,
               ),
             ],
           ],

@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/app_settings.dart';
+import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/tx_filter.dart';
 import 'package:ssr_space/theme/cool_icons.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
+import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/month.dart';
@@ -22,7 +25,7 @@ import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/tx_day_slivers.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
-import 'package:ssr_space/widgets/tx_row.dart';
+import 'package:ssr_space/widgets/restyle/transaction_item.dart';
 
 String txHistoryTitle(String m) {
   final label = localeCode.value == 'en'
@@ -200,28 +203,6 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     if (await openTxInputSheet(context, editing: t)) await _load();
   }
 
-  /// Hapus transaksi via swipe kanan-ke-kiri (sudah dikonfirmasi di TxRow).
-  Future<void> _deleteTx(SaasTransaction t) async {
-    try {
-      final orgId = await activeOrgId();
-      if (orgId.isEmpty || !mounted) return;
-      await TransactionService().delete(t.id, orgId);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(tr('tx_deleted'))),
-      );
-      await _load();
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              tr('tx_err_generic').replaceFirst('{a}', tr('tx_act_del'))),
-        ),
-      );
-    }
-  }
-
   void _onMonthChanged(String m) {
     setState(() {
       month = m;
@@ -380,7 +361,6 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         onMonthChanged: _onMonthChanged,
         items: items,
         onTap: _openEdit,
-        onDelete: _deleteTx,
         onEmptyAction: _openAdd,
         onlyNoWallet: onlyNoWallet,
         onToggleNoWallet: () =>
@@ -401,13 +381,13 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   }
 }
 
-/// Blok riwayat: judul bulan + banner tanpa-dompet + daftar TxRow
-/// (atau EmptyView bila kosong). Ketuk baris = ubah via sheet.
+/// Blok riwayat: judul bulan + banner tanpa-dompet + daftar TransactionItem
+/// (atau EmptyView bila kosong). Ketuk baris = ubah via sheet. Hapus via
+/// geser-konfirmasi di sheet ubah (bukan swipe di list).
 class _TxHistorySection {
   final String month;
   final List<SaasTransaction> items;
   final ValueChanged<SaasTransaction> onTap;
-  final ValueChanged<SaasTransaction> onDelete;
   final VoidCallback onEmptyAction;
   final bool onlyNoWallet;
   final VoidCallback onToggleNoWallet;
@@ -418,7 +398,6 @@ class _TxHistorySection {
     required this.month,
     required this.items,
     required this.onTap,
-    required this.onDelete,
     required this.onEmptyAction,
     required this.onlyNoWallet,
     required this.onToggleNoWallet,
@@ -482,16 +461,52 @@ class _TxHistorySection {
         padding: const EdgeInsets.symmetric(horizontal: SsrSpace.lg),
         sliver: txDaySliverList(
           items: shown,
-          buildRow: (t) => TxRow(
-            tx: t,
-            onTap: () => onTap(t),
-            onEdit: () => onTap(t),
-            onDelete: () => onDelete(t),
-          ),
+          buildRow: _txItem,
           dividersBetween: false,
         ),
       ),
     ];
+  }
+
+  /// Satu baris gaya baru: ikon pastel + nominal tabular. Ketuk = ubah.
+  /// Chips/catatan TxRow lama tak tampil di list (baca via ketuk-ubah);
+  /// nominal, tanggal, kode, kategori tetap sama.
+  Widget _txItem(SaasTransaction t) {
+    final when = txWhenLabel(t.date, t.createdAt);
+    final code = (t.code ?? '').isEmpty ? '' : t.code!;
+    final date = when.isEmpty
+        ? code
+        : code.isEmpty
+            ? when
+            : '$when · $code';
+    final nominal = amt(t.amount);
+    final signed = t.type == 'in'
+        ? '+ $nominal'
+        : t.type == 'out'
+            ? '− $nominal'
+            : nominal;
+    final kind = t.type == 'in'
+        ? tr('tx_in')
+        : t.type == 'transfer'
+            ? tr('tx_transfer')
+            : tr('tx_out');
+    final title =
+        (t.category ?? '').isNotEmpty ? t.category! : kind;
+    final tint = t.type == 'in'
+        ? Colors.green.shade700
+        : t.type == 'out'
+            ? Colors.red.shade700
+            : DribTokens.navy;
+    return TransactionItem(
+      iconSvg: svgForCategory(t.category),
+      tint: tint,
+      title: title,
+      date: date,
+      amount: signed,
+      isIncome: t.type == 'in',
+      neutral: t.type == 'transfer',
+      onTap: () => onTap(t),
+    );
   }
 
   Widget _noWalletBanner() {
@@ -590,7 +605,6 @@ class _TxListBody extends StatelessWidget {
   final ValueChanged<String> onMonthChanged;
   final List<SaasTransaction> items;
   final ValueChanged<SaasTransaction> onTap;
-  final ValueChanged<SaasTransaction> onDelete;
   final VoidCallback onEmptyAction;
   final bool onlyNoWallet;
   final VoidCallback onToggleNoWallet;
@@ -611,7 +625,6 @@ class _TxListBody extends StatelessWidget {
     required this.onMonthChanged,
     required this.items,
     required this.onTap,
-    required this.onDelete,
     required this.onEmptyAction,
     required this.onlyNoWallet,
     required this.onToggleNoWallet,
@@ -679,7 +692,6 @@ class _TxListBody extends StatelessWidget {
           month: month,
           items: items,
           onTap: onTap,
-          onDelete: onDelete,
           onEmptyAction: onEmptyAction,
           onlyNoWallet: onlyNoWallet,
           onToggleNoWallet: onToggleNoWallet,
