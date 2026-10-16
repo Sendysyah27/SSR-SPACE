@@ -18,6 +18,7 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/app_info.dart';
 import 'package:ssr_space/screens/budget/budgets_screen.dart';
 import 'package:ssr_space/screens/lainnya/billing_screen.dart';
@@ -426,6 +427,7 @@ class _OtherScreenState extends State<OtherScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DribTokens.bg,
       appBar: _appBar(),
       body: FutureBuilder<_OtherMeta>(
         future: _metaFuture,
@@ -439,7 +441,6 @@ class _OtherScreenState extends State<OtherScreen> {
           return _HubList(
             orgName: meta?.orgName ?? '-',
             planLabel: planLabel,
-            isPro: meta?.plan == 'pro',
             tracking: meta?.tracking == true,
             backupBusy: backingUp,
             budgetNonce: _budgetNonce,
@@ -483,7 +484,6 @@ class _OtherScreenState extends State<OtherScreen> {
 class _HubList extends StatelessWidget {
   final String orgName;
   final String planLabel;
-  final bool isPro;
   final bool tracking;
   final bool backupBusy;
   final int budgetNonce;
@@ -520,7 +520,6 @@ class _HubList extends StatelessWidget {
   const _HubList({
     required this.orgName,
     required this.planLabel,
-    required this.isPro,
     required this.tracking,
     required this.backupBusy,
     required this.budgetNonce,
@@ -560,7 +559,6 @@ class _HubList extends StatelessWidget {
       _HeaderCard(
         orgName: orgName,
         planLabel: planLabel,
-        isPro: isPro,
         tracking: tracking,
       ),
       _DataSection(
@@ -624,34 +622,32 @@ class _HubList extends StatelessWidget {
 }
 
 /// HEADER: kartu identitas hero (avatar inisial + nama + chip).
-/// Pola warna ikut hero Beranda: emeraldDeep dua mode, teks adaptif.
+/// TAHAP 8: gradient navy Dribbble, teks putih.
 class _HeaderCard extends StatelessWidget {
   final String orgName;
   final String planLabel;
-  final bool isPro;
   final bool tracking;
 
   const _HeaderCard({
     required this.orgName,
     required this.planLabel,
-    required this.isPro,
     required this.tracking,
   });
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final onHero = dark ? scheme.onSurface : scheme.onPrimary;
+    const onHero = DribTokens.onNavy;
     final initial = orgName.trim().isEmpty
         ? '?'
         : String.fromCharCode(orgName.trim().runes.first).toUpperCase();
     return Container(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       padding: const EdgeInsets.all(SsrSpace.lg),
-      decoration: const BoxDecoration(
-        color: AppColors.emeraldDeep,
-        borderRadius: BorderRadius.all(Radius.circular(SsrRadius.hero)),
+      decoration: BoxDecoration(
+        gradient: DribTokens.balanceGradient,
+        borderRadius:
+            BorderRadius.circular(DribTokens.sheetRadius),
+        boxShadow: DribTokens.cardShadow,
       ),
       child: Row(
         children: [
@@ -659,14 +655,14 @@ class _HeaderCard extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: const BoxDecoration(
-              color: AppColors.gold,
+              color: DribTokens.accentOrange,
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 initial,
                 style: const TextStyle(
-                  color: AppColors.emeraldDeep,
+                  color: DribTokens.navy,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
@@ -687,9 +683,21 @@ class _HeaderCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: SsrSpace.xs),
-                StatusChip(
-                  label: planLabel,
-                  tone: isPro ? StatusTone.ink : StatusTone.neutral,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: onHero.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    planLabel,
+                    style: const TextStyle(
+                      color: onHero,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: SsrSpace.xs),
                 Text(
