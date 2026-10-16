@@ -10,7 +10,9 @@ import 'package:ssr_space/services/wallet_edit_logic.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/widgets/pin_dialog.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
@@ -219,6 +221,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DribTokens.bg,
       appBar: AppBar(
         title: Text(widget.wallet.name),
         actions: [
@@ -361,7 +364,7 @@ class _DeleteSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -397,7 +400,7 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return SectionCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -420,7 +423,8 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: SsrSpace.xs),
           Text(
             balanceText,
-            style: AppTheme.moneyLarge.copyWith(color: scheme.onSurface),
+            style: DribTokens.bigNumber(
+                size: 26, color: DribTokens.navy),
           ),
           const SizedBox(height: SsrSpace.xs),
           Text(

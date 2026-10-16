@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+237.
+Versi terpasang: 2.72.0+238.
+
+## Yang baru di 2.72.0+238
+
+1. Layar Dompet gaya baru: kartu putih, saldo navy, tombol simpan biru, donut komposisi biru/navy/oranye.
 
 ## Yang baru di 2.72.0+237
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/wallet_art.dart';
@@ -58,9 +59,13 @@ class WalletRow extends StatelessWidget {
               textAlign: TextAlign.end,
               style: balanceText == tr('w_notloaded')
                   ? Theme.of(context).textTheme.bodySmall
-                  : AppTheme.money.copyWith(
+                  : TextStyle(
+                      fontWeight: FontWeight.w700,
                       fontSize: 14,
-                      color: scheme.onSurface,
+                      color: DribTokens.navy,
+                      fontFeatures: const [
+                        FontFeature.tabularFigures()
+                      ],
                     ),
             ),
           ),

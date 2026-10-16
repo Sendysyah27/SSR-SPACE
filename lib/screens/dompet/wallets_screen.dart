@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -10,12 +9,13 @@ import 'package:ssr_space/services/notif_parse.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/screens/dompet/wallet_detail_screen.dart';
-import 'package:ssr_space/widgets/labeled_section_card.dart';
-import 'package:ssr_space/widgets/primary_button.dart';
-import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
+import 'package:ssr_space/widgets/premium/premium_button.dart';
+import 'package:ssr_space/widgets/restyle/donut_chart.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/wallet_row.dart';
@@ -257,10 +257,10 @@ class _WalletsScreenState extends State<WalletsScreen> {
 class _WalletsScaffold extends StatelessWidget {
   final Widget body;
   const _WalletsScaffold(this.body);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DribTokens.bg,
       appBar: AppBar(title: Text(tr('nav_dompet'))),
       body: body,
     );
@@ -292,17 +292,23 @@ class _WalletOverview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (t != null)
-          LabeledSectionCard(
+          DribCard(
             margin: const EdgeInsets.only(bottom: SsrSpace.md),
-            label: tr('w_total'),
-            children: [
-              Text(
-                amt(t),
-                style: AppTheme.moneyLarge.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tr('w_total'),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  amt(t),
+                  style: DribTokens.bigNumber(
+                      size: 26, color: DribTokens.navy),
+                ),
+              ],
+            ),
           ),
         if (items.isEmpty)
           EmptyView(
@@ -349,7 +355,7 @@ class _NewWalletForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -378,10 +384,13 @@ class _NewWalletForm extends StatelessWidget {
             ),
           ],
           const SizedBox(height: SsrSpace.lg),
-          PrimaryButton(
+          PremiumButton(
             label: tr('w_save'),
             loading: saving,
             onPressed: onSave,
+            gradient: const LinearGradient(
+              colors: [DribTokens.primary, DribTokens.primary],
+            ),
           ),
         ],
       ),
@@ -435,7 +444,7 @@ class _WalletListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       padding: const EdgeInsets.symmetric(
         horizontal: SsrSpace.md,
@@ -480,7 +489,7 @@ class _CompositionStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    return SectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,12 +517,11 @@ class _CompChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final liquid = Theme.of(context).colorScheme.primary;
     return Row(
       children: [
         SizedBox(
           width: 96,
-          height: 96,
+          height: 64,
           child: _CompDonut(comp: comp),
         ),
         const SizedBox(width: SsrSpace.md),
@@ -522,21 +530,21 @@ class _CompChart extends StatelessWidget {
             children: [
               _compRow(
                 context,
-                liquid,
+                DribTokens.primary,
                 tr('comp_liquid'),
                 comp.liquid,
                 comp.liquidPct,
               ),
               _compRow(
                 context,
-                AppColors.gold,
+                DribTokens.accentOrange,
                 tr('w_savings'),
                 comp.savings,
                 comp.savingsPct,
               ),
               _compRow(
                 context,
-                Theme.of(context).colorScheme.outline,
+                DribTokens.navy,
                 tr('w_investment'),
                 comp.investments,
                 comp.investmentsPct,
@@ -549,45 +557,32 @@ class _CompChart extends StatelessWidget {
   }
 }
 
-/// Donut mini pola laporan: touch mati, hanya iris di atas nol.
+/// Donut mini komposisi via komponen DonutChart (biru/navy/oranye).
 class _CompDonut extends StatelessWidget {
   final Composition comp;
   const _CompDonut({required this.comp});
 
   @override
   Widget build(BuildContext context) {
-    final liquid = Theme.of(context).colorScheme.primary;
-    final investments = Theme.of(context).colorScheme.outline;
-    return PieChart(
-      PieChartData(
-        pieTouchData: PieTouchData(enabled: false),
-        sectionsSpace: 2,
-        centerSpaceRadius: 30,
-        startDegreeOffset: 270,
-        sections: [
-          if (comp.liquid > 0)
-            PieChartSectionData(
-              value: comp.liquid,
-              color: liquid,
-              radius: 14,
-              showTitle: false,
-            ),
-          if (comp.savings > 0)
-            PieChartSectionData(
-              value: comp.savings,
-              color: AppColors.gold,
-              radius: 14,
-              showTitle: false,
-            ),
-          if (comp.investments > 0)
-            PieChartSectionData(
-              value: comp.investments,
-              color: investments,
-              radius: 14,
-              showTitle: false,
-            ),
-        ],
-      ),
+    return DonutChart(
+      compact: true,
+      slices: [
+        DonutSlice(
+          value: comp.liquid,
+          label: tr('comp_liquid'),
+          color: DribTokens.primary,
+        ),
+        DonutSlice(
+          value: comp.savings,
+          label: tr('w_savings'),
+          color: DribTokens.accentOrange,
+        ),
+        DonutSlice(
+          value: comp.investments,
+          label: tr('w_investment'),
+          color: DribTokens.navy,
+        ),
+      ],
     );
   }
 }
