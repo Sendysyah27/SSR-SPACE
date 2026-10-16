@@ -10,7 +10,7 @@ import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/theme/category_emoji.dart';
-import 'package:ssr_space/theme/glass.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
 import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/widgets/premium/glass_sheet.dart';
 import 'package:ssr_space/services/receipt_scan_parse.dart';
@@ -138,12 +138,11 @@ class TxRow extends StatelessWidget {
       },
       background: _buildEditBg(context, scheme),
       secondaryBackground: _buildDeleteBg(context, scheme),
-      child: GlassCard(
+      child: DribCard(
         margin: const EdgeInsets.symmetric(
             vertical: GlassSpace.xs, horizontal: GlassSpace.xs),
         padding: const EdgeInsets.symmetric(
             vertical: GlassSpace.sm, horizontal: GlassSpace.md),
-        borderRadius: GlassRadius.md,
         child: GestureDetector(
           onTap: onTap,
           behavior: HitTestBehavior.opaque,

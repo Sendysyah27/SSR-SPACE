@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+229.
+Versi terpasang: 2.72.0+230.
+
+## Yang baru di 2.72.0+230
+
+1. Beranda full gaya baru: kartu saldo pakai komponen BalanceCard, seluruh kartu + baris transaksi putih sudut lembut.
 
 ## Yang baru di 2.72.0+229
 

@@ -56,6 +56,7 @@ import 'package:ssr_space/widgets/mask_toggle.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/widgets/drib_card.dart';
+import 'package:ssr_space/widgets/restyle/balance_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/input_mode_sheet.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
@@ -1111,6 +1112,8 @@ class BerandaScreenState extends State<BerandaScreen> {
 
   /// Hero TAHAP 2 restyle: BalanceCard gradient navy gaya Dribbble.
   /// Data & copy sama persis (surplus, masuk/keluar, pctOut, bar progres).
+  /// Hero TAHAP 4a: pakai komponen BalanceCard (gradient navy).
+  /// Data & copy sama persis (surplus, masuk/keluar, pctOut, bar progres).
   Widget _surplusCard(
     double totalIn,
     double totalOut,
@@ -1120,21 +1123,6 @@ class BerandaScreenState extends State<BerandaScreen> {
   ) {
     final positive = surplus >= 0;
     const onHero = DribTokens.onNavy;
-    final heroSub = TextStyle(
-      color: onHero.withValues(alpha: 0.75),
-      fontSize: 13,
-    );
-    const heroValue = TextStyle(
-      fontFamily: SsrFonts.numeric,
-      color: DribTokens.onNavy,
-      fontWeight: FontWeight.w700,
-      fontSize: 14,
-      fontFeatures: [FontFeature.tabularFigures()],
-    );
-    final heroLabel = TextStyle(
-      color: onHero.withValues(alpha: 0.75),
-      fontSize: 12,
-    );
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: GlassDuration.slow,
@@ -1148,54 +1136,28 @@ class BerandaScreenState extends State<BerandaScreen> {
           ),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: DribTokens.balanceGradient,
-          borderRadius:
-              BorderRadius.circular(DribTokens.sheetRadius),
-          boxShadow: DribTokens.cardShadow,
-        ),
-        child: Column(
+      child: BalanceCard(
+        label: positive ? tr('beranda_surplus') : tr('beranda_defisit'),
+        amount: amt(surplus),
+        footer: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: onHero.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  positive
-                      ? tr('beranda_surplus')
-                      : tr('beranda_defisit'),
-                  style: const TextStyle(
-                    color: onHero,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: SsrSpace.md),
-            Text(
-              amt(surplus),
-              style: DribTokens.bigNumber(size: 34, color: onHero),
-            ),
-            const SizedBox(height: SsrSpace.xs),
             Text(
               tr('beranda_diff').replaceFirst('{m}', _monthLower()),
-              style: heroSub,
+              style: TextStyle(
+                color: onHero.withValues(alpha: 0.75),
+                fontSize: 13,
+              ),
             ),
             if (pctOut != null) ...[
               const SizedBox(height: SsrSpace.sm),
               Text(
                 tr('beranda_vs_out').replaceFirst(
                     '{p}', '${pctOut >= 0 ? '+' : ''}$pctOut'),
-                style: heroSub,
+                style: TextStyle(
+                  color: onHero.withValues(alpha: 0.75),
+                  fontSize: 13,
+                ),
               ),
             ],
             const SizedBox(height: SsrSpace.lg),
@@ -1203,14 +1165,12 @@ class BerandaScreenState extends State<BerandaScreen> {
               children: [
                 Expanded(
                   child: _heroMini(tr('tx_in'), amt(totalIn),
-                      AppIcons.arrowDown, Colors.green.shade300,
-                      heroLabel, heroValue),
+                      AppIcons.arrowDown, Colors.green.shade300),
                 ),
                 const SizedBox(width: GlassSpace.sm),
                 Expanded(
                   child: _heroMini(tr('tx_out'), amt(totalOut),
-                      AppIcons.arrowUp, Colors.red.shade300,
-                      heroLabel, heroValue),
+                      AppIcons.arrowUp, Colors.red.shade300),
                 ),
               ],
             ),
@@ -1265,8 +1225,12 @@ class BerandaScreenState extends State<BerandaScreen> {
   }
 
   /// Kotak mini di hero: ikon + label + nominal putih di atas navy.
-  Widget _heroMini(String label, String value, IconData icon, Color tint,
-      TextStyle labelStyle, TextStyle valueStyle) {
+  Widget _heroMini(
+      String label, String value, IconData icon, Color tint) {
+    const labelStyle = TextStyle(
+      color: DribTokens.onNavy,
+      fontSize: 12,
+    );
     return Container(
       padding: const EdgeInsets.all(GlassSpace.sm),
       decoration: BoxDecoration(
@@ -1281,11 +1245,22 @@ class BerandaScreenState extends State<BerandaScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: labelStyle),
+                Text(
+                  label,
+                  style: labelStyle.copyWith(
+                    color: labelStyle.color!.withValues(alpha: 0.75),
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: valueStyle,
+                  style: const TextStyle(
+                    fontFamily: SsrFonts.numeric,
+                    color: DribTokens.onNavy,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
