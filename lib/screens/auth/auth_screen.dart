@@ -7,10 +7,12 @@ import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:ssr_space/screens/auth/set_password_screen.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
-import 'package:ssr_space/widgets/primary_button.dart';
+import 'package:ssr_space/widgets/premium/premium_button.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
 import 'package:ssr_space/utils/strings.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -198,6 +200,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DribTokens.bg,
       body: SafeArea(
         child: _AuthForm(
           emailC: emailC,
@@ -252,15 +255,23 @@ class _AuthForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(SsrSpace.xxl),
+      padding: const EdgeInsets.all(SsrSpace.lg),
       children: [
         const _AuthHeader(),
-        _AuthFields(emailC: emailC, passC: passC, onSubmit: onSubmit),
-        _AuthMessages(
-          err: err,
-          info: info,
-          showResend: needVerify && emailC.text.isNotEmpty,
-          onResend: onResend,
+        const SizedBox(height: SsrSpace.md),
+        DribCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _AuthFields(emailC: emailC, passC: passC, onSubmit: onSubmit),
+              _AuthMessages(
+                err: err,
+                info: info,
+                showResend: needVerify && emailC.text.isNotEmpty,
+                onResend: onResend,
+              ),
+            ],
+          ),
         ),
         _AuthActions(
           isLogin: isLogin,
@@ -313,24 +324,43 @@ class _AuthFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TextField(
-          controller: emailC,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.next,
-          autofillHints: const [AutofillHints.email],
-          decoration: InputDecoration(labelText: tr('au_email')),
-        ),
-        const SizedBox(height: SsrSpace.md),
-        TextField(
-          controller: passC,
-          obscureText: true,
-          onSubmitted: (_) => onSubmit(),
-          decoration: InputDecoration(labelText: tr('au_pass')),
-        ),
-      ],
+    const labelStyle = TextStyle(color: Colors.white70, fontSize: 13);
+    const inputStyle = TextStyle(color: Colors.white);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: DribTokens.balanceGradient,
+        borderRadius:
+            BorderRadius.circular(DribTokens.cardRadius),
+        boxShadow: DribTokens.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: emailC,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.email],
+            style: inputStyle,
+            decoration: InputDecoration(
+              labelText: tr('au_email'),
+              labelStyle: labelStyle,
+            ),
+          ),
+          const SizedBox(height: SsrSpace.md),
+          TextField(
+            controller: passC,
+            obscureText: true,
+            onSubmitted: (_) => onSubmit(),
+            style: inputStyle,
+            decoration: InputDecoration(
+              labelText: tr('au_pass'),
+              labelStyle: labelStyle,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -439,10 +469,13 @@ class _AuthActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: SsrSpace.lg),
-        PrimaryButton(
+        PremiumButton(
           label: isLogin ? tr('au_login') : tr('au_register'),
           loading: loading,
           onPressed: onSubmit,
+          gradient: const LinearGradient(
+            colors: [DribTokens.primary, DribTokens.primary],
+          ),
         ),
         const SizedBox(height: SsrSpace.sm),
         OutlinedButton(
