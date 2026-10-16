@@ -1295,6 +1295,7 @@ class BerandaScreenState extends State<BerandaScreen> {
       ),
     );
   }
+}
 
 /// Kartu calm streak: 8 dot minggu, tanpa angka tanpa api.
 class _CalmWeeks extends StatelessWidget {

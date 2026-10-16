@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+225.
+Versi terpasang: 2.72.0+226.
+
+## Yang baru di 2.72.0+226
+
+1. Perbaikan build: kurung tutup class yang hilang. Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.72.0+225
 
