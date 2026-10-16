@@ -75,6 +75,28 @@ jobs:
           EOF
       - run: |
           python3 - <<'EOF'
+          import glob, os, pathlib
+          # receive_sharing_intent dipin exact 1.8.1 (1.9.0 butuh
+          # compileSdk 37 > maks AGP 9.1.0=36): build.gradle-nya tanpa
+          # jvmTarget -> Kotlin default 1.8, tabrakan Java 17
+          # ("Inconsistent JVM Target"). Tambal jvmTarget 17.
+          cands = glob.glob(os.path.expanduser(
+              '~/.pub-cache/hosted/pub.dev/receive_sharing_intent-*/android/build.gradle'))
+          assert len(cands) == 1, f'rsi build.gradle tak ketemu: {cands}'
+          p = pathlib.Path(cands[0])
+          s = p.read_text()
+          if 'jvmTarget' in s:
+              print('sudah ada jvmTarget, lewati:', cands[0])
+          else:
+              assert '\nandroid {' in s, 'pola android { tak ketemu'
+              s = s.replace('\nandroid {',
+                  "\nandroid {\n    kotlinOptions {\n        jvmTarget = '17'\n    }", 1)
+              p.write_text(s)
+          assert p.read_text().count('jvmTarget') == 1
+          print('rsi jvmTarget patch ok:', cands[0])
+          EOF
+      - run: |
+          python3 - <<'EOF'
           import glob, os, pathlib, re
           # NFC e-money (terbukti spike 2026-09-28): build.gradle plugin
           # prepaid jadul, 3 tambalan agar lolos toolchain modern:
