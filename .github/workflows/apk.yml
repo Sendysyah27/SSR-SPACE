@@ -1088,9 +1088,11 @@ jobs:
               'android:name="android.intent.action.SEND_MULTIPLE"',
               'android:mimeType="image/*"',
               'android.app.shortcuts', '@xml/shortcuts',
-              '@string/ssr_shortcut_short', '@string/ssr_shortcut_long',
           ):
               assert needle in t, 'manifest kehilangan: ' + needle
+          sc_txt = sc.read_text()
+          assert '@string/ssr_shortcut_short' in sc_txt, 'shortcut short tak ref string'
+          assert '@string/ssr_shortcut_long' in sc_txt, 'shortcut long tak ref string'
           assert t.count('<uses-permission') == perm_before, \
               'permission baru bocor'
           for cls in ('BudgetWidgetProvider', 'BalanceWidgetProvider'):
