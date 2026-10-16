@@ -32,6 +32,7 @@ import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/wallet_usage.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
@@ -1024,6 +1025,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
               label: _isEdit ? tr('tx_save_edit') : tr('tx_save_add'),
               onPressed: _save,
               loading: saving,
+              gradient: const LinearGradient(
+                colors: [DribTokens.primary, DribTokens.primary],
+              ),
             ),
             if (_isEdit) ...[
               const SizedBox(height: SsrSpace.sm),
@@ -1193,10 +1197,20 @@ class _CatCell extends StatelessWidget {
         ),
         child: Row(
           children: [
-            SvgPicture.asset(
-              svgForCategory(label),
-              width: 20,
-              colorFilter: ColorFilter.mode(fg, BlendMode.srcIn),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: DribTokens.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: SvgPicture.asset(
+                  svgForCategory(label),
+                  width: 20,
+                  colorFilter: ColorFilter.mode(fg, BlendMode.srcIn),
+                ),
+              ),
             ),
             const SizedBox(width: SsrSpace.sm),
             Expanded(
@@ -1482,15 +1496,28 @@ class _AmountDisplay extends StatelessWidget {
             tr('tx_f_nominal'),
             style: theme.textTheme.bodySmall,
           ),
+          const SizedBox(height: SsrSpace.sm),
           ValueListenableBuilder<String>(
             valueListenable: digits,
             builder: (_, d, __) {
               final idr =
                   CurrencyService.toIdr(majorFromDigits(d, dec: dec));
-              return Text(
-                CurrencyService.format(idr),
-                style: AppTheme.moneyLarge,
-                textAlign: TextAlign.center,
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    vertical: 18, horizontal: 16),
+                decoration: BoxDecoration(
+                  gradient: DribTokens.balanceGradient,
+                  borderRadius: BorderRadius.circular(
+                      DribTokens.cardRadius),
+                  boxShadow: DribTokens.cardShadow,
+                ),
+                child: Text(
+                  CurrencyService.format(idr),
+                  style: DribTokens.bigNumber(
+                      size: 32, color: DribTokens.onNavy),
+                  textAlign: TextAlign.center,
+                ),
               );
             },
           ),

@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+232.
+Versi terpasang: 2.72.0+233.
+
+## Yang baru di 2.72.0+233
+
+1. Form catat gaya baru: ikon kategori kotak pastel, kartu nominal gradient navy, tombol simpan biru.
 
 ## Yang baru di 2.72.0+232
 
