@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 
 /// Baris menu "Lainnya": ikon + judul (+ subjudul & chip status) + chevron.
@@ -45,23 +46,22 @@ class NavTile extends StatelessWidget {
   }
 }
 
-/// Ikon 44x44 di atas latar lembut khas tile Lainnya (ukuran ikon 20).
+/// Ikon 44x44 di atas latar pastel biru khas tile (ukuran ikon 20).
+/// TAHAP 8: dipakai hub Profil + sheet mode input.
 class _NavIconTile extends StatelessWidget {
   final IconData icon;
   const _NavIconTile(this.icon);
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: scheme.outline.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(SsrRadius.tile),
-        border: Border.all(color: scheme.outline),
+        color: DribTokens.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: DuoIcon(icon, color: scheme.primary, size: 20),
+      child: DuoIcon(icon, color: DribTokens.primary, size: 20),
     );
   }
 }

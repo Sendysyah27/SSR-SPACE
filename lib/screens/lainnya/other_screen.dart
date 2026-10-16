@@ -49,7 +49,7 @@ import 'package:ssr_space/screens/lainnya/update_log_screen.dart';
 import 'package:ssr_space/screens/workspace/org_switcher_screen.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:ssr_space/screens/dompet/wallets_screen.dart';
-import 'package:ssr_space/widgets/labeled_section_card.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
 import 'package:ssr_space/widgets/nav_tile.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
