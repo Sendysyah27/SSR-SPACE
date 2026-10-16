@@ -27,8 +27,8 @@ void main() {
     expect(s.isNotEmpty, isTrue);
     expect(s, contains('Makan'));
     expect(s, contains(tr('ba_warn')));
-    expect(s, contains('Rp85.000'));
-    expect(s, contains('Rp100.000'));
+    expect(s, contains('Rp 85.000'));
+    expect(s, contains('Rp 100.000'));
   });
 
   test('alertLabel breach via ba_breach + kategori lain', () {

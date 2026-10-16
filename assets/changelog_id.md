@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.71.0+220.
+Versi terpasang: 2.71.0+221.
+
+## Yang baru di 2.71.0+221
+
+1. Fondasi gaya baru (token warna/bentuk/huruf, tanpa ubah tampilan) + format Rupiah standar BI "Rp 1.250.000".
 
 ## Yang baru di 2.71.0+220
 

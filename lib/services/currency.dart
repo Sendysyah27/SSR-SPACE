@@ -85,6 +85,8 @@ class CurrencyService {
   static String format(num idrAmount) {
     final code = currencyCode.value;
     final symbol = kCurrencySymbols[code] ?? 'Rp';
+    // Standar BI: "Rp 1.250.000" (spasi setelah Rp). Non-IDR tak berubah.
+    final sym = code == 'IDR' ? 'Rp ' : symbol;
     final dec = kCurrencyDecimals(code);
     final v = convert(idrAmount);
     final locale = code == 'IDR'
@@ -92,7 +94,7 @@ class CurrencyService {
         : 'en_US';
     final f = NumberFormat.currency(
       locale: locale,
-      symbol: symbol,
+      symbol: sym,
       decimalDigits: dec,
     );
     return f.format(v);

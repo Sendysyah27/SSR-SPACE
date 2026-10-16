@@ -5,7 +5,7 @@ import 'package:ssr_space/utils/mask.dart';
 void main() {
   test('amt tampil asli saat mask mati', () {
     maskAmounts.value = false;
-    expect(amt(1500000), 'Rp1.500.000');
+    expect(amt(1500000), 'Rp 1.500.000');
   });
 
   test('amt menyamar saat mask menyala', () {
@@ -19,7 +19,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await loadMaskAmounts(prefs);
     expect(maskAmounts.value, false);
-    expect(amt(500), 'Rp500');
+    expect(amt(500), 'Rp 500');
   });
 
   test('mask disimpan di prefs dan terbaca balik', () async {

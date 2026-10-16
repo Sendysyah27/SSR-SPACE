@@ -646,3 +646,4 @@ Manifest manggil  yang tidak ada -> FC pas launch.
   - AI akses baca data penuh (dompet, budget, target, utang) untuk konteks.
   - Beranda: ikon robot AI, tombol Mang AI sejajar Catat, greeting random sesuai waktu.
 - **2.71.0+220** (2026-10-16): Batch fix FC + insight — insight laporan pakai parseChatReply (cache lama kompatibel); rangkai ulang FlutterError/dispatcher/zone handler catat DIAG lalu teruskan ke ErrorReporter (upload tak berubah); marker DIAG beranda/notif/widget; onUpdate TodayWidgetProvider dibungkus try-catch Throwable penuh (inject apk.yml).
+- **2.71.0+221** (2026-10-16): TAHAP 1 restyle — token `dribbble_tokens.dart` (bg #EAF0F8, biru #5B9BF5, navy 3 tingkat, oranye badge, gradient navy, radius 20/24, PlusJakartaSans tabular; ungu/indigo dilarang) + format Rupiah BI "Rp 1.250.000" via currency.format/rp/_rp (pemanggil nol ubah; 6 test ikut format baru). Tanpa ubah tampilan layar.

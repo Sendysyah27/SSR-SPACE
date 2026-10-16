@@ -338,7 +338,7 @@ String receiptDetailText(ReceiptScanResult r) {
   for (final it in r.items) {
     n++;
     final qty = it.qty > 1 ? ' x${it.qty}' : '';
-    buf.writeln('$n. ${it.name}$qty — Rp${_rp(it.price)}');
+    buf.writeln('$n. ${it.name}$qty — Rp ${_rp(it.price)}');
   }
   if (r.truncatedItems > 0) {
     buf.writeln('...dan ${r.truncatedItems} item lainnya (disingkat)');
@@ -347,7 +347,7 @@ String receiptDetailText(ReceiptScanResult r) {
     buf.writeln('(tidak ada rincian item)');
   }
   buf.writeln('--------------------------------');
-  buf.writeln('TOTAL Rp${_rp(r.total)}');
+  buf.writeln('TOTAL Rp ${_rp(r.total)}');
   return buf.toString().trimRight();
 }
 

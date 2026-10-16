@@ -284,7 +284,7 @@ void main() {
       final r = parseReceiptScanText(txt, _cats)!;
       final d = receiptDetailText(r);
       expect(d.startsWith('[STRUK]'), isTrue);
-      expect(d.contains('TOTAL Rp16.000'), isTrue);
+      expect(d.contains('TOTAL Rp 16.000'), isTrue);
       expect(isReceiptDetailNote(d), isTrue);
       expect(isReceiptDetailNote('catatan biasa'), isFalse);
     });
