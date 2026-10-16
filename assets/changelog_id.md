@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+228.
+Versi terpasang: 2.72.0+229.
+
+## Yang baru di 2.72.0+229
+
+1. 8 komponen gaya baru siap pakai (saldo, item transaksi, donut, progres budget, avatar anggota, badge peran, pilih workspace, geser konfirmasi). Belum tampil di layar.
 
 ## Yang baru di 2.72.0+228
 
