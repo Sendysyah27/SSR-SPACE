@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ssr_space/services/app_settings.dart';
+import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/goal_forecast.dart';
 import 'package:ssr_space/services/goal_store.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/savings_goal.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -169,6 +171,23 @@ class GoalsScreenState extends State<GoalsScreen> {
     if (name.isEmpty || target == null || target <= 0) {
       setState(() => formErr = tr('goal_err'));
       return;
+    }
+    // Gate Gratis (prefs lokal, plan server sumber kebenaran): tambah
+    // ke-(freeGoals+1) → paywall. Stale (offline/RPC-gagal) → izinkan.
+    // Cap teknis maxGoals tetap di store (take).
+    if (goals.length >= PlanLimits.freeGoals) {
+      final orgId = await activeOrgId();
+      final st = await planStatus(orgId);
+      final blocked = st['stale'] != true &&
+          !canAddGoal(
+            plan: (st['plan'] ?? 'free').toString(),
+            used: goals.length,
+          );
+      if (blocked) {
+        if (!mounted) return;
+        await requirePro(context, tr('bl_limit_goals'));
+        return;
+      }
     }
     final now = DateTime.now();
     final since =

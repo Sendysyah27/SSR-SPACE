@@ -261,6 +261,15 @@ class _BackupScreenState extends State<BackupScreen> {
                         .replaceFirst('{w}', '${result!.walletsCreated}'),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
+                  // Tertahan kuota paket = bukan gagal generik: tampilkan
+                  // pesan kuota jujur (tanpa kunci strings baru).
+                  if (result!.quotaBlocked > 0) ...[
+                    const SizedBox(height: SsrSpace.xs),
+                    Text(
+                      '${result!.quotaBlocked} ${tr('q_wallet_exceeded')}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ],
                 if (err != null) ...[
                   const SizedBox(height: SsrSpace.md),
