@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+241.
+Versi terpasang: 2.72.0+242.
+
+## Yang baru di 2.72.0+242
+
+1. Layar Profil gaya baru: hero gradient navy, 9 seksi kartu putih, ikon pastel biru.
 
 ## Yang baru di 2.72.0+241
 
