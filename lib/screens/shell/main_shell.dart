@@ -14,6 +14,8 @@ import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
+import 'package:ssr_space/screens/lainnya/ai_chat_screen.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_detail_sheet.dart';
@@ -205,6 +207,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     if (mounted) _reloadTab(index);
   }
 
+  /// Mang AI dibuka sebagai route (bukan tab): tombol robot di navbar.
+  /// Kembali = muat ulang tab aktif.
+  Future<void> _openMangAi() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AiChatScreen()),
+    );
+    if (mounted) _reloadTab(index);
+  }
+
   void _select(int i) {
     setState(() => index = i);
     _reloadTab(i);
@@ -221,7 +232,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: Column(
         children: [
@@ -254,14 +264,20 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'catat',
         onPressed: _openInput,
-        backgroundColor: scheme.primary,
-        foregroundColor: scheme.onPrimary,
+        backgroundColor: DribTokens.primary,
+        foregroundColor: DribTokens.onNavy,
         tooltip: tr('act_catat'),
         child: const DuoIcon(AppIcons.add),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      bottomNavigationBar: _MainBottomBar(index: index, onSelect: _select),
+      floatingActionButtonLocation:
+          FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: _DockedNav(
+        index: index,
+        onSelect: _select,
+        onMangAi: _openMangAi,
+      ),
     );
   }
 }
@@ -307,59 +323,115 @@ class _OfflineBar extends StatelessWidget {
   }
 }
 
-/// Navigasi bawah 4 tab: bar surface, aktif primer, nonaktif sekunder.
-class _MainBottomBar extends StatelessWidget {
+/// Navigasi bawah TAHAP 2 restyle: BottomAppBar putih dengan coakan (notch)
+/// untuk FAB '+' di tengah, 4 tab (2 kiri + 2 kanan coakan), dan tombol
+/// chat AI floating di ujung kanan mengikuti navbar.
+class _DockedNav extends StatelessWidget {
   final int index;
   final ValueChanged<int> onSelect;
+  final VoidCallback onMangAi;
 
-  const _MainBottomBar({required this.index, required this.onSelect});
-
-  static List<NavigationDestination> get _destinations => [
-    NavigationDestination(
-      icon: const DuoIcon(AppIcons.home),
-      label: tr('nav_beranda'),
-    ),
-    NavigationDestination(
-      icon: const DuoIcon(AppIcons.transactions),
-      label: tr('nav_transaksi'),
-    ),
-    NavigationDestination(
-      icon: const DuoIcon(AppIcons.budget),
-      label: tr('nav_budget'),
-    ),
-    NavigationDestination(
-      icon: const DuoIcon(AppIcons.reports),
-      label: tr('nav_laporan'),
-    ),
-  ];
+  const _DockedNav({
+    required this.index,
+    required this.onSelect,
+    required this.onMangAi,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final unselected =
-        Theme.of(context).textTheme.bodySmall?.color ?? scheme.onSurface;
-    return NavigationBarTheme(
-      data: NavigationBarThemeData(
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected);
-          return IconThemeData(
-            color: selected ? scheme.primary : unselected,
-          );
-        }),
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8,
+      color: DribTokens.card,
+      child: Row(
+        children: [
+          _NavBtn(
+            icon: AppIcons.home,
+            label: tr('nav_beranda'),
+            selected: index == 0,
+            onTap: () => onSelect(0),
+          ),
+          _NavBtn(
+            icon: AppIcons.transactions,
+            label: tr('nav_transaksi'),
+            selected: index == 1,
+            onTap: () => onSelect(1),
+          ),
+          // Ruang coakan FAB tengah.
+          const SizedBox(width: 72),
+          _NavBtn(
+            icon: AppIcons.budget,
+            label: tr('nav_budget'),
+            selected: index == 2,
+            onTap: () => onSelect(2),
+          ),
+          _NavBtn(
+            icon: AppIcons.reports,
+            label: tr('nav_laporan'),
+            selected: index == 3,
+            onTap: () => onSelect(3),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: FloatingActionButton.small(
+              heroTag: 'mangai',
+              onPressed: onMangAi,
+              backgroundColor: DribTokens.navy,
+              foregroundColor: DribTokens.onNavy,
+              tooltip: tr('chat_title'),
+              child: const Icon(Icons.smart_toy_outlined),
+            ),
+          ),
+        ],
       ),
-      child: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: onSelect,
-        indicatorColor: scheme.primary.withValues(alpha: 0.16),
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected);
-          return TextStyle(
-            fontSize: 12,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            color: selected ? scheme.primary : unselected,
-          );
-        }),
-        destinations: _destinations,
+    );
+  }
+}
+
+/// Satu tombol tab: ikon + label, aktif biru, nonaktif navy redup.
+class _NavBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _NavBtn({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected
+        ? DribTokens.primary
+        : DribTokens.navy.withValues(alpha: 0.55);
+    return Expanded(
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DuoIcon(icon, color: color),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight:
+                      selected ? FontWeight.w700 : FontWeight.w500,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

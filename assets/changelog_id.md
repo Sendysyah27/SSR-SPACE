@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.71.0+223.
+Versi terpasang: 2.72.0+224.
+
+## Yang baru di 2.72.0+224
+
+1. Navigasi baru: tombol + menempel di tengah bar bawah, tombol Mang AI ikut di bar.
 
 ## Yang baru di 2.71.0+223
 
