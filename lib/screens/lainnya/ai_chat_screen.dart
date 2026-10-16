@@ -867,6 +867,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
           provider: 'Mang AI',
         ));
       });
+    } on QuotaExceededException catch (e) {
+      if (!mounted) return;
+      await requirePro(context, e.message);
     } catch (_) {
       if (!mounted) return;
       setState(() {
