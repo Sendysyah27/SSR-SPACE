@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+239.
+Versi terpasang: 2.72.0+240.
+
+## Yang baru di 2.72.0+240
+
+1. Layar Laporan full gaya baru: semua kartu putih, grafik batang biru/navy.
 
 ## Yang baru di 2.72.0+239
 

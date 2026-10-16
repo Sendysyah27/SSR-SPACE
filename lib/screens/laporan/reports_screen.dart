@@ -36,7 +36,6 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
-import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/widgets/day_header.dart';
@@ -957,7 +956,7 @@ class _TransferHints extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1035,12 +1034,11 @@ class _CategoryRecapState extends State<_CategoryRecap> {
           style: theme.textTheme.titleMedium,
         ),
         const SizedBox(height: SsrSpace.xs),
-        GlassCard(
+        DribCard(
           padding: const EdgeInsets.symmetric(
             horizontal: GlassSpace.lg,
             vertical: GlassSpace.sm,
           ),
-          borderRadius: GlassRadius.md,
           child: Column(
             children: [
               for (final c in shown)
@@ -1183,12 +1181,11 @@ class _TxListCard extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: SsrSpace.xs),
-        GlassCard(
+        DribCard(
           padding: const EdgeInsets.symmetric(
             horizontal: GlassSpace.sm,
             vertical: GlassSpace.xs,
           ),
-          borderRadius: GlassRadius.md,
           child: Column(
             children: [
               for (final b in buckets) ...[
@@ -1281,10 +1278,10 @@ class _YearFlowCard extends StatelessWidget {
       if (b.masuk > maxV) maxV = b.masuk;
       if (b.keluar > maxV) maxV = b.keluar;
     }
-    const inColor = Color(0xFF0A84FF);
-    const outColor = Color(0xFFFF453A);
+    const inColor = DribTokens.primary;
+    const outColor = DribTokens.navy;
     final nowM = currentMonth();
-    return GlassCard(
+    return DribCard(
       padding: const EdgeInsets.all(GlassSpace.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
