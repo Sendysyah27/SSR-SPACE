@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+235.
+Versi terpasang: 2.72.0+236.
+
+## Yang baru di 2.72.0+236
+
+1. Layar Laporan gaya baru: donut biru/navy/oranye + legenda, kartu insight putih, tombol unduh biru.
 
 ## Yang baru di 2.72.0+235
 

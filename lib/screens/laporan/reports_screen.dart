@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:csv/csv.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -35,11 +34,15 @@ import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/widgets/day_header.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
+import 'package:ssr_space/widgets/premium/premium_button.dart';
+import 'package:ssr_space/widgets/restyle/donut_chart.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/tx_day_slivers.dart';
@@ -863,199 +866,30 @@ class _MonthFlowChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final total = totalIn + spendOut + savingOut;
     final pctIn = total <= 0 ? 0 : (totalIn / total * 100).round();
-    return GlassCard(
+    return DribCard(
       padding: const EdgeInsets.all(GlassSpace.lg),
-      child: Column(
-        children: [
-          _DonutDial(
-            totalIn: totalIn,
-            spendOut: spendOut,
-            savingOut: savingOut,
-            pctIn: pctIn,
+      child: DonutChart(
+        centerText: '$pctIn%',
+        slices: [
+          DonutSlice(
+            value: totalIn,
+            label: tr('tx_in'),
+            color: DribTokens.primary,
           ),
-          const SizedBox(height: SsrSpace.sm),
-          Row(
-            children: [
-              Expanded(
-                child: _FlowLegend(
-                  color: scheme.primary,
-                  label: tr('tx_in'),
-                  value: totalIn,
-                ),
-              ),
-              Expanded(
-                child: _FlowLegend(
-                  color: scheme.error,
-                  label: tr('tx_out'),
-                  value: spendOut,
-                ),
-              ),
-              Expanded(
-                child: _FlowLegend(
-                  color: AppColors.gold,
-                  label: tr('sv_label'),
-                  value: savingOut,
-                ),
-              ),
-            ],
+          DonutSlice(
+            value: spendOut,
+            label: tr('tx_out'),
+            color: DribTokens.navy,
+          ),
+          DonutSlice(
+            value: savingOut,
+            label: tr('sv_label'),
+            color: DribTokens.accentOrange,
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Lingkaran donut + persen masuk di tengah.
-/// Hanya iris bernilai > 0 yang dirender (fl_chart tak dapat section 0);
-/// bila semua nol, satu lingkaran penuh warna muted sebagai placeholder.
-class _DonutDial extends StatelessWidget {
-  final double totalIn;
-  final double spendOut;
-  final double savingOut;
-  final int pctIn;
-
-  const _DonutDial({
-    required this.totalIn,
-    required this.spendOut,
-    required this.savingOut,
-    required this.pctIn,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final track = Theme.of(context).colorScheme.outline;
-    return SizedBox(
-      height: 180,
-      child: Stack(
-        children: [
-          PieChart(
-            PieChartData(
-              pieTouchData: PieTouchData(enabled: false),
-              sectionsSpace: 2,
-              centerSpaceRadius: 52,
-              startDegreeOffset: 270,
-              sections: _sections(track, Theme.of(context).colorScheme),
-            ),
-            duration: SsrMotion.base,
-            curve: SsrMotion.curve,
-          ),
-          _DonutCenter(pctIn: pctIn),
-        ],
-      ),
-    );
-  }
-
-  List<PieChartSectionData> _sections(Color track, ColorScheme scheme) {
-    final live = <PieChartSectionData>[
-      if (totalIn > 0)
-        PieChartSectionData(
-          value: totalIn,
-          color: scheme.primary,
-          radius: 26,
-          showTitle: false,
-        ),
-      if (spendOut > 0)
-        PieChartSectionData(
-          value: spendOut,
-          color: scheme.error,
-          radius: 26,
-          showTitle: false,
-        ),
-      if (savingOut > 0)
-        PieChartSectionData(
-          value: savingOut,
-          color: AppColors.gold,
-          radius: 26,
-          showTitle: false,
-        ),
-    ];
-    if (live.isNotEmpty) return live;
-    return [
-      PieChartSectionData(
-        value: 1,
-        color: track,
-        radius: 26,
-        showTitle: false,
-      ),
-    ];
-  }
-}
-
-/// Persen masuk di tengah donut (onSurface eksplisit agar terbaca
-/// di light dan dark).
-class _DonutCenter extends StatelessWidget {
-  final int pctIn;
-
-  const _DonutCenter({required this.pctIn});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$pctIn%',
-            style: AppTheme.money.copyWith(
-              fontSize: 20,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          Text(
-            tr('r_center'),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Titik warna + dua baris: label lalu nominal penuh lewat amt
-/// (ikut privacy mode). Tanpa truncate: nominal panjang turun baris utuh.
-class _FlowLegend extends StatelessWidget {
-  final Color color;
-  final String label;
-  final double value;
-
-  const _FlowLegend({
-    required this.color,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          margin: const EdgeInsets.only(top: 3),
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: SsrSpace.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                amt(value),
-                style: SsrType.moneyMedium.copyWith(color: color),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
@@ -1324,6 +1158,7 @@ class _ReportsScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DribTokens.bg,
       appBar: AppBar(title: Text(tr('nav_laporan'))),
       body: body,
     );
@@ -1564,7 +1399,7 @@ class _InsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return GlassPanel(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1611,8 +1446,7 @@ class _MonthlySummary extends StatelessWidget {
     double value,
     Color color,
   ) {
-    return GlassCard(
-      borderRadius: GlassRadius.md,
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1635,15 +1469,14 @@ class _MonthlySummary extends StatelessWidget {
 
   Widget _exportButton(String label, VoidCallback onTap) {
     return Expanded(
-      child: OutlinedButton(
+      child: PremiumButton(
+        height: 48,
+        loading: exporting,
         onPressed: hasItems && !exporting ? onTap : null,
-        child: exporting
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2.2),
-              )
-            : Text(tr('r_dl').replaceFirst('{l}', label)),
+        gradient: const LinearGradient(
+          colors: [DribTokens.primary, DribTokens.primary],
+        ),
+        label: tr('r_dl').replaceFirst('{l}', label),
       ),
     );
   }
@@ -1703,7 +1536,7 @@ class _NetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return GlassCard(
+    return DribCard(
       padding: const EdgeInsets.all(GlassSpace.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
