@@ -492,10 +492,10 @@ jobs:
           public class TodayWidgetProvider extends AppWidgetProvider {
               @Override
               public void onUpdate(Context c, AppWidgetManager m, int[] ids) {
-                  // Fix widget FC: ids kosong/null = tak ada kerja; semua
-                  // baca prefs + update per-id dijaga (Throwable, bukan
-                  // sekadar Exception) supaya satu widget rusak tak
-                  // menjatuhkan provider; launch null = tanpa tap.
+                  // Fix widget FC: SELURUH body dibungkus try-catch
+                  // Throwable (termasuk loop RemoteViews) — satu widget
+                  // rusak tak boleh menjatuhkan provider.
+                  try {
                   if (ids == null || ids.length == 0) return;
                   String title = "SSR SPACE";
                   String line = "Buka aplikasi untuk memuat";
@@ -539,6 +539,8 @@ jobs:
                           m.updateAppWidget(id, v);
                       } catch (Throwable ignored) {
                       }
+                  }
+                  } catch (Throwable ignored) {
                   }
               }
           }

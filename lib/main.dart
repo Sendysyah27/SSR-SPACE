@@ -32,6 +32,23 @@ Future<void> main() async {
   };
   DiagLog.write('DIAG main start');
   ErrorReporter.init();
+  // DIAG-FIX FC: ErrorReporter.init() menimpa FlutterError.onError &
+  // platformDispatcher.onError yang dipasang di atas (dead code) -> crash
+  // Dart tak pernah tercatat di log lokal. Rangkai ulang: catat DIAG lalu
+  // teruskan ke handler ErrorReporter (perilaku upload tidak berubah).
+  final erFlutterOnError = FlutterError.onError;
+  FlutterError.onError = (details) {
+    DiagLog.error('DIAG FlutterError', details.exception, details.stack);
+    erFlutterOnError?.call(details);
+  };
+  final erDispatcherOnError =
+      WidgetsBinding.instance.platformDispatcher.onError;
+  WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+    DiagLog.error('DIAG uncaught-async', error, stack);
+    final h = erDispatcherOnError;
+    if (h != null) return h(error, stack);
+    return true;
+  };
   DiagLog.write('DIAG ErrorReporter init ok');
   await SupabaseConfig.init();
   DiagLog.write('DIAG Supabase init ok');
@@ -103,7 +120,10 @@ Future<void> main() async {
   DiagLog.write('DIAG runApp dipanggil');
   runZonedGuarded(
     () => runApp(app),
-    (err, stack) => ErrorReporter.capture(err, stack, context: 'zone'),
+    (err, stack) {
+      DiagLog.error('DIAG zone', err, stack);
+      ErrorReporter.capture(err, stack, context: 'zone');
+    },
   );
 }
 

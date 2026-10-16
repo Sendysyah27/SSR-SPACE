@@ -169,8 +169,10 @@ class NotifTrack {
         },
       );
       _started = true;
+      DiagLog.write('DIAG notif ensureListening ok');
       unawaited(_ensureNativeConnected());
     } catch (err) {
+      DiagLog.write('DIAG notif ensureListening gagal: $err');
       debugPrint('track listen gagal: $err');
       _started = false;
     }

@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.71.0+219.
+Versi terpasang: 2.71.0+220.
+
+## Yang baru di 2.71.0+220
+
+1. Insight Mang AI tampil teks bersih (bukan JSON mentah); widget Beranda dikeraskan anti-crash.
 
 ## Yang baru di 2.71.0+219
 

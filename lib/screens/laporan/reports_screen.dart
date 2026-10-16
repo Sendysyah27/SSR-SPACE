@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/ai_zen_client.dart';
+import 'package:ssr_space/services/ai_chat_parse.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/datetime.dart';
@@ -181,7 +182,8 @@ class ReportsScreenState extends State<ReportsScreen> {
         final cached = prefs.getString(key);
         if (cached != null && cached.trim().isNotEmpty) {
           if (!mounted) return;
-          setState(() => insight = cached);
+          // Kompat: cache lama mungkin masih JSON mentah kontrak {"reply",...}.
+          setState(() => insight = parseChatReply(cached).reply.trim());
           return;
         }
       }
@@ -202,7 +204,9 @@ class ReportsScreenState extends State<ReportsScreen> {
           'Tanpa list mentah, tanpa markdown berat.';
       final r = await aiChat(prompt);
       if (!mounted) return;
-      final text = r.text.trim();
+      // Kontrak Mang AI: {"reply":"...","action":...} -> tampilkan reply saja.
+      final parsed = parseChatReply(r.text);
+      final text = parsed.reply.trim();
       if (text.isEmpty) return;
       await prefs.setString(key, text);
       await prefs.setInt('${key}_at', nowMs);

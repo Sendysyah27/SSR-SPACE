@@ -645,3 +645,4 @@ Manifest manggil  yang tidak ada -> FC pas launch.
   - Edit memori via UI (ubah/hapus per item).
   - AI akses baca data penuh (dompet, budget, target, utang) untuk konteks.
   - Beranda: ikon robot AI, tombol Mang AI sejajar Catat, greeting random sesuai waktu.
+- **2.71.0+220** (2026-10-16): Batch fix FC + insight — insight laporan pakai parseChatReply (cache lama kompatibel); rangkai ulang FlutterError/dispatcher/zone handler catat DIAG lalu teruskan ke ErrorReporter (upload tak berubah); marker DIAG beranda/notif/widget; onUpdate TodayWidgetProvider dibungkus try-catch Throwable penuh (inject apk.yml).

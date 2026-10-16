@@ -43,7 +43,10 @@ Future<void> refreshTodayWidget({
         masked: maskAmounts.value,
       ),
     );
-  } catch (_) {}
+    DiagLog.write('DIAG refreshTodayWidget done');
+  } catch (_) {
+    DiagLog.write('DIAG refreshTodayWidget error');
+  }
 }
 
 /// Minta provider native gambar ulang snapshot terbaru SEKARANG.

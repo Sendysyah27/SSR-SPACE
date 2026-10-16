@@ -539,7 +539,9 @@ class BerandaScreenState extends State<BerandaScreen> {
         loading = false;
       });
       _pushTodaySnapshot(txs);
+      DiagLog.write('DIAG Beranda _load done');
     } catch (_) {
+      DiagLog.write('DIAG Beranda _load error');
       if (!mounted) return;
       setState(() {
         loading = false;
