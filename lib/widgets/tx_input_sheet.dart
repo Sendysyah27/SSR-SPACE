@@ -8,6 +8,7 @@ import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/screens/lainnya/ai_draft_screen.dart';
 import 'package:ssr_space/services/ai_draft.dart';
+import 'package:ssr_space/services/ai_quota.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/app_settings.dart';
@@ -16,6 +17,7 @@ import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/offline_cache.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
@@ -589,6 +591,13 @@ class _TxInputSheetState extends State<TxInputSheet> {
       }
     } on VisionScanException catch (e) {
       if (!mounted) return;
+      // Kuota AI mentok (dilempar scanReceiptVision sebelum model
+      // dipanggil) -> paywall Pro, bukan error struk.
+      if (e.trKey == 'q_ai_exceeded') {
+        setState(() => _scanning = false);
+        await requirePro(context, tr('q_ai_exceeded'));
+        return;
+      }
       setState(() {
         _scanning = false;
         _scanErr = e.detail == null
@@ -679,7 +688,19 @@ class _TxInputSheetState extends State<TxInputSheet> {
   /// free tier-nya 403 ("can only be used from within OpenCode").
   /// Pengganti: scan vision via OpenCode lokal (_pickVisionSource).
   /// null = isi manual (jujur, tanpa fallback diam-diam).
-  Future<AiDraft?> _tryAiDraft(String raw) async => null;
+  ///
+  /// Gate kuota AI kind 'quick' (entitlement Fase 1) dipasang DI SINI
+  /// agar bila jalur diaktifkan lagi, pemakaian langsung tunduk kuota:
+  /// mentok -> paywall + null; sukses AI kelak -> recordAiUse 'quick'.
+  /// Fail-open: server diam -> lolos.
+  Future<AiDraft?> _tryAiDraft(String raw) async {
+    final orgId = await activeOrgId();
+    if (orgId.isNotEmpty && !await aiAllowed(orgId)) {
+      if (mounted) await requirePro(context, tr('q_ai_exceeded'));
+      return null;
+    }
+    return null;
+  }
 
   /// Ringkasan asal prefill struk: nominal + tanggal + kategori.
   String _scanOriginText(ReceiptData r) {

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
+import 'package:ssr_space/services/ai_quota.dart';
 import 'package:ssr_space/services/ai_cli_client.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
@@ -10,6 +11,7 @@ import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/receipt_scan_parse.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 
 export 'package:image_picker/image_picker.dart' show ImageSource;
 
@@ -61,6 +63,16 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
     }
     final categories = appCategories.value;
     final system = scanReceiptSystemPrompt(categories);
+
+    // Gate kuota AI (entitlement Fase 1) HANYA untuk jalur AI
+    // (vision langsung + OCR->AI di bawah). OCR on-device
+    // (ocrBytesToText) tetap gratis tanpa batas; bila kuota mentok,
+    // lempar sebelum model dipanggil (pemanggil petakan ke paywall).
+    // Fail-open: server diam -> lolos.
+    final orgId = await activeOrgId();
+    if (orgId.isNotEmpty && !await aiAllowed(orgId)) {
+      throw const VisionScanException('q_ai_exceeded');
+    }
 
     ReceiptScanResult? scanned;
     String? lastDetail;
@@ -117,6 +129,8 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
       throw VisionScanException(
           'rcp_fail', (lastDetail ?? 'Struk tak terbaca.').trim());
     }
+    // Sukses AI -> catat satu pemakaian kuota (fail-silent).
+    if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'receipt'));
     final s = scanned;
     // Teks detail gaya struk -> disimpan sebagai catatan transaksi
     // (terlihat lengkap di detail transaksi).
