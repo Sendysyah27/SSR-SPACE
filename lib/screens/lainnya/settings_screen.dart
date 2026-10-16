@@ -17,12 +17,12 @@ import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/app_info.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
-import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/widgets/premium/premium_section_header.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
@@ -111,6 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DribTokens.bg,
       appBar: AppBar(title: Text(tr('st_title'))),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
@@ -227,14 +228,22 @@ class _VersionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GlassPanel(
+    const onHero = DribTokens.onNavy;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: BoxDecoration(
+        gradient: DribTokens.balanceGradient,
+        borderRadius:
+            BorderRadius.circular(DribTokens.cardRadius),
+        boxShadow: DribTokens.cardShadow,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('st_group_about').toUpperCase(),
-            style: theme.textTheme.bodySmall?.copyWith(
+            style: const TextStyle(
+              color: Colors.white70,
               fontWeight: FontWeight.w500,
               letterSpacing: 0.5,
             ),
@@ -242,16 +251,15 @@ class _VersionCard extends StatelessWidget {
           const SizedBox(height: GlassSpace.xs),
           Text(
             tr('sp_tagline'),
-            style: theme.textTheme.titleSmall?.copyWith(
+            style: const TextStyle(
+              color: onHero,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: GlassSpace.sm),
           Text(
             '${tr('st_version')} ${AppInfo.version}',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: const TextStyle(color: Colors.white70),
           ),
         ],
       ),
@@ -585,6 +593,7 @@ class _TopNCard extends StatelessWidget {
         ValueListenableBuilder<bool>(
           valueListenable: reportsTopN,
           builder: (context, value, _) => SwitchListTile(
+            activeColor: DribTokens.primary,
             contentPadding: EdgeInsets.zero,
             title: Text(tr('st_topn')),
             subtitle: Text(tr('st_topn_sub')),
@@ -610,6 +619,7 @@ class _AnimsCard extends StatelessWidget {
         ValueListenableBuilder<bool>(
           valueListenable: uiAnims,
           builder: (context, value, _) => SwitchListTile(
+            activeColor: DribTokens.primary,
             contentPadding: EdgeInsets.zero,
             title: Text(tr('st_anims')),
             value: value,
@@ -818,6 +828,7 @@ class _ReminderCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SwitchListTile(
+                    activeColor: DribTokens.primary,
                     contentPadding: EdgeInsets.zero,
                     title: Text(tr('st_reminder_on')),
                     value: enabled,
@@ -934,6 +945,7 @@ class _WeeklySection extends StatelessWidget {
               children: [
                 const Divider(height: 1),
                 SwitchListTile(
+                  activeColor: DribTokens.primary,
                   contentPadding: EdgeInsets.zero,
                   title: Text(tr('st_weekly_on')),
                   value: enabled,
@@ -1001,6 +1013,7 @@ class _WidgetCard extends StatelessWidget {
         ValueListenableBuilder<bool>(
           valueListenable: widgetToday,
           builder: (context, value, _) => SwitchListTile(
+            activeColor: DribTokens.primary,
             contentPadding: EdgeInsets.zero,
             title: Text(tr('st_widget_today')),
             subtitle: Text(tr('wg_open')),
@@ -1164,6 +1177,7 @@ class _AiCardState extends State<_AiCard> {
       children: [
         Text(tr('ai_sub'), style: Theme.of(context).textTheme.bodySmall),
         SwitchListTile(
+          activeColor: DribTokens.primary,
           contentPadding: EdgeInsets.zero,
           title: Text(tr('ai_enable')),
           subtitle: Text(
@@ -1280,6 +1294,7 @@ class _BiometricCardState extends State<_BiometricCard> {
         ValueListenableBuilder<bool>(
           valueListenable: biometricEnabled,
           builder: (context, enabled, _) => SwitchListTile(
+            activeColor: DribTokens.primary,
             contentPadding: EdgeInsets.zero,
             title: Text(tr('bio_t')),
             subtitle: Text(

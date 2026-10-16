@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+248.
+Versi terpasang: 2.72.0+249.
+
+## Yang baru di 2.72.0+249
+
+1. Layar Pengaturan gaya navy: semua kartu navy teks putih, toggle biru.
 
 ## Yang baru di 2.72.0+248
 
