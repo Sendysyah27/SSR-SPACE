@@ -101,7 +101,13 @@ class _BillingScreenState extends State<BillingScreen> {
     controller.dispose();
     if (code == null) return;
     final trimmed = code.trim();
-    if (trimmed.isEmpty) return;
+    if (trimmed.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('bl_vip_hint'))),
+      );
+      return;
+    }
     try {
       await SupabaseConfig.client.rpc(
         'redeem_vip_code',
@@ -120,6 +126,18 @@ class _BillingScreenState extends State<BillingScreen> {
         key = 'bl_vip_invalid';
       } else if (msg.contains('VIP_EXHAUSTED')) {
         key = 'bl_vip_exhausted';
+      } else {
+        // Double-tap/race (23505/unique-violation) atau error tak dikenal
+        // lain: baris mungkin sudah tercatat — verifikasi via reload,
+        // klaim sukses HANYA bila plan kini pro, jangan klaim buta.
+        await _load();
+        if (!mounted) return;
+        if (plan == 'pro') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(tr('bl_vip_ok'))),
+          );
+          return;
+        }
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(tr(key))),

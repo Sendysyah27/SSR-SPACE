@@ -954,6 +954,29 @@ select t_assert(
 set role authenticated;
 set test.user_id = '11111111-1111-4111-8111-111111111111';
 
+-- T34d2 (F2): double-submit berurutan → baris existing yang sama
+-- (expires_at identik), tanpa raise, tanpa increment. Cabang EXCEPTION
+-- unique_violation hanya terjangkau via race konkuren sejati (tak bisa
+-- direproduksi sekuensial); cakupannya = return baris-sama ini + review kode.
+do $$
+declare
+  e1 timestamptz;
+  e2 timestamptz;
+begin
+  select (public.redeem_vip_code('SSR-VIP-T34A')->>'expires_at')::timestamptz into e1;
+  select (public.redeem_vip_code('SSR-VIP-T34A')->>'expires_at')::timestamptz into e2;
+  if e1 is distinct from e2 then
+    raise exception 'ASSERT GAGAL: T34d2 double-submit expires_at geser';
+  end if;
+end $$;
+reset role;
+select t_assert(
+  (select used_count from vip_codes
+   where code_hash = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-T34A')), 'UTF8')), 'hex')) = 1,
+  'T34d2 double-submit tak increment');
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+
 -- T34e: entitlement lampau → plan free (org milik frank, insert expired via superuser).
 set test.user_id = 'f0000000-0000-4000-8000-00000000000f';
 insert into organizations (id, name, created_by)
@@ -972,6 +995,44 @@ select t_assert(public.org_plan('f0000000-0000-4000-8000-0000000000f0') = 'free'
 select t_assert(
   (public.plan_status('f0000000-0000-4000-8000-0000000000f0')->>'plan') = 'free',
   'T34e plan_status free saat entitlement lampau');
+
+-- T34k (F1): redeem ulang kode yang entitlement-nya SUDAH expired →
+-- renewal jujur: berakhir Pro (expiry baru), tetap 1 baris (UPDATE),
+-- used_count +1. Kode fresh EXP-34 + baris expired disiapkan superuser.
+reset role;
+insert into vip_codes (code_hash, duration_days, max_uses, note) values
+  (encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-EXP-34')), 'UTF8')), 'hex'), 30, 5, 't34 expired')
+on conflict (code_hash) do nothing;
+insert into user_entitlements (user_id, plan, expires_at, source, source_ref)
+values ('f0000000-0000-4000-8000-00000000000f', 'pro', now() - interval '1 day', 'vip_code',
+  encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-EXP-34')), 'UTF8')), 'hex'));
+set role authenticated;
+set test.user_id = 'f0000000-0000-4000-8000-00000000000f';
+select public.redeem_vip_code('SSR-VIP-EXP-34');
+select t_assert(public.org_plan('f0000000-0000-4000-8000-0000000000f0') = 'pro',
+  'T34k expired re-redeem → org_plan pro lagi');
+select t_assert(
+  (public.plan_status('f0000000-0000-4000-8000-0000000000f0')->>'plan') = 'pro',
+  'T34k expired re-redeem → plan_status pro');
+reset role;
+select t_assert(
+  (select count(*) from user_entitlements
+   where user_id = 'f0000000-0000-4000-8000-00000000000f'
+     and source = 'vip_code'
+     and source_ref = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-EXP-34')), 'UTF8')), 'hex')) = 1,
+  'T34k renewal tetap 1 baris (UPDATE)');
+select t_assert(
+  (select expires_at from user_entitlements
+   where user_id = 'f0000000-0000-4000-8000-00000000000f'
+     and source = 'vip_code'
+     and source_ref = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-EXP-34')), 'UTF8')), 'hex')) > now(),
+  'T34k expiry diperbarui ke masa depan');
+select t_assert(
+  (select used_count from vip_codes
+   where code_hash = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-EXP-34')), 'UTF8')), 'hex')) = 1,
+  'T34k renewal increment tepat 1x');
+set role authenticated;
+set test.user_id = 'f0000000-0000-4000-8000-00000000000f';
 
 -- T34f-setup: org free milik grace (tanpa entitlement) untuk uji blokir g/h/i.
 set test.user_id = '60000000-0000-4000-8000-000000000006';

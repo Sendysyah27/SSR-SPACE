@@ -8,7 +8,6 @@ import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/screens/lainnya/ai_draft_screen.dart';
 import 'package:ssr_space/services/ai_draft.dart';
-import 'package:ssr_space/services/ai_quota.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/app_settings.dart';
@@ -689,16 +688,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
   /// Pengganti: scan vision via OpenCode lokal (_pickVisionSource).
   /// null = isi manual (jujur, tanpa fallback diam-diam).
   ///
-  /// Gate kuota AI kind 'quick' (entitlement Fase 1) dipasang DI SINI
-  /// agar bila jalur diaktifkan lagi, pemakaian langsung tunduk kuota:
-  /// mentok -> paywall + null; sukses AI kelak -> recordAiUse 'quick'.
-  /// Fail-open: server diam -> lolos.
+  /// AI gate intentionally absent: stub returns null, no AI consumed.
   Future<AiDraft?> _tryAiDraft(String raw) async {
-    final orgId = await activeOrgId();
-    if (orgId.isNotEmpty && !await aiAllowed(orgId)) {
-      if (mounted) await requirePro(context, tr('q_ai_exceeded'));
-      return null;
-    }
+    // AI gate intentionally absent: stub returns null, no AI consumed.
     return null;
   }
 

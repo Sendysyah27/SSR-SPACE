@@ -152,6 +152,10 @@ grant execute on function public.plan_status(uuid) to authenticated;
 
 -- 4b. redeem_vip_code: normalisasi + hash pola invite (join_org_by_invite),
 --     idempoten sebelum EXHAUSTED, increment = gerbang atomik lawan race.
+--     F1: idempotent hit yang SUDAH expired jatuh ke jalur renewal
+--     (cek EXHAUSTED + UPDATE expiry + increment terjaga) — bukan sukses basi.
+--     F2: balapan double-tap (unique_violation 23505) kembalikan baris
+--     existing, jangan bocorkan error mentah ke klien.
 create or replace function public.redeem_vip_code(p_code text)
 returns jsonb
 language plpgsql
@@ -164,6 +168,7 @@ declare
   vip record;
   ent record;
   v_exp timestamptz;
+  v_renew boolean := false;
 begin
   if v_uid is null then
     raise exception 'NOT_AUTHENTICATED';
@@ -185,6 +190,7 @@ begin
 
   -- Idempoten: user+kode sama (cocok source_ref) → entitlement lama,
   -- tanpa increment (sebelum cek EXHAUSTED, pola join_org_by_invite).
+  -- Bila entitlement SUDAH expired → renewal: jatuh ke jalur normal di bawah.
   select * into ent
   from user_entitlements
   where user_id = v_uid
@@ -192,8 +198,11 @@ begin
     and source_ref = v_hash
   limit 1;
   if found then
-    return jsonb_build_object(
-      'expires_at', ent.expires_at, 'duration_days', vip.duration_days);
+    if ent.expires_at is null or ent.expires_at > now() then
+      return jsonb_build_object(
+        'expires_at', ent.expires_at, 'duration_days', vip.duration_days);
+    end if;
+    v_renew := true;
   end if;
 
   if vip.used_count >= vip.max_uses then
@@ -206,8 +215,14 @@ begin
     v_exp := now() + (vip.duration_days || ' days')::interval;
   end if;
 
-  insert into user_entitlements (user_id, plan, expires_at, source, source_ref)
-  values (v_uid, 'pro', v_exp, 'vip_code', v_hash);
+  if v_renew then
+    update user_entitlements
+    set expires_at = v_exp, granted_at = now()
+    where id = ent.id;
+  else
+    insert into user_entitlements (user_id, plan, expires_at, source, source_ref)
+    values (v_uid, 'pro', v_exp, 'vip_code', v_hash);
+  end if;
 
   -- Increment = gerbang atomik (bukan sekadar counter).
   update vip_codes
@@ -221,6 +236,21 @@ begin
 
   return jsonb_build_object(
     'expires_at', v_exp, 'duration_days', vip.duration_days);
+exception
+  when unique_violation then
+    -- Double-tap/konkuren: pesaing menang duluan → kembalikan baris
+    -- existing, jangan bocorkan 23505 mentah ke klien.
+    select * into ent
+    from user_entitlements
+    where user_id = v_uid
+      and source = 'vip_code'
+      and source_ref = v_hash
+    limit 1;
+    if found then
+      return jsonb_build_object(
+        'expires_at', ent.expires_at, 'duration_days', vip.duration_days);
+    end if;
+    raise;
 end $$;
 
 revoke all on function public.redeem_vip_code(text) from public, anon;
