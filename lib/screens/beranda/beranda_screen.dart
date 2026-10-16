@@ -539,6 +539,10 @@ class BerandaScreenState extends State<BerandaScreen> {
         loading = false;
       });
       _pushTodaySnapshot(txs);
+      // Fan-out varian widget fase 2 (fire-and-forget, fail-open tiap
+      // penulis; toggle-off no-op di dalam penulis).
+      unawaited(refreshWidgetBudgetSnapshot(orgId).catchError((_) {}));
+      unawaited(refreshWidgetBalanceSnapshot(orgId).catchError((_) {}));
       DiagLog.write('DIAG Beranda _load done');
     } catch (_) {
       DiagLog.write('DIAG Beranda _load error');

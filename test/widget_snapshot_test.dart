@@ -138,6 +138,8 @@ void main() {
     });
 
     test('toggle mati → refreshTodayWidget hapus ketiga kunci', () async {
+      final prev = widgetToday.value;
+      addTearDown(() => widgetToday.value = prev);
       SharedPreferences.setMockInitialValues({
         'widget_snapshot': 'x',
         'widget_snapshot_budget': 'y',
@@ -149,7 +151,6 @@ void main() {
       expect(prefs.getString('widget_snapshot'), isNull);
       expect(prefs.getString('widget_snapshot_budget'), isNull);
       expect(prefs.getString('widget_snapshot_balance'), isNull);
-      widgetToday.value = true;
     });
 
     test('toggle mati → clearTodaySnapshot hapus ketiga kunci', () async {
@@ -166,6 +167,8 @@ void main() {
     });
 
     test('penulis varian no-op tanpa toggle/org (tanpa network)', () async {
+      final prev = widgetToday.value;
+      addTearDown(() => widgetToday.value = prev);
       SharedPreferences.setMockInitialValues({});
       widgetToday.value = false;
       await refreshWidgetBudgetSnapshot('org-x');
@@ -173,7 +176,6 @@ void main() {
       widgetToday.value = true;
       await refreshWidgetBudgetSnapshot('');
       await refreshWidgetBalanceSnapshot('');
-      widgetToday.value = false;
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('widget_snapshot_budget'), isNull);
       expect(prefs.getString('widget_snapshot_balance'), isNull);

@@ -239,9 +239,12 @@ Future<void> refreshWidgetBalanceSnapshot(String orgId) async {
     }
     final today = _todayYmd();
     final text = '${tr('w_total')} ${amt(total)}';
-    // `dompet` hardcoded ID: belum ada kunci strings hitung-dompet —
-    // satu baris ini diganti saat kunci wg_balance_meta mendarat.
-    final text2 = '$count dompet · $today';
+    // Template milik Task 5 (`wg_balance_meta`: ID '{n} dompet · {d}' /
+    // EN '{n} wallets · {d}'). Sementara kunci belum ada, tr() kembalikan
+    // kunci itu sendiri (tak crash — pola aman yang sama).
+    final text2 = tr('wg_balance_meta')
+        .replaceFirst('{n}', '$count')
+        .replaceFirst('{d}', today);
     try {
       final prefs = await SharedPreferences.getInstance();
       if (!widgetToday.value) {
