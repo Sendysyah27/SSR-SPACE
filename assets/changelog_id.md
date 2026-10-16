@@ -1,6 +1,13 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.73.0+251.
+Versi terpasang: 2.74.0+252.
+
+## Yang baru di 2.74.0+252
+
+1. 3 widget layar utama: Hari-ini + Budget + Saldo — angka dari data tersimpan, tombol Catat Keluar/Masuk buka form catat langsung.
+2. Jalan pintas catat: QS tile + ikon shortcut "Catat" — terkunci atau belum login, bukannya hilang melainkan diantre lalu dibuka setelah siap.
+3. Bagikan gambar dari aplikasi lain: otomatis dipindai jadi draft catat (hanya gambar pertama diproses, tanpa simpan otomatis).
+4. Tanpa migration database.
 
 ## Yang baru di 2.73.0+251
 

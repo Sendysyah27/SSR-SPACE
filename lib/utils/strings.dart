@@ -760,6 +760,28 @@ const _t = <String, Map<String, String>>{
     'id': 'Sisa budget {m}',
     'en': 'Budget left {m}',
   },
+  'wg_budget_title': {'id': 'Budget', 'en': 'Budget'},
+  'wg_balance_title': {'id': 'Saldo', 'en': 'Balance'},
+  'wg_balance_total': {
+    'id': 'Total saldo {m}',
+    'en': 'Total balance {m}',
+  },
+  'wg_balance_meta': {
+    'id': '{n} dompet · {d}',
+    'en': '{n} wallets · {d}',
+  },
+  'wg_share_first': {
+    'id': 'Hanya gambar pertama yang diproses.',
+    'en': 'Only the first image is processed.',
+  },
+  'wg_locked_queued': {
+    'id': 'Belum siap — antrean dibuka setelah siap.',
+    'en': 'Not ready yet — the queue opens when ready.',
+  },
+  'ql_invalid_ignored': {
+    'id': 'Tautan tak dikenal, diabaikan.',
+    'en': 'Unknown link, ignored.',
+  },
   // Lainnya
   'o_logout_t': {'id': 'Keluar dari akun?', 'en': 'Log out of your account?'},
   'o_logout': {'id': 'Keluar', 'en': 'Log out'},
