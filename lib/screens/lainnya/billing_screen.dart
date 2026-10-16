@@ -49,7 +49,7 @@ class _BillingScreenState extends State<BillingScreen> {
       setState(() {
         plan = (status['plan'] ?? 'free').toString();
         final exp = status['expiresAt'];
-        expiresAt = exp == null ? null : exp.toString();
+        expiresAt = exp?.toString();
         stale = status['stale'] == true;
         loading = false;
       });

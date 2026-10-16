@@ -96,6 +96,7 @@ class DebtsScreenState extends State<DebtsScreen> {
         return;
       }
     }
+    if (!mounted) return;
     final made = await showModalBottomSheet<DebtRecord>(
       context: context,
       isScrollControlled: true,
