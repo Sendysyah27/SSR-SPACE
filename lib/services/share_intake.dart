@@ -294,7 +294,7 @@ class ShareIntake {
     }
     if (shareOpened) {
       saved = true;
-    } else if (_busy) {
+    } else if (_busy || !context.mounted) {
       try {
         await queueSharePath(share.path!, hadMore: share.hadMore);
       } catch (_) {}

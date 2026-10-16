@@ -959,7 +959,7 @@ jobs:
                                   .optString("text", "");
                           if (!text.isEmpty()) line = text;
                       }
-                  } catch (Exception ignored) {
+                  } catch (Throwable ignored) {
                   }
                   if (Build.VERSION.SDK_INT >= 29) t.setSubtitle(line);
                   t.updateTile();
@@ -975,7 +975,7 @@ jobs:
                       i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
                       i.setPackage(getPackageName());
                       startActivityAndCollapse(i);
-                  } catch (Exception ignored) {
+                  } catch (Throwable ignored) {
                   }
               }
           }
