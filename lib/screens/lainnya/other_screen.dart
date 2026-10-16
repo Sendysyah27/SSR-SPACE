@@ -621,6 +621,26 @@ class _HubList extends StatelessWidget {
   }
 }
 
+/// Kepala seksi hub: ikon kecil biru + label (pengganti header
+/// LabeledSectionCard agar wadah bisa DribCard putih).
+class _SectionLabel extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _SectionLabel({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        DuoIcon(icon, size: 14, color: DribTokens.primary),
+        const SizedBox(width: SsrSpace.xs),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
+}
+
 /// HEADER: kartu identitas hero (avatar inisial + nama + chip).
 /// TAHAP 8: gradient navy Dribbble, teks putih.
 class _HeaderCard extends StatelessWidget {
@@ -788,11 +808,13 @@ class _DataSectionState extends State<_DataSection> {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('pf_data'),
-      icon: AppIcons.transactions,
-      children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(icon: AppIcons.transactions, label: tr('pf_data')),
+          const SizedBox(height: SsrSpace.xs),
         NavTile(
           icon: AppIcons.wallet,
           title: tr('o_wallets'),
@@ -886,6 +908,7 @@ class _DataSectionState extends State<_DataSection> {
           onTap: widget.onNfc,
         ),
       ],
+      ),
     );
   }
 }
@@ -902,11 +925,13 @@ class _TrackingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('pf_tracking'),
-      icon: AppIcons.tracking,
-      children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(icon: AppIcons.tracking, label: tr('pf_tracking')),
+          const SizedBox(height: SsrSpace.xs),
         NavTile(
           icon: AppIcons.tracking,
           title: tr('o_tracking'),
@@ -918,6 +943,7 @@ class _TrackingSection extends StatelessWidget {
           onTap: onOpen,
         ),
       ],
+      ),
     );
   }
 }
@@ -942,11 +968,13 @@ class _BackupSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('pf_backup'),
-      icon: AppIcons.backup,
-      children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(icon: AppIcons.backup, label: tr('pf_backup')),
+          const SizedBox(height: SsrSpace.xs),
         NavTile(
           icon: AppIcons.backup,
           title: tr('o_backup'),
@@ -981,6 +1009,7 @@ class _BackupSection extends StatelessWidget {
           onTap: onClearCache,
         ),
       ],
+      ),
     );
   }
 }
@@ -1023,11 +1052,13 @@ class _WorkspaceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('pf_workspace'),
-      icon: AppIcons.workspace,
-      children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(icon: AppIcons.workspace, label: tr('pf_workspace')),
+          const SizedBox(height: SsrSpace.xs),
         NavTile(
           icon: AppIcons.invite,
           title: tr('o_invite'),
@@ -1075,6 +1106,7 @@ class _WorkspaceSection extends StatelessWidget {
           onTap: onBilling,
         ),
       ],
+      ),
     );
   }
 }
@@ -1087,11 +1119,13 @@ class _AppearanceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('pf_appearance'),
-      icon: AppIcons.eye,
-      children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(icon: AppIcons.eye, label: tr('pf_appearance')),
+          const SizedBox(height: SsrSpace.xs),
         ValueListenableBuilder<bool>(
           valueListenable: maskAmounts,
           builder: (context, masked, _) => SwitchListTile(
@@ -1109,6 +1143,7 @@ class _AppearanceSection extends StatelessWidget {
           onTap: () => onSettings('font'),
         ),
       ],
+      ),
     );
   }
 }
@@ -1121,17 +1156,20 @@ class _LangMoneySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('pf_langmoney'),
-      icon: AppIcons.billing,
-      children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(icon: AppIcons.billing, label: tr('pf_langmoney')),
+          const SizedBox(height: SsrSpace.xs),
         NavTile(
           icon: AppIcons.menu,
           title: tr('st_lang'),
           onTap: () => onSettings('lang'),
         ),
       ],
+      ),
     );
   }
 }
@@ -1144,17 +1182,20 @@ class _ReminderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('pf_reminder'),
-      icon: AppIcons.clock,
-      children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(icon: AppIcons.clock, label: tr('pf_reminder')),
+          const SizedBox(height: SsrSpace.xs),
         NavTile(
           icon: AppIcons.menu,
           title: tr('st_reminder_on'),
           onTap: () => onSettings('reminder'),
         ),
       ],
+      ),
     );
   }
 }
@@ -1168,11 +1209,13 @@ class _SecuritySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      label: tr('pf_security'),
-      icon: AppIcons.lock,
-      children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(icon: AppIcons.lock, label: tr('pf_security')),
+          const SizedBox(height: SsrSpace.xs),
         NavTile(
           icon: AppIcons.lock,
           title: tr('st_pin'),
@@ -1181,6 +1224,7 @@ class _SecuritySection extends StatelessWidget {
         const Divider(height: 1),
         NavTile(icon: AppIcons.logout, title: tr('o_logout'), onTap: onLogout),
       ],
+      ),
     );
   }
 }
@@ -1219,10 +1263,13 @@ class _AboutSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LabeledSectionCard(
-      label: tr('pf_about'),
-      icon: AppIcons.menu,
-      children: [
+    return DribCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(icon: AppIcons.menu, label: tr('pf_about')),
+          const SizedBox(height: SsrSpace.xs),
         NavTile(
           icon: AppIcons.menu,
           title: tr('ab_about'),
