@@ -8,14 +8,14 @@ void main() {
   test('masuk satu baris', () {
     expect(
       savedBody(type: 'in', amount: 50000, app: 'DANA'),
-      'Masuk Rp50.000 • DANA',
+      'Masuk Rp 50.000 • DANA',
     );
   });
 
   test('keluar satu baris', () {
     expect(
       savedBody(type: 'out', amount: 10800, app: 'BRI'),
-      'Keluar Rp10.800 • BRI',
+      'Keluar Rp 10.800 • BRI',
     );
   });
 
@@ -27,14 +27,14 @@ void main() {
         app: 'ISAKU',
         appTo: 'GoPay',
       ),
-      'Transfer Rp17.000 • ISAKU → GoPay',
+      'Transfer Rp 17.000 • ISAKU → GoPay',
     );
   });
 
   test('transfer tanpa tujuan = satu baris biasa', () {
     expect(
       savedBody(type: 'transfer', amount: 17000, app: 'ISAKU'),
-      'Transfer Rp17.000 • ISAKU',
+      'Transfer Rp 17.000 • ISAKU',
     );
   });
 

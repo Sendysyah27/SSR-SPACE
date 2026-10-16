@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.71.0+222.
+Versi terpasang: 2.71.0+223.
+
+## Yang baru di 2.71.0+223
+
+1. Perbaikan test: 4 test notif tersimpan ikut format Rupiah baru. Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.71.0+222
 
