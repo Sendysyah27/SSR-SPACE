@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 
 /// Design tokens TAHAP 1 restyle (referensi Dribbble banking).

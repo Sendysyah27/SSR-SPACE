@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.71.0+221.
+Versi terpasang: 2.71.0+222.
+
+## Yang baru di 2.71.0+222
+
+1. Perbaikan kecil: hapus import tak perlu di token (CI analyze hijau lagi). Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.71.0+221
 
