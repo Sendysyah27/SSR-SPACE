@@ -16,6 +16,7 @@ import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/offline_cache.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
@@ -589,6 +590,13 @@ class _TxInputSheetState extends State<TxInputSheet> {
       }
     } on VisionScanException catch (e) {
       if (!mounted) return;
+      // Kuota AI mentok (dilempar scanReceiptVision sebelum model
+      // dipanggil) -> paywall Pro, bukan error struk.
+      if (e.trKey == 'q_ai_exceeded') {
+        setState(() => _scanning = false);
+        await requirePro(context, tr('q_ai_exceeded'));
+        return;
+      }
       setState(() {
         _scanning = false;
         _scanErr = e.detail == null
@@ -679,7 +687,12 @@ class _TxInputSheetState extends State<TxInputSheet> {
   /// free tier-nya 403 ("can only be used from within OpenCode").
   /// Pengganti: scan vision via OpenCode lokal (_pickVisionSource).
   /// null = isi manual (jujur, tanpa fallback diam-diam).
-  Future<AiDraft?> _tryAiDraft(String raw) async => null;
+  ///
+  /// AI gate intentionally absent: stub returns null, no AI consumed.
+  Future<AiDraft?> _tryAiDraft(String raw) async {
+    // AI gate intentionally absent: stub returns null, no AI consumed.
+    return null;
+  }
 
   /// Ringkasan asal prefill struk: nominal + tanggal + kategori.
   String _scanOriginText(ReceiptData r) {

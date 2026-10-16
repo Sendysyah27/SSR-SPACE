@@ -14,12 +14,14 @@ import 'package:ssr_space/services/ai_chat_parse.dart';
 import 'package:ssr_space/services/ai_soul.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/budget_service.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/ai_zen_client.dart';
+import 'package:ssr_space/services/ai_quota.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
@@ -258,6 +260,15 @@ class _AiChatScreenState extends State<AiChatScreen> {
     final img = retryText != null ? null : _pendingImage;
     final mime = retryText != null ? null : _pendingMime;
     if ((text.isEmpty && img == null) || _sending) return;
+    // Gate kuota AI (entitlement Fase 1): tiap kirim dicek. Mentok ->
+    // paywall + batal (tanpa panggil model, tanpa bubble user baru).
+    // Fail-open: server diam -> lolos (aiAllowed true).
+    final orgId = await activeOrgId();
+    if (orgId.isNotEmpty && !await aiAllowed(orgId)) {
+      if (!mounted) return;
+      await requirePro(context, tr('q_ai_exceeded'));
+      return;
+    }
     final memory = await loadAiMemory();
     if (!mounted) return;
     final summaries = await loadAiSummaries();
@@ -287,6 +298,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
           mimeType: mime,
           history: history,
           dataContext: _dataCtx.isEmpty ? null : _dataCtx);
+      // Sukses -> catat pemakaian kuota AI (fail-silent, tanpa blokir UI).
+      if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'chat'));
       if (!mounted) return;
       unawaited(
           addAiMemory(parseIngatBlocks(r.text)).then((_) async {
@@ -854,6 +867,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
           provider: 'Mang AI',
         ));
       });
+    } on QuotaExceededException catch (e) {
+      if (!mounted) return;
+      await requirePro(context, e.message);
     } catch (_) {
       if (!mounted) return;
       setState(() {

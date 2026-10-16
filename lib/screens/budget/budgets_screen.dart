@@ -9,6 +9,8 @@ import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/services/budget_alerts.dart';
 import 'package:ssr_space/services/budget_pace.dart';
 import 'package:ssr_space/services/budget_service.dart';
+import 'package:ssr_space/services/plan_limits.dart';
+import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/app_categories.dart';
@@ -208,6 +210,9 @@ class BudgetsScreenState extends State<BudgetsScreen> {
         unawaited(showSuccessFlash(context));
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(tr('b_updated'))));
+      } on QuotaExceededException catch (e) {
+        if (!mounted) return;
+        await requirePro(context, e.message);
       } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context)
@@ -406,6 +411,9 @@ class BudgetsScreenState extends State<BudgetsScreen> {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(tr('b_saved'))));
       }
+      return null;
+    } on QuotaExceededException catch (e) {
+      if (mounted) await requirePro(context, e.message);
       return null;
     } catch (_) {
       return tr('b_err_save');

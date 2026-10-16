@@ -8,6 +8,7 @@ import 'package:ssr_space/services/nfc_emoney.dart';
 import 'package:ssr_space/services/nfc_emoney_logic.dart';
 import 'package:ssr_space/services/notif_parse.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -529,6 +530,10 @@ class _ResultSheetState extends State<_ResultSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(tr('nfc_wallet_made'))),
       );
+    } on QuotaExceededException catch (e) {
+      if (!mounted) return;
+      setState(() => busy = false);
+      await requirePro(context, e.message);
     } catch (_) {
       if (!mounted) return;
       setState(() => busy = false);

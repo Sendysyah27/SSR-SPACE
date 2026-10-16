@@ -5,6 +5,17 @@ import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Kuota paket mentok (trigger QUOTA_EXCEEDED, migration_20).
+/// Pesan sudah lokal (q_wallet_exceeded / q_budget_exceeded) — pemanggil
+/// UI: catch → `requirePro(context, e.message)`. Bukan SpaceException
+/// (itu khusus mode Bendahara 42501).
+class QuotaExceededException implements Exception {
+  final String message;
+  const QuotaExceededException(this.message);
+  @override
+  String toString() => 'QuotaExceededException($message)';
+}
+
 /// Bungkus tulis dompet: RLS bendahara → pesan jujur, bukan error teknis.
 Future<T> _guardSpace<T>(Future<T> Function() run) async {
   try {
@@ -23,12 +34,21 @@ class WalletService {
 
   Future<String> create(String orgId, String name, String type) async {
     return _guardSpace(() async {
-      final row = await SupabaseConfig.client
-          .from('wallets')
-          .insert({'org_id': orgId, 'name': name, 'type': type})
-          .select('id')
-          .single();
-      return row['id'].toString();
+      try {
+        final row = await SupabaseConfig.client
+            .from('wallets')
+            .insert({'org_id': orgId, 'name': name, 'type': type})
+            .select('id')
+            .single();
+        return row['id'].toString();
+      } on PostgrestException catch (e) {
+        // Trigger kuota (migration_20): tawarkan Pro, bukan error teknis.
+        // _guardSpace di luar tetap memetakan 42501 Bendahara.
+        if (e.message.contains('QUOTA_EXCEEDED')) {
+          throw QuotaExceededException(tr('q_wallet_exceeded'));
+        }
+        rethrow;
+      }
     });
   }
 

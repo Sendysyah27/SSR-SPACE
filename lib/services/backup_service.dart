@@ -7,17 +7,21 @@ import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Hasil restore: hitung jujur per baris (ok/lewat/gagal + dompet dibuat).
+/// Hasil restore: hitung jujur per baris (ok/lewat/gagal + dompet dibuat
+/// + tertahan kuota). quotaBlocked = baris yang ditolak trigger
+/// QUOTA_EXCEEDED (paket Gratis penuh) — bukan "gagal" generik.
 class RestoreResult {
   final int walletsCreated;
   final int ok;
   final int skipped;
   final int failed;
+  final int quotaBlocked;
   const RestoreResult({
     required this.walletsCreated,
     required this.ok,
     required this.skipped,
     required this.failed,
+    this.quotaBlocked = 0,
   });
 }
 
@@ -95,10 +99,23 @@ Future<RestoreResult> restoreBackup(
     for (final w in live) w.name.trim().toLowerCase(): w.id,
   };
   var created = 0;
+  var quotaBlocked = 0;
   for (final entry in plan.missingWallets.entries) {
-    final id = await WalletService().create(orgId, entry.key, entry.value);
-    nameToId[entry.key.trim().toLowerCase()] = id;
-    created++;
+    try {
+      final id = await WalletService().create(orgId, entry.key, entry.value);
+      nameToId[entry.key.trim().toLowerCase()] = id;
+      created++;
+    } on QuotaExceededException {
+      // Dompet Gratis penuh: catat jujur, lanjutkan sisa rencana
+      // (transaksi yang butuh dompet ini jadi skipped di bawah).
+      quotaBlocked++;
+    } on PostgrestException catch (e) {
+      if (e.message.contains('QUOTA_EXCEEDED')) {
+        quotaBlocked++;
+      } else {
+        rethrow;
+      }
+    }
   }
   var ok = 0;
   var skipped = plan.skipped;
@@ -136,8 +153,11 @@ Future<RestoreResult> restoreBackup(
       ok++;
     } on PostgrestException catch (e) {
       // Duplikat hash = baris sudah ada → lewati, bukan gagal.
+      // QUOTA = tertahan kuota paket → hitung jujur, bukan gagal generik.
       if (e.code == '23505') {
         skipped++;
+      } else if (e.message.contains('QUOTA_EXCEEDED')) {
+        quotaBlocked++;
       } else {
         failed++;
       }
@@ -150,5 +170,6 @@ Future<RestoreResult> restoreBackup(
     ok: ok,
     skipped: skipped,
     failed: failed,
+    quotaBlocked: quotaBlocked,
   );
 }

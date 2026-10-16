@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ssr_space/models/wallet.dart';
+import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/due_notify.dart';
 import 'package:ssr_space/services/due_reminder.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -82,6 +84,23 @@ class RecurringBillsScreenState extends State<RecurringBillsScreen> {
     if (i >= 0) {
       next[i] = bill;
     } else {
+      // Gate Gratis hanya untuk tagihan BARU (edit tak dihitung).
+      // ke-(freeBills+1) → paywall; stale → izinkan. Cap teknis
+      // maxBills tetap di bawah (diam, pola existing).
+      if (next.length >= PlanLimits.freeBills) {
+        final orgId = await activeOrgId();
+        final st = await planStatus(orgId);
+        final blocked = st['stale'] != true &&
+            !canAddBill(
+              plan: (st['plan'] ?? 'free').toString(),
+              used: next.length,
+            );
+        if (blocked) {
+          if (!mounted) return;
+          await requirePro(context, tr('bl_limit_bills'));
+          return;
+        }
+      }
       if (next.length >= maxBills) return;
       next.add(bill);
     }

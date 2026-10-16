@@ -6,7 +6,9 @@ import 'package:ssr_space/services/offline_cache.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 double budgetProgress(double spent, double limit) {
   if (limit <= 0) return 0;
@@ -166,16 +168,25 @@ Future<void> setBudget(
   double limit, {
   int warnPct = 80,
 }) async {
-  await SupabaseConfig.client.from('budgets').upsert(
-    {
-      'org_id': orgId,
-      'category': category,
-      'month': currentMonth(),
-      'limit_amount': limit,
-      'warn_pct': warnPct,
-    },
-    onConflict: 'org_id,category,month',
-  );
+  // Trigger kuota (migration_20) hanya menolak bucket BARU — edit baris
+  // existing lolos di server. Tertolak → paywall, bukan error teknis.
+  try {
+    await SupabaseConfig.client.from('budgets').upsert(
+      {
+        'org_id': orgId,
+        'category': category,
+        'month': currentMonth(),
+        'limit_amount': limit,
+        'warn_pct': warnPct,
+      },
+      onConflict: 'org_id,category,month',
+    );
+  } on PostgrestException catch (e) {
+    if (e.message.contains('QUOTA_EXCEEDED')) {
+      throw QuotaExceededException(tr('q_budget_exceeded'));
+    }
+    rethrow;
+  }
 }
 
 /// Hapus budget kategori sebulan. Dipanggil setelah PIN terverifikasi.

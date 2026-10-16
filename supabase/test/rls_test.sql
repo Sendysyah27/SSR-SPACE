@@ -863,6 +863,322 @@ begin
   end if;
 end $$;
 
+-- ===== T34: entitlement VIP + limit wallet/budget/AI (migration_20) =====
+-- Fixture: 2 user + 2 org + 3 kode VIP (superuser; vip_codes RPC-only,
+-- client insert langsung pasti 42501 sehingga seed wajib superuser).
+reset role;
+insert into auth.users (id) values
+  ('f0000000-0000-4000-8000-00000000000f'),
+  ('60000000-0000-4000-8000-000000000006')
+on conflict (id) do nothing;
+insert into vip_codes (code_hash, duration_days, max_uses, note) values
+  (encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-T34A')), 'UTF8')), 'hex'), 30, 5, 't34 multi'),
+  (encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-NORM-34')), 'UTF8')), 'hex'), null, 5, 't34 norm'),
+  (encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-ONCE-34')), 'UTF8')), 'hex'), 30, 1, 't34 once')
+on conflict (code_hash) do nothing;
+set role authenticated;
+
+-- T34b: kode salah → VIP_INVALID (tanpa ubah state).
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+do $$
+begin
+  perform public.redeem_vip_code('KODE-SALAH-T34');
+  raise exception 'ASSERT GAGAL: T34b kode salah lolos';
+exception when others then
+  if sqlerrm not like '%VIP_INVALID%' then raise; end if;
+end $$;
+
+-- T34a: redeem happy → entitlement ada + plan_status pro via vip.
+select public.redeem_vip_code('SSR-VIP-T34A');
+-- user_entitlements RPC-only: keberadaan baris dicek superuser (pola T32).
+reset role;
+select t_assert(
+  (select count(*) from user_entitlements
+   where user_id = '11111111-1111-4111-8111-111111111111'
+     and source = 'vip_code'
+     and source_ref = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-T34A')), 'UTF8')), 'hex')) = 1,
+  'T34a entitlement tercatat');
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select t_assert(
+  (public.plan_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1')->>'plan') = 'pro'
+  and (public.plan_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1')->>'source') = 'vip',
+  'T34a plan_status pro via vip');
+select t_assert(public.org_plan('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1') = 'pro',
+  'T34a org_plan pro via owner ber-entitlement');
+
+-- T34a2: normalisasi — lowercase + spasi → sukses.
+set test.user_id = '22222222-2222-4222-8222-222222222222';
+select public.redeem_vip_code('  ssr-vip-norm-34  ');
+reset role;
+select t_assert(
+  (select count(*) from user_entitlements
+   where user_id = '22222222-2222-4222-8222-222222222222'
+     and source_ref = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-NORM-34')), 'UTF8')), 'hex')) = 1,
+  'T34a2 redeem lowercase+spasi sukses');
+set role authenticated;
+
+-- T34c: max_uses=1 dipakai 2 user → kedua VIP_EXHAUSTED.
+set test.user_id = '33333333-3333-4333-8333-333333333333';
+select public.redeem_vip_code('SSR-VIP-ONCE-34');
+set test.user_id = '22222222-2222-4222-8222-222222222222';
+do $$
+begin
+  perform public.redeem_vip_code('SSR-VIP-ONCE-34');
+  raise exception 'ASSERT GAGAL: T34c redeem kedua lolos';
+exception when others then
+  if sqlerrm not like '%VIP_EXHAUSTED%' then raise; end if;
+end $$;
+reset role;
+select t_assert(
+  (select used_count from vip_codes
+   where code_hash = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-ONCE-34')), 'UTF8')), 'hex')) = 1,
+  'T34c used_count tetap 1');
+set role authenticated;
+set test.user_id = '22222222-2222-4222-8222-222222222222';
+
+-- T34d: idempoten — redeem sama 2x, used_count tetap 1 + tetap 1 baris.
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select public.redeem_vip_code('SSR-VIP-T34A');
+reset role;
+select t_assert(
+  (select used_count from vip_codes
+   where code_hash = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-T34A')), 'UTF8')), 'hex')) = 1,
+  'T34d redeem ulang tak increment');
+select t_assert(
+  (select count(*) from user_entitlements
+   where user_id = '11111111-1111-4111-8111-111111111111'
+     and source = 'vip_code'
+     and source_ref = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-T34A')), 'UTF8')), 'hex')) = 1,
+  'T34d tetap 1 entitlement');
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+
+-- T34d2 (F2): double-submit berurutan → baris existing yang sama
+-- (expires_at identik), tanpa raise, tanpa increment. Cabang EXCEPTION
+-- unique_violation hanya terjangkau via race konkuren sejati (tak bisa
+-- direproduksi sekuensial); cakupannya = return baris-sama ini + review kode.
+do $$
+declare
+  e1 timestamptz;
+  e2 timestamptz;
+begin
+  select (public.redeem_vip_code('SSR-VIP-T34A')->>'expires_at')::timestamptz into e1;
+  select (public.redeem_vip_code('SSR-VIP-T34A')->>'expires_at')::timestamptz into e2;
+  if e1 is distinct from e2 then
+    raise exception 'ASSERT GAGAL: T34d2 double-submit expires_at geser';
+  end if;
+end $$;
+reset role;
+select t_assert(
+  (select used_count from vip_codes
+   where code_hash = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-T34A')), 'UTF8')), 'hex')) = 1,
+  'T34d2 double-submit tak increment');
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+
+-- T34e: entitlement lampau → plan free (org milik frank, insert expired via superuser).
+set test.user_id = 'f0000000-0000-4000-8000-00000000000f';
+insert into organizations (id, name, created_by)
+values ('f0000000-0000-4000-8000-0000000000f0', 'Org F',
+        'f0000000-0000-4000-8000-00000000000f');
+insert into org_members (org_id, user_id, role)
+values ('f0000000-0000-4000-8000-0000000000f0',
+        'f0000000-0000-4000-8000-00000000000f', 'owner');
+reset role;
+insert into user_entitlements (user_id, plan, expires_at, source, source_ref)
+values ('f0000000-0000-4000-8000-00000000000f', 'pro', now() - interval '1 day', 'manual', 't34e');
+set role authenticated;
+set test.user_id = 'f0000000-0000-4000-8000-00000000000f';
+select t_assert(public.org_plan('f0000000-0000-4000-8000-0000000000f0') = 'free',
+  'T34e entitlement lampau → org_plan free');
+select t_assert(
+  (public.plan_status('f0000000-0000-4000-8000-0000000000f0')->>'plan') = 'free',
+  'T34e plan_status free saat entitlement lampau');
+
+-- T34k (F1): redeem ulang kode yang entitlement-nya SUDAH expired →
+-- renewal jujur: berakhir Pro (expiry baru), tetap 1 baris (UPDATE),
+-- used_count +1. Kode fresh EXP-34 + baris expired disiapkan superuser.
+reset role;
+insert into vip_codes (code_hash, duration_days, max_uses, note) values
+  (encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-EXP-34')), 'UTF8')), 'hex'), 30, 5, 't34 expired')
+on conflict (code_hash) do nothing;
+insert into user_entitlements (user_id, plan, expires_at, source, source_ref)
+values ('f0000000-0000-4000-8000-00000000000f', 'pro', now() - interval '1 day', 'vip_code',
+  encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-EXP-34')), 'UTF8')), 'hex'));
+set role authenticated;
+set test.user_id = 'f0000000-0000-4000-8000-00000000000f';
+select public.redeem_vip_code('SSR-VIP-EXP-34');
+select t_assert(public.org_plan('f0000000-0000-4000-8000-0000000000f0') = 'pro',
+  'T34k expired re-redeem → org_plan pro lagi');
+select t_assert(
+  (public.plan_status('f0000000-0000-4000-8000-0000000000f0')->>'plan') = 'pro',
+  'T34k expired re-redeem → plan_status pro');
+reset role;
+select t_assert(
+  (select count(*) from user_entitlements
+   where user_id = 'f0000000-0000-4000-8000-00000000000f'
+     and source = 'vip_code'
+     and source_ref = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-EXP-34')), 'UTF8')), 'hex')) = 1,
+  'T34k renewal tetap 1 baris (UPDATE)');
+select t_assert(
+  (select expires_at from user_entitlements
+   where user_id = 'f0000000-0000-4000-8000-00000000000f'
+     and source = 'vip_code'
+     and source_ref = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-EXP-34')), 'UTF8')), 'hex')) > now(),
+  'T34k expiry diperbarui ke masa depan');
+select t_assert(
+  (select used_count from vip_codes
+   where code_hash = encode(sha256(convert_to(upper(trim(both from 'SSR-VIP-EXP-34')), 'UTF8')), 'hex')) = 1,
+  'T34k renewal increment tepat 1x');
+set role authenticated;
+set test.user_id = 'f0000000-0000-4000-8000-00000000000f';
+
+-- T34f-setup: org free milik grace (tanpa entitlement) untuk uji blokir g/h/i.
+set test.user_id = '60000000-0000-4000-8000-000000000006';
+insert into organizations (id, name, created_by)
+values ('60000000-0000-4000-8000-00000000060d', 'Org G',
+        '60000000-0000-4000-8000-000000000006');
+insert into org_members (org_id, user_id, role)
+values ('60000000-0000-4000-8000-00000000060d',
+        '60000000-0000-4000-8000-000000000006', 'owner');
+select t_assert(public.org_plan('60000000-0000-4000-8000-00000000060d') = 'free',
+  'T34f org G free sebelum redeem');
+
+-- T34g: wallet ke-8 free → QUOTA_EXCEEDED.
+insert into wallets (org_id, name)
+select '60000000-0000-4000-8000-00000000060d', 'W' || g
+from generate_series(1, 7) g;
+select t_assert(
+  (public.check_quota('60000000-0000-4000-8000-00000000060d', 'wallets')->>'allowed')::boolean = false
+  and (public.check_quota('60000000-0000-4000-8000-00000000060d', 'wallets')->>'used')::int = 7,
+  'T34g check_quota wallets jujur di 7');
+do $$
+begin
+  insert into wallets (org_id, name)
+  values ('60000000-0000-4000-8000-00000000060d', 'W8');
+  raise exception 'ASSERT GAGAL: T34g wallet ke-8 lolos';
+exception when others then
+  if sqlerrm not like '%QUOTA_EXCEEDED%' then raise; end if;
+end $$;
+
+-- T34h: bucket ke-8 baru ditolak, edit existing (UPSERT pola budget_service) lolos.
+insert into budgets (org_id, category, month, limit_amount)
+select '60000000-0000-4000-8000-00000000060d', 'B' || g, to_char(current_date, 'YYYY-MM'), 10000
+from generate_series(1, 7) g;
+do $$
+begin
+  insert into budgets (org_id, category, month, limit_amount)
+  values ('60000000-0000-4000-8000-00000000060d', 'B8', to_char(current_date, 'YYYY-MM'), 10000);
+  raise exception 'ASSERT GAGAL: T34h bucket ke-8 lolos';
+exception when others then
+  if sqlerrm not like '%QUOTA_EXCEEDED%' then raise; end if;
+end $$;
+insert into budgets (org_id, category, month, limit_amount)
+values ('60000000-0000-4000-8000-00000000060d', 'B1', to_char(current_date, 'YYYY-MM'), 20000)
+on conflict (org_id, category, month) do update set limit_amount = excluded.limit_amount;
+select t_assert(
+  (select limit_amount from budgets
+   where org_id = '60000000-0000-4000-8000-00000000060d'
+     and category = 'B1' and month = to_char(current_date, 'YYYY-MM')) = 20000,
+  'T34h edit bucket existing lolos');
+
+-- T34i: 30x record_ai_usage → check_quota ai allowed=false.
+select t_assert(
+  (public.check_quota('60000000-0000-4000-8000-00000000060d', 'ai')->>'allowed')::boolean = true,
+  'T34i ai allowed sebelum pakai');
+do $$
+declare i int;
+begin
+  for i in 1..30 loop
+    perform public.record_ai_usage('60000000-0000-4000-8000-00000000060d', 'chat');
+  end loop;
+end $$;
+select t_assert(
+  (public.check_quota('60000000-0000-4000-8000-00000000060d', 'ai')->>'allowed')::boolean = false
+  and (public.check_quota('60000000-0000-4000-8000-00000000060d', 'ai')->>'used')::int = 30
+  and (public.check_quota('60000000-0000-4000-8000-00000000060d', 'ai')->>'limit')::int = 30,
+  'T34i ai mentok di 30');
+
+-- T34f: owner redeem → org pro; wallet + budget ke-8 lolos (Pro).
+select public.redeem_vip_code('SSR-VIP-T34A');
+select t_assert(public.org_plan('60000000-0000-4000-8000-00000000060d') = 'pro',
+  'T34f org_plan pro via VIP-owner');
+select t_assert(
+  (public.plan_status('60000000-0000-4000-8000-00000000060d')->>'source') = 'vip',
+  'T34f plan_status source vip');
+insert into wallets (org_id, name)
+values ('60000000-0000-4000-8000-00000000060d', 'W8');
+select t_assert(exists (select 1 from wallets
+  where org_id = '60000000-0000-4000-8000-00000000060d' and name = 'W8'),
+  'T34g Pro lolos wallet ke-8');
+insert into budgets (org_id, category, month, limit_amount)
+values ('60000000-0000-4000-8000-00000000060d', 'B8', to_char(current_date, 'YYYY-MM'), 10000);
+select t_assert(exists (select 1 from budgets
+  where org_id = '60000000-0000-4000-8000-00000000060d'
+    and category = 'B8' and month = to_char(current_date, 'YYYY-MM')),
+  'T34h Pro lolos bucket ke-8');
+
+-- T34j: client-deny — tabel RPC-only tak terbaca client meski baris ada
+-- (RLS tanpa policy = 0 baris, pola T10; tulis = 42501, pola T03/T07).
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select t_assert((select count(*) from vip_codes) = 0,
+  'T34j vip_codes tak terbaca client (RPC-only)');
+select t_assert((select count(*) from user_entitlements) = 0,
+  'T34j user_entitlements tak terbaca client (RPC-only)');
+select t_assert((select count(*) from ai_usage) = 0,
+  'T34j ai_usage tak terbaca client (RPC-only)');
+do $$
+begin
+  insert into user_entitlements (user_id, plan, source)
+  values ('11111111-1111-4111-8111-111111111111', 'pro', 'vip_code');
+  raise exception 'ASSERT GAGAL: T34j client INSERT user_entitlements lolos';
+exception when sqlstate '42501' then null;
+end $$;
+-- Grant: RPC boleh authenticated, anon ditolak; trigger-fn revoke semua.
+select t_assert(has_function_privilege('authenticated', 'public.redeem_vip_code(text)', 'execute'),
+  'T34j authenticated boleh execute redeem');
+select t_assert(not has_function_privilege('anon', 'public.redeem_vip_code(text)', 'execute'),
+  'T34j anon tak boleh execute redeem');
+select t_assert(not has_function_privilege('authenticated', 'public.enforce_wallet_quota()', 'execute'),
+  'T34j trigger-fn revoke authenticated');
+-- NULL-kind fail-closed (semantik fix d3480bf).
+do $$
+begin
+  perform public.check_quota('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', null);
+  raise exception 'ASSERT GAGAL: T34j kind NULL lolos';
+exception when others then
+  if sqlerrm not like '%QUOTA_UNKNOWN_KIND%' then raise; end if;
+end $$;
+-- plan_status fail-closed untuk non-member.
+set test.user_id = '77777777-7777-4777-8777-777777777777';
+do $$
+begin
+  perform public.plan_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
+  raise exception 'ASSERT GAGAL: T34j non-member bisa plan_status';
+exception when others then
+  if sqlerrm not like '%NOT_MEMBER%' then raise; end if;
+end $$;
+-- anon: RPC revoke menembak permission denied (pola T09/T15).
+set role anon;
+set test.user_id = '';
+do $$
+begin
+  perform public.redeem_vip_code('SSR-VIP-T34A');
+  raise exception 'ASSERT GAGAL: T34j anon bisa redeem';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+do $$
+begin
+  perform public.plan_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
+  raise exception 'ASSERT GAGAL: T34j anon bisa plan_status';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');

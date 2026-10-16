@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
+import 'package:ssr_space/services/ai_quota.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/ai_cli_client.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/biometric_auth.dart';
@@ -1117,10 +1119,25 @@ class _AiCardState extends State<_AiCard> {
       _busy = true;
       _msg = tr('ai_working');
     });
+    // Gate kuota AI (entitlement Fase 1): Tes = aksi user eksplisit ->
+    // mentok = paywall + batal (tanpa panggil model).
+    // Fail-open: server diam -> lolos (aiAllowed true).
+    final orgId = await activeOrgId();
+    if (orgId.isNotEmpty && !await aiAllowed(orgId)) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _msg = null;
+      });
+      await requirePro(context, tr('q_ai_exceeded'));
+      return;
+    }
     String out;
     try {
       final r = await aiChatViaCli('Halo')
           .timeout(const Duration(seconds: 120));
+      // Sukses -> catat pemakaian kuota AI (fail-silent, tanpa blokir UI).
+      if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'chat'));
       out = '[CLI: ${r.provider}]\n'
           '${r.text.trim().isEmpty ? 'AI: (kosong)' : r.text}';
     } on AiFailure catch (e) {

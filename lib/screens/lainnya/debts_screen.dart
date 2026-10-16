@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ssr_space/services/billing_service.dart';
 import 'package:ssr_space/services/debt_store.dart';
 import 'package:ssr_space/services/debt_track.dart';
 import 'package:ssr_space/services/due_notify.dart';
 import 'package:ssr_space/services/due_reminder.dart';
+import 'package:ssr_space/services/plan_limits.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
@@ -76,6 +79,24 @@ class DebtsScreenState extends State<DebtsScreen> {
   }
 
   Future<void> _create() async {
+    // Gate Gratis sebelum editor dibuka: catatan ke-(freeDebts+1) →
+    // paywall. Stale (offline/RPC-gagal) → izinkan. Cap teknis
+    // maxDebts tetap di bawah (pesan db_full untuk Pro penuh).
+    if (debts.length >= PlanLimits.freeDebts) {
+      final orgId = await activeOrgId();
+      final st = await planStatus(orgId);
+      final blocked = st['stale'] != true &&
+          !canAddDebt(
+            plan: (st['plan'] ?? 'free').toString(),
+            used: debts.length,
+          );
+      if (blocked) {
+        if (!mounted) return;
+        await requirePro(context, tr('bl_limit_debts'));
+        return;
+      }
+    }
+    if (!mounted) return;
     final made = await showModalBottomSheet<DebtRecord>(
       context: context,
       isScrollControlled: true,

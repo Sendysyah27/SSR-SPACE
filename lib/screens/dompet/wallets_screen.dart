@@ -3,6 +3,7 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/wallet_composition.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/notif_parse.dart';
@@ -189,6 +190,9 @@ class _WalletsScreenState extends State<WalletsScreen> {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(tr('w_added'))));
       }
+    } on QuotaExceededException catch (e) {
+      if (!mounted) return;
+      await requirePro(context, e.message);
     } catch (_) {
       if (!mounted) return;
       setState(() => formErr = tr('w_err_save'));
