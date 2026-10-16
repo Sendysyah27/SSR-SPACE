@@ -14,6 +14,22 @@ String formatSnapshot({
     '{"date":"$date","text":"${_esc(text)}",'
     '"text2":"${_esc(text2)}","masked":${masked ? 1 : 0}}';
 
+/// Kunci prefs snapshot per widget (satu kunci per widget, fase 2).
+/// `widget_snapshot` (Hari-ini) TAK DIUBAH (milik today_widget.dart,
+/// provider lama kompatibel). Ketiga kunci memakai format JSON yang sama
+/// ({date, text, text2, masked}) via formatSnapshot/parseSnapshot.
+const widgetBudgetSnapshotKey = 'widget_snapshot_budget';
+const widgetBalanceSnapshotKey = 'widget_snapshot_balance';
+
+/// Lampu status budget widget (murni, tanpa Flutter).
+///
+/// 'danger' bila total sisa negatif ATAU ada kategori jebol (belanja >
+/// limit); selain itu 'safe'. Penulis memetakan ke copy pakai-ulang
+/// pace_danger/pace_safe (tanpa kunci strings baru).
+/// Tanpa tier waspada: proyeksi pace butuh laju harian (follow-up).
+String widgetBudgetLamp({required double left, required bool anyOver}) =>
+    (left < 0 || anyOver) ? 'danger' : 'safe';
+
 String _esc(String s) => s
     .replaceAll('\\', '\\\\')
     .replaceAll('"', '\\"')

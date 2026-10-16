@@ -5,6 +5,7 @@ import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/widget_snapshot.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -22,6 +23,22 @@ import 'package:ssr_space/utils/diag_log.dart';
 // ikut tersangka FC. Seluruh pemanggilan fail-silent (timeout 2 dtk).
 const _kSnapshot = 'widget_snapshot';
 
+/// Ketiga kunci snapshot (Hari-ini + 2 varian fase 2): toggle mati
+/// menghapus semuanya agar widget kembali ke ajakan buka app.
+const _allSnapshotKeys = <String>[
+  _kSnapshot,
+  widgetBudgetSnapshotKey,
+  widgetBalanceSnapshotKey,
+];
+
+/// Tanggal hari ini 'YYYY-MM-DD' lokal (label jujur snapshot).
+String _todayYmd() {
+  final now = DateTime.now();
+  return '${now.year.toString().padLeft(4, '0')}-'
+      '${now.month.toString().padLeft(2, '0')}-'
+      '${now.day.toString().padLeft(2, '0')}';
+}
+
 Future<void> refreshTodayWidget({
   required String date,
   required String text,
@@ -31,7 +48,11 @@ Future<void> refreshTodayWidget({
   try {
     final prefs = await SharedPreferences.getInstance();
     if (!widgetToday.value) {
-      await prefs.remove(_kSnapshot);
+      for (final k in _allSnapshotKeys) {
+        try {
+          await prefs.remove(k);
+        } catch (_) {}
+      }
       return;
     }
     await prefs.setString(
@@ -60,20 +81,33 @@ Future<void> requestWidgetRefresh() async {
   return;
 }
 
-/// Tulis snapshot + minta gambar ulang, hitung dari server.
-/// Dipakai jalur simpan yang tak memegang data (sheet manual, auto-track,
-/// forceSave, budget). Fire-and-forget oleh pemanggil, fail-open total.
-Future<void> refreshBudgetWidgetSnapshot(String orgId) async {
+/// Angka mentah snapshot budget: dihitung sekali, dipakai penulis
+/// Hari-ini (existing) + varian budget (baru) agar jalur simpan tak
+/// query ganda. Cerminan loop agregasi existing (topOf, tabungan
+/// dikecualikan, limit <= 0 dilewati).
+class _BudgetFigures {
+  final String today;
+  final double todayOut;
+  final bool hasBudget;
+  final double left;
+  final bool anyOver;
+  const _BudgetFigures({
+    required this.today,
+    required this.todayOut,
+    required this.hasBudget,
+    required this.left,
+    required this.anyOver,
+  });
+}
+
+/// Query server untuk angka budget (null bila gagal — pemanggil skip,
+/// fail-open). Guard toggle/orgId ada di pemanggil, bukan di sini.
+Future<_BudgetFigures?> _budgetFigures(String orgId) async {
   try {
-    if (!widgetToday.value || orgId.isEmpty) return;
     final month = currentMonth();
     final txs = await TransactionService().listMonth(orgId, month);
     final limits = await fetchBudgetLimits(orgId);
-    final now = DateTime.now();
-    final today =
-        '${now.year.toString().padLeft(4, '0')}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
+    final today = _todayYmd();
     var todayOut = 0.0;
     final spent = <String, double>{};
     for (final t in txs) {
@@ -87,25 +121,158 @@ Future<void> refreshBudgetWidgetSnapshot(String orgId) async {
     }
     var hasBudget = false;
     var left = 0.0;
+    var anyOver = false;
     for (final b in limits) {
       if (isSavingCategory(b.category) || b.limit <= 0) continue;
       hasBudget = true;
-      left += b.limit - (spent[b.category] ?? 0);
+      final s = spent[b.category] ?? 0;
+      left += b.limit - s;
+      if (s > b.limit) anyOver = true;
     }
-    await refreshTodayWidget(
-      date: today,
-      text: tr('wg_out_today').replaceFirst('{m}', amt(todayOut)),
-      text2: hasBudget
-          ? tr('wg_budget_left').replaceFirst('{m}', amt(left))
-          : '',
+    return _BudgetFigures(
+      today: today,
+      todayOut: todayOut,
+      hasBudget: hasBudget,
+      left: left,
+      anyOver: anyOver,
     );
-    await requestWidgetRefresh();
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Tulis kunci varian budget (try/catch PER KUNCI — gagal di sini tak
+/// menggagalkan kunci lain). Tanpa budget → kunci dihapus agar provider
+/// tampilkan ajakan, bukan angka basi.
+Future<void> _writeBudgetVariant(_BudgetFigures f) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    if (!widgetToday.value || !f.hasBudget) {
+      try {
+        await prefs.remove(widgetBudgetSnapshotKey);
+      } catch (_) {}
+      return;
+    }
+    final lamp = widgetBudgetLamp(left: f.left, anyOver: f.anyOver);
+    try {
+      await prefs.setString(
+        widgetBudgetSnapshotKey,
+        formatSnapshot(
+          date: f.today,
+          text: tr('wg_budget_left').replaceFirst('{m}', amt(f.left)),
+          text2: tr(lamp == 'danger' ? 'pace_danger' : 'pace_safe'),
+          masked: maskAmounts.value,
+        ),
+      );
+    } catch (_) {}
+    DiagLog.write('DIAG refreshWidgetBudgetSnapshot done');
   } catch (_) {}
+}
+
+/// Tulis snapshot + minta gambar ulang, hitung dari server.
+/// Dipakai jalur simpan yang tak memegang data (sheet manual, auto-track,
+/// forceSave, budget). Fire-and-forget oleh pemanggil, fail-open total.
+/// Isi kunci Hari-ini TAK BERUBAH; varian baru di-fan-out dari titik
+/// pemicu yang sama (tanpa scheduler baru).
+Future<void> refreshBudgetWidgetSnapshot(String orgId) async {
+  _BudgetFigures? f;
+  try {
+    if (!widgetToday.value || orgId.isEmpty) return;
+    f = await _budgetFigures(orgId);
+    final fig = f;
+    if (fig != null) {
+      await refreshTodayWidget(
+        date: fig.today,
+        text: tr('wg_out_today').replaceFirst('{m}', amt(fig.todayOut)),
+        text2: fig.hasBudget
+            ? tr('wg_budget_left').replaceFirst('{m}', amt(fig.left))
+            : '',
+      );
+      await requestWidgetRefresh();
+    }
+  } catch (_) {}
+  // Fan-out varian: tiap penulis fail-open sendiri (budget-query gagal
+  // tak menggagalkan varian saldo).
+  final fig = f;
+  if (fig != null) {
+    try {
+      await _writeBudgetVariant(fig);
+    } catch (_) {}
+  }
+  try {
+    await refreshWidgetBalanceSnapshot(orgId);
+  } catch (_) {}
+}
+
+/// Varian budget (§ spec 4.1): text = sisa budget bulan (negatif/jebol
+/// ditulis apa adanya), text2 = lampu pace. Berdiri sendiri untuk
+/// pemanggil yang butuh hanya varian ini.
+Future<void> refreshWidgetBudgetSnapshot(String orgId) async {
+  DiagLog.write('DIAG refreshWidgetBudgetSnapshot start');
+  try {
+    if (!widgetToday.value || orgId.isEmpty) return;
+    final f = await _budgetFigures(orgId);
+    if (f == null) return;
+    await _writeBudgetVariant(f);
+  } catch (_) {
+    DiagLog.write('DIAG refreshWidgetBudgetSnapshot error');
+  }
+}
+
+/// Varian saldo (§ spec 4.1): text = total saldo semua dompet
+/// (view wallet_balance via service existing, tanpa query mentah),
+/// text2 = jumlah dompet + tanggal update. Mask dihormati via amt().
+Future<void> refreshWidgetBalanceSnapshot(String orgId) async {
+  DiagLog.write('DIAG refreshWidgetBalanceSnapshot start');
+  try {
+    if (!widgetToday.value || orgId.isEmpty) return;
+    var total = 0.0;
+    var count = 0;
+    try {
+      final rows = await WalletService().balances(orgId);
+      for (final b in rows) {
+        total += b.balance;
+      }
+      count = rows.length;
+    } catch (_) {
+      return;
+    }
+    final today = _todayYmd();
+    final text = '${tr('w_total')} ${amt(total)}';
+    // `dompet` hardcoded ID: belum ada kunci strings hitung-dompet —
+    // satu baris ini diganti saat kunci wg_balance_meta mendarat.
+    final text2 = '$count dompet · $today';
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!widgetToday.value) {
+        try {
+          await prefs.remove(widgetBalanceSnapshotKey);
+        } catch (_) {}
+        return;
+      }
+      await prefs.setString(
+        widgetBalanceSnapshotKey,
+        formatSnapshot(
+          date: today,
+          text: text,
+          text2: text2,
+          masked: maskAmounts.value,
+        ),
+      );
+    } catch (_) {}
+    DiagLog.write('DIAG refreshWidgetBalanceSnapshot done');
+  } catch (_) {
+    DiagLog.write('DIAG refreshWidgetBalanceSnapshot error');
+  }
 }
 
 Future<void> clearTodaySnapshot() async {
   try {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kSnapshot);
+    for (final k in _allSnapshotKeys) {
+      try {
+        await prefs.remove(k);
+      } catch (_) {}
+    }
   } catch (_) {}
 }
