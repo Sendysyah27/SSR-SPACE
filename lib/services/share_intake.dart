@@ -93,6 +93,22 @@ void _snack(BuildContext context, String msg) {
   } catch (_) {}
 }
 
+/// Antre ulang tanpa context (cabang tak-mounted). Tak pernah melempar.
+Future<bool> _requeueType(String type, bool saved) async {
+  try {
+    await queuePending(type);
+  } catch (_) {}
+  return saved;
+}
+
+/// Antre ulang path share tanpa context. Tak pernah melempar.
+Future<bool> _requeueShare(String path, bool hadMore, bool saved) async {
+  try {
+    await queueSharePath(path, hadMore: hadMore);
+  } catch (_) {}
+  return saved;
+}
+
 /// Wiring deep-link + share-intake. Semua entry fail-silent ke pemanggil
 /// (snackbar jujur hanya untuk kejadian yang perlu diketahui user).
 class ShareIntake {
@@ -141,6 +157,7 @@ class ShareIntake {
     try {
       _linkSub = AppLinks().uriLinkStream.listen(
         (uri) {
+          if (!context.mounted) return;
           unawaited(handleLink(context, uri));
         },
         onError: (_) {},
@@ -149,6 +166,7 @@ class ShareIntake {
     try {
       _mediaSub = ReceiveSharingIntent.instance.getMediaStream().listen(
         (files) {
+          if (!context.mounted) return;
           unawaited(handleMedia(context, [for (final f in files) f.path]));
         },
         onError: (_) {},
@@ -178,6 +196,7 @@ class ShareIntake {
       try {
         await queuePending(type);
       } catch (_) {}
+      if (!context.mounted) return;
       _snack(
         context,
         _t('wg_locked_queued', 'Terkunci — antrean dibuka setelah unlock.'),
@@ -189,12 +208,14 @@ class ShareIntake {
     // Pengecekan sinkron -> atomik menuju _openQuick (tanpa await di
     // antaranya), jadi false dari _openQuick = batal user, bukan balapan.
     if (ready && !_busy) {
+      if (!context.mounted) return;
       await _openQuick(context, type);
       return;
     }
     try {
       await queuePending(type);
     } catch (_) {}
+    if (!context.mounted) return;
     _snack(
       context,
       _t('wg_locked_queued', 'Belum siap — antrean dibuka setelah siap.'),
@@ -217,6 +238,7 @@ class ShareIntake {
       try {
         await queueSharePath(picked.first!, hadMore: picked.hadMore);
       } catch (_) {}
+      if (!context.mounted) return;
       _snack(
         context,
         _t('wg_locked_queued', 'Terkunci — antrean dibuka setelah unlock.'),
@@ -227,6 +249,7 @@ class ShareIntake {
       try {
         await queueSharePath(picked.first!, hadMore: picked.hadMore);
       } catch (_) {}
+      if (!context.mounted) return;
       _snack(
         context,
         _t('wg_locked_queued', 'Belum siap — antrean dibuka setelah siap.'),
@@ -240,6 +263,7 @@ class ShareIntake {
       } catch (_) {}
       return;
     }
+    if (!context.mounted) return;
     await _openShare(context, picked.first!, hadMore: picked.hadMore);
   }
 
@@ -257,6 +281,9 @@ class ShareIntake {
       type = await takePending();
     } catch (_) {}
     if (type != null && type.isNotEmpty) {
+      // Shell mati sesudah ambil: kembalikan via helper tanpa-context
+      // (guard bare agar lint mounted-check mengenalinya).
+      if (!context.mounted) return _requeueType(type, saved);
       var opened = false;
       if (!_busy) opened = await _openQuick(context, type);
       if (opened) {
@@ -275,15 +302,11 @@ class ShareIntake {
     if (share.path == null) {
       // Berkas hilang sesudah diantre -> hanguskan + jujur (tanpa antre
       // ulang: path mati akan gagal lagi tiap resume).
+      if (!context.mounted) return saved;
       _snack(context, tr('rcp_empty'));
       return saved;
     }
-    if (!context.mounted) {
-      try {
-        await queueSharePath(share.path!, hadMore: share.hadMore);
-      } catch (_) {}
-      return saved;
-    }
+    if (!context.mounted) return _requeueShare(share.path!, share.hadMore, saved);
     var shareOpened = false;
     if (!_busy) {
       shareOpened = await _openShare(
@@ -342,9 +365,11 @@ class ShareIntake {
       try {
         data = await scanSharedFile(path);
       } on ReceiptScanException catch (e) {
+        if (!context.mounted) return false;
         _snack(context, tr(e.trKey));
         return false;
       } catch (_) {
+        if (!context.mounted) return false;
         _snack(context, tr('rcp_fail'));
         return false;
       }
