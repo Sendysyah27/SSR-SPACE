@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+230.
+Versi terpasang: 2.72.0+231.
+
+## Yang baru di 2.72.0+231
+
+1. Layar Anggaran gaya baru: kartu putih, bar progres biru, cincin tabungan donut.
 
 ## Yang baru di 2.72.0+230
 

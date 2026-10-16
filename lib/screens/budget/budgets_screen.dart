@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,7 +22,10 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/theme/category_emoji.dart';
-import 'package:ssr_space/theme/glass.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
+import 'package:ssr_space/widgets/restyle/budget_progress_bar.dart';
+import 'package:ssr_space/widgets/restyle/donut_chart.dart';
 import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/pin_pad.dart';
@@ -323,18 +325,21 @@ class BudgetsScreenState extends State<BudgetsScreen> {
   Widget build(BuildContext context) {
     if (loading) {
       return Scaffold(
+        backgroundColor: DribTokens.bg,
         appBar: AppBar(title: Text(_title)),
         body: const BudgetListSkeleton(),
       );
     }
     if (err != null) {
       return Scaffold(
+        backgroundColor: DribTokens.bg,
         appBar: AppBar(title: Text(_title)),
         body: ErrorView(message: err!, onRetry: _load),
       );
     }
     final items = data?.items ?? [];
     return Scaffold(
+      backgroundColor: DribTokens.bg,
       appBar: AppBar(
         title: Text(_title),
         actions: [
@@ -594,7 +599,7 @@ class _SavingCard extends StatelessWidget {
     final b = budget;
     final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
     final done = pct >= 100;
-    return GlassCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: GlassSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -735,7 +740,7 @@ class _BudgetCard extends StatelessWidget {
     final progress = budgetProgress(b.spent, b.limit);
     final pct = b.limit > 0 ? (b.spent / b.limit * 100).round() : 0;
     final color = _statusColor(over, pct, context);
-    return GlassCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: GlassSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -769,38 +774,7 @@ class _BudgetCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: SsrSpace.sm),
-          Container(
-            height: 10,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(GlassRadius.sm),
-              color: Colors.white.withValues(alpha: 0.08),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: progress.clamp(0.0, 1.0).toDouble(),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(GlassRadius.sm),
-                  gradient: LinearGradient(
-                    colors: [
-                      color,
-                      color.withValues(alpha: 0.65),
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.4),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          BudgetProgressBar(progress: progress, label: '$pct%'),
           const SizedBox(height: SsrSpace.xs),
           Text(
             '${amt(b.spent)} ${tr('sv_of')} ${amt(b.limit)}',
@@ -888,57 +862,25 @@ class _BudgetGauge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final used = progress.clamp(0.0, 1.0).toDouble();
-    final main = color ?? scheme.primary;
-    final track = Theme.of(context).colorScheme.outline;
+    final main = color ?? DribTokens.primary;
     return SizedBox(
-      width: 56,
-      height: 56,
-      child: Stack(
-        children: [
-          PieChart(
-            _gaugeData(used, main, track),
-            duration: SsrMotion.base,
-            curve: SsrMotion.curve,
-          ),
-          Center(
-            child: Text(
-              '$pct',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: main,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
+      width: 64,
+      height: 64,
+      child: DonutChart(
+        compact: true,
+        centerText: '$pct',
+        slices: [
+          DonutSlice(value: used, label: '', color: main),
+          DonutSlice(
+            value: (1 - used).clamp(0.0, 1.0).toDouble(),
+            label: '',
+            color: DribTokens.navy.withValues(alpha: 0.12),
           ),
         ],
       ),
     );
   }
-}
-
-PieChartData _gaugeData(double used, Color main, Color rest) {
-  return PieChartData(
-    pieTouchData: PieTouchData(enabled: false),
-    sectionsSpace: 0,
-    centerSpaceRadius: 20,
-    startDegreeOffset: 270,
-    sections: [
-      PieChartSectionData(
-        value: used,
-        color: main,
-        radius: 8,
-        showTitle: false,
-      ),
-      PieChartSectionData(
-        value: 1 - used,
-        color: rest,
-        radius: 8,
-        showTitle: false,
-      ),
-    ],
-  );
 }
 
 /// Caption "OKTOBER 2026 · N hari tersisa" (brief §4.1).

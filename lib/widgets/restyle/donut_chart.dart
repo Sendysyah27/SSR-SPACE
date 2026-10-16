@@ -24,15 +24,24 @@ class DonutChart extends StatelessWidget {
   /// Teks tengah donut (mis. total). Null = donut polos.
   final String? centerText;
 
-  const DonutChart({super.key, required this.slices, this.centerText});
+  /// Mode ringkas untuk gauge kecil (tinggi 64, tanpa legenda).
+  final bool compact;
+
+  const DonutChart({
+    super.key,
+    required this.slices,
+    this.centerText,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final live = slices.where((s) => s.value > 0).toList();
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          height: 180,
+          height: compact ? 64 : 180,
           child: Stack(
             children: [
               PieChart(
@@ -71,31 +80,33 @@ class DonutChart extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 16,
-          runSpacing: 8,
-          alignment: WrapAlignment.center,
-          children: [
-            for (final s in live)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: s.color,
-                      shape: BoxShape.circle,
+        if (!compact) ...[
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              for (final s in live)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: s.color,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(s.label, style: const TextStyle(fontSize: 12)),
-                ],
-              ),
-          ],
-        ),
-      ],
+                    const SizedBox(width: 6),
+                    Text(s.label, style: const TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 }
