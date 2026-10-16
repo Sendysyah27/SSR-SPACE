@@ -1154,6 +1154,58 @@ const _t = <String, Map<String, String>>{
     'id': 'Pembayaran Pro dalam persiapan. Kuota Gratis tetap berlaku dan kini ditegakkan server.',
     'en': 'Pro payments are being prepared. Free quotas still apply and are now enforced server-side.',
   },
+  'bl_pro_until': {'id': 'Pro sampai {d}', 'en': 'Pro until {d}'},
+  'bl_vip_title': {'id': 'Masukkan kode VIP', 'en': 'Enter VIP code'},
+  'bl_vip_hint': {
+    'id': 'Tulis kode persis seperti yang diberikan.',
+    'en': 'Type the code exactly as given.',
+  },
+  'bl_vip_redeem': {'id': 'Tukar', 'en': 'Redeem'},
+  'bl_vip_ok': {
+    'id': 'Kode VIP diterima. Paket Pro aktif.',
+    'en': 'VIP code accepted. Pro plan is active.',
+  },
+  'bl_vip_invalid': {
+    'id': 'Kode VIP tidak dikenal. Periksa lagi.',
+    'en': 'Unknown VIP code. Check again.',
+  },
+  'bl_vip_exhausted': {
+    'id': 'Kode VIP sudah habis dipakai.',
+    'en': 'VIP code is already fully used.',
+  },
+  'bl_limit_wallets': {'id': 'Maks 7 dompet', 'en': 'Max 7 wallets'},
+  'bl_limit_budgets': {
+    'id': 'Maks 7 budget per bulan',
+    'en': 'Max 7 budgets per month',
+  },
+  'bl_limit_ai': {
+    'id': '30 panggilan AI per bulan',
+    'en': '30 AI calls per month',
+  },
+  'bl_limit_goals': {
+    'id': 'Maks 3 target nabung',
+    'en': 'Max 3 saving goals',
+  },
+  'bl_limit_debts': {
+    'id': 'Maks 5 utang & piutang',
+    'en': 'Max 5 debts & receivables',
+  },
+  'bl_limit_bills': {
+    'id': 'Maks 5 tagihan berulang',
+    'en': 'Max 5 recurring bills',
+  },
+  'q_ai_exceeded': {
+    'id': 'Batas AI Gratis (30/bln). Naik ke Pro.',
+    'en': 'Free AI limit (30/mo). Upgrade to Pro.',
+  },
+  'q_wallet_exceeded': {
+    'id': 'Paket Gratis maks 7 dompet.',
+    'en': 'Free plan allows 7 wallets max.',
+  },
+  'q_budget_exceeded': {
+    'id': 'Paket Gratis maks 7 budget per bulan.',
+    'en': 'Free plan allows 7 budgets per month max.',
+  },
   'iv_quota': {
     'id': 'Anggota workspace penuh (maksimal 3 di paket Gratis).',
     'en': 'Workspace members full (maximum 3 on the Free plan).',

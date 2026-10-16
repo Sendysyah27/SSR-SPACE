@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/money.dart';
+import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/services/billing_service.dart';
+import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/widgets/section_card.dart';
@@ -9,6 +11,7 @@ import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BillingScreen extends StatefulWidget {
   const BillingScreen({super.key});
@@ -18,6 +21,8 @@ class BillingScreen extends StatefulWidget {
 
 class _BillingScreenState extends State<BillingScreen> {
   String plan = '';
+  String? expiresAt;
+  bool stale = false;
   bool loading = true;
   String? err;
 
@@ -35,13 +40,17 @@ class _BillingScreenState extends State<BillingScreen> {
     try {
       final orgId = await activeOrgId();
       if (orgId.isEmpty) {
+        if (!mounted) return;
         setState(() => loading = false);
         return;
       }
-      final p = await currentPlan(orgId);
+      final status = await planStatus(orgId);
       if (!mounted) return;
       setState(() {
-        plan = p;
+        plan = (status['plan'] ?? 'free').toString();
+        final exp = status['expiresAt'];
+        expiresAt = exp == null ? null : exp.toString();
+        stale = status['stale'] == true;
         loading = false;
       });
     } catch (_) {
@@ -50,6 +59,76 @@ class _BillingScreenState extends State<BillingScreen> {
         loading = false;
         err = tr('bl_err_load');
       });
+    }
+  }
+
+  /// Label paket aktif: "Pro sampai {tgl}" bila ada expiry,
+  /// "Pro" bila permanen, tampilan Gratis existing bila free.
+  String _planLabel() {
+    if (plan != 'pro') return tr('bl_free');
+    final exp = expiresAt;
+    if (exp == null || exp.isEmpty) return tr('bl_pro');
+    final d = exp.length >= 10 ? dayLabel(exp.substring(0, 10)) : exp;
+    return tr('bl_pro_until').replaceFirst('{d}', d);
+  }
+
+  /// Dialog tukar kode VIP → RPC redeem_vip_code → snackbar jujur → reload.
+  Future<void> _redeemVip() async {
+    final controller = TextEditingController();
+    final code = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(tr('bl_vip_title')),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          decoration: InputDecoration(hintText: tr('bl_vip_hint')),
+          onSubmitted: (v) => Navigator.pop(dialogContext, v),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: Text(tr('bl_vip_redeem')),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (code == null) return;
+    final trimmed = code.trim();
+    if (trimmed.isEmpty) return;
+    try {
+      await SupabaseConfig.client.rpc(
+        'redeem_vip_code',
+        params: {'p_code': trimmed},
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('bl_vip_ok'))),
+      );
+      await _load();
+    } on PostgrestException catch (e) {
+      if (!mounted) return;
+      final msg = e.message;
+      String key = 'bl_failed';
+      if (msg.contains('VIP_INVALID')) {
+        key = 'bl_vip_invalid';
+      } else if (msg.contains('VIP_EXHAUSTED')) {
+        key = 'bl_vip_exhausted';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr(key))),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('bl_failed'))),
+      );
     }
   }
 
@@ -67,12 +146,21 @@ class _BillingScreenState extends State<BillingScreen> {
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
           Text(
-            tr('bl_active').replaceFirst('{p}', plan.isEmpty ? '-' : (isPro ? tr('bl_pro') : tr('bl_free'))),
+            tr('bl_active').replaceFirst(
+                '{p}', plan.isEmpty ? '-' : _planLabel()),
             style: Theme.of(context).textTheme.titleLarge,
           ),
+          if (stale) ...[
+            const SizedBox(height: SsrSpace.xs),
+            Text(
+              tr('conn_error'),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
           const SizedBox(height: SsrSpace.lg),
           _FreePlanCard(isPro: isPro),
           _ProPlanCard(isPro: isPro),
+          _VipCodeTile(onTap: _redeemVip),
         ],
       ),
     );
@@ -111,6 +199,12 @@ class _FreePlanCard extends StatelessWidget {
       features: [
         tr('bl_f_free1'),
         tr('bl_f_free2').replaceFirst('{n}', '${PlanLimits.freeWorkspaces}'),
+        tr('bl_limit_wallets'),
+        tr('bl_limit_budgets'),
+        tr('bl_limit_ai'),
+        tr('bl_limit_goals'),
+        tr('bl_limit_debts'),
+        tr('bl_limit_bills'),
       ],
     );
   }
@@ -146,6 +240,36 @@ class _ProPlanCard extends StatelessWidget {
           Text(tr('bl_soon_s'), style: Theme.of(context).textTheme.bodySmall),
         ],
       ],
+    );
+  }
+}
+
+/// Tile "Masukkan kode VIP": ketuk → dialog tukar kode.
+class _VipCodeTile extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _VipCodeTile({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      margin: const EdgeInsets.only(top: SsrSpace.md),
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(
+          tr('bl_vip_title'),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        subtitle: Text(
+          tr('bl_vip_hint'),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        trailing: StatusChip(
+          label: tr('bl_vip_redeem'),
+          tone: StatusTone.accent,
+        ),
+        onTap: onTap,
+      ),
     );
   }
 }
