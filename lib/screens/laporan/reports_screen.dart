@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/ai_chat_parse.dart';
+import 'package:ssr_space/services/ai_quota.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/datetime.dart';
@@ -206,7 +207,14 @@ class ReportsScreenState extends State<ReportsScreen> {
           'Top belanja: ${top3.isEmpty ? '-' : top3}. '
           'Tulis 2-3 kalimat manusiawi: sorotan + satu saran hemat. '
           'Tanpa list mentah, tanpa markdown berat.';
+      // Gate kuota AI (entitlement Fase 1): insight = prefetch otomatis
+      // tiap buka Laporan (bukan aksi user) -> mentok = fail-silent
+      // (kartu sembunyi), tanpa paywall. Cache di atas tetap tampil
+      // tanpa makan kuota. Fail-open: server diam -> lolos.
+      if (orgId.isNotEmpty && !await aiAllowed(orgId)) return;
       final r = await aiChat(prompt);
+      // Sukses -> catat pemakaian kuota AI (fail-silent, tanpa blokir UI).
+      if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'insight'));
       if (!mounted) return;
       // Kontrak Mang AI: {"reply":"...","action":...} -> tampilkan reply saja.
       final parsed = parseChatReply(r.text);
