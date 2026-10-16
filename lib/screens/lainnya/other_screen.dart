@@ -639,7 +639,6 @@ class _SectionLabel extends StatelessWidget {
     );
   }
 }
-}
 
 /// HEADER: kartu identitas hero (avatar inisial + nama + chip).
 /// TAHAP 8: gradient navy Dribbble, teks putih.
@@ -1311,6 +1310,7 @@ class _AboutSection extends StatelessWidget {
           onTap: () => _info(context, 'ab_privacy', tr('ab_privacy_body')),
         ),
       ],
+      ),
     );
   }
 }

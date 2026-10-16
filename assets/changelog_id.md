@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+242.
+Versi terpasang: 2.72.0+243.
+
+## Yang baru di 2.72.0+243
+
+1. Perbaikan build: kurung tutup seksi Profil. Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.72.0+242
 
