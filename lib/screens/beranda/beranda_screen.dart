@@ -44,7 +44,6 @@ import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_day_group.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
-import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/utils/diag_log.dart';
 import 'package:ssr_space/services/app_settings.dart';
@@ -55,14 +54,14 @@ import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
 import 'package:ssr_space/widgets/day_header.dart';
 import 'package:ssr_space/widgets/mask_toggle.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
-import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/input_mode_sheet.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
-import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/widgets/premium/premium_section_header.dart';
 
@@ -822,6 +821,7 @@ class BerandaScreenState extends State<BerandaScreen> {
         ? '?'
         : orgName.trim()[0].toUpperCase();
     return Scaffold(
+      backgroundColor: DribTokens.bg,
       extendBodyBehindAppBar: false,
       appBar: AppBar(
         // Batch 7 (2.61.0+170): blur AppBar dihapus demi performa.
@@ -1090,7 +1090,7 @@ class BerandaScreenState extends State<BerandaScreen> {
           )
         else
           for (final b in buckets.take(7)) ...[
-            GlassCard(
+            DribCard(
               padding: const EdgeInsets.all(GlassSpace.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1109,6 +1109,8 @@ class BerandaScreenState extends State<BerandaScreen> {
     );
   }
 
+  /// Hero TAHAP 2 restyle: BalanceCard gradient navy gaya Dribbble.
+  /// Data & copy sama persis (surplus, masuk/keluar, pctOut, bar progres).
   Widget _surplusCard(
     double totalIn,
     double totalOut,
@@ -1117,23 +1119,22 @@ class BerandaScreenState extends State<BerandaScreen> {
     int? pctOut,
   ) {
     final positive = surplus >= 0;
-    // Hero industrial: kartu permukaan netral + angka tinta, bayangan
-    // halus satu-satunya (R-12). Makna tetap via chip + warna angka.
-    final scheme = Theme.of(context).colorScheme;
-    final onHero = scheme.onSurface;
-    final heroLabel = TextStyle(
-      color: scheme.onSurfaceVariant,
-      fontSize: 12,
+    const onHero = DribTokens.onNavy;
+    final heroSub = TextStyle(
+      color: onHero.withValues(alpha: 0.75),
+      fontSize: 13,
     );
     final heroValue = TextStyle(
       fontFamily: SsrFonts.numeric,
       color: onHero,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w700,
       fontSize: 14,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
-    // Batch 2 (2.61.0+165): hero glassmorphism dengan entrance animation.
-    // TweenAnimationBuilder: fade + scale halus saat kartu muncul.
+    final heroLabel = TextStyle(
+      color: onHero.withValues(alpha: 0.75),
+      fontSize: 12,
+    );
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: GlassDuration.slow,
@@ -1147,160 +1148,153 @@ class BerandaScreenState extends State<BerandaScreen> {
           ),
         );
       },
-      child: GlassPanel(
-        padding: const EdgeInsets.all(GlassSpace.lg),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: DribTokens.balanceGradient,
+          borderRadius:
+              BorderRadius.circular(DribTokens.sheetRadius),
+          boxShadow: DribTokens.cardShadow,
+        ),
         child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: StatusChip(
-                  label: positive
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: onHero.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  positive
                       ? tr('beranda_surplus')
                       : tr('beranda_defisit'),
-                  tone: positive ? StatusTone.ink : StatusTone.danger,
-                ),
-              ),
-              const SizedBox(height: SsrSpace.md),
-              Text(
-                amt(surplus),
-                style: SsrType.heroMoney.copyWith(color: onHero),
-              ),
-              const SizedBox(height: SsrSpace.xs),
-              Text(
-                tr('beranda_diff').replaceFirst('{m}', _monthLower()),
-                style: TextStyle(
-                  color: onHero.withValues(alpha: 0.7),
-                  fontSize: 13,
-                ),
-              ),
-              if (pctOut != null) ...[
-                const SizedBox(height: SsrSpace.sm),
-                Text(
-                  tr('beranda_vs_out')
-                      .replaceFirst('{p}', '${pctOut >= 0 ? '+' : ''}$pctOut'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: onHero,
-                    fontSize: 13,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
+              ),
+            ),
+            const SizedBox(height: SsrSpace.md),
+            Text(
+              amt(surplus),
+              style: DribTokens.bigNumber(size: 34, color: onHero),
+            ),
+            const SizedBox(height: SsrSpace.xs),
+            Text(
+              tr('beranda_diff').replaceFirst('{m}', _monthLower()),
+              style: heroSub,
+            ),
+            if (pctOut != null) ...[
+              const SizedBox(height: SsrSpace.sm),
+              Text(
+                tr('beranda_vs_out').replaceFirst(
+                    '{p}', '${pctOut >= 0 ? '+' : ''}$pctOut'),
+                style: heroSub,
+              ),
+            ],
+            const SizedBox(height: SsrSpace.lg),
+            Row(
+              children: [
+                Expanded(
+                  child: _heroMini(tr('tx_in'), amt(totalIn),
+                      AppIcons.arrowDown, Colors.green.shade300,
+                      heroLabel, heroValue),
+                ),
+                const SizedBox(width: GlassSpace.sm),
+                Expanded(
+                  child: _heroMini(tr('tx_out'), amt(totalOut),
+                      AppIcons.arrowUp, Colors.red.shade300,
+                      heroLabel, heroValue),
+                ),
               ],
-              const SizedBox(height: SsrSpace.lg),
-              Row(
+            ),
+            const SizedBox(height: SsrSpace.md),
+            SizedBox(
+              height: 8,
+              child: Stack(
                 children: [
-                  Expanded(
-                    child: GlassCard(
-                      padding: const EdgeInsets.all(GlassSpace.sm),
-                      borderRadius: GlassRadius.md,
-                      child: Row(
-                        children: [
-                          DuoIcon(AppIcons.arrowDown,
-                              size: 20, color: Colors.green.shade400),
-                          const SizedBox(width: GlassSpace.sm),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  tr('tx_in'),
-                                  style: heroLabel,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  amt(totalIn),
-                                  style: heroValue,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: onHero.withValues(alpha: 0.25),
+                        borderRadius: const BorderRadius.all(
+                            Radius.circular(4)),
                       ),
                     ),
                   ),
-                  const SizedBox(width: GlassSpace.sm),
-                  Expanded(
-                    child: GlassCard(
-                      padding: const EdgeInsets.all(GlassSpace.sm),
-                      borderRadius: GlassRadius.md,
-                      child: Row(
-                        children: [
-                          DuoIcon(AppIcons.arrowUp,
-                              size: 20, color: scheme.error),
-                          const SizedBox(width: GlassSpace.sm),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  tr('tx_out'),
-                                  style: heroLabel,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  amt(totalOut),
-                                  style: heroValue,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                  Positioned.fill(
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(
+                        begin: 0,
+                        end: inShare < 0
+                            ? 0.0
+                            : (inShare > 1 ? 1.0 : inShare),
+                      ),
+                      duration: SsrMotion.base,
+                      curve: SsrMotion.curve,
+                      builder: (context, value, _) {
+                        return Align(
+                          alignment: Alignment.centerLeft,
+                          child: FractionallySizedBox(
+                            widthFactor: value,
+                            heightFactor: 1,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: onHero,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: SsrSpace.md),
-              SizedBox(
-                height: 8,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: onHero.withValues(alpha: 0.25),
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(4)),
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(
-                          begin: 0,
-                          end: inShare < 0
-                              ? 0.0
-                              : (inShare > 1 ? 1.0 : inShare),
-                        ),
-                        duration: SsrMotion.base,
-                        curve: SsrMotion.curve,
-                        builder: (context, value, _) {
-                          return Align(
-                            alignment: Alignment.centerLeft,
-                            child: FractionallySizedBox(
-                              widthFactor: value,
-                              heightFactor: 1,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: onHero,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
   }
-}
+
+  /// Kotak mini di hero: ikon + label + nominal putih di atas navy.
+  Widget _heroMini(String label, String value, IconData icon, Color tint,
+      TextStyle labelStyle, TextStyle valueStyle) {
+    return Container(
+      padding: const EdgeInsets.all(GlassSpace.sm),
+      decoration: BoxDecoration(
+        color: DribTokens.onNavy.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(DribTokens.cardRadius),
+      ),
+      child: Row(
+        children: [
+          DuoIcon(icon, size: 20, color: tint),
+          const SizedBox(width: GlassSpace.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: labelStyle),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: valueStyle,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
 /// Kartu calm streak: 8 dot minggu, tanpa angka tanpa api.
 class _CalmWeeks extends StatelessWidget {
@@ -1312,7 +1306,7 @@ class _CalmWeeks extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return SectionCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1402,7 +1396,7 @@ class _DashFeatureGrid extends StatelessWidget {
         screen: const NotifSettingsScreen()
       ),
     ];
-    return SectionCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1452,7 +1446,7 @@ class _DashDebtCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final t = debtTotals(debts);
-    return SectionCard(
+    return DribCard(
       child: InkWell(
         onTap: onOpen,
         child: Column(
@@ -1548,7 +1542,7 @@ class _DashAllowanceCard extends StatelessWidget {
       avgDailyOut: avgDailyOut,
       daysLeft: days,
     );
-    return SectionCard(
+    return DribCard(
       child: InkWell(
         onTap: onOpen,
         child: Row(
@@ -1602,7 +1596,7 @@ class _DashNetWorthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SectionCard(
+    return DribCard(
       child: InkWell(
         onTap: onOpen,
         child: Row(
@@ -1659,7 +1653,7 @@ class _DashBudgetCard extends StatelessWidget {
     final rows = [...budgets]
       ..sort((a, b) => b.spent.compareTo(a.spent));
     final top = rows.take(3).toList();
-    return SectionCard(
+    return DribCard(
       child: InkWell(
         onTap: onOpen,
         child: Column(
@@ -1773,7 +1767,7 @@ class _StreakCard extends StatelessWidget {
       sub = tr('streak_empty');
     }
     final next = nextMilestone(s.days);
-    return SectionCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1830,7 +1824,7 @@ class _HealthCard extends StatelessWidget {
     final theme = Theme.of(context);
     final h = health;
     final d = delta;
-    return SectionCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1977,7 +1971,7 @@ class _NudgeCard extends StatelessWidget {
         '${dd.year.toString().padLeft(4, '0')}-'
         '${dd.month.toString().padLeft(2, '0')}-'
         '${dd.day.toString().padLeft(2, '0')}';
-    return SectionCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2032,7 +2026,7 @@ class _InsightCard extends StatelessWidget {
           .replaceFirst('{c}', ins.topCategory)
           .replaceFirst('{m}', amt(ins.topTotal));
     }
-    return SectionCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2152,7 +2146,7 @@ class _DreamCard extends StatelessWidget {
     }
     return GestureDetector(
       onTap: onTap,
-      child: SectionCard(
+      child: DribCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2219,7 +2213,7 @@ class _LevelRow extends StatelessWidget {
     final lv = levelFor(xp);
     return GestureDetector(
       onTap: onTap,
-      child: SectionCard(
+      child: DribCard(
         child: Row(
           children: [
             Expanded(
@@ -2287,7 +2281,7 @@ class _BillsSuggest extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SectionCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2345,12 +2339,11 @@ class _QuickAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return GlassCard(
+    return DribCard(
       padding: const EdgeInsets.symmetric(
         horizontal: GlassSpace.md,
         vertical: GlassSpace.sm,
       ),
-      borderRadius: GlassRadius.md,
       onTap: onTap,
       child: Row(
         children: [

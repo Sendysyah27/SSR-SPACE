@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+224.
+Versi terpasang: 2.72.0+225.
+
+## Yang baru di 2.72.0+225
+
+1. Beranda gaya baru: latar biru muda, kartu saldo gradient navy, semua kartu putih sudut lembut.
 
 ## Yang baru di 2.72.0+224
 
