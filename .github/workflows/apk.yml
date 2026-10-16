@@ -1011,14 +1011,25 @@ jobs:
           }
           '''.replace('__QS_PKG__', dotted))
           sc = xmldir / 'shortcuts.xml'
+          # Label shortcut WAJIB @string (literal ditolak aapt:
+          # "'Catat' is incompatible with attribute ... reference").
+          vals = pathlib.Path('android/app/src/main/res/values/ssr_shortcut_strings.xml')
+          vals.write_text('''<?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="ssr_shortcut_short">Catat</string>
+              <string name="ssr_shortcut_long">Catat transaksi</string>
+          </resources>
+          ''')
+          assert 'ssr_shortcut_short' in vals.read_text()
+          assert 'ssr_shortcut_long' in vals.read_text()
           sc.write_text('''<?xml version="1.0" encoding="utf-8"?>
           <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
               <shortcut
                   android:shortcutId="ssr_catat"
                   android:enabled="true"
                   android:icon="@mipmap/ic_launcher"
-                  android:shortcutShortLabel="Catat"
-                  android:shortcutLongLabel="Catat transaksi">
+                  android:shortcutShortLabel="@string/ssr_shortcut_short"
+                  android:shortcutLongLabel="@string/ssr_shortcut_long">
                   <intent
                       android:action="android.intent.action.VIEW"
                       android:targetPackage="__PKG__"
@@ -1077,6 +1088,7 @@ jobs:
               'android:name="android.intent.action.SEND_MULTIPLE"',
               'android:mimeType="image/*"',
               'android.app.shortcuts', '@xml/shortcuts',
+              '@string/ssr_shortcut_short', '@string/ssr_shortcut_long',
           ):
               assert needle in t, 'manifest kehilangan: ' + needle
           assert t.count('<uses-permission') == perm_before, \
