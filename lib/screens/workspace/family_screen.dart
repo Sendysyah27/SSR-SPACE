@@ -9,13 +9,15 @@ import 'package:ssr_space/services/workspace_service.dart';
 import 'package:ssr_space/screens/workspace/invite_screen.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
-import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
+import 'package:ssr_space/widgets/restyle/member_avatar_row.dart';
+import 'package:ssr_space/widgets/restyle/role_badge.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
-import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Anggota workspace + belanja per anggota bulan berjalan.
@@ -166,6 +168,7 @@ class FamilyScreenState extends State<FamilyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DribTokens.bg,
       appBar: AppBar(title: Text(tr('fam_title'))),
       floatingActionButton: (loading || loadFailed || noOrg)
           ? null
@@ -211,6 +214,12 @@ class FamilyScreenState extends State<FamilyScreen> {
     return ListView(
       padding: const EdgeInsets.all(SsrSpace.lg),
       children: [
+        DribCard(
+          child: MemberAvatarRow(names: [
+            for (final m in members) _memberName(m),
+          ]),
+        ),
+        const SizedBox(height: SsrSpace.md),
         _SummaryCard(monthIn: monthIn, monthOut: monthOut),
         const SizedBox(height: SsrSpace.md),
         for (final m in members) _memberTile(m),
@@ -218,17 +227,24 @@ class FamilyScreenState extends State<FamilyScreen> {
     );
   }
 
+  String _memberName(OrgMember m) {
+    final r = actorLabel(m.userId, myId);
+    return r.$2 ? tr('sp_by_you') : r.$1;
+  }
+
   Widget _memberTile(OrgMember m) {
     final isMe = m.userId == myId;
-    final r = actorLabel(m.userId, myId);
-    final name = r.$2 ? tr('sp_by_you') : r.$1;
+    final name = _memberName(m);
     final t = totals[m.userId];
     final canKick = _canManage && !isMe && kicking == null;
-    return SectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       child: Row(
         children: [
           CircleAvatar(
+            backgroundColor:
+                DribTokens.primary.withValues(alpha: 0.14),
+            foregroundColor: DribTokens.navy,
             child: Text(name.isEmpty ? '?' : name[0].toUpperCase()),
           ),
           const SizedBox(width: SsrSpace.md),
@@ -246,12 +262,7 @@ class FamilyScreenState extends State<FamilyScreen> {
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                     ),
-                    StatusChip(
-                      label: _roleLabel(m.role),
-                      tone: m.role == 'member'
-                          ? StatusTone.neutral
-                          : StatusTone.accent,
-                    ),
+                    RoleBadge(role: _roleLabel(m.role)),
                   ],
                 ),
                 const SizedBox(height: 2),
@@ -293,7 +304,7 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
+    return DribCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

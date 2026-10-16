@@ -22,10 +22,18 @@ class WorkspaceSwitcher extends StatelessWidget {
   final List<WorkspaceOption> options;
   final ValueChanged<WorkspaceOption> onSelect;
 
+  /// Aksi kelola per workspace (ikon gear). Null = tanpa tombol kelola.
+  final ValueChanged<WorkspaceOption>? onManage;
+
+  /// Tooltip tombol kelola.
+  final String? manageTooltip;
+
   const WorkspaceSwitcher({
     super.key,
     required this.options,
     required this.onSelect,
+    this.onManage,
+    this.manageTooltip,
   });
 
   @override
@@ -76,6 +84,13 @@ class WorkspaceSwitcher extends StatelessWidget {
                       const Icon(
                         Icons.check_circle,
                         color: DribTokens.primary,
+                      ),
+                    if (onManage != null)
+                      IconButton(
+                        tooltip: manageTooltip,
+                        onPressed: () => onManage!(o),
+                        icon: const Icon(Icons.settings_outlined, size: 20),
+                        color: DribTokens.navy.withValues(alpha: 0.6),
                       ),
                   ],
                 ),

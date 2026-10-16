@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+233.
+Versi terpasang: 2.72.0+234.
+
+## Yang baru di 2.72.0+234
+
+1. Layar Anggota & Workspace gaya baru: avatar tumpuk, badge peran, kartu pilih workspace + centang aktif.
 
 ## Yang baru di 2.72.0+233
 

@@ -9,12 +9,13 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/screens/shell/main_shell.dart';
 import 'package:ssr_space/screens/workspace/workspace_detail_screen.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
-import 'package:ssr_space/widgets/status_chip.dart';
+import 'package:ssr_space/widgets/restyle/workspace_switcher.dart';
 
 class OrgSwitcherScreen extends StatefulWidget {
   final SessionService session;
@@ -30,6 +31,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
   String? loadErr;
   String? formErr;
   String? joinErr;
+  String activeId = '';
   final nameC = TextEditingController();
   final nameFocus = FocusNode();
   final joinC = TextEditingController();
@@ -61,6 +63,9 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
           .eq('user_id', uid);
       if (!mounted) return;
       setState(() => orgs = List<Map<String, dynamic>>.from(rows));
+      final aid = await activeOrgId();
+      if (!mounted) return;
+      setState(() => activeId = aid);
     } catch (_) {
       if (!mounted) return;
       setState(() => orgs = []);
@@ -199,6 +204,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
     return _OrgSwitcherScaffold(
       _OrgPickerBody(
         orgs: orgs,
+        activeId: activeId,
         nameC: nameC,
         nameFocus: nameFocus,
         joinC: joinC,
@@ -225,6 +231,7 @@ class _OrgSwitcherScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DribTokens.bg,
       appBar: AppBar(title: Text(tr('org_title'))),
       body: body,
     );
@@ -248,6 +255,7 @@ class _OrgPickerBody extends StatelessWidget {
   final VoidCallback onFocusForm;
   final Future<void> Function(Map<String, dynamic> org) onSelect;
   final ValueChanged<Map<String, dynamic>> onManage;
+  final String activeId;
 
   const _OrgPickerBody({
     required this.orgs,
@@ -264,6 +272,7 @@ class _OrgPickerBody extends StatelessWidget {
     required this.onFocusForm,
     required this.onSelect,
     required this.onManage,
+    required this.activeId,
   });
 
   @override
@@ -288,7 +297,12 @@ class _OrgPickerBody extends StatelessWidget {
             onAction: onFocusForm,
           )
         else
-          _OrgListCard(items: orgs, onSelect: onSelect, onManage: onManage),
+          _OrgListCard(
+            items: orgs,
+            activeId: activeId,
+            onSelect: onSelect,
+            onManage: onManage,
+          ),
         const SizedBox(height: SsrSpace.lg),
         _CreateOrgForm(
           nameC: nameC,
@@ -311,112 +325,50 @@ class _OrgPickerBody extends StatelessWidget {
   }
 }
 
-/// Kartu daftar workspace: satu `_OrgRow` per workspace, berdivider.
+/// Daftar workspace TAHAP 4d: komponen WorkspaceSwitcher kartu putih.
+/// Adapter Map -> WorkspaceOption; centang = workspace aktif saat ini.
 class _OrgListCard extends StatelessWidget {
   final List<Map<String, dynamic>> items;
+  final String activeId;
   final Future<void> Function(Map<String, dynamic> org) onSelect;
   final ValueChanged<Map<String, dynamic>> onManage;
 
   const _OrgListCard({
     required this.items,
+    required this.activeId,
     required this.onSelect,
     required this.onManage,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return SectionCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: SsrSpace.md,
-        vertical: SsrSpace.xs,
-      ),
-      child: Column(
-        children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const Divider(height: 1),
-            _OrgRow(m: items[i], onSelect: onSelect, onManage: onManage),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// Satu baris daftar workspace: avatar inisial, nama, chip peran,
-/// ketuk untuk pindah ke workspace tsb.
-class _OrgRow extends StatelessWidget {
-  final Map<String, dynamic> m;
-  final Future<void> Function(Map<String, dynamic> org) onSelect;
-  final ValueChanged<Map<String, dynamic>> onManage;
-
-  const _OrgRow({
-    required this.m,
-    required this.onSelect,
-    required this.onManage,
-  });
+  String _orgId(Map<String, dynamic> m) =>
+      (m['org_id'] ?? m['organizations']?['id'] ?? '').toString();
 
   @override
   Widget build(BuildContext context) {
-    final name = (m['organizations']?['name'] ?? '-').toString();
-    final isOwner = m['role'] == 'owner';
-    return InkWell(
-      onTap: () => onSelect(m),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
-        child: Row(
-          children: [
-            _OrgAvatar(name: name),
-            const SizedBox(width: SsrSpace.md),
-            Expanded(
-              child: Text(
-                name,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            const SizedBox(width: SsrSpace.sm),
-            StatusChip(
-              label: isOwner ? tr('org_owner') : tr('org_member'),
-              tone: isOwner ? StatusTone.accent : StatusTone.neutral,
-            ),
-            IconButton(
-              tooltip: tr('wsm_detail'),
-              onPressed: () => onManage(m),
-              icon: const DuoIcon(AppIcons.settings),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Avatar lingkaran inisial nama workspace di atas surface terangkat.
-class _OrgAvatar extends StatelessWidget {
-  final String name;
-
-  const _OrgAvatar({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
-    return Container(
-      width: 40,
-      height: 40,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: scheme.outline.withValues(alpha: 0.35),
-        shape: BoxShape.circle,
-        border: Border.all(color: scheme.outline),
-      ),
-      child: Text(
-        initial,
-        style: TextStyle(
-          color: scheme.primary,
-          fontWeight: FontWeight.w700,
-          fontSize: 15,
-        ),
-      ),
+    final byId = <String, Map<String, dynamic>>{
+      for (final m in items) _orgId(m): m,
+    };
+    return WorkspaceSwitcher(
+      options: [
+        for (final m in items)
+          WorkspaceOption(
+            id: _orgId(m),
+            name: (m['organizations']?['name'] ?? '-').toString(),
+            role: m['role'] == 'owner'
+                ? tr('org_owner')
+                : tr('org_member'),
+            selected: _orgId(m).isNotEmpty && _orgId(m) == activeId,
+          ),
+      ],
+      onSelect: (o) {
+        final m = byId[o.id];
+        if (m != null) onSelect(m);
+      },
+      onManage: (o) {
+        final m = byId[o.id];
+        if (m != null) onManage(m);
+      },
+      manageTooltip: tr('wsm_detail'),
     );
   }
 }
