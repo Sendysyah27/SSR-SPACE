@@ -37,6 +37,8 @@ dependencies:
   flutter_local_notifications: ^22.3.1
   google_mlkit_text_recognition: ^0.15.0
   image_picker: ^1.1.2
+  # Share gambar dari app lain -> scan struk (Fase 2 widget suite).
+  receive_sharing_intent: ^1.9.0
   # Buka file ekspor dari ketuk notifikasi (FileProvider via merger).
   open_filex: ^4.7.0
   # AI native OpenCode Zen (satu-satunya provider): HTTP + Keystore.

@@ -3,6 +3,7 @@ import 'package:ssr_space/utils/diag_log.dart';
 import 'package:app_links/app_links.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
+import 'package:ssr_space/services/share_intake.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
@@ -72,6 +73,11 @@ class _SplashScreenState extends State<SplashScreen> {
         final initial = await AppLinks().getInitialLink();
         if (initial != null) await PinLinkVerify.consume(initial);
       } catch (_) {}
+      // Dingin quick-entry/share: titipkan ke antrean prefs SEDINI
+      // mungkin (mencakup cabang PIN/lock di bawah). Tanpa sheet —
+      // context splash mati setelah pushReplacement; MainShell
+      // mengonsumsi + membuka sheet di bingkai pertama / tiap resume.
+      await ShareIntake.stashCold();
       if (passwordRecovery.value) {
         await _go(SetPasswordScreen(session: widget.session));
         return;

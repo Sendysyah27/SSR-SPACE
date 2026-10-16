@@ -10,6 +10,7 @@ import 'package:ssr_space/services/foreground_track.dart';
 import 'package:ssr_space/services/notif_track_service.dart';
 import 'package:ssr_space/services/offline_cache.dart';
 import 'package:ssr_space/services/realtime_sync.dart';
+import 'package:ssr_space/services/share_intake.dart';
 import 'package:ssr_space/services/pin_link_verify.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -56,11 +57,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     netOnline.addListener(_onNetChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkDetail());
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkRecovery());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkQuickEntry());
   }
 
   @override
   void dispose() {
     netOnline.removeListener(_onNetChanged);
+    ShareIntake.detachWarm();
     unawaited(RealtimeSync.stop());
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -118,6 +121,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       // Alert budget baru dari perangkat lain (idempoten, fail-silent).
       unawaited(_checkBudgetAlerts());
       unawaited(_checkDetail());
+      unawaited(_checkQuickEntry());
       _checkRecovery();
       // Poll budget alerts tiap resume supaya banner/badge segar
       // walau tab Budget sedang tidak aktif.
@@ -147,6 +151,25 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       ),
     );
     session.touch();
+  }
+
+  /// Konsumsi antrean quick-entry/share (dingin + hangat): buka sheet
+  /// bila ada; tersimpan -> muat ulang semua tab. Dilewati bila detail
+  /// tersimpan sedang dibuka (hindari tumpuk sheet dengan _checkDetail).
+  Future<void> _checkQuickEntry() async {
+    if (!mounted || _detailOpen) return;
+    // Timeout lewat (relock tertunda) -> biarkan antre; dikonsumsi
+    // resume berikutnya sesudah unlock (terkunci tak boleh buka sheet).
+    final session = widget.session;
+    if (session.hasPin &&
+        session.shouldRelock(
+          timeout: Duration(minutes: lockTimeoutMinutes.value),
+        )) {
+      return;
+    }
+    ShareIntake.attachWarm(context);
+    final saved = await ShareIntake.consumeAll(context);
+    if (saved && mounted) _reloadAll();
   }
 
   /// Link lupa-password diketuk saat app sudah masuk (hangat): arahkan ke
