@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+238.
+Versi terpasang: 2.72.0+239.
+
+## Yang baru di 2.72.0+239
+
+1. Perbaikan kecil: gaya saldo jadi konstanta (CI analyze hijau lagi). Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.72.0+238
 

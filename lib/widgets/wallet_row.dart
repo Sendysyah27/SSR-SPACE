@@ -59,11 +59,11 @@ class WalletRow extends StatelessWidget {
               textAlign: TextAlign.end,
               style: balanceText == tr('w_notloaded')
                   ? Theme.of(context).textTheme.bodySmall
-                  : TextStyle(
+                  : const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                       color: DribTokens.navy,
-                      fontFeatures: const [
+                      fontFeatures: [
                         FontFeature.tabularFigures()
                       ],
                     ),
