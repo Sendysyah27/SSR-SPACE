@@ -38,6 +38,11 @@ alter table user_entitlements enable row level security;
 create index if not exists user_entitlements_user_idx
   on user_entitlements (user_id);
 
+-- Guard idempotensi redeem: satu user hanya satu entitlement per kode
+-- (gagalkan double-redeem konkuren di level DB, bukan sekadar SELECT-check).
+create unique index if not exists user_entitlements_user_coderef_uidx
+  on user_entitlements (user_id, source_ref) where source = 'vip_code';
+
 create table if not exists vip_codes (
   id uuid primary key default gen_random_uuid(),
   code_hash text not null unique,
@@ -240,7 +245,7 @@ begin
   if auth.uid() is null then
     raise exception 'NOT_AUTHENTICATED';
   end if;
-  if p_kind not in (
+  if coalesce(p_kind, '') not in (
     'auto', 'members', 'workspaces', 'wallets', 'budgets', 'ai'
   ) then
     raise exception 'QUOTA_UNKNOWN_KIND';
@@ -434,6 +439,13 @@ create trigger trg_budget_quota
   before insert on budgets
   for each row
   execute function public.enforce_budget_quota();
+
+-- Fungsi trigger-only di atas sengaja TANPA grant ke siapa pun (tidak boleh
+-- dipanggil sebagai RPC); penyimpangan sadar dari pola grant-to-authenticated
+-- yang dipakai fungsi RPC di file ini.
+revoke all on function public.enforce_workspace_quota() from public, anon, authenticated;
+revoke all on function public.enforce_wallet_quota() from public, anon, authenticated;
+revoke all on function public.enforce_budget_quota() from public, anon, authenticated;
 
 -- Retention ai_usage 90 hari, guarded pola migration_13
 -- (CI/lokal tanpa pg_cron = NOTICE + lewati; verifikasi penuh di Supabase).
