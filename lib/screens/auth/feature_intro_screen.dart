@@ -187,7 +187,7 @@ class _SlideDonut extends StatelessWidget {
       demo: const DribCard(
         child: DonutChart(
           centerText: '40%',
-          slices: const [
+          slices: [
             DonutSlice(value: 40, label: 'Masuk', color: DribTokens.primary),
             DonutSlice(value: 35, label: 'Belanja', color: DribTokens.navy),
             DonutSlice(

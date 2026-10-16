@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+245.
+Versi terpasang: 2.72.0+246.
+
+## Yang baru di 2.72.0+246
+
+1. Perbaikan kecil: buang const ganda di tur fitur. Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.72.0+245
 
