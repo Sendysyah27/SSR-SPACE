@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+243.
+Versi terpasang: 2.72.0+244.
+
+## Yang baru di 2.72.0+244
+
+1. Layar masuk gaya baru + tur fitur 4 slide (sekali saja): donut, budget, Mang AI, geser hapus.
 
 ## Yang baru di 2.72.0+243
 
