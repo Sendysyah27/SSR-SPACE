@@ -105,8 +105,8 @@ class DonutChart extends StatelessWidget {
                 ),
               ],
             ),
+          ],
         ],
-      ),
-    );
+      );
   }
 }

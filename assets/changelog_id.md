@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+231.
+Versi terpasang: 2.72.0+232.
+
+## Yang baru di 2.72.0+232
+
+1. Perbaikan build: kurung tutup ganda di komponen donut. Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.72.0+231
 
