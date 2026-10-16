@@ -1124,12 +1124,12 @@ class BerandaScreenState extends State<BerandaScreen> {
       color: onHero.withValues(alpha: 0.75),
       fontSize: 13,
     );
-    final heroValue = TextStyle(
+    final heroValue = const TextStyle(
       fontFamily: SsrFonts.numeric,
-      color: onHero,
+      color: DribTokens.onNavy,
       fontWeight: FontWeight.w700,
       fontSize: 14,
-      fontFeatures: const [FontFeature.tabularFigures()],
+      fontFeatures: [FontFeature.tabularFigures()],
     );
     final heroLabel = TextStyle(
       color: onHero.withValues(alpha: 0.75),
