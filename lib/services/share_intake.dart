@@ -100,6 +100,11 @@ class ShareIntake {
   static StreamSubscription<Uri>? _linkSub;
   static StreamSubscription<List<SharedMediaFile>>? _mediaSub;
 
+  /// Probe kunci: diset MainShell (pemilik SessionService). True =
+  /// relock tertunda -> jalur terkunci (antre, jangan buka sheet).
+  /// Default false (fail-open seperti sebelumnya bila tak diset).
+  static bool Function() isLocked = () => false;
+
   /// Dingin (dipanggil splash _boot): initial link -> antre; initial
   /// media -> antre path pertama. Tanpa UI, tanpa sheet. Tak melempar.
   static Future<void> stashCold() async {
@@ -168,6 +173,17 @@ class ShareIntake {
   static Future<void> handleLink(BuildContext context, Uri uri) async {
     final type = parseQuickLink(uri);
     if (type == null) return;
+    // Terkunci -> antre + snackbar jujur (jangan buka sheet).
+    if (isLocked()) {
+      try {
+        await queuePending(type);
+      } catch (_) {}
+      _snack(
+        context,
+        _t('wg_locked_queued', 'Terkunci — antrean dibuka setelah unlock.'),
+      );
+      return;
+    }
     final ready = await _ready();
     // Sibuk (sheet lain terbuka) -> antre juga: single-slot, latest wins.
     // Pengecekan sinkron -> atomik menuju _openQuick (tanpa await di
@@ -196,6 +212,17 @@ class ShareIntake {
     try {
       await ReceiveSharingIntent.instance.reset();
     } catch (_) {}
+    // Terkunci -> antre path + snackbar jujur (jangan scan/buka sheet).
+    if (isLocked()) {
+      try {
+        await queueSharePath(picked.first!, hadMore: picked.hadMore);
+      } catch (_) {}
+      _snack(
+        context,
+        _t('wg_locked_queued', 'Terkunci — antrean dibuka setelah unlock.'),
+      );
+      return;
+    }
     if (!await _ready()) {
       try {
         await queueSharePath(picked.first!, hadMore: picked.hadMore);
@@ -221,24 +248,56 @@ class ShareIntake {
   /// (pemanggil muat ulang). Tanpa sheet ganda ([_busy] guard).
   static Future<bool> consumeAll(BuildContext context) async {
     var saved = false;
+    // Tak pernah buang antrean diam-diam: terkunci/sibuk -> keluar awal
+    // (antrean utuh); kalah balapan tengah-jalan -> antre ulang di bawah.
+    if (isLocked() || _busy) return false;
     if (!await _ready()) return false;
     String? type;
     try {
       type = await takePending();
     } catch (_) {}
     if (type != null && type.isNotEmpty) {
-      if (await _openQuick(context, type)) saved = true;
+      var opened = false;
+      if (!_busy) opened = await _openQuick(context, type);
+      if (opened) {
+        saved = true;
+      } else if (_busy || !context.mounted) {
+        // Kalah balapan dgn sheet lain / shell mati: kembalikan antrean.
+        // Batal user / gagal buka (_busy false + mounted) = hangus benar.
+        try {
+          await queuePending(type);
+        } catch (_) {}
+      }
       if (!context.mounted) return saved;
     }
     final share = await takeSharePath();
     if (!share.wasQueued) return saved;
-    if (!context.mounted) return saved;
     if (share.path == null) {
+      // Berkas hilang sesudah diantre -> hanguskan + jujur (tanpa antre
+      // ulang: path mati akan gagal lagi tiap resume).
       _snack(context, tr('rcp_empty'));
       return saved;
     }
-    if (await _openShare(context, share.path!, hadMore: share.hadMore)) {
+    if (!context.mounted) {
+      try {
+        await queueSharePath(share.path!, hadMore: share.hadMore);
+      } catch (_) {}
+      return saved;
+    }
+    var shareOpened = false;
+    if (!_busy) {
+      shareOpened = await _openShare(
+        context,
+        share.path!,
+        hadMore: share.hadMore,
+      );
+    }
+    if (shareOpened) {
       saved = true;
+    } else if (_busy) {
+      try {
+        await queueSharePath(share.path!, hadMore: share.hadMore);
+      } catch (_) {}
     }
     return saved;
   }

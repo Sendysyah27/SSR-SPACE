@@ -55,14 +55,24 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     unawaited(ForegroundTrack.syncFromPrefs());
     unawaited(_ensureRealtime());
     netOnline.addListener(_onNetChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkDetail());
+    // Probe kunci untuk ShareIntake (jalur hangat tak punya SessionService).
+    ShareIntake.isLocked = () {
+      final s = widget.session;
+      return s.hasPin &&
+          s.shouldRelock(
+            timeout: Duration(minutes: lockTimeoutMinutes.value),
+          );
+    };
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkRecovery());
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkQuickEntry());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _checkDetailThenQuick(),
+    );
   }
 
   @override
   void dispose() {
     netOnline.removeListener(_onNetChanged);
+    ShareIntake.isLocked = () => false;
     ShareIntake.detachWarm();
     unawaited(RealtimeSync.stop());
     WidgetsBinding.instance.removeObserver(this);
@@ -120,8 +130,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       unawaited(_ensureRealtime());
       // Alert budget baru dari perangkat lain (idempoten, fail-silent).
       unawaited(_checkBudgetAlerts());
-      unawaited(_checkDetail());
-      unawaited(_checkQuickEntry());
+      unawaited(_checkDetailThenQuick());
       _checkRecovery();
       // Poll budget alerts tiap resume supaya banner/badge segar
       // walau tab Budget sedang tidak aktif.
@@ -151,6 +160,14 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       ),
     );
     session.touch();
+  }
+
+  /// Detail dulu, quick-entry sesudahnya (SERIAL, anti-tumpuk sheet):
+  /// _checkDetail mengklaim _detailOpen sinkron di entry; quick-entry
+  /// jalan setelah detail selesai (ditutup/tanpa antrean). Tanpa interleave.
+  Future<void> _checkDetailThenQuick() async {
+    await _checkDetail();
+    await _checkQuickEntry();
   }
 
   /// Konsumsi antrean quick-entry/share (dingin + hangat): buka sheet
@@ -186,6 +203,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   /// Buka detail read-only bila ada ketuk notif tersimpan.  /// Prefs ditulis AutoSavedNotify saat notif tampil maupun diketuk.
   Future<void> _checkDetail() async {
     if (_detailOpen || !_resumed || !mounted) return;
+    // Klaim sinkron SEBELUM await pertama: cegah interleave _checkQuickEntry
+    // (keduanya dipicu bingkai/resume yang sama). finally mengembalikan.
+    _detailOpen = true;
     try {
       final prefs = await SharedPreferences.getInstance();
       final txId = prefs.getString(AutoSavedNotify.lastDetailKey);
@@ -196,11 +216,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       await prefs.remove(AutoSavedNotify.lastDetailKey);
       if (!mounted) return;
       if (tx == null) return;
-      _detailOpen = true;
       final go = await showTxDetailSheet(context, tx, orgId);
-      _detailOpen = false;
       if (go == true && mounted) _select(1);
     } catch (_) {
+    } finally {
       _detailOpen = false;
     }
   }
