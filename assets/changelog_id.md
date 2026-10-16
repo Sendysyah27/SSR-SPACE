@@ -1,6 +1,10 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.72.0+249.
+Versi terpasang: 2.72.0+250.
+
+## Yang baru di 2.72.0+250
+
+1. Perbaikan kecil: toggle pakai API baru Flutter. Tanpa perubahan tampilan/fitur.
 
 ## Yang baru di 2.72.0+249
 

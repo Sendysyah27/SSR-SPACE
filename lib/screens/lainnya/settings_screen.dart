@@ -593,7 +593,7 @@ class _TopNCard extends StatelessWidget {
         ValueListenableBuilder<bool>(
           valueListenable: reportsTopN,
           builder: (context, value, _) => SwitchListTile(
-            activeColor: DribTokens.primary,
+            activeThumbColor: DribTokens.primary,
             contentPadding: EdgeInsets.zero,
             title: Text(tr('st_topn')),
             subtitle: Text(tr('st_topn_sub')),
@@ -619,7 +619,7 @@ class _AnimsCard extends StatelessWidget {
         ValueListenableBuilder<bool>(
           valueListenable: uiAnims,
           builder: (context, value, _) => SwitchListTile(
-            activeColor: DribTokens.primary,
+            activeThumbColor: DribTokens.primary,
             contentPadding: EdgeInsets.zero,
             title: Text(tr('st_anims')),
             value: value,
@@ -828,7 +828,7 @@ class _ReminderCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SwitchListTile(
-                    activeColor: DribTokens.primary,
+                    activeThumbColor: DribTokens.primary,
                     contentPadding: EdgeInsets.zero,
                     title: Text(tr('st_reminder_on')),
                     value: enabled,
@@ -945,7 +945,7 @@ class _WeeklySection extends StatelessWidget {
               children: [
                 const Divider(height: 1),
                 SwitchListTile(
-                  activeColor: DribTokens.primary,
+                  activeThumbColor: DribTokens.primary,
                   contentPadding: EdgeInsets.zero,
                   title: Text(tr('st_weekly_on')),
                   value: enabled,
@@ -1013,7 +1013,7 @@ class _WidgetCard extends StatelessWidget {
         ValueListenableBuilder<bool>(
           valueListenable: widgetToday,
           builder: (context, value, _) => SwitchListTile(
-            activeColor: DribTokens.primary,
+            activeThumbColor: DribTokens.primary,
             contentPadding: EdgeInsets.zero,
             title: Text(tr('st_widget_today')),
             subtitle: Text(tr('wg_open')),
@@ -1177,7 +1177,7 @@ class _AiCardState extends State<_AiCard> {
       children: [
         Text(tr('ai_sub'), style: Theme.of(context).textTheme.bodySmall),
         SwitchListTile(
-          activeColor: DribTokens.primary,
+          activeThumbColor: DribTokens.primary,
           contentPadding: EdgeInsets.zero,
           title: Text(tr('ai_enable')),
           subtitle: Text(
@@ -1294,7 +1294,7 @@ class _BiometricCardState extends State<_BiometricCard> {
         ValueListenableBuilder<bool>(
           valueListenable: biometricEnabled,
           builder: (context, enabled, _) => SwitchListTile(
-            activeColor: DribTokens.primary,
+            activeThumbColor: DribTokens.primary,
             contentPadding: EdgeInsets.zero,
             title: Text(tr('bio_t')),
             subtitle: Text(
