@@ -8,6 +8,7 @@ import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/screens/auth/onboarding_screen.dart';
+import 'package:ssr_space/screens/auth/feature_intro_screen.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/screens/auth/set_password_screen.dart';
 import 'package:ssr_space/screens/shell/main_shell.dart';
@@ -45,6 +46,21 @@ class _SplashScreenState extends State<SplashScreen> {
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => w));
   }
 
+  /// Tampilkan intro di atas splash, tunggu selesai (pop), lalu lanjut
+  /// boot normal (cek workspace aktif -> buat/pilih -> Beranda).
+  Future<void> _goIntroAndWait() async {
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FeatureIntroScreen(
+          onDone: () {
+            if (mounted) Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _boot() async {
     setState(() => failed = false);
     try {
@@ -76,6 +92,12 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         );
         return;
+      }
+      // Intro fitur terbaru: sekali saja (baru maupun lama), sebelum
+      // buat/pilih workspace. Selesai -> lanjut alur normal di bawah.
+      if (!await introSeen()) {
+        await _goIntroAndWait();
+        if (!mounted) return;
       }
       if (SupabaseConfig.isConfigured) {
         if ((prefs.getString('active_org_id') ?? '').isEmpty) {

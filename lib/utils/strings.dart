@@ -2480,6 +2480,35 @@ const _t = <String, Map<String, String>>{
   'ai_add_item': {'id': 'Tambah baris', 'en': 'Add row'},
   'ai_payment': {'id': 'Bayar', 'en': 'Payment'},
   'ai_tax': {'id': 'Pajak', 'en': 'Tax'},
+  'fi_skip': {'id': 'Lewati', 'en': 'Skip'},
+  'fi_next': {'id': 'Lanjut', 'en': 'Next'},
+  'fi_done': {'id': 'Mulai', 'en': 'Start'},
+  'fi_t1': {'id': 'Arus kas sekilas', 'en': 'Cash flow at a glance'},
+  'fi_s1': {
+    'id': 'Donut biru-navy-oranye: masuk, belanja, tabungan.',
+    'en': 'Blue-navy-orange donut: income, spending, savings.',
+  },
+  'fi_t2': {'id': 'Budget terkendali', 'en': 'Budgets under control'},
+  'fi_s2': {
+    'id': 'Bar progres tiap kategori, persen jelas.',
+    'en': 'Progress bar per category, clear percent.',
+  },
+  'fi_t3': {'id': 'Tanya Mang AI', 'en': 'Ask Mang AI'},
+  'fi_s3': {
+    'id': 'Chat mencatat transaksi, bisa pakai AI lokal.',
+    'en': 'Chat records transactions, can use local AI.',
+  },
+  'fi_t4': {'id': 'Hapus pakai geser', 'en': 'Swipe to delete'},
+  'fi_s4': {
+    'id': 'Geser tombol sampai ujung untuk konfirmasi hapus.',
+    'en': 'Slide the button to the end to confirm delete.',
+  },
+  'fi_chat_ex': {
+    'id': '"Catat makan siang 25 ribu" — langsung jadi draft.',
+    'en': '"Log lunch 25 thousand" — instantly a draft.',
+  },
+  'fi_swipe_ex': {'id': 'Geser untuk menghapus', 'en': 'Slide to delete'},
+  'fi_swipe_ok': {'id': 'Contoh saja — data aman.', 'en': 'Just an example — data is safe.'},
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;
