@@ -1076,44 +1076,6 @@ class BerandaScreenState extends State<BerandaScreen> {
           _CalmWeeks(weeks: calm),
         ],
         const SizedBox(height: SsrSpace.md),
-        PremiumSectionHeader(title: tr('qa_title')),
-        const SizedBox(height: SsrSpace.sm),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: SsrSpace.sm,
-          crossAxisSpacing: SsrSpace.sm,
-          childAspectRatio: 2.4,
-          children: [
-            _QuickAction(
-              icon: AppIcons.add,
-              label: tr('act_catat'),
-              onTap: _goCatat,
-            ),
-            _QuickAction(
-              icon: Icons.smart_toy_outlined,
-              label: tr('chat_title'),
-              onTap: _goMangAi,
-            ),
-            _QuickAction(
-              icon: AppIcons.scan,
-              label: tr('rcp_scan'),
-              onTap: _goScan,
-            ),
-            _QuickAction(
-              icon: AppIcons.reports,
-              label: tr('nav_laporan'),
-              onTap: _goLaporan,
-            ),
-            _QuickAction(
-              icon: AppIcons.budget,
-              label: tr('nav_budget'),
-              onTap: _goBudget,
-            ),
-          ],
-        ),
-        const SizedBox(height: SsrSpace.xl),
         if (billsDue.isNotEmpty) ...[
           _BillsSuggest(
             bills: billsDue,
@@ -2563,54 +2525,6 @@ class _BillsSuggest extends StatelessWidget {
             ),
             if (b != bills.last) const Divider(height: 1),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-/// Batch 7 (2.61.0+170): tombol aksi cepat — kartu kaca kecil berisi
-/// ikon + label, dipakai di grid 2x2 Beranda.
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return DribCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: GlassSpace.md,
-        vertical: GlassSpace.sm,
-      ),
-      onTap: onTap,
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: scheme.primary.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(GlassRadius.md),
-            ),
-            child: Icon(icon, size: 22, color: scheme.primary),
-          ),
-          const SizedBox(width: GlassSpace.sm),
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.titleSmall,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
         ],
       ),
     );
