@@ -1,9 +1,12 @@
 // Parser murni `assets/changelog_id.md` -> kartu per-versi. Tanpa Flutter.
 //
 // Format blok: baris `## Yang baru di <version>` lalu item `- ...` atau
-// `1. ...`. Baris lain (header dokumen, `Versi terpasang:`, baris aneh)
-// diabaikan. Blok tanpa item tetap dimasukkan supaya versi tak hilang.
-// Tak pernah throw; input kosong → daftar kosong.
+// `1. ...`. HANYA blok `## Yang baru di …` yang dipancarkan; heading `## `
+// lain (mis. `## Sebelumnya`, `## Inti yang tetap`) menutup blok berjalan
+// dan mematikan akumulasi, jadi itemnya tak bocor ke versi sebelumnya.
+// Baris lain (header dokumen, `Versi terpasang:`, baris aneh) diabaikan.
+// Blok tanpa item tetap dimasukkan supaya versi tak hilang. Tak pernah
+// throw; input kosong → daftar kosong.
 
 /// Satu versi changelog dengan daftar poinnya.
 class ChangelogVersion {
@@ -29,11 +32,16 @@ List<ChangelogVersion> parseChangelog(String markdown) {
 
   for (final raw in markdown.split('\n')) {
     final line = raw.trimRight();
-    final m = _headerRe.firstMatch(line);
-    if (m != null) {
+    if (line.startsWith('## ')) {
+      final m = _headerRe.firstMatch(line);
       flush();
-      version = m.group(1)!.trim();
-      items = <String>[];
+      if (m != null) {
+        version = m.group(1)!.trim();
+        items = <String>[];
+      } else {
+        version = null;
+        items = null;
+      }
       continue;
     }
     if (version == null) continue;
