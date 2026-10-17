@@ -204,7 +204,7 @@ class _VoiceDraftSheetState extends State<_VoiceDraftSheet> {
     return Container(
       decoration: BoxDecoration(
         color: DribTokens.cardOf(context),
-        borderRadius: BorderRadius.vertical(
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(DribTokens.sheetRadius),
         ),
       ),

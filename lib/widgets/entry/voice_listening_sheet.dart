@@ -176,7 +176,7 @@ class _VoiceListeningSheetState extends State<_VoiceListeningSheet>
     return Container(
       decoration: BoxDecoration(
         color: DribTokens.cardOf(context),
-        borderRadius: BorderRadius.vertical(
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(DribTokens.sheetRadius),
         ),
       ),

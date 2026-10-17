@@ -24,7 +24,6 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 import 'package:ssr_space/widgets/entry/ollo_entry_sheet.dart';
 import 'package:ssr_space/widgets/entry/voice_draft_sheet.dart';
-import 'package:ssr_space/widgets/input_mode_sheet.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/screens/auth/set_password_screen.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
@@ -291,7 +290,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         return Container(
           decoration: BoxDecoration(
             color: DribTokens.cardOf(ctx),
-            borderRadius: BorderRadius.vertical(
+            borderRadius: const BorderRadius.vertical(
               top: Radius.circular(DribTokens.sheetRadius),
             ),
           ),
