@@ -331,7 +331,7 @@ class _CurrencyCard extends StatelessWidget {
           decoration: const InputDecoration(),
           items: [
             for (final c in kCurrencySymbols.keys)
-              DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(color: Color(0xFF12285A)))),
+              DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(color: const Color(0xFF12285A)))),
           ],
           onChanged: (v) {
             if (v != null) onChanged(v);
@@ -398,7 +398,7 @@ class _DefaultCurrencyCard extends StatelessWidget {
             decoration: const InputDecoration(),
             items: [
               for (final c in kCurrencySymbols.keys)
-                DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(color: Color(0xFF12285A)))),
+                DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(color: const Color(0xFF12285A)))),
             ],
             onChanged: (v) {
               if (v != null) setInputDefaultCurrency(v);
@@ -486,10 +486,10 @@ class _DefaultWalletCardState extends State<_DefaultWalletCard> {
                   items: [
                     DropdownMenuItem(
                       value: '',
-                      child: Text(tr('st_def_wallet_none'), style: const TextStyle(color: Color(0xFF12285A))),
+                      child: Text(tr('st_def_wallet_none'), style: const TextStyle(color: const Color(0xFF12285A))),
                     ),
                     for (final w in ws)
-                      DropdownMenuItem(value: w.id, child: Text(w.name, style: const TextStyle(color: Color(0xFF12285A)))),
+                      DropdownMenuItem(value: w.id, child: Text(w.name, style: const TextStyle(color: const Color(0xFF12285A)))),
                   ],
                   onChanged: (v) => setDefaultWalletId(v ?? ''),
                 );
@@ -695,7 +695,7 @@ class _DateStyleCard extends StatelessWidget {
             decoration: const InputDecoration(),
             items: [
               for (final s in _styles)
-                DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(color: Color(0xFF12285A)))),
+                DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(color: const Color(0xFF12285A)))),
             ],
             onChanged: (v) {
               if (v != null) setUiDateStyle(v);
@@ -725,7 +725,7 @@ class _HeroStyleCard extends StatelessWidget {
             items: const [
               DropdownMenuItem(
                 value: 'emerald-calm',
-                child: Text('emerald-calm', style: const TextStyle(color: Color(0xFF12285A))),
+                child: Text('emerald-calm', style: const TextStyle(color: const Color(0xFF12285A))),
               ),
             ],
             onChanged: (v) {
