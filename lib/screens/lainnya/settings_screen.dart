@@ -231,7 +231,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: ValueListenableBuilder<String>(
                   valueListenable: themeChoice,
                   builder: (context, theme, _) => _ThemeCard(
-                      value: theme, onChanged: (v) => setThemeChoice(v)),
+                      value: theme, onChanged: (v) { setThemeChoice(v); }),
                 ),
               ),
             ],
