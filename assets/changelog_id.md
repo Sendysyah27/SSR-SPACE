@@ -1,6 +1,19 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.78.0+263.
+Versi terpasang: 2.79.0+264.
+
+## Yang baru di 2.79.0+264
+
+1. Mode gelap kini penuh: seluruh layar (Beranda, Transaksi, Budget, Laporan, Dompet, Pengaturan, dan lainnya) mengikuti pilihan tema Terang/Gelap/Otomatis — warna kartu, teks, dan grafik laporan menyesuaikan otomatis.
+2. Menu tombol + di navbar kini gaya Ollo: 4 lingkaran pastel — Tambah, Scan, Suara, Chat AI.
+3. Mode suara baru gaya Ollo: sheet "mendengarkan" dengan tombol Stop & Proses, lalu pratinjau draft (dompet, kategori, nominal, tanggal) sebelum disimpan; bisa Edit dulu bila perlu.
+
+## What's new in 2.79.0+264
+
+1. Full dark mode: every screen (Home, Transactions, Budget, Reports, Wallets, Settings, and more) now follows the Light/Dark/Auto theme choice — card colors, text, and report charts adapt automatically.
+2. The navbar + menu is now Ollo-style: 4 pastel circles — Add, Scan, Voice, AI Chat.
+3. New Ollo-style voice mode: a listening sheet with a Stop & Process button, then a draft preview (wallet, category, amount, date) before saving; Edit first if needed.
+
 
 ## Yang baru di 2.78.0+263
 
