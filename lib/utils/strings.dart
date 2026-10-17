@@ -2258,10 +2258,20 @@ const _t = <String, Map<String, String>>{
   'lvl_7': {'id': 'Legenda Ledger', 'en': 'Ledger Legend'},
   'game_badges': {'id': 'Badge', 'en': 'Badges'},
   'game_new': {'id': 'Baru', 'en': 'New'},
+  'b_streak3_t': {'id': '3 Hari Beruntun', 'en': '3-Day Streak'},
+  'b_streak3_d': {
+    'id': 'Catat 3 hari beruntun.',
+    'en': 'Log 3 days in a row.',
+  },
   'b_streak7_t': {'id': 'Seminggu Konsisten', 'en': 'Consistent Week'},
   'b_streak7_d': {
     'id': 'Catat 7 hari beruntun.',
     'en': 'Log 7 days in a row.',
+  },
+  'b_streak14_t': {'id': '2 Minggu Beruntun', 'en': '2-Week Streak'},
+  'b_streak14_d': {
+    'id': 'Catat 14 hari beruntun.',
+    'en': 'Log 14 days in a row.',
   },
   'b_streak30_t': {'id': 'Sebulan Penuh', 'en': 'Full Month'},
   'b_streak30_d': {
