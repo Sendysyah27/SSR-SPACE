@@ -1305,6 +1305,148 @@ begin
 exception when sqlstate '42501' then null;
 end $$;
 
+-- ===== T36: announcements + roadmap + read state (migration_22) =====
+-- Tabel RPC-only (RLS tanpa policy) + 3 RPC list_announcements/ack_announcements/
+-- list_roadmap. Seed migration_22 ada (1 pengumuman + 5 rm-*), karena itu assert
+-- pakai id spesifik / cek-anggota, bukan asumsi tabel kosong.
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+
+-- T36a: grant — authenticated boleh, anon ditolak (revoke pola T34j/T35a).
+select t_assert(has_function_privilege('authenticated', 'public.list_announcements()', 'execute'),
+  'T36a authenticated boleh execute list_announcements');
+select t_assert(not has_function_privilege('anon', 'public.list_announcements()', 'execute'),
+  'T36a anon tak boleh execute list_announcements');
+select t_assert(has_function_privilege('authenticated', 'public.list_roadmap()', 'execute'),
+  'T36a authenticated boleh execute list_roadmap');
+select t_assert(not has_function_privilege('anon', 'public.list_roadmap()', 'execute'),
+  'T36a anon tak boleh execute list_roadmap');
+set role anon;
+set test.user_id = '';
+do $$
+begin
+  perform public.list_announcements();
+  raise exception 'ASSERT GAGAL: T36a anon bisa list_announcements';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+do $$
+begin
+  perform public.list_roadmap();
+  raise exception 'ASSERT GAGAL: T36a anon bisa list_roadmap';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+
+-- T36b: bentuk return + filter aktif (fixture id khusus via superuser).
+reset role;
+insert into announcements (id, title, body, kind, pinned, published_at, expires_at) values
+  ('t36-active', 'Aktif', 'body', 'promo', false, now() - interval '1 hour', now() + interval '1 day'),
+  ('t36-future', 'Belum', 'body', 'info', false, now() + interval '1 day', null),
+  ('t36-expired', 'Lampau', 'body', 'info', false, now() - interval '2 day', now() - interval '1 day');
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select t_assert(
+  (select e ?& array['id', 'title', 'body', 'kind', 'pinned', 'published_at', 'read']
+   from jsonb_array_elements(public.list_announcements()) e
+   where e->>'id' = 't36-active'),
+  'T36b bentuk memuat field kunci');
+select t_assert(
+  exists (select 1 from jsonb_array_elements(public.list_announcements()) e
+          where e->>'id' = 't36-active'),
+  'T36b pengumuman aktif muncul');
+select t_assert(
+  not exists (select 1 from jsonb_array_elements(public.list_announcements()) e
+              where e->>'id' = 't36-future'),
+  'T36b pengumuman published_at masa depan tak muncul');
+select t_assert(
+  not exists (select 1 from jsonb_array_elements(public.list_announcements()) e
+              where e->>'id' = 't36-expired'),
+  'T36b pengumuman expires_at lampau tak muncul');
+
+-- T36c: ack idempoten (2x → 1 baris) + flag read per-id.
+select public.ack_announcements(array['t36-active']);
+select public.ack_announcements(array['t36-active']);
+reset role;
+select t_assert(
+  (select count(*) from announcement_reads
+   where user_id = '11111111-1111-4111-8111-111111111111'
+     and announcement_id = 't36-active') = 1,
+  'T36c ack 2x → tepat 1 baris read');
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select t_assert(
+  (select (e->>'read')::boolean from jsonb_array_elements(public.list_announcements()) e
+   where e->>'id' = 't36-active'),
+  'T36c read=true untuk id di-ack');
+select t_assert(
+  (select not (e->>'read')::boolean from jsonb_array_elements(public.list_announcements()) e
+   where e->>'id' = '2026-10-17-selamat-datang'),
+  'T36c read=false untuk id belum di-ack');
+
+-- T36d: isolasi antar-user — ack alice tak membuat read=true di list bob.
+set test.user_id = '22222222-2222-4222-8222-222222222222';
+select t_assert(
+  (select not (e->>'read')::boolean from jsonb_array_elements(public.list_announcements()) e
+   where e->>'id' = 't36-active'),
+  'T36d read=false di user B untuk id di-ack user A');
+reset role;
+select t_assert(
+  (select count(*) from announcement_reads
+   where user_id = '22222222-2222-4222-8222-222222222222'
+     and announcement_id = 't36-active') = 0,
+  'T36d user B tak punya baris read (isolasi per auth.uid())');
+-- Bersihkan fixture T36b-d (cascade ikut hapus announcement_reads).
+delete from announcements where id in ('t36-active', 't36-future', 't36-expired');
+
+-- T36e: client tak bisa akses langsung (RLS tanpa policy = 0 baris / 42501).
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select t_assert((select count(*) from announcements) = 0,
+  'T36e announcements tak terbaca client (RLS deny)');
+select t_assert((select count(*) from roadmap_items) = 0,
+  'T36e roadmap_items tak terbaca client (RLS deny)');
+select t_assert((select count(*) from announcement_reads) = 0,
+  'T36e announcement_reads tak terbaca client (RLS deny)');
+do $$
+begin
+  insert into announcements (id, title, body) values ('t36-x', 'X', 'x');
+  raise exception 'ASSERT GAGAL: T36e client INSERT announcements lolos';
+exception when sqlstate '42501' then null;
+end $$;
+do $$
+begin
+  insert into roadmap_items (id, title) values ('t36-x', 'X');
+  raise exception 'ASSERT GAGAL: T36e client INSERT roadmap_items lolos';
+exception when sqlstate '42501' then null;
+end $$;
+do $$
+begin
+  insert into announcement_reads (user_id, announcement_id)
+  values ('11111111-1111-4111-8111-111111111111', '2026-10-17-selamat-datang');
+  raise exception 'ASSERT GAGAL: T36e client INSERT announcement_reads lolos';
+exception when sqlstate '42501' then null;
+end $$;
+
+-- T36f: list_roadmap urut sort_order naik + status apa adanya.
+select t_assert(
+  (select coalesce(bool_and(cur >= prev), true) from (
+     select (e->>'sort_order')::int as cur,
+            lag((e->>'sort_order')::int) over (order by ord) as prev
+     from jsonb_array_elements(public.list_roadmap()) with ordinality as t(e, ord)
+   ) s),
+  'T36f roadmap urut sort_order naik monoton');
+select t_assert(
+  exists (select 1 from jsonb_array_elements(public.list_roadmap()) e
+          where e->>'id' = 'rm-announcements' and e->>'status' = 'done'),
+  'T36f status apa adanya (rm-announcements=done)');
+select t_assert(
+  exists (select 1 from jsonb_array_elements(public.list_roadmap()) e
+          where e->>'id' = 'rm-update-log' and e->>'status' = 'in_progress'),
+  'T36f status apa adanya (rm-update-log=in_progress)');
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');
