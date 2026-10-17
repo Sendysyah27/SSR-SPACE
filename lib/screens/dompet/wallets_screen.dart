@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/utils/currency.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/plan_limits.dart';
@@ -41,6 +42,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
   final openC = TextEditingController();
   final nameFocus = FocusNode();
   String type = 'cash';
+  String currency = 'IDR';
 
   @override
   void initState() {
@@ -105,11 +107,15 @@ class _WalletsScreenState extends State<WalletsScreen> {
   }
 
   String _balanceLabel(String walletId) {
+    String cur = 'IDR';
+    for (final w in items) {
+      if (w.id == walletId) { cur = w.currency; break; }
+    }
     if (!balancesOk) return tr('w_notloaded');
     for (final b in balances) {
-      if (b.walletId == walletId) return amt(b.balance);
+      if (b.walletId == walletId) return formatMoney(b.balance, cur);
     }
-    return amt(0);
+    return formatMoney(0, cur);
   }
 
   double? _totalBalance() {
@@ -159,7 +165,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
     });
     try {
       final orgId = await activeOrgId();
-      final id = await WalletService().create(orgId, name, type);
+      final id = await WalletService().create(orgId, name, type, currency: currency);
       final opening =
           int.tryParse(openC.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
       if (opening > 0) {
@@ -249,6 +255,8 @@ class _WalletsScreenState extends State<WalletsScreen> {
             formErr: formErr,
             saving: saving,
             onTypeChanged: (v) => setState(() => type = v ?? 'cash'),
+            onCurrencyChanged: (v) => setState(() => currency = v ?? 'IDR'),
+            currency: currency,
             onSave: _save,
           ),
         ],
@@ -344,6 +352,8 @@ class _NewWalletForm extends StatelessWidget {
   final String? formErr;
   final bool saving;
   final ValueChanged<String?> onTypeChanged;
+  final ValueChanged<String?> onCurrencyChanged;
+  final String currency;
   final VoidCallback onSave;
 
   const _NewWalletForm({
@@ -354,6 +364,8 @@ class _NewWalletForm extends StatelessWidget {
     required this.formErr,
     required this.saving,
     required this.onTypeChanged,
+    required this.onCurrencyChanged,
+    required this.currency,
     required this.onSave,
   });
 
@@ -372,6 +384,8 @@ class _NewWalletForm extends StatelessWidget {
           ),
           const SizedBox(height: SsrSpace.md),
           _WalletTypeField(type: type, onChanged: onTypeChanged),
+          const SizedBox(height: SsrSpace.md),
+          _CurrencyField(currency: currency, onChanged: onCurrencyChanged),
           const SizedBox(height: SsrSpace.md),
           TextField(
             controller: openC,
@@ -433,6 +447,29 @@ class _WalletTypeField extends StatelessWidget {
   }
 }
 
+/// Dropdown mata uang dompet.
+class _CurrencyField extends StatelessWidget {
+  final String currency;
+  final ValueChanged<String?> onChanged;
+
+  const _CurrencyField({required this.currency, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<String>(
+      initialValue: currency,
+      decoration: InputDecoration(labelText: tr('w_f_currency')),
+      items: [
+        for (final cur in supportedCurrencies)
+          DropdownMenuItem(
+            value: cur.code,
+            child: Text(cur.code + ' 2014 ' + cur.symbol.trim()),
+          ),
+      ],
+      onChanged: onChanged,
+    );
+  }
+}
 /// Kartu daftar dompet: satu WalletRow per dompet, dipisah Divider.
 class _WalletListCard extends StatelessWidget {
   final List<Wallet> items;
