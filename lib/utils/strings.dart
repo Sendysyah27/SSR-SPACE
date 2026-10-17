@@ -54,6 +54,10 @@ const _t = <String, Map<String, String>>{
   'hm_period_month': {'id': 'Bulan', 'en': 'Month'},
   'hm_period_year': {'id': 'Tahun', 'en': 'Year'},
   'hm_period_calendar': {'id': 'Kalender', 'en': 'Calendar'},
+  'hm_menu_budget': {'id': 'Anggaran', 'en': 'Budget'},
+  'hm_menu_recurring': {'id': 'Berulang', 'en': 'Recurring'},
+  'hm_menu_goals': {'id': 'Target', 'en': 'Goals'},
+  'hm_menu_bills': {'id': 'Tagihan', 'en': 'Bills'},
   // Transaksi
   'tx_err_load': {
     'id': 'Gagal memuat transaksi. Periksa koneksi.',

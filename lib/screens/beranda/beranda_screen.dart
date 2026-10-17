@@ -1014,6 +1014,8 @@ class BerandaScreenState extends State<BerandaScreen> {
         const SizedBox(height: SsrSpace.sm),
         _surplusCard(totalIn, totalOut, surplus, inShare, pctOut),
         const SizedBox(height: SsrSpace.md),
+        const _HomeMenuRow(),
+        const SizedBox(height: SsrSpace.md),
         ..._dashSection(),
         if (streak != null) ...[
           const SizedBox(height: SsrSpace.md),
@@ -1357,6 +1359,94 @@ class _PeriodPills extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+/// Menu 4 ikon pastel ala Ollo di bawah kartu saldo: Anggaran, Berulang,
+/// Target, Tagihan. Tap -> layar yang sudah ada (tanpa logika baru).
+/// Pemetaan: Anggaran->BudgetsScreen, Berulang->RecurringBillsScreen,
+/// Target->GoalsScreen, Tagihan->SubscriptionsScreen (layar tagihan khusus
+/// yang ada di repo; tagihan generik = langganan terdeteksi).
+class _HomeMenuRow extends StatelessWidget {
+  const _HomeMenuRow();
+
+  void _go(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final items = <({
+      IconData icon,
+      String labelKey,
+      Color bg,
+      Widget screen,
+    })>[
+      (
+        icon: AppIcons.budget,
+        labelKey: 'hm_menu_budget',
+        bg: const Color(0xFFFFF3D6),
+        screen: const BudgetsScreen(),
+      ),
+      (
+        icon: AppIcons.bills,
+        labelKey: 'hm_menu_recurring',
+        bg: const Color(0xFFDCE9FF),
+        screen: const RecurringBillsScreen(),
+      ),
+      (
+        icon: AppIcons.topup,
+        labelKey: 'hm_menu_goals',
+        bg: const Color(0xFFD9F2E3),
+        screen: const GoalsScreen(),
+      ),
+      (
+        icon: AppIcons.calendar,
+        labelKey: 'hm_menu_bills',
+        bg: const Color(0xFFFFE8D6),
+        screen: const SubscriptionsScreen(),
+      ),
+    ];
+    return Row(
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) const SizedBox(width: 10),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _go(context, items[i].screen),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+                decoration: BoxDecoration(
+                  color: items[i].bg,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DuoIcon(items[i].icon,
+                        size: 26, color: DribTokens.navy),
+                    const SizedBox(height: 6),
+                    Text(
+                      tr(items[i].labelKey),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: DribTokens.navy,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
