@@ -799,50 +799,73 @@ class _CardThemeCard extends StatelessWidget {
       children: [
         ValueListenableBuilder<String>(
           valueListenable: cardTheme,
-          builder: (context, value, _) => DropdownButtonFormField<String>(
-            dropdownColor: Colors.white,
-            initialValue: _themes.contains(value) ? value : 'navy',
-            decoration: const InputDecoration(),
-            items: [
-              DropdownMenuItem(
-                value: 'navy',
-                child: Text(
-                  tr('st_card_navy'),
-                  style: const TextStyle(color: Color(0xFF12285A)),
-                ),
-              ),
-              DropdownMenuItem(
-                value: 'ocean',
-                child: Text(
-                  tr('st_card_ocean'),
-                  style: const TextStyle(color: Color(0xFF12285A)),
-                ),
-              ),
-              DropdownMenuItem(
-                value: 'midnight',
-                child: Text(
-                  tr('st_card_midnight'),
-                  style: const TextStyle(color: Color(0xFF12285A)),
-                ),
-              ),
-              DropdownMenuItem(
-                value: 'steel',
-                child: Text(
-                  tr('st_card_steel'),
-                  style: const TextStyle(color: Color(0xFF12285A)),
-                ),
-              ),
+          builder: (context, value, _) => Row(
+            children: [
+              for (var k = 0; k < _themes.length; k++) ...[
+                if (k > 0) const SizedBox(width: 8),
+                Expanded(child: _preview(_themes[k], value == _themes[k])),
+              ],
             ],
-            onChanged: (v) {
-              if (v != null) setCardTheme(v);
-            },
           ),
         ),
       ],
     );
   }
-}
 
+  /// Mockup kartu mini: gradient asli (navy/ocean/midnight/steel dari
+  /// DribTokens) + label + indikator terpilih (border navy + check).
+  /// Tap -> setCardTheme.
+  Widget _preview(String t, bool selected) {
+    final gradient = switch (t) {
+      'ocean' => DribTokens.oceanDeep,
+      'midnight' => DribTokens.midnightBlue,
+      'steel' => DribTokens.steelBlue,
+      _ => DribTokens.balanceGradient,
+    };
+    final label = switch (t) {
+      'ocean' => tr('st_card_ocean'),
+      'midnight' => tr('st_card_midnight'),
+      'steel' => tr('st_card_steel'),
+      _ => tr('st_card_navy'),
+    };
+    return GestureDetector(
+      onTap: () => setCardTheme(t),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 50,
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected ? DribTokens.navy : Colors.transparent,
+                width: selected ? 2.5 : 1,
+              ),
+            ),
+            child: selected
+                ? const Center(
+                    child: Icon(Icons.check,
+                        color: Colors.white, size: 20),
+                  )
+                : null,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: DribTokens.navy,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
 /// Tema aplikasi: Otomatis (ikut sistem) atau Noir.
 class _ThemeCard extends StatelessWidget {
   final String value;
