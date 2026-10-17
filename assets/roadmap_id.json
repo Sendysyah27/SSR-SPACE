@@ -31,7 +31,7 @@
     "id": "rm-multicurrency",
     "title": "Multi-mata uang",
     "description": "Catat transaksi dengan mata uang selain Rupiah.",
-    "status": "planned",
+    "status": "done",
     "sort_order": 50
   }
 ]
