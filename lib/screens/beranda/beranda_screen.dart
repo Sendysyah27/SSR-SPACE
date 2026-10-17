@@ -895,26 +895,11 @@ class BerandaScreenState extends State<BerandaScreen> {
           const MaskToggle(),
         ],
       ),
-      body: Stack(
-        children: [
-          AnimatedSwitcher(
-            duration: SsrMotion.base,
-            switchInCurve: SsrMotion.curve,
-            switchOutCurve: SsrMotion.curve,
-            child: _body(),
-          ),
-          Positioned(
-            left: SsrSpace.lg,
-            right: SsrSpace.lg,
-            bottom: SsrSpace.md,
-            child: _QuickBar(
-              onVoice: _goVoiceAi,
-              onScan: _goScan,
-              onChat: _goMangAi,
-              onAdd: _goCatat,
-            ),
-          ),
-        ],
+      body: AnimatedSwitcher(
+        duration: SsrMotion.base,
+        switchInCurve: SsrMotion.curve,
+        switchOutCurve: SsrMotion.curve,
+        child: _body(),
       ),
     );
   }
@@ -1076,44 +1061,6 @@ class BerandaScreenState extends State<BerandaScreen> {
           _CalmWeeks(weeks: calm),
         ],
         const SizedBox(height: SsrSpace.md),
-        PremiumSectionHeader(title: tr('qa_title')),
-        const SizedBox(height: SsrSpace.sm),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: SsrSpace.sm,
-          crossAxisSpacing: SsrSpace.sm,
-          childAspectRatio: 2.4,
-          children: [
-            _QuickAction(
-              icon: AppIcons.add,
-              label: tr('act_catat'),
-              onTap: _goCatat,
-            ),
-            _QuickAction(
-              icon: Icons.smart_toy_outlined,
-              label: tr('chat_title'),
-              onTap: _goMangAi,
-            ),
-            _QuickAction(
-              icon: AppIcons.scan,
-              label: tr('rcp_scan'),
-              onTap: _goScan,
-            ),
-            _QuickAction(
-              icon: AppIcons.reports,
-              label: tr('nav_laporan'),
-              onTap: _goLaporan,
-            ),
-            _QuickAction(
-              icon: AppIcons.budget,
-              label: tr('nav_budget'),
-              onTap: _goBudget,
-            ),
-          ],
-        ),
-        const SizedBox(height: SsrSpace.xl),
         if (billsDue.isNotEmpty) ...[
           _BillsSuggest(
             bills: billsDue,
@@ -1474,74 +1421,6 @@ class _HomeMenuRow extends StatelessWidget {
   }
 }
 
-
-/// Bar aksi cepat melayang ala Ollo di atas bottom nav Beranda (radius 24):
-/// Asisten AI, Scan Struk, Chat AI, Tambah. KEPUTUSAN: melengkapi seksi
-/// "Aksi Cepat" di tengah halaman, bukan menggantikan (seksi itu juga punya
-/// Laporan + Budget); bar ini selalu dalam jangkauan jempol tanpa scroll.
-/// Tidak ada FAB di Beranda sebelumnya -> tidak ada duplikasi FAB.
-/// Asisten AI = input suara (TxInputMode.voice); Chat AI = room Mang AI.
-class _QuickBar extends StatelessWidget {
-  final VoidCallback onVoice;
-  final VoidCallback onScan;
-  final VoidCallback onChat;
-  final VoidCallback onAdd;
-
-  const _QuickBar({
-    required this.onVoice,
-    required this.onScan,
-    required this.onChat,
-    required this.onAdd,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(
-        color: DribTokens.card,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: DribTokens.cardShadow,
-      ),
-      child: Row(
-        children: [
-          _item(theme, AppIcons.voice, tr('hm_bar_ai'), onVoice),
-          _item(theme, AppIcons.scan, tr('hm_bar_scan'), onScan),
-          _item(theme, Icons.smart_toy_outlined, tr('hm_bar_chat'), onChat),
-          _item(theme, AppIcons.add, tr('hm_bar_add'), onAdd),
-        ],
-      ),
-    );
-  }
-
-  Widget _item(
-      ThemeData theme, IconData icon, String label, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DuoIcon(icon, size: 24, color: DribTokens.navy),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: DribTokens.navy,
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _CalmWeeks extends StatelessWidget {
   final List<bool> weeks;
@@ -2563,54 +2442,6 @@ class _BillsSuggest extends StatelessWidget {
             ),
             if (b != bills.last) const Divider(height: 1),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-/// Batch 7 (2.61.0+170): tombol aksi cepat — kartu kaca kecil berisi
-/// ikon + label, dipakai di grid 2x2 Beranda.
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return DribCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: GlassSpace.md,
-        vertical: GlassSpace.sm,
-      ),
-      onTap: onTap,
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: scheme.primary.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(GlassRadius.md),
-            ),
-            child: Icon(icon, size: 22, color: scheme.primary),
-          ),
-          const SizedBox(width: GlassSpace.sm),
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.titleSmall,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
         ],
       ),
     );
