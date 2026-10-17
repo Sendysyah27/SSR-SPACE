@@ -6,6 +6,7 @@ import 'package:ssr_space/services/game_badges.dart';
 import 'package:ssr_space/services/game_challenge.dart';
 import 'package:ssr_space/services/game_level.dart';
 import 'package:ssr_space/services/game_store.dart';
+import 'package:ssr_space/services/gamification_service.dart';
 import 'package:ssr_space/services/goal_store.dart';
 import 'package:ssr_space/services/calm_streak.dart';
 import 'package:ssr_space/services/month.dart';
@@ -36,7 +37,9 @@ class ArcadeScreen extends StatefulWidget {
 class ArcadeScreenState extends State<ArcadeScreen> {
   GameStats stats = const GameStats();
   List<String> fresh = [];
+  Set<String> unlocked = {};
   int xp = 0;
+  int level = 0;
   Map<String, ChallengeState> evals = {};
   Map<String, int> stored = {};
   String week = '';
@@ -216,30 +219,42 @@ class ArcadeScreenState extends State<ArcadeScreen> {
           save30Done: save30Wins,
         );
       }
-      // Tandai badge terlihat (chip Baru hanya sekali).
+      // Server dulu: streak/XP/level + 8 badge server-derivable. Null
+      // (RPC belum ada / offline / error) -> fallback hitung lokal penuh.
+      final gs = orgId.isEmpty ? null : await fetchGamification(orgId);
+      final unlockedIds = <String>{
+        if (gs != null) ...gs.badges else ...unlockedServerBadges(st),
+        ...localUnlockedBadges(st),
+      };
+      // Tandai badge terlihat (chip Baru hanya sekali, device-local).
       var seen = <String>{};
       try {
         seen = await loadSeenBadges();
       } catch (_) {}
-      final freshIds = newBadges(st, seen);
+      final freshIds = newBadgesIn(unlockedIds, seen);
       try {
-        await saveSeenBadges({...seen, ...unlockedBadges(st)});
+        await saveSeenBadges({...seen, ...unlockedIds});
       } catch (_) {}
+      final xpVal = gs?.xp ??
+          calcXp(
+            txCount: st.txCount,
+            streakDays: st.streakDays,
+            challengesDone: st.challengesDone,
+            goalsReached: st.goalsReached,
+          );
       if (!mounted) return;
       setState(() {
         stats = st;
         fresh = freshIds;
-        xp = calcXp(
-          txCount: st.txCount,
-          streakDays: st.streakDays,
-          challengesDone: st.challengesDone,
-          goalsReached: st.goalsReached,
-        );
+        unlocked = unlockedIds;
+        xp = xpVal;
+        level = gs?.level ?? levelFor(xpVal);
         evals = evalMap;
         stored = storedMap;
         week = wk;
         loading = false;
       });
+      await syncAchievements(gs);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -296,14 +311,12 @@ class ArcadeScreenState extends State<ArcadeScreen> {
         body: ErrorView(message: err!, onRetry: _load),
       );
     }
-    final lv = levelFor(xp);
-    final unlocked = unlockedBadges(stats).toSet();
     return Scaffold(
       appBar: AppBar(title: Text(tr('game_title'))),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
-          _LevelCard(xp: xp, level: lv),
+          _LevelCard(xp: xp, level: level),
           const SizedBox(height: SsrSpace.md),
           _BadgesCard(unlocked: unlocked, fresh: fresh.toSet()),
           const SizedBox(height: SsrSpace.md),

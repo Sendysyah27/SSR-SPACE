@@ -25,6 +25,7 @@ import 'package:ssr_space/services/goal_forecast.dart';
 import 'package:ssr_space/services/goal_store.dart';
 import 'package:ssr_space/services/game_level.dart';
 import 'package:ssr_space/services/game_store.dart';
+import 'package:ssr_space/services/gamification_service.dart';
 import 'package:ssr_space/services/save30_store.dart';
 import 'package:ssr_space/screens/dompet/wallets_screen.dart';
 import 'package:ssr_space/screens/lainnya/arcade_screen.dart';
@@ -263,13 +264,23 @@ class BerandaScreenState extends State<BerandaScreen> {
       }
       dashNet = nw;
       final now = DateTime.now();
-      // Streak: tanggal ringan lintas bulan, fail-open (kartu sembunyi).
+      // Streak: server dulu (global lintas-device), fallback lokal org.
+      // Fail-open: kartu sembunyi bila dua-duanya gagal.
       DailyStreak? st;
+      GamificationStatus? gameStatus;
       try {
-        st = dailyStreak(await TransactionService().listDates(orgId), now);
+        gameStatus = await fetchGamification(orgId);
+        st = gameStatus != null
+            ? DailyStreak(
+                days: gameStatus.streakDays,
+                todayDone: gameStatus.streakTodayDone,
+                graceUsed: gameStatus.streakGraceUsed,
+              )
+            : dailyStreak(await TransactionService().listDates(orgId), now);
       } catch (_) {
         st = null;
       }
+      await syncAchievements(gameStatus);
       // Health + pace: hanya bulan berjalan (limit budget milik bulan
       // berjalan). Bulan lampau tak dihitung, kartu sembunyi.
       HealthBreakdown? hb;
