@@ -1,0 +1,37 @@
+[
+  {
+    "id": "rm-announcements",
+    "title": "Pengumuman dalam aplikasi",
+    "description": "Kabar dan promo terbaru langsung di aplikasi.",
+    "status": "done",
+    "sort_order": 10
+  },
+  {
+    "id": "rm-roadmap",
+    "title": "Roadmap publik",
+    "description": "Rencana dan progres fitur yang sedang dikerjakan.",
+    "status": "done",
+    "sort_order": 20
+  },
+  {
+    "id": "rm-update-log",
+    "title": "Riwayat pembaruan",
+    "description": "Catatan perubahan tiap versi di satu tempat.",
+    "status": "in_progress",
+    "sort_order": 30
+  },
+  {
+    "id": "rm-i18n",
+    "title": "Dukungan bahasa penuh",
+    "description": "Rapikan terjemahan Indonesia dan Inggris di seluruh layar.",
+    "status": "planned",
+    "sort_order": 40
+  },
+  {
+    "id": "rm-multicurrency",
+    "title": "Multi-mata uang",
+    "description": "Catat transaksi dengan mata uang selain Rupiah.",
+    "status": "planned",
+    "sort_order": 50
+  }
+]

@@ -88,3 +88,5 @@ flutter:
     - assets/icons/coolicons/
     - assets/lottie/
     - assets/changelog_id.md
+    - assets/announcements_id.json
+    - assets/roadmap_id.json

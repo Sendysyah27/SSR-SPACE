@@ -1696,6 +1696,27 @@ const _t = <String, Map<String, String>>{
     'id': 'Data tersimpan aman di cloud dan hanya bisa diakses dalam workspace-mu.',
     'en': 'Data is stored securely in the cloud and only accessible within your workspace.',
   },
+  // Pengumuman & roadmap (Fase 4)
+  'an_title': {'id': 'Pengumuman', 'en': 'Announcements'},
+  'an_new': {'id': 'Baru', 'en': 'New'},
+  'an_empty': {'id': 'Belum ada pengumuman.', 'en': 'No announcements yet.'},
+  'an_kind_info': {'id': 'Info', 'en': 'Info'},
+  'an_kind_promo': {'id': 'Promo', 'en': 'Promo'},
+  'an_kind_update': {'id': 'Pembaruan', 'en': 'Update'},
+  'an_fallback_note': {
+    'id': 'Menampilkan bawaan — sambungkan internet untuk kabar terbaru.',
+    'en': 'Showing built-in — connect to the internet for the latest news.',
+  },
+  'an_notif_title': {'id': 'Pengumuman baru', 'en': 'New announcement'},
+  'an_notif_body': {
+    'id': 'Ada kabar terbaru. Ketuk untuk membuka.',
+    'en': 'There is something new. Tap to open.',
+  },
+  'rm_title': {'id': 'Roadmap', 'en': 'Roadmap'},
+  'rm_planned': {'id': 'Direncanakan', 'en': 'Planned'},
+  'rm_progress': {'id': 'Sedang dikerjakan', 'en': 'In progress'},
+  'rm_done': {'id': 'Selesai', 'en': 'Done'},
+  'rm_empty': {'id': 'Belum ada rencana.', 'en': 'Nothing planned yet.'},
   'tx_quick_hint': {
     'id': 'Ketik cepat: "makan siang 35rb"',
     'en': 'Quick type: "lunch 35k"',
