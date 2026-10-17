@@ -326,12 +326,12 @@ class _CurrencyCard extends StatelessWidget {
       label: tr('st_currency'),
       icon: AppIcons.billing,
       children: [
-        DropdownButtonFormField<String>(
+        DropdownButtonFormField<String>(dropdownColor: Colors.white,
           initialValue: value,
           decoration: const InputDecoration(),
           items: [
             for (final c in kCurrencySymbols.keys)
-              DropdownMenuItem(value: c, child: Text(c)),
+              DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(color: Color(0xFF12285A)))),
           ],
           onChanged: (v) {
             if (v != null) onChanged(v);
@@ -393,12 +393,12 @@ class _DefaultCurrencyCard extends StatelessWidget {
       children: [
         ValueListenableBuilder<String>(
           valueListenable: inputDefaultCurrency,
-          builder: (context, value, _) => DropdownButtonFormField<String>(
+          builder: (context, value, _) => DropdownButtonFormField<String>(dropdownColor: Colors.white,
             initialValue: value,
             decoration: const InputDecoration(),
             items: [
               for (final c in kCurrencySymbols.keys)
-                DropdownMenuItem(value: c, child: Text(c)),
+                DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(color: Color(0xFF12285A)))),
             ],
             onChanged: (v) {
               if (v != null) setInputDefaultCurrency(v);
@@ -480,16 +480,16 @@ class _DefaultWalletCardState extends State<_DefaultWalletCard> {
               builder: (context, value, _) {
                 final valid =
                     ws.any((w) => w.id == value) ? value : '';
-                return DropdownButtonFormField<String>(
+                return DropdownButtonFormField<String>(dropdownColor: Colors.white,
                   initialValue: valid,
                   decoration: const InputDecoration(),
                   items: [
                     DropdownMenuItem(
                       value: '',
-                      child: Text(tr('st_def_wallet_none')),
+                      child: Text(tr('st_def_wallet_none'), style: const TextStyle(color: Color(0xFF12285A))),
                     ),
                     for (final w in ws)
-                      DropdownMenuItem(value: w.id, child: Text(w.name)),
+                      DropdownMenuItem(value: w.id, child: Text(w.name, style: const TextStyle(color: Color(0xFF12285A)))),
                   ],
                   onChanged: (v) => setDefaultWalletId(v ?? ''),
                 );
@@ -690,12 +690,12 @@ class _DateStyleCard extends StatelessWidget {
       children: [
         ValueListenableBuilder<String>(
           valueListenable: uiDateStyle,
-          builder: (context, value, _) => DropdownButtonFormField<String>(
+          builder: (context, value, _) => DropdownButtonFormField<String>(dropdownColor: Colors.white,
             initialValue: _styles.contains(value) ? value : 'system',
             decoration: const InputDecoration(),
             items: [
               for (final s in _styles)
-                DropdownMenuItem(value: s, child: Text(s)),
+                DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(color: Color(0xFF12285A)))),
             ],
             onChanged: (v) {
               if (v != null) setUiDateStyle(v);
@@ -719,13 +719,13 @@ class _HeroStyleCard extends StatelessWidget {
       children: [
         ValueListenableBuilder<String>(
           valueListenable: uiHeroStyle,
-          builder: (context, value, _) => DropdownButtonFormField<String>(
+          builder: (context, value, _) => DropdownButtonFormField<String>(dropdownColor: Colors.white,
             initialValue: value == 'emerald-calm' ? value : 'emerald-calm',
             decoration: const InputDecoration(),
             items: const [
               DropdownMenuItem(
                 value: 'emerald-calm',
-                child: Text('emerald-calm'),
+                child: Text('emerald-calm', style: const TextStyle(color: Color(0xFF12285A))),
               ),
             ],
             onChanged: (v) {
