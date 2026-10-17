@@ -1534,7 +1534,7 @@ class _MonthlySummary extends StatelessWidget {
 }
 
 /// Kartu Selisih bulan: label + nominal Fraunces (mint bila surplus,
-// rose bila defisit) di atas kartu noir.
+// rose bila defisit) di atas kartu gelap.
 class _NetCard extends StatelessWidget {
   final String monthLabel;
   final double net;
