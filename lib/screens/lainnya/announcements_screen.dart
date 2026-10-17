@@ -22,6 +22,7 @@ class AnnouncementsScreen extends StatefulWidget {
 
 class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   bool _loading = true;
+  bool _fromFallback = false;
   List<Announcement> _items = const [];
 
   @override
@@ -32,10 +33,11 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final list = await fetchAnnouncements();
+    final result = await fetchAnnouncementsDetailed();
     if (!mounted) return;
     setState(() {
-      _items = list;
+      _items = result.items;
+      _fromFallback = result.fromFallback;
       _loading = false;
     });
   }
@@ -67,7 +69,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         onAction: _load,
       );
     }
-    return ListView.separated(
+    final list = ListView.separated(
       padding: const EdgeInsets.all(SsrSpace.lg),
       itemCount: _items.length,
       separatorBuilder: (_, __) => const SizedBox(height: SsrSpace.md),
@@ -75,6 +77,27 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         a: _items[i],
         onTap: () => _open(_items[i]),
       ),
+    );
+    if (!_fromFallback) return list;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            SsrSpace.lg,
+            SsrSpace.md,
+            SsrSpace.lg,
+            0,
+          ),
+          child: Text(
+            tr('an_fallback_note'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Expanded(child: list),
+      ],
     );
   }
 }

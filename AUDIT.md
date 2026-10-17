@@ -515,6 +515,7 @@ Setelah install APK v2.3.3+ & migration 07+08:
 | `TBD` | **Batch 2 Premium Fintech 2026 (2.61.0+165)**: Beranda redesign — hero GlassPanel + entrance animation (fade+scale), Transaksi Terakhir pakai PremiumSectionHeader + GlassCard, dashboard header → PremiumSectionHeader |
 | `8e4397e`…`3608c2f` (Fase 3 gamifikasi, run `38991702839` hijau + RLS `38991705492` hijau) | **Gamifikasi server (2.75.0+253)**: `migration_21_gamification.sql` (+`run.sh`) — indeks `transactions(created_by,date)`, tabel RPC-only `user_achievements`, RPC `gamification_status`/`ack_achievements`; RLS T35+; `game_badges` server/lokal + `calm_streak` milestone 3/14; `gamification_service` + `achievement_notify`; wiring Arcade+Beranda server-dulu-fallback. Spec/plan `docs/superpowers/{specs,plans}/2026-10-17-ollo-fase3-gamification*` |
 | (Fase 4) | **Fase 4**: migration_22 announcements/roadmap/read (RPC-only + RLS T36a–f) + parser murni + service/notify + layar Pengumuman/Roadmap + update-log per-versi + wiring hub/search + v2.76.0+255 |
+| (Fix wave Fase 4 FIX1+FIX2, run CI berikut) | **Fix wave Fase 4 (2.76.0+256)**: `AnnouncementsResult.fromFallback` + caption `an_fallback_note` di layar Pengumuman (string mati jadi hidup) + union prefs `ann_read_ids` monoton di jalur RPC sukses (helper murni `unionReadIds`/`pendingReadIds`) + flush best-effort `ack_announcements` + guard batch existence di `migration_22` (id basi dilewati) + test toleran `parseRoadmap`/helper |
 
 APK artefak: run Actions hijau terakhir → artifact `ssr-space-apk`.
 

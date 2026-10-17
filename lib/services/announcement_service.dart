@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
@@ -30,13 +31,37 @@ Future<void> _saveIdSet(String key, Set<String> ids) async {
   await prefs.setStringList(key, capped);
 }
 
+/// Hasil ambil pengumuman + sumbernya. `fromFallback` true berarti layar
+/// sedang menampilkan aset bawaan (offline / RPC belum tersedia).
+class AnnouncementsResult {
+  final List<Announcement> items;
+  final bool fromFallback;
+  const AnnouncementsResult({required this.items, required this.fromFallback});
+}
+
 /// Ambil pengumuman aktif. RPC sukses = sumber kebenaran (array kosong
 /// berarti memang kosong, BUKAN fallback). Exception apa pun → aset
 /// bawaan + status baca dari prefs.
 Future<List<Announcement>> fetchAnnouncements() async {
+  return (await fetchAnnouncementsDetailed()).items;
+}
+
+/// Seperti [fetchAnnouncements] tapi ikut melaporkan apakah data dari
+/// aset bawaan. Di jalur RPC sukses, status baca prefs di-union (monoton)
+/// lalu id yang belum tercatat di server di-flush best-effort.
+Future<AnnouncementsResult> fetchAnnouncementsDetailed() async {
   try {
     final res = await SupabaseConfig.client.rpc('list_announcements');
-    return parseAnnouncements(res);
+    final items = parseAnnouncements(res);
+    final readIds = await _loadIdSet(_kReadIds);
+    final pending = pendingReadIds(items, readIds);
+    if (pending.isNotEmpty) {
+      unawaited(_flushReadIds(pending));
+    }
+    return AnnouncementsResult(
+      items: unionReadIds(items, readIds),
+      fromFallback: false,
+    );
   } catch (err, st) {
     await ErrorReporter.capture(err, st, context: 'list_announcements');
   }
@@ -44,20 +69,25 @@ Future<List<Announcement>> fetchAnnouncements() async {
     final raw = await rootBundle.loadString('assets/announcements_id.json');
     final parsed = parseFallbackAnnouncements(raw);
     final readIds = await _loadIdSet(_kReadIds);
-    return [
-      for (final a in parsed)
-        Announcement(
-          id: a.id,
-          title: a.title,
-          body: a.body,
-          kind: a.kind,
-          pinned: a.pinned,
-          read: a.read || readIds.contains(a.id),
-          publishedAt: a.publishedAt,
-        ),
-    ];
+    return AnnouncementsResult(
+      items: unionReadIds(parsed, readIds),
+      fromFallback: true,
+    );
   } catch (_) {
-    return const [];
+    return const AnnouncementsResult(items: [], fromFallback: true);
+  }
+}
+
+/// Kirim id baca lokal ke server sekali (best-effort). Tak pernah throw;
+/// gagal tetap simpan prefs — percobaan berikutnya menyusul.
+Future<void> _flushReadIds(Set<String> ids) async {
+  try {
+    await SupabaseConfig.client.rpc(
+      'ack_announcements',
+      params: {'p_ids': ids.toList()},
+    );
+  } catch (err, st) {
+    await ErrorReporter.capture(err, st, context: 'ack_announcements_flush');
   }
 }
 

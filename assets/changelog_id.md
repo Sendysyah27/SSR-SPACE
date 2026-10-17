@@ -1,6 +1,12 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.76.0+255.
+Versi terpasang: 2.76.0+256.
+
+## Yang baru di 2.76.0+256
+
+1. Pengumuman bawaan kini diberi catatan jelas saat kamu offline atau server belum diperbarui — tidak lagi terlihat seperti kabar terbaru.
+2. Pengumuman yang sudah dibaca saat offline tetap "sudah dibaca" setelah tersambung internet; statusnya tidak balik jadi Baru dan lencana tidak naik lagi.
+3. Tanpa migration baru (perbaikan klien + penyempurnaan RPC yang belum dirilis).
 
 ## Yang baru di 2.76.0+255
 

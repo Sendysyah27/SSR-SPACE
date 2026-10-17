@@ -48,11 +48,70 @@ void main() {
     final list = parseRoadmap([
       {'id': 'r1', 'title': 'X', 'status': 'done', 'sort_order': 20},
       {'id': 'r2', 'status': 'aneh', 'sort_order': 'x'},
+      {'id': '', 'title': 'kosong'},
+      42,
     ]);
     expect(list.length, 2);
     expect(list[0].status, 'done');
     expect(list[0].sortOrder, 20);
     expect(list[1].status, 'planned');
     expect(list[1].sortOrder, 0);
+  });
+
+  test('parseRoadmap non-list/null = kosong, elemen cacat dilewati', () {
+    expect(parseRoadmap(null), isEmpty);
+    expect(parseRoadmap('bukan-list'), isEmpty);
+    expect(parseRoadmap({'id': 'x'}), isEmpty);
+  });
+
+  test('unionReadIds monoton: prefs hanya menambah baca', () {
+    final items = [
+      const Announcement(
+        id: 'a1',
+        title: 'T',
+        body: '',
+        kind: 'info',
+        pinned: false,
+        read: false,
+      ),
+      const Announcement(
+        id: 'a2',
+        title: 'T',
+        body: '',
+        kind: 'info',
+        pinned: false,
+        read: true,
+      ),
+    ];
+    final out = unionReadIds(items, {'a1'});
+    expect(out.firstWhere((a) => a.id == 'a1').read, isTrue);
+    expect(out.firstWhere((a) => a.id == 'a2').read, isTrue);
+    expect(identical(unionReadIds(items, const <String>{}), items), isTrue);
+  });
+
+  test('pendingReadIds = prefs yang belum read di server', () {
+    final items = [
+      const Announcement(
+        id: 'a1',
+        title: 'T',
+        body: '',
+        kind: 'info',
+        pinned: false,
+        read: true,
+      ),
+      const Announcement(
+        id: 'a2',
+        title: 'T',
+        body: '',
+        kind: 'info',
+        pinned: false,
+        read: false,
+      ),
+    ];
+    expect(
+      pendingReadIds(items, {'a1', 'a2', 'a3'}),
+      unorderedEquals(['a2', 'a3']),
+    );
+    expect(pendingReadIds(items, const <String>{}), isEmpty);
   });
 }

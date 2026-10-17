@@ -117,8 +117,12 @@ begin
   if auth.uid() is null then
     raise exception 'NOT_AUTHENTICATED';
   end if;
+  -- Lewati id yang tidak ada (dihapus/di-expired) agar satu id basi tidak
+  -- membatalkan seluruh batch (FK violation). Batch boleh berisi >1 id.
   insert into announcement_reads (user_id, announcement_id)
-  select auth.uid(), unnest(p_ids)
+  select auth.uid(), p
+  from unnest(p_ids) as p
+  where exists (select 1 from announcements a where a.id = p)
   on conflict (user_id, announcement_id) do nothing;
 end $$;
 

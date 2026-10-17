@@ -103,6 +103,48 @@ List<RoadmapItem> parseRoadmap(Object? raw) {
   return out;
 }
 
+/// Union id yang sudah dibaca di prefs ke flag `read` tiap pengumuman.
+/// Monoton: prefs hanya bisa menambah baca, tak pernah membatalkan yang
+/// sudah `read` dari server. Id kosong → daftar apa adanya.
+List<Announcement> unionReadIds(
+  List<Announcement> items,
+  Set<String> readIds,
+) {
+  if (readIds.isEmpty) return items;
+  final out = <Announcement>[];
+  var changed = false;
+  for (final a in items) {
+    if (a.read || !readIds.contains(a.id)) {
+      out.add(a);
+    } else {
+      changed = true;
+      out.add(Announcement(
+        id: a.id,
+        title: a.title,
+        body: a.body,
+        kind: a.kind,
+        pinned: a.pinned,
+        read: true,
+        publishedAt: a.publishedAt,
+      ));
+    }
+  }
+  return changed ? out : items;
+}
+
+/// Id prefs yang belum tercatat `read` di daftar (calon flush ke server).
+Set<String> pendingReadIds(
+  List<Announcement> items,
+  Set<String> readIds,
+) {
+  if (readIds.isEmpty) return const <String>{};
+  final serverRead = <String>{
+    for (final a in items)
+      if (a.read) a.id,
+  };
+  return readIds.difference(serverRead);
+}
+
 /// Urai aset fallback JSON (`assets/announcements_id.json`). Decode
 /// gagal → daftar kosong.
 List<Announcement> parseFallbackAnnouncements(String json) {
