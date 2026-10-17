@@ -48,6 +48,12 @@ const _t = <String, Map<String, String>>{
   },
   'beranda_diff': {'id': 'Selisih {m}', 'en': 'Net {m}'},
   'beranda_vs_out': {'id': '{p}% dari pengeluaran', 'en': '{p}% of expenses'},
+  // Beranda: tab periode ala Ollo
+  'hm_period_day': {'id': 'Hari', 'en': 'Day'},
+  'hm_period_week': {'id': 'Minggu', 'en': 'Week'},
+  'hm_period_month': {'id': 'Bulan', 'en': 'Month'},
+  'hm_period_year': {'id': 'Tahun', 'en': 'Year'},
+  'hm_period_calendar': {'id': 'Kalender', 'en': 'Calendar'},
   // Transaksi
   'tx_err_load': {
     'id': 'Gagal memuat transaksi. Periksa koneksi.',

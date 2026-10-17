@@ -1010,6 +1010,8 @@ class BerandaScreenState extends State<BerandaScreen> {
           },
         ),
         const SizedBox(height: SsrSpace.sm),
+        const _PeriodPills(),
+        const SizedBox(height: SsrSpace.sm),
         _surplusCard(totalIn, totalOut, surplus, inShare, pctOut),
         const SizedBox(height: SsrSpace.md),
         ..._dashSection(),
@@ -1296,6 +1298,69 @@ class BerandaScreenState extends State<BerandaScreen> {
 }
 
 /// Kartu calm streak: 8 dot minggu, tanpa angka tanpa api.
+/// Tab periode ala Ollo: pill Day/Week/Month/Year/Calendar di atas kartu
+/// saldo. State via [homePeriod] (prefs 'home_period'). UI + state saja:
+/// pemuatan data Beranda tetap berbasis bulan (MonthPicker) - wiring penuh
+/// ke day/week/year butuh perubahan logika bisnis, sengaja tidak dilakukan.
+class _PeriodPills extends StatelessWidget {
+  const _PeriodPills();
+
+  static const _periods = ['day', 'week', 'month', 'year', 'calendar'];
+
+  String _label(String p) => switch (p) {
+        'day' => tr('hm_period_day'),
+        'week' => tr('hm_period_week'),
+        'month' => tr('hm_period_month'),
+        'year' => tr('hm_period_year'),
+        _ => tr('hm_period_calendar'),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<String>(
+      valueListenable: homePeriod,
+      builder: (context, value, _) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (var i = 0; i < _periods.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              _pill(_periods[i], value == _periods[i]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pill(String p, bool active) {
+    return GestureDetector(
+      onTap: () => setHomePeriod(p),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? DribTokens.navy : DribTokens.card,
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: active ? null : DribTokens.cardShadow,
+          border: active
+              ? null
+              : Border.all(
+                  color: DribTokens.navy.withValues(alpha: 0.12),
+                ),
+        ),
+        child: Text(
+          _label(p),
+          style: TextStyle(
+            color: active ? DribTokens.onNavy : DribTokens.navy,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CalmWeeks extends StatelessWidget {
   final List<bool> weeks;
 

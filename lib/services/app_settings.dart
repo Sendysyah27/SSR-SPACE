@@ -30,6 +30,7 @@ const _kWeekStart = 'app_week_start';
 const _kLockTimeout = 'app_lock_timeout';
 const _kBiometric = 'app_biometric';
 const _kCardTheme = 'app_card_theme';
+const _kHomePeriod = 'home_period';
 
 /// Pengaturan aplikasi: bahasa, mata uang tampilan, skala font.
 /// Diisi di main() sebelum runApp; layar settings mengubah + simpan.
@@ -60,6 +61,11 @@ final themeChoice = ValueNotifier<String>('otomatis');
 
 /// Tema gradient kartu saldo: 'navy' | 'ocean' | 'midnight' | 'steel'.
 final cardTheme = ValueNotifier<String>('navy');
+
+/// Periode tampil Beranda ala Ollo: 'day' | 'week' | 'month' | 'year' |
+/// 'calendar'. UI + state saja (belum di-wire ke pemuatan data Beranda
+/// yang tetap berbasis bulan via MonthPicker).
+final homePeriod = ValueNotifier<String>('month');
 
 /// Format angka: 'id' (1.000.000) atau 'us' (1,000,000).
 final numberFormat = ValueNotifier<String>('id');
@@ -105,6 +111,14 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
           ct == 'steel')
       ? ct!
       : 'navy';
+  final hp = prefs.getString(_kHomePeriod);
+  homePeriod.value = (hp == 'day' ||
+          hp == 'week' ||
+          hp == 'month' ||
+          hp == 'year' ||
+          hp == 'calendar')
+      ? hp!
+      : 'month';
   homeMenuOrder.value = List<String>.of(
     prefs.getStringList(_kHomeMenuOrder) ?? [],
   );
@@ -193,6 +207,19 @@ Future<void> setCardTheme(String v) async {
   cardTheme.value = nv;
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kCardTheme, nv);
+}
+
+Future<void> setHomePeriod(String v) async {
+  final nv = (v == 'day' ||
+          v == 'week' ||
+          v == 'month' ||
+          v == 'year' ||
+          v == 'calendar')
+      ? v
+      : 'month';
+  homePeriod.value = nv;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kHomePeriod, nv);
 }
 
 Future<void> setHomeMenuOrder(List<String> v) async {
