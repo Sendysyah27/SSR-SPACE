@@ -23,9 +23,7 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 import 'package:ssr_space/widgets/entry/ollo_entry_sheet.dart';
-import 'package:ssr_space/widgets/premium/glass_sheet.dart';
-import 'package:ssr_space/widgets/nav_tile.dart';
-import 'package:ssr_space/widgets/tx_input_sheet.dart';
+import 'package:ssr_space/widgets/entry/voice_draft_sheet.dart';
 import 'package:ssr_space/widgets/input_mode_sheet.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/screens/auth/set_password_screen.dart';
@@ -242,12 +240,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     }
   }
 
-  /// FAB '+' tengah: buka sheet "Aksi Cepat" berisi 4 jalan pintas.
-  /// - Tambah Transaksi -> entry sheet Ollo (TASK A).
-  /// - Scan Struk -> sheet catat, langsung picu scan vision (pola sama
-  ///   seperti pemanggil existing TxInputMode.scanVision).
-  /// - Asisten Suara -> sheet catat, langsung picu mode suara
-  ///   (TxInputMode.voice).
+  /// FAB '+' tengah: buka sheet "Aksi Cepat" gaya Ollo berisi 4 pintasan.
+  /// - Tambah Transaksi -> entry sheet Ollo.
+  /// - Scan Struk -> entry sheet Ollo + langsung picu scan struk.
+  /// - Asisten Suara -> alur voice gaya Ollo (listening -> draft -> simpan).
   /// - Chat AI -> route Mang AI (_openMangAi).
   Future<void> _openQuickActions() async {
     final act = await _showQuickActionsSheet();
@@ -260,22 +256,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         if (mounted) _reloadAll();
         break;
       case _QuickAction.scan:
-        if (await openTxInputSheet(
-              context,
-              initialMode: TxInputMode.scanVision,
-            ) &&
-            mounted) {
-          _reloadAll();
-        }
+        // Sheet Ollo sudah punya tombol kamera; autoScan langsung
+        // membuka dialog sumber lalu scan (logika existing _scan).
+        await showOlloEntrySheet(context, autoScan: true);
+        if (mounted) _reloadAll();
         break;
       case _QuickAction.voice:
-        if (await openTxInputSheet(
-              context,
-              initialMode: TxInputMode.voice,
-            ) &&
-            mounted) {
-          _reloadAll();
-        }
+        if (await openOlloVoiceFlow(context) && mounted) _reloadAll();
         break;
       case _QuickAction.chat:
         await _openMangAi();
@@ -283,51 +270,94 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     }
   }
 
-  /// Sheet bawah "Aksi Cepat": 4 item ikon + label (i18n),
-  /// gaya konsisten dengan sheet mode input (GlassSheetScaffold + NavTile).
+  /// Sheet bawah "Aksi Cepat" gaya Ollo: 4 lingkaran pastel (ikon + label).
   Future<_QuickAction?> _showQuickActionsSheet() {
     return showModalBottomSheet<_QuickAction>(
       context: context,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => GlassSheetScaffold(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      builder: (ctx) {
+        final scheme = Theme.of(ctx).colorScheme;
+        final items = <_QaItem>[
+          _QaItem(_QuickAction.addTx, tr('qa_add_tx'), AppIcons.add,
+              const Color(0xFF5B9BF5)),
+          _QaItem(_QuickAction.scan, tr('qa_scan'), AppIcons.scan,
+              const Color(0xFF22B07D)),
+          _QaItem(_QuickAction.voice, tr('qa_voice'), AppIcons.voice,
+              const Color(0xFFFF9F43)),
+          _QaItem(_QuickAction.chat, tr('qa_chat'),
+              Icons.smart_toy_outlined, const Color(0xFF00A19A)),
+        ];
+        return Container(
+          decoration: BoxDecoration(
+            color: DribTokens.cardOf(ctx),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(DribTokens.sheetRadius),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(2),
+                  color: scheme.outlineVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
               Text(
                 tr('qa_sheet_title'),
-                style: Theme.of(ctx).textTheme.titleMedium,
-                textAlign: TextAlign.center,
+                style: Theme.of(ctx)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: 8),
-              NavTile(
-                icon: AppIcons.add,
-                title: tr('qa_add_tx'),
-                onTap: () => Navigator.pop(ctx, _QuickAction.addTx),
-              ),
-              const Divider(height: 1),
-              NavTile(
-                icon: AppIcons.scan,
-                title: tr('qa_scan'),
-                onTap: () => Navigator.pop(ctx, _QuickAction.scan),
-              ),
-              const Divider(height: 1),
-              NavTile(
-                icon: AppIcons.voice,
-                title: tr('qa_voice'),
-                onTap: () => Navigator.pop(ctx, _QuickAction.voice),
-              ),
-              const Divider(height: 1),
-              NavTile(
-                icon: Icons.smart_toy_outlined,
-                title: tr('qa_chat'),
-                onTap: () => Navigator.pop(ctx, _QuickAction.chat),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final it in items) _qaCircle(ctx, scheme, it),
+                ],
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  /// Satu lingkaran pastel aksi cepat (adaptasi lingkaran kategori Ollo).
+  Widget _qaCircle(BuildContext ctx, ColorScheme scheme, _QaItem it) {
+    return GestureDetector(
+      onTap: () => Navigator.pop(ctx, it.action),
+      child: SizedBox(
+        width: 72,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: it.color.withValues(alpha: 0.15),
+              ),
+              alignment: Alignment.center,
+              child: Icon(it.icon, size: 28, color: it.color),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              it.label,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: scheme.onSurface),
+            ),
+          ],
         ),
       ),
     );
@@ -420,6 +450,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
 /// Pilihan item sheet Aksi Cepat (FAB '+').
 enum _QuickAction { addTx, scan, voice, chat }
+
+/// Item lingkaran pastel untuk sheet aksi cepat gaya Ollo.
+class _QaItem {
+  final _QuickAction action;
+  final String label;
+  final IconData icon;
+  final Color color;
+  const _QaItem(this.action, this.label, this.icon, this.color);
+}
 
 /// Strip offline global: data terakhir tersimpan + tombol muat ulang.
 /// Muncul bila panggilan jaringan gagal (tanpa plugin konektivitas).
