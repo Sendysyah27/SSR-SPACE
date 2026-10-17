@@ -225,6 +225,13 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     route: 'settings',
     focus: 'hero',
   ),
+  SettingsSearchEntry(
+    titleKey: 'st_card_theme',
+    en: 'balance card theme gradient',
+    sectionKey: 'st_title',
+    route: 'settings',
+    focus: 'card-theme',
+  ),
   // Keamanan.
   SettingsSearchEntry(
     titleKey: 'st_pin',

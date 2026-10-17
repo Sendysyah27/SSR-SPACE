@@ -58,6 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _listKey = GlobalKey();
   final _dateKey = GlobalKey();
   final _heroKey = GlobalKey();
+  final _cardThemeKey = GlobalKey();
   final _widgetKey = GlobalKey();
   final _numKey = GlobalKey();
   final _defWalletKey = GlobalKey();
@@ -81,6 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'list' => _listKey,
         'date' => _dateKey,
         'hero' => _heroKey,
+        'card-theme' => _cardThemeKey,
         'widget' => _widgetKey,
         'numformat' => _numKey,
         'defwallet' => _defWalletKey,
@@ -183,6 +185,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(key: _dateKey, child: const _DateStyleCard()),
           const SizedBox(height: SsrSpace.md),
           Container(key: _heroKey, child: const _HeroStyleCard()),
+          const SizedBox(height: SsrSpace.md),
+          Container(key: _cardThemeKey, child: const _CardThemeCard()),
           const SizedBox(height: SsrSpace.md),
           ValueListenableBuilder<String>(
             valueListenable: themeChoice,
@@ -730,6 +734,64 @@ class _HeroStyleCard extends StatelessWidget {
             ],
             onChanged: (v) {
               if (v != null) setUiHeroStyle(v);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Tema kartu saldo: varian gradient kartu (navy/ocean/midnight/steel).
+class _CardThemeCard extends StatelessWidget {
+  const _CardThemeCard();
+
+  static const _themes = ['navy', 'ocean', 'midnight', 'steel'];
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassLabeledCard(
+      label: tr('st_card_theme'),
+      icon: AppIcons.eye,
+      children: [
+        ValueListenableBuilder<String>(
+          valueListenable: cardTheme,
+          builder: (context, value, _) => DropdownButtonFormField<String>(
+            dropdownColor: Colors.white,
+            initialValue: _themes.contains(value) ? value : 'navy',
+            decoration: const InputDecoration(),
+            items: [
+              DropdownMenuItem(
+                value: 'navy',
+                child: Text(
+                  tr('st_card_navy'),
+                  style: const TextStyle(color: Color(0xFF12285A)),
+                ),
+              ),
+              DropdownMenuItem(
+                value: 'ocean',
+                child: Text(
+                  tr('st_card_ocean'),
+                  style: const TextStyle(color: Color(0xFF12285A)),
+                ),
+              ),
+              DropdownMenuItem(
+                value: 'midnight',
+                child: Text(
+                  tr('st_card_midnight'),
+                  style: const TextStyle(color: Color(0xFF12285A)),
+                ),
+              ),
+              DropdownMenuItem(
+                value: 'steel',
+                child: Text(
+                  tr('st_card_steel'),
+                  style: const TextStyle(color: Color(0xFF12285A)),
+                ),
+              ),
+            ],
+            onChanged: (v) {
+              if (v != null) setCardTheme(v);
             },
           ),
         ),

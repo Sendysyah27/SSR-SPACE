@@ -29,6 +29,7 @@ const _kDefaultWallet = 'app_default_wallet';
 const _kWeekStart = 'app_week_start';
 const _kLockTimeout = 'app_lock_timeout';
 const _kBiometric = 'app_biometric';
+const _kCardTheme = 'app_card_theme';
 
 /// Pengaturan aplikasi: bahasa, mata uang tampilan, skala font.
 /// Diisi di main() sebelum runApp; layar settings mengubah + simpan.
@@ -56,6 +57,9 @@ final weeklyHour = ValueNotifier<int>(20);
 final weeklyMinute = ValueNotifier<int>(0);
 final widgetToday = ValueNotifier<bool>(false);
 final themeChoice = ValueNotifier<String>('otomatis');
+
+/// Tema gradient kartu saldo: 'navy' | 'ocean' | 'midnight' | 'steel'.
+final cardTheme = ValueNotifier<String>('navy');
 
 /// Format angka: 'id' (1.000.000) atau 'us' (1,000,000).
 final numberFormat = ValueNotifier<String>('id');
@@ -94,6 +98,13 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
       : 'system';
   final hs = prefs.getString(_kUiHeroStyle);
   uiHeroStyle.value = (hs == 'emerald-calm') ? hs! : 'emerald-calm';
+  final ct = prefs.getString(_kCardTheme);
+  cardTheme.value = (ct == 'navy' ||
+          ct == 'ocean' ||
+          ct == 'midnight' ||
+          ct == 'steel')
+      ? ct!
+      : 'navy';
   homeMenuOrder.value = List<String>.of(
     prefs.getStringList(_kHomeMenuOrder) ?? [],
   );
@@ -172,6 +183,16 @@ Future<void> setUiHeroStyle(String v) async {
   uiHeroStyle.value = nv;
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kUiHeroStyle, nv);
+}
+
+Future<void> setCardTheme(String v) async {
+  final nv =
+      (v == 'navy' || v == 'ocean' || v == 'midnight' || v == 'steel')
+          ? v
+          : 'navy';
+  cardTheme.value = nv;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kCardTheme, nv);
 }
 
 Future<void> setHomeMenuOrder(List<String> v) async {

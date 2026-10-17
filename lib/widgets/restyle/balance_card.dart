@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
 
-/// Kartu saldo gradient navy TAHAP 3 restyle (komponen baru, tak dipakai
-/// layar mana pun dulu — wiring tahap lanjutan).
+/// Kartu saldo gradient TAHAP 3 restyle.
 ///
-/// Teks selalu putih di atas gradient [DribTokens.balanceGradient].
+/// Varian gradient: 'navy' (bawaan, [DribTokens.balanceGradient]), 'ocean'
+/// ([DribTokens.oceanDeep]), 'midnight' ([DribTokens.midnightBlue]),
+/// 'steel' ([DribTokens.steelBlue]).
+///
+/// Teks selalu putih ([DribTokens.onNavy]) di atas semua varian.
+///
+/// [themeId] = varian tetap. Null = ikut pengaturan global [cardTheme]
+/// (diubah dari Pengaturan > Tema kartu saldo) dan ikut berubah otomatis.
 class BalanceCard extends StatelessWidget {
   /// Label kecil di atas angka (mis. "Total saldo").
   final String label;
@@ -15,21 +22,31 @@ class BalanceCard extends StatelessWidget {
   /// Baris tambahan di bawah angka (mis. chip status / keterangan).
   final Widget? footer;
 
+  /// Varian gradient tetap; null = ikut [cardTheme] global.
+  final String? themeId;
+
   const BalanceCard({
     super.key,
     required this.label,
     required this.amount,
     this.footer,
+    this.themeId,
   });
 
-  @override
-  Widget build(BuildContext context) {
+  /// Gradient untuk satu id tema; tak dikenal -> navy (bawaan).
+  static LinearGradient _gradientFor(String id) {
+    if (id == 'ocean') return DribTokens.oceanDeep;
+    if (id == 'midnight') return DribTokens.midnightBlue;
+    if (id == 'steel') return DribTokens.steelBlue;
+    return DribTokens.balanceGradient;
+  }
+
+  Widget _card(LinearGradient gradient) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: DribTokens.balanceGradient,
-        borderRadius:
-            BorderRadius.circular(DribTokens.sheetRadius),
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(DribTokens.sheetRadius),
         boxShadow: DribTokens.cardShadow,
       ),
       child: Column(
@@ -53,6 +70,16 @@ class BalanceCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fixed = themeId;
+    if (fixed != null) return _card(_gradientFor(fixed));
+    return ValueListenableBuilder<String>(
+      valueListenable: cardTheme,
+      builder: (context, value, _) => _card(_gradientFor(value)),
     );
   }
 }

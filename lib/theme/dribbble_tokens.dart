@@ -61,6 +61,30 @@ abstract final class DribTokens {
     colors: [navyDeep, navyBright],
   );
 
+  /// Varian gradient "ocean": navy -> teal gelap, diagonal topLeft-bottomRight.
+  /// Teks di atasnya selalu [onNavy].
+  static const LinearGradient oceanDeep = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [navy, Color(0xFF0B4F4A)],
+  );
+
+  /// Varian gradient "midnight": navyDeep -> biru-hitam, diagonal
+  /// topLeft-bottomRight. Teks di atasnya selalu [onNavy].
+  static const LinearGradient midnightBlue = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [navyDeep, Color(0xFF101E42)],
+  );
+
+  /// Varian gradient "steel": biru-abu -> navyBright, diagonal
+  /// topLeft-bottomRight. Teks di atasnya selalu [onNavy].
+  static const LinearGradient steelBlue = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF3B5B8C), navyBright],
+  );
+
   /// Nama family font (sudah dibundel di assets/fonts).
   static const String fontFamily = 'PlusJakartaSans';
 
