@@ -17,21 +17,21 @@
     "id": "rm-update-log",
     "title": "Riwayat pembaruan",
     "description": "Catatan perubahan tiap versi di satu tempat.",
-    "status": "in_progress",
+    "status": "done",
     "sort_order": 30
   },
   {
     "id": "rm-i18n",
     "title": "Dukungan bahasa penuh",
     "description": "Rapikan terjemahan Indonesia dan Inggris di seluruh layar.",
-    "status": "planned",
+    "status": "done",
     "sort_order": 40
   },
   {
     "id": "rm-multicurrency",
     "title": "Multi-mata uang",
     "description": "Catat transaksi dengan mata uang selain Rupiah.",
-    "status": "planned",
+    "status": "done",
     "sort_order": 50
   }
 ]

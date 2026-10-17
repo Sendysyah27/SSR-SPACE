@@ -270,6 +270,7 @@ const _t = <String, Map<String, String>>{
     'en': 'Wallet name (Cash, Dana, Bank)',
   },
   'w_f_type': {'id': 'Jenis', 'en': 'Type'},
+  'w_f_currency': {'id': 'Mata uang', 'en': 'Currency'},
   'w_cash': {'id': 'Tunai', 'en': 'Cash'},
   'w_ewallet': {'id': 'E-wallet', 'en': 'E-wallet'},
   'w_bank': {'id': 'Bank', 'en': 'Bank'},

@@ -32,12 +32,12 @@ class WalletService {
     return List<Map<String, dynamic>>.from(rows).map(Wallet.fromMap).toList();
   }
 
-  Future<String> create(String orgId, String name, String type) async {
+  Future<String> create(String orgId, String name, String type, {String currency = 'IDR'}) async {
     return _guardSpace(() async {
       try {
         final row = await SupabaseConfig.client
             .from('wallets')
-            .insert({'org_id': orgId, 'name': name, 'type': type})
+            .insert({'org_id': orgId, 'name': name, 'type': type, 'currency': currency.toUpperCase()})
             .select('id')
             .single();
         return row['id'].toString();
