@@ -253,6 +253,15 @@ const _t = <String, Map<String, String>>{
     'id': 'Dompet tujuan sama dengan asal',
     'en': 'Destination is the same as source',
   },
+  // Ollo entry sheet
+  'entry_amount_hint': {'id': 'Masukkan nominal', 'en': 'Enter Amount'},
+  'entry_title_hint': {'id': 'Judul', 'en': 'Title'},
+  'entry_note_hint': {'id': 'Tambah catatan...', 'en': 'Add a note...'},
+  'entry_to_wallet': {'id': 'Ke dompet', 'en': 'To wallet'},
+  'entry_tag_reimburse': {'id': 'Reimburse', 'en': 'Reimburse'},
+  'entry_tag_split': {'id': 'Bagi tagihan', 'en': 'Split Bill'},
+  'entry_tag_cc': {'id': 'CC/Paylater', 'en': 'CC/Paylater'},
+  'entry_calc_err': {'id': 'Ekspresi tidak valid', 'en': 'Invalid expression'},
   // Dompet
   'w_err_name': {
     'id': 'Isi nama dompet dulu.',
