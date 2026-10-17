@@ -890,12 +890,42 @@ class _CardThemeCard extends StatelessWidget {
     );
   }
 }
-/// Tema aplikasi: Otomatis (ikut sistem) atau Noir.
+/// Tema aplikasi: Terang / Gelap / Otomatis (auto-switch terjadwal).
+/// Mode Otomatis menampilkan 2 time picker jam mulai terang & gelap.
 class _ThemeCard extends StatelessWidget {
   final String value;
   final ValueChanged<String> onChanged;
 
   const _ThemeCard({required this.value, required this.onChanged});
+
+  Future<void> _pickStart(BuildContext context, bool isDay) async {
+    final cur = isDay ? themeDayStart.value : themeNightStart.value;
+    final t = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: cur, minute: 0),
+    );
+    if (t == null) return;
+    if (isDay) {
+      await setThemeDayStart(t.hour);
+    } else {
+      await setThemeNightStart(t.hour);
+    }
+  }
+
+  String _fmtH(int h) => '${h.toString().padLeft(2, '0')}:00';
+
+  Widget _timeRow(BuildContext context, String label, int hour, bool isDay) {
+    return Row(
+      children: [
+        Expanded(child: Text(label)),
+        TextButton.icon(
+          onPressed: () => _pickStart(context, isDay),
+          icon: const DuoIcon(AppIcons.clock),
+          label: Text(_fmtH(hour)),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -906,8 +936,9 @@ class _ThemeCard extends StatelessWidget {
         SegmentedButton<String>(
           style: ssrSegmentedStyle(context),
           segments: [
+            ButtonSegment(value: 'terang', label: Text(tr('th_terang'))),
+            ButtonSegment(value: 'gelap', label: Text(tr('th_gelap'))),
             ButtonSegment(value: 'otomatis', label: Text(tr('th_auto'))),
-            ButtonSegment(value: 'noir', label: Text(tr('th_noir'))),
           ],
           selected: {value},
           showSelectedIcon: false,
@@ -915,6 +946,21 @@ class _ThemeCard extends StatelessWidget {
         ),
         const SizedBox(height: SsrSpace.sm),
         Text(tr('th_theme_desc'), style: Theme.of(context).textTheme.bodySmall),
+        if (value == 'otomatis') ...[
+          const SizedBox(height: SsrSpace.xs),
+          ValueListenableBuilder<int>(
+            valueListenable: themeDayStart,
+            builder: (context, ds, _) => ValueListenableBuilder<int>(
+              valueListenable: themeNightStart,
+              builder: (context, ns, _) => Column(
+                children: [
+                  _timeRow(context, tr('th_day_start'), ds, true),
+                  _timeRow(context, tr('th_night_start'), ns, false),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
