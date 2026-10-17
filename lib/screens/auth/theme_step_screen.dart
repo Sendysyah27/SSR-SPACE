@@ -20,7 +20,8 @@ class ThemeStepScreen extends StatefulWidget {
 
 class _ThemeStepScreenState extends State<ThemeStepScreen> {
   static const _iconAuto = IconData(0xE566, fontFamily: SsrFonts.icon);
-  static const _iconNoir = IconData(0xE330, fontFamily: SsrFonts.icon);
+  static const _iconTerang = IconData(0xE5F4, fontFamily: SsrFonts.icon);
+  static const _iconGelap = IconData(0xE330, fontFamily: SsrFonts.icon);
   static const _iconCheck = IconData(0xE184, fontFamily: SsrFonts.icon);
 
   late String _pilih;
@@ -28,7 +29,10 @@ class _ThemeStepScreenState extends State<ThemeStepScreen> {
   @override
   void initState() {
     super.initState();
-    _pilih = themeChoice.value == 'noir' ? 'noir' : 'otomatis';
+    final c = themeChoice.value;
+    _pilih = (c == 'terang' || c == 'gelap' || c == 'otomatis')
+        ? c
+        : 'otomatis';
   }
 
   void _pilihOption(String v) {
@@ -119,9 +123,11 @@ class _ThemeStepScreenState extends State<ThemeStepScreen> {
                         ),
                       ),
                       const SizedBox(height: SsrSpace.xl),
-                      _optionCard('otomatis', tr('th_auto'), _iconAuto),
+                      _optionCard('terang', tr('th_terang'), _iconTerang),
                       const SizedBox(height: SsrSpace.md),
-                      _optionCard('noir', tr('th_noir'), _iconNoir),
+                      _optionCard('gelap', tr('th_gelap'), _iconGelap),
+                      const SizedBox(height: SsrSpace.md),
+                      _optionCard('otomatis', tr('th_auto'), _iconAuto),
                       const SizedBox(height: SsrSpace.xxl),
                     ],
                   ),
