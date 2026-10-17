@@ -1,6 +1,13 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.75.0+253.
+Versi terpasang: 2.75.0+254.
+
+## Yang baru di 2.75.0+254
+
+1. Level & XP kini konsisten antara Beranda dan Pencapaian — satu hitungan, server jadi acuan saat tersedia.
+2. Notifikasi pencapaian tidak lagi menumpuk saat pertama kali aktif: badge yang sudah pernah dilihat tidak diberitakan ulang, dan tidak dobel dalam satu perangkat.
+3. Paritas badge "bulan bersih" (clean30) untuk kategori bersub-kategori disamakan server ↔ perangkat.
+4. Tanpa migration baru (perbaikan klien saja).
 
 ## Yang baru di 2.75.0+253
 
