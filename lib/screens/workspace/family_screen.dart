@@ -168,7 +168,7 @@ class FamilyScreenState extends State<FamilyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DribTokens.bg,
+      backgroundColor: DribTokens.bgOf(context),
       appBar: AppBar(title: Text(tr('fam_title'))),
       floatingActionButton: (loading || loadFailed || noOrg)
           ? null
@@ -244,7 +244,8 @@ class FamilyScreenState extends State<FamilyScreen> {
           CircleAvatar(
             backgroundColor:
                 DribTokens.primary.withValues(alpha: 0.14),
-            foregroundColor: DribTokens.navy,
+            foregroundColor:
+                Theme.of(context).colorScheme.onSurface,
             child: Text(name.isEmpty ? '?' : name[0].toUpperCase()),
           ),
           const SizedBox(width: SsrSpace.md),

@@ -41,7 +41,7 @@ class WorkspaceSwitcher extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: DribTokens.card,
+        color: DribTokens.cardOf(context),
         borderRadius:
             BorderRadius.circular(DribTokens.cardRadius),
         boxShadow: DribTokens.cardShadow,

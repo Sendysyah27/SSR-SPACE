@@ -890,7 +890,9 @@ class _MonthFlowChart extends StatelessWidget {
           DonutSlice(
             value: spendOut,
             label: tr('tx_out'),
-            color: DribTokens.navy,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF8FB4F7)
+                : DribTokens.navy,
           ),
           DonutSlice(
             value: savingOut,
@@ -1166,7 +1168,7 @@ class _ReportsScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DribTokens.bg,
+      backgroundColor: DribTokens.bgOf(context),
       appBar: AppBar(title: Text(tr('nav_laporan'))),
       body: body,
     );
@@ -1288,7 +1290,9 @@ class _YearFlowCard extends StatelessWidget {
       if (b.keluar > maxV) maxV = b.keluar;
     }
     const inColor = DribTokens.primary;
-    const outColor = DribTokens.navy;
+    final outColor = theme.brightness == Brightness.dark
+        ? const Color(0xFF8FB4F7)
+        : DribTokens.navy;
     final nowM = currentMonth();
     return DribCard(
       padding: const EdgeInsets.all(GlassSpace.lg),
@@ -1340,7 +1344,10 @@ class _YearFlowCard extends StatelessWidget {
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Text(
                                   names[(m - 1).clamp(0, 11)],
-                                  style: const TextStyle(fontSize: 9),
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: scheme.onSurfaceVariant,
+                                  ),
                                 ),
                               );
                             },

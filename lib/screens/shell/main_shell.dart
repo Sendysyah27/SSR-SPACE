@@ -479,7 +479,7 @@ class _DockedNav extends StatelessWidget {
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
       notchMargin: 8,
-      color: DribTokens.card,
+      color: DribTokens.cardOf(context),
       child: Row(
         children: [
           _NavBtn(
@@ -532,7 +532,7 @@ class _NavBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = selected
         ? DribTokens.primary
-        : DribTokens.navy.withValues(alpha: 0.55);
+        : Theme.of(context).colorScheme.onSurfaceVariant;
     return Expanded(
       child: InkWell(
         customBorder: const CircleBorder(),

@@ -105,7 +105,7 @@ class _Avatar extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: Border.all(color: DribTokens.card, width: 2),
+        border: Border.all(color: DribTokens.cardOf(context), width: 2),
       ),
       child: Center(
         child: Text(

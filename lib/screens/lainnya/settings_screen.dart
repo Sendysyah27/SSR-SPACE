@@ -117,7 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DribTokens.bg,
+      backgroundColor: DribTokens.bgOf(context),
       appBar: AppBar(title: Text(tr('st_title'))),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
@@ -397,12 +397,13 @@ class _CurrencyCard extends StatelessWidget {
       label: tr('st_currency'),
       icon: AppIcons.billing,
       children: [
-        DropdownButtonFormField<String>(dropdownColor: Colors.white,
+        DropdownButtonFormField<String>(
+          dropdownColor: Theme.of(context).colorScheme.surface,
           initialValue: value,
           decoration: const InputDecoration(),
           items: [
             for (final c in kCurrencySymbols.keys)
-              DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(color: Color(0xFF12285A)))),
+              DropdownMenuItem(value: c, child: Text(c, style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
           ],
           onChanged: (v) {
             if (v != null) onChanged(v);
@@ -464,12 +465,13 @@ class _DefaultCurrencyCard extends StatelessWidget {
       children: [
         ValueListenableBuilder<String>(
           valueListenable: inputDefaultCurrency,
-          builder: (context, value, _) => DropdownButtonFormField<String>(dropdownColor: Colors.white,
+          builder: (context, value, _) => DropdownButtonFormField<String>(
+            dropdownColor: Theme.of(context).colorScheme.surface,
             initialValue: value,
             decoration: const InputDecoration(),
             items: [
               for (final c in kCurrencySymbols.keys)
-                DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(color: Color(0xFF12285A)))),
+                DropdownMenuItem(value: c, child: Text(c, style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
             ],
             onChanged: (v) {
               if (v != null) setInputDefaultCurrency(v);
@@ -551,16 +553,17 @@ class _DefaultWalletCardState extends State<_DefaultWalletCard> {
               builder: (context, value, _) {
                 final valid =
                     ws.any((w) => w.id == value) ? value : '';
-                return DropdownButtonFormField<String>(dropdownColor: Colors.white,
+                return DropdownButtonFormField<String>(
+                  dropdownColor: Theme.of(context).colorScheme.surface,
                   initialValue: valid,
                   decoration: const InputDecoration(),
                   items: [
                     DropdownMenuItem(
                       value: '',
-                      child: Text(tr('st_def_wallet_none'), style: const TextStyle(color: Color(0xFF12285A))),
+                      child: Text(tr('st_def_wallet_none'), style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                     ),
                     for (final w in ws)
-                      DropdownMenuItem(value: w.id, child: Text(w.name, style: const TextStyle(color: Color(0xFF12285A)))),
+                      DropdownMenuItem(value: w.id, child: Text(w.name, style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
                   ],
                   onChanged: (v) => setDefaultWalletId(v ?? ''),
                 );
@@ -761,12 +764,13 @@ class _DateStyleCard extends StatelessWidget {
       children: [
         ValueListenableBuilder<String>(
           valueListenable: uiDateStyle,
-          builder: (context, value, _) => DropdownButtonFormField<String>(dropdownColor: Colors.white,
+          builder: (context, value, _) => DropdownButtonFormField<String>(
+            dropdownColor: Theme.of(context).colorScheme.surface,
             initialValue: _styles.contains(value) ? value : 'system',
             decoration: const InputDecoration(),
             items: [
               for (final s in _styles)
-                DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(color: Color(0xFF12285A)))),
+                DropdownMenuItem(value: s, child: Text(s, style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
             ],
             onChanged: (v) {
               if (v != null) setUiDateStyle(v);
@@ -790,13 +794,17 @@ class _HeroStyleCard extends StatelessWidget {
       children: [
         ValueListenableBuilder<String>(
           valueListenable: uiHeroStyle,
-          builder: (context, value, _) => DropdownButtonFormField<String>(dropdownColor: Colors.white,
+          builder: (context, value, _) => DropdownButtonFormField<String>(
+            dropdownColor: Theme.of(context).colorScheme.surface,
             initialValue: value == 'emerald-calm' ? value : 'emerald-calm',
             decoration: const InputDecoration(),
             items: const [
               DropdownMenuItem(
                 value: 'emerald-calm',
-                child: Text('emerald-calm', style: TextStyle(color: Color(0xFF12285A))),
+                child: Text(
+                  'emerald-calm',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                ),
               ),
             ],
             onChanged: (v) {
@@ -863,7 +871,8 @@ class _CardThemeCard extends StatelessWidget {
               gradient: gradient,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: selected ? DribTokens.navy : Colors.transparent,
+                color:
+                    selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
                 width: selected ? 2.5 : 1,
               ),
             ),
@@ -877,10 +886,10 @@ class _CardThemeCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: DribTokens.navy,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1257,7 +1266,7 @@ class _HomeViewCard extends StatelessWidget {
         ValueListenableBuilder<String>(
           valueListenable: homeDefaultPeriod,
           builder: (context, value, _) => DropdownButtonFormField<String>(
-            dropdownColor: Colors.white,
+            dropdownColor: Theme.of(context).colorScheme.surface,
             initialValue: _periods.contains(value) ? value : 'month',
             decoration: const InputDecoration(),
             items: [
@@ -1266,7 +1275,7 @@ class _HomeViewCard extends StatelessWidget {
                   value: p,
                   child: Text(
                     _label(p),
-                    style: const TextStyle(color: Color(0xFF12285A)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   ),
                 ),
             ],

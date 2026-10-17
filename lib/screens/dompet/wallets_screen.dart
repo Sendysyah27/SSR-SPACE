@@ -272,7 +272,7 @@ class _WalletsScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DribTokens.bg,
+      backgroundColor: DribTokens.bgOf(context),
       appBar: AppBar(title: Text(tr('nav_dompet'))),
       body: body,
     );
@@ -317,7 +317,8 @@ class _WalletOverview extends StatelessWidget {
                 Text(
                   amt(t),
                   style: DribTokens.bigNumber(
-                      size: 26, color: DribTokens.navy),
+                      size: 26,
+                      color: Theme.of(context).colorScheme.onSurface),
                 ),
               ],
             ),
@@ -586,7 +587,9 @@ class _CompChart extends StatelessWidget {
               ),
               _compRow(
                 context,
-                DribTokens.navy,
+                Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF8FB4F7)
+                    : DribTokens.navy,
                 tr('w_investment'),
                 comp.investments,
                 comp.investmentsPct,
@@ -622,7 +625,9 @@ class _CompDonut extends StatelessWidget {
         DonutSlice(
           value: comp.investments,
           label: tr('w_investment'),
-          color: DribTokens.navy,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF8FB4F7)
+              : DribTokens.navy,
         ),
       ],
     );

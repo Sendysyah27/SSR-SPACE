@@ -20,6 +20,18 @@ abstract final class DribTokens {
   /// Permukaan kartu: putih.
   static const Color card = Color(0xFFFFFFFF);
 
+  /// Latar aplikasi sadar-tema: gelap (navy malam) saat mode dark.
+  static Color bgOf(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF0D1526)
+          : bg;
+
+  /// Permukaan kartu sadar-tema: gelap (navy malam) saat mode dark.
+  static Color cardOf(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF16203A)
+          : card;
+
   /// Biru utama: tombol, aksen, link.
   static const Color primary = Color(0xFF5B9BF5);
 

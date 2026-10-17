@@ -221,7 +221,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DribTokens.bg,
+      backgroundColor: DribTokens.bgOf(context),
       appBar: AppBar(
         title: Text(widget.wallet.name),
         actions: [
@@ -424,7 +424,7 @@ class _SummaryCard extends StatelessWidget {
           Text(
             balanceText,
             style: DribTokens.bigNumber(
-                size: 26, color: DribTokens.navy),
+                size: 26, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: SsrSpace.xs),
           Text(

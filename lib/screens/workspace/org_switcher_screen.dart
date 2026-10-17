@@ -231,7 +231,7 @@ class _OrgSwitcherScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DribTokens.bg,
+      backgroundColor: DribTokens.bgOf(context),
       appBar: AppBar(title: Text(tr('org_title'))),
       body: body,
     );

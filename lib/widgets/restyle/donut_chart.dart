@@ -36,6 +36,7 @@ class DonutChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final live = slices.where((s) => s.value > 0).toList();
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -54,7 +55,7 @@ class DonutChart extends StatelessWidget {
                       ? [
                           PieChartSectionData(
                             value: 1,
-                            color: DribTokens.navy.withValues(alpha: 0.12),
+                            color: scheme.outline,
                             radius: 26,
                             showTitle: false,
                           ),
@@ -72,10 +73,11 @@ class DonutChart extends StatelessWidget {
               ),
               if (centerText != null)
                 Center(
-                  child: Text(
-                    centerText!,
-                    style: DribTokens.bigNumber(size: 20),
-                  ),
+                    child: Text(
+                      centerText!,
+                      style: DribTokens.bigNumber(
+                          size: 20, color: scheme.onSurface),
+                    ),
                 ),
             ],
           ),
@@ -100,7 +102,13 @@ class DonutChart extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(s.label, style: const TextStyle(fontSize: 12)),
+                    Text(
+                      s.label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurface,
+                      ),
+                    ),
                   ],
                 ),
               ],

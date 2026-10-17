@@ -80,7 +80,8 @@ class _TxDetailSheet extends StatelessWidget {
                       Text(
                         '$dir ${amt(tx.amount)}',
                         style: DribTokens.bigNumber(
-                            size: 26, color: DribTokens.navy),
+                            size: 26,
+                            color: Theme.of(context).colorScheme.onSurface),
                       ),
                       const SizedBox(height: SsrSpace.sm),
                       _row(context, tr('td_wallet'), wallet),

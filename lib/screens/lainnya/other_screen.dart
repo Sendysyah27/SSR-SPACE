@@ -452,7 +452,7 @@ class _OtherScreenState extends State<OtherScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DribTokens.bg,
+      backgroundColor: DribTokens.bgOf(context),
       appBar: _appBar(),
       body: FutureBuilder<_OtherMeta>(
         future: _metaFuture,

@@ -330,21 +330,21 @@ class BudgetsScreenState extends State<BudgetsScreen> {
   Widget build(BuildContext context) {
     if (loading) {
       return Scaffold(
-        backgroundColor: DribTokens.bg,
+        backgroundColor: DribTokens.bgOf(context),
         appBar: AppBar(title: Text(_title)),
         body: const BudgetListSkeleton(),
       );
     }
     if (err != null) {
       return Scaffold(
-        backgroundColor: DribTokens.bg,
+        backgroundColor: DribTokens.bgOf(context),
         appBar: AppBar(title: Text(_title)),
         body: ErrorView(message: err!, onRetry: _load),
       );
     }
     final items = data?.items ?? [];
     return Scaffold(
-      backgroundColor: DribTokens.bg,
+      backgroundColor: DribTokens.bgOf(context),
       appBar: AppBar(
         title: Text(_title),
         actions: [
@@ -883,7 +883,7 @@ class _BudgetGauge extends StatelessWidget {
           DonutSlice(
             value: (1 - used).clamp(0.0, 1.0).toDouble(),
             label: '',
-            color: DribTokens.navy.withValues(alpha: 0.12),
+            color: Theme.of(context).colorScheme.outline,
           ),
         ],
       ),

@@ -845,7 +845,7 @@ class BerandaScreenState extends State<BerandaScreen> {
         ? '?'
         : orgName.trim()[0].toUpperCase();
     return Scaffold(
-      backgroundColor: DribTokens.bg,
+      backgroundColor: DribTokens.bgOf(context),
       extendBodyBehindAppBar: false,
       appBar: AppBar(
         // Batch 7 (2.61.0+170): blur AppBar dihapus demi performa.
@@ -1297,7 +1297,7 @@ class _PeriodPills extends StatelessWidget {
           children: [
             for (var i = 0; i < _periods.length; i++) ...[
               if (i > 0) const SizedBox(width: 8),
-              _pill(_periods[i], value == _periods[i]),
+              _pill(context, _periods[i], value == _periods[i]),
             ],
           ],
         ),
@@ -1305,25 +1305,22 @@ class _PeriodPills extends StatelessWidget {
     );
   }
 
-  Widget _pill(String p, bool active) {
+  Widget _pill(BuildContext context, String p, bool active) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => setHomePeriod(p),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? DribTokens.navy : DribTokens.card,
+          color: active ? DribTokens.navy : DribTokens.cardOf(context),
           borderRadius: BorderRadius.circular(999),
           boxShadow: active ? null : DribTokens.cardShadow,
-          border: active
-              ? null
-              : Border.all(
-                  color: DribTokens.navy.withValues(alpha: 0.12),
-                ),
+          border: active ? null : Border.all(color: scheme.outline),
         ),
         child: Text(
           _label(p),
           style: TextStyle(
-            color: active ? DribTokens.onNavy : DribTokens.navy,
+            color: active ? DribTokens.onNavy : scheme.onSurface,
             fontWeight: FontWeight.w700,
             fontSize: 13,
           ),

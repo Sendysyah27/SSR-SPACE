@@ -58,7 +58,7 @@ class _FeatureIntroScreenState extends State<FeatureIntroScreen> {
   Widget build(BuildContext context) {
     const slides = [_SlideDonut(), _SlideBudget(), _SlideChat(), _SlideSwipe()];
     return Scaffold(
-      backgroundColor: DribTokens.bg,
+      backgroundColor: DribTokens.bgOf(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -88,7 +88,10 @@ class _FeatureIntroScreenState extends State<FeatureIntroScreen> {
                       shape: BoxShape.circle,
                       color: d == _i
                           ? DribTokens.primary
-                          : DribTokens.navy.withValues(alpha: 0.2),
+                          : Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant
+                              .withValues(alpha: 0.35),
                     ),
                   ),
               ],
@@ -159,10 +162,7 @@ class _SlideShell extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(color: DribTokens.navy),
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
           Text(
