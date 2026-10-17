@@ -1,6 +1,15 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.77.0+259.
+Versi terpasang: 2.77.0+262.
+
+## Yang baru di 2.77.0+262
+
+1. Tab periode Day/Week/Month/Year/Calendar di Beranda (baru tampilan + pilihan tersimpan; data masih dihitung per bulan).
+2. Menu 4 ikon pastel di bawah kartu saldo: Anggaran, Berulang, Target, Tagihan.
+3. Bar aksi cepat melayang di Beranda: Asisten AI (suara), Scan Struk, Chat AI, Tambah.
+4. Grup Tampilan di Pengaturan kini tampil grid 2 kolom.
+5. Tema kartu saldo: pilih lewat preview mini (navy/ocean/midnight/steel).
+6. Pengaturan baru: Tampilan Beranda (periode default saat dibuka) dan Format Saldo (tampilkan desimal ya/tidak).
 
 ## Yang baru di 2.77.0+259
 
