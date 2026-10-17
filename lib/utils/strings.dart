@@ -24,6 +24,12 @@ const _t = <String, Map<String, String>>{
   'nav_dompet': {'id': 'Dompet', 'en': 'Wallets'},
   'act_catat': {'id': 'Catat', 'en': 'Record'},
   'qa_title': {'id': 'Aksi Cepat', 'en': 'Quick Actions'},
+  // Seksi Pengingat Beranda (TASK D, batch 2.78.0+263)
+  'reminder_title': {'id': 'Pengingat', 'en': 'Reminders'},
+  'reminder_empty': {
+    'id': 'Tidak ada tagihan mendekat',
+    'en': 'No upcoming bills',
+  },
   // Beranda
   'beranda_recent': {'id': 'Transaksi terbaru', 'en': 'Recent transactions'},
   'beranda_empty_t': {
