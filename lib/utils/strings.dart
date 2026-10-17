@@ -62,6 +62,12 @@ const _t = <String, Map<String, String>>{
   'hm_bar_scan': {'id': 'Scan Struk', 'en': 'Scan Receipt'},
   'hm_bar_chat': {'id': 'Chat AI', 'en': 'AI Chat'},
   'hm_bar_add': {'id': 'Tambah', 'en': 'Add'},
+  // Sheet Aksi Cepat (FAB '+')
+  'qa_sheet_title': {'id': 'Aksi Cepat', 'en': 'Quick Actions'},
+  'qa_add_tx': {'id': 'Tambah Transaksi', 'en': 'Add Transaction'},
+  'qa_scan': {'id': 'Scan Struk', 'en': 'Scan Receipt'},
+  'qa_voice': {'id': 'Asisten Suara', 'en': 'Voice Assistant'},
+  'qa_chat': {'id': 'Chat AI', 'en': 'AI Chat'},
   // Transaksi
   'tx_err_load': {
     'id': 'Gagal memuat transaksi. Periksa koneksi.',
