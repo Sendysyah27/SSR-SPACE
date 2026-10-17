@@ -463,7 +463,7 @@ class _CurrencyField extends StatelessWidget {
         for (final cur in supportedCurrencies)
           DropdownMenuItem(
             value: cur.code,
-            child: Text(cur.code + ' 2014 ' + cur.symbol.trim()),
+            child: Text('${cur.code} \u2014 ${cur.symbol.trim()}'),
           ),
       ],
       onChanged: onChanged,
