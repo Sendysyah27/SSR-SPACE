@@ -1666,10 +1666,19 @@ const _t = <String, Map<String, String>>{
       'en': 'Show decimal digits'},
   'st_theme': {'id': 'Tema', 'en': 'Theme'},
   'th_auto': {'id': 'Otomatis', 'en': 'Automatic'},
-  'th_noir': {'id': 'Noir', 'en': 'Noir'},
+  'th_terang': {'id': 'Terang', 'en': 'Light'},
+  'th_gelap': {'id': 'Gelap', 'en': 'Dark'},
   'th_theme_desc': {
     'id': 'Pilih tampilan aplikasi.',
     'en': 'Choose how the app looks.',
+  },
+  'th_day_start': {
+    'id': 'Jam mulai mode terang',
+    'en': 'Light mode start',
+  },
+  'th_night_start': {
+    'id': 'Jam mulai mode gelap',
+    'en': 'Dark mode start',
   },
   'st_reminder_time': {'id': 'Jam pengingat', 'en': 'Reminder time'},
   'st_reminder_on': {'id': 'Pengingat harian', 'en': 'Daily reminder'},

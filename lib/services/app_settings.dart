@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/reports_topn.dart';
@@ -24,6 +25,8 @@ const _kWeeklyMinute = 'weekly_minute';
 const _kWidgetToday = 'widget_today';
 const _kWalletUse = 'wallet_use_count';
 const _kThemeChoice = 'app_theme_choice';
+const _kThemeDayStart = 'app_theme_day_start';
+const _kThemeNightStart = 'app_theme_night_start';
 const _kNumberFormat = 'app_number_format';
 const _kDefaultWallet = 'app_default_wallet';
 const _kWeekStart = 'app_week_start';
@@ -59,7 +62,17 @@ final weeklyWeekday = ValueNotifier<int>(7);
 final weeklyHour = ValueNotifier<int>(20);
 final weeklyMinute = ValueNotifier<int>(0);
 final widgetToday = ValueNotifier<bool>(false);
+/// Pilihan tema: 'terang' | 'gelap' | 'otomatis' (auto-switch terjadwal).
 final themeChoice = ValueNotifier<String>('otomatis');
+
+/// Jam mulai mode terang (0-23) dan jam mulai mode gelap (0-23) untuk
+/// mode 'otomatis'. Default: terang 06:00-18:00, gelap 18:00-06:00.
+final themeDayStart = ValueNotifier<int>(6);
+final themeNightStart = ValueNotifier<int>(18);
+
+/// Tema efektif hasil resolusi: 'terang' | 'gelap'.
+/// Mode 'otomatis' dievaluasi dari jam sekarang; mode manual = pilihan.
+final themeEffective = ValueNotifier<String>('terang');
 
 /// Tema gradient kartu saldo: 'navy' | 'ocean' | 'midnight' | 'steel'.
 final cardTheme = ValueNotifier<String>('navy');
@@ -155,8 +168,19 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
   weeklyMinute.value = (prefs.getInt(_kWeeklyMinute) ?? 0).clamp(0, 59);
   widgetToday.value = prefs.getBool(_kWidgetToday) ?? false;
   walletUseCounts.value = decodeUsage(prefs.getString(_kWalletUse));
+  // Migrasi sekali jalan: nilai lama 'noir' -> 'gelap', ditulis balik.
   final tc = prefs.getString(_kThemeChoice);
-  themeChoice.value = (tc == 'noir') ? 'noir' : 'otomatis';
+  if (tc == 'noir') {
+    themeChoice.value = 'gelap';
+    await prefs.setString(_kThemeChoice, 'gelap');
+  } else if (tc == 'terang' || tc == 'gelap' || tc == 'otomatis') {
+    themeChoice.value = tc!;
+  } else {
+    themeChoice.value = 'otomatis';
+  }
+  themeDayStart.value = (prefs.getInt(_kThemeDayStart) ?? 6).clamp(0, 23);
+  themeNightStart.value =
+      (prefs.getInt(_kThemeNightStart) ?? 18).clamp(0, 23);
   final nf = prefs.getString(_kNumberFormat);
   numberFormat.value = (nf == 'us') ? 'us' : 'id';
   defaultWalletId.value = prefs.getString(_kDefaultWallet) ?? '';
@@ -166,6 +190,7 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
   lockTimeoutMinutes.value =
       (lt == 1 || lt == 5 || lt == 15 || lt == 30) ? lt : 5;
   biometricEnabled.value = prefs.getBool(_kBiometric) ?? false;
+  syncThemeAutoTimer();
 }
 
 Future<void> setLocaleCode(String v) async {
@@ -320,10 +345,96 @@ Future<void> setWidgetToday(bool v) async {
 }
 
 Future<void> setThemeChoice(String v) async {
-  if (v != 'noir' && v != 'otomatis') return;
+  if (v != 'terang' && v != 'gelap' && v != 'otomatis') return;
   themeChoice.value = v;
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kThemeChoice, v);
+  syncThemeAutoTimer();
+}
+
+/// Jam mulai mode terang (0-23), hanya dipakai mode 'otomatis'.
+Future<void> setThemeDayStart(int v) async {
+  final nv = v.clamp(0, 23);
+  themeDayStart.value = nv;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt(_kThemeDayStart, nv);
+  refreshEffectiveTheme();
+}
+
+/// Jam mulai mode gelap (0-23), hanya dipakai mode 'otomatis'.
+Future<void> setThemeNightStart(int v) async {
+  final nv = v.clamp(0, 23);
+  themeNightStart.value = nv;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt(_kThemeNightStart, nv);
+  refreshEffectiveTheme();
+}
+
+// --- Auto-switch tema terjadwal -------------------------------------
+// Mode 'otomatis': terang pukul [themeDayStart] s/d sebelum
+// [themeNightStart]; gelap di luar rentang itu. Timer 1 menit menyegarkan
+// [themeEffective]; timer hanya hidup saat mode 'otomatis' (dibatalkan
+// saat manual) agar ringan dan tidak bocor.
+
+Timer? _themeTimer;
+
+/// Jam [hour] (0-23) termasuk rentang terang? Rentang boleh melintasi
+/// tengah malam (mis. terang 20:00 s/d 06:00). Batas sama = terang
+/// seharian. Murni (bisa di-test).
+bool isThemeDayHour(int hour, int dayStart, int nightStart) {
+  final h = hour.clamp(0, 23);
+  final ds = dayStart.clamp(0, 23);
+  final ns = nightStart.clamp(0, 23);
+  if (ds == ns) return true;
+  if (ds < ns) return h >= ds && h < ns;
+  return h >= ds || h < ns;
+}
+
+/// Resolusi tema efektif dari pilihan + jam. Murni (bisa di-test).
+String resolveEffectiveTheme({
+  required String choice,
+  required int hour,
+  required int dayStart,
+  required int nightStart,
+}) {
+  if (choice == 'gelap') return 'gelap';
+  if (choice == 'terang') return 'terang';
+  return isThemeDayHour(hour, dayStart, nightStart) ? 'terang' : 'gelap';
+}
+
+/// Hitung ulang tema efektif dari state sekarang; notify hanya bila
+/// nilai berubah (ValueNotifier tidak rebuild berlebihan).
+void refreshEffectiveTheme() {
+  final eff = resolveEffectiveTheme(
+    choice: themeChoice.value,
+    hour: DateTime.now().hour,
+    dayStart: themeDayStart.value,
+    nightStart: themeNightStart.value,
+  );
+  if (themeEffective.value != eff) themeEffective.value = eff;
+}
+
+/// Sinkronkan timer auto-switch dengan mode; dipanggil setelah load prefs
+/// dan setiap perubahan pilihan tema.
+void syncThemeAutoTimer() {
+  if (themeChoice.value == 'otomatis') {
+    _themeTimer ??= Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => refreshEffectiveTheme(),
+    );
+  } else {
+    _themeTimer?.cancel();
+    _themeTimer = null;
+  }
+  refreshEffectiveTheme();
+}
+
+/// Hentikan timer auto-switch. Dipakai test; app tidak pernah memanggil
+/// (timer level-app, dibatalkan otomatis saat mode manual).
+@visibleForTesting
+void stopThemeAutoTimer() {
+  _themeTimer?.cancel();
+  _themeTimer = null;
 }
 
 Future<void> setNumberFormat(String v) async {
