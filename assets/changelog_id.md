@@ -1,6 +1,14 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.74.0+252.
+Versi terpasang: 2.75.0+253.
+
+## Yang baru di 2.75.0+253
+
+1. Gamifikasi pindah ke server: streak harian, XP, dan level dihitung lintas-device — sama dari HP mana pun kamu login.
+2. Badge baru streak 3 & 14 hari; total 11 badge (8 dari server, 3 dari perangkat).
+3. Notifikasi pencapaian saat badge baru terbuka (channel "Pencapaian").
+4. Tanpa internet atau server belum dimigrasi: tetap dihitung di perangkat seperti biasa, tidak diblokir.
+5. Perlu migration_21 di Supabase (sekali saja, aman diulang).
 
 ## Yang baru di 2.74.0+252
 
