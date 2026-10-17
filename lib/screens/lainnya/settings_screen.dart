@@ -725,7 +725,7 @@ class _HeroStyleCard extends StatelessWidget {
             items: const [
               DropdownMenuItem(
                 value: 'emerald-calm',
-                child: Text('emerald-calm', style: const TextStyle(color: Color(0xFF12285A))),
+                child: Text('emerald-calm', style: TextStyle(color: Color(0xFF12285A))),
               ),
             ],
             onChanged: (v) {
