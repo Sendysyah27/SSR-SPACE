@@ -17,6 +17,7 @@ import 'package:ssr_space/services/save30_store.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/diag_log.dart';
@@ -50,8 +51,17 @@ Future<void> main() async {
     return true;
   };
   DiagLog.write('DIAG ErrorReporter init ok');
-  await SupabaseConfig.init();
-  DiagLog.write('DIAG Supabase init ok');
+  // Init inti dibungkus: kegagalan plugin native (mis. Pigeon di-strip R8)
+  // TIDAK boleh jadi layar putih tanpa jejak — tampilkan pesan jujur.
+  try {
+    await SupabaseConfig.init();
+    DiagLog.write('DIAG Supabase init ok');
+  } catch (e, s) {
+    DiagLog.error('DIAG Supabase init gagal', e, s);
+    ErrorReporter.capture(e, s, context: 'SupabaseConfig.init');
+    _bootFailed();
+    return;
+  }
   ForegroundTrack.initOnce();
   PinLinkVerify.initOnce();
   DiagLog.write('DIAG sebelum SharedPreferences.getInstance');
@@ -61,7 +71,9 @@ Future<void> main() async {
     DiagLog.write('DIAG SharedPreferences ok');
   } catch (e, s) {
     DiagLog.error('SharedPreferences.getInstance', e, s);
-    rethrow;
+    ErrorReporter.capture(e, s, context: 'SharedPreferences.getInstance');
+    _bootFailed();
+    return;
   }
   // Optimasi startup: task independen jalan paralel (bukan sekuensial).
   await Future.wait([
@@ -125,6 +137,55 @@ Future<void> main() async {
       ErrorReporter.capture(err, stack, context: 'zone');
     },
   );
+}
+
+/// Startup minimal saat init inti gagal (mis. plugin native hilang karena
+/// R8). Tampilkan pesan jujur + versi, bukan layar putih tanpa petunjuk.
+void _bootFailed() {
+  runZonedGuarded(
+    () => runApp(const _StartupErrorApp()),
+    (err, stack) {
+      DiagLog.error('DIAG bootFailed zone', err, stack);
+      ErrorReporter.capture(err, stack, context: 'bootFailed');
+    },
+  );
+}
+
+class _StartupErrorApp extends StatelessWidget {
+  const _StartupErrorApp();
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      home: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(SsrSpace.xxl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    tr('boot_fail_title'),
+                    style: Theme.of(context).textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: SsrSpace.md),
+                  Text(
+                    tr('boot_fail_body'),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class SsrSpaceApp extends StatelessWidget {

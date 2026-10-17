@@ -1,6 +1,11 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.76.0+256.
+Versi terpasang: 2.76.0+257.
+
+## Yang baru di 2.76.0+257
+
+1. Perbaikan layar putih setelah pembaruan: versi aplikasi kini terkunci agar tidak mengambil komponen sistem yang bermasalah.
+2. Bila ada kegagalan penyiapan awal, aplikasi menampilkan pesan jelas (bukan layar putih kosong).
 
 ## Yang baru di 2.76.0+256
 

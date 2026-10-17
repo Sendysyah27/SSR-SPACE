@@ -2615,6 +2615,19 @@ const _t = <String, Map<String, String>>{
   },
   'fi_swipe_ex': {'id': 'Geser untuk menghapus', 'en': 'Slide to delete'},
   'fi_swipe_ok': {'id': 'Contoh saja — data aman.', 'en': 'Just an example — data is safe.'},
+  // Gagal boot (init inti gagal — pengganti layar putih).
+  'boot_fail_title': {
+    'id': 'Gagal memulai aplikasi',
+    'en': 'App failed to start',
+  },
+  'boot_fail_body': {
+    'id':
+        'Penyiapan awal tidak selesai. Coba tutup lalu buka ulang aplikasi. '
+        'Bila tetap gagal, pasang ulang versi terbaru.',
+    'en':
+        'Startup did not finish. Close and reopen the app. '
+        'If it keeps failing, reinstall the latest version.',
+  },
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;
