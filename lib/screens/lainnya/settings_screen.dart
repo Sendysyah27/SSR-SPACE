@@ -60,6 +60,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _heroKey = GlobalKey();
   final _cardThemeKey = GlobalKey();
   final _widgetKey = GlobalKey();
+  final _homeViewKey = GlobalKey();
+  final _balanceFormatKey = GlobalKey();
   final _numKey = GlobalKey();
   final _defWalletKey = GlobalKey();
   final _weekStartKey = GlobalKey();
@@ -237,7 +239,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           Container(key: _cardThemeKey, child: const _CardThemeCard()),
           const SizedBox(height: SsrSpace.md),
-          Container(key: _widgetKey, child: const _WidgetCard()),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  key: _widgetKey,
+                  child: const _WidgetCard(),
+                ),
+              ),
+              const SizedBox(width: SsrSpace.md),
+              Expanded(
+                child: Container(
+                  key: _homeViewKey,
+                  child: const _HomeViewCard(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: SsrSpace.md),
+          Container(
+            key: _balanceFormatKey,
+            child: const _BalanceFormatCard(),
+          ),
           const SizedBox(height: SsrSpace.md),
           PremiumSectionHeader(title: tr('st_group_reminder')),
           const SizedBox(height: SsrSpace.sm),
@@ -1163,6 +1187,80 @@ class _WidgetCard extends StatelessWidget {
 
 /// AI Parser struk via Firebase: aktif otomatis bila login Google,
 /// tanpa input kunci. Mati diam bila belum login (jujur di subtitle).
+
+/// Tampilan Beranda: periode default saat dibuka (day/week/month/year).
+/// Dipakai sebagai nilai awal tab periode (Item 1) bila belum tersimpan.
+class _HomeViewCard extends StatelessWidget {
+  const _HomeViewCard();
+
+  static const _periods = ['day', 'week', 'month', 'year'];
+
+  String _label(String p) => switch (p) {
+        'day' => tr('hm_period_day'),
+        'week' => tr('hm_period_week'),
+        'month' => tr('hm_period_month'),
+        _ => tr('hm_period_year'),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassLabeledCard(
+      label: tr('st_home_view'),
+      icon: AppIcons.calendar,
+      children: [
+        ValueListenableBuilder<String>(
+          valueListenable: homeDefaultPeriod,
+          builder: (context, value, _) => DropdownButtonFormField<String>(
+            dropdownColor: Colors.white,
+            initialValue: _periods.contains(value) ? value : 'month',
+            decoration: const InputDecoration(),
+            items: [
+              for (final p in _periods)
+                DropdownMenuItem(
+                  value: p,
+                  child: Text(
+                    _label(p),
+                    style: const TextStyle(color: Color(0xFF12285A)),
+                  ),
+                ),
+            ],
+            onChanged: (v) {
+              if (v != null) setHomeDefaultPeriod(v);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Format Saldo: tampilkan desimal ya/tidak (default ya = perilaku sekarang).
+/// Di-wire di CurrencyService.format; rp() tetap 0 desimal (IDR by design).
+class _BalanceFormatCard extends StatelessWidget {
+  const _BalanceFormatCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassLabeledCard(
+      label: tr('st_balance_format'),
+      icon: AppIcons.menu,
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: balanceShowDecimal,
+          builder: (context, value, _) => SwitchListTile(
+            activeThumbColor: DribTokens.primary,
+            contentPadding: EdgeInsets.zero,
+            title: Text(tr('st_balance_format')),
+            subtitle: Text(tr('st_balance_format_sub')),
+            value: value,
+            onChanged: setBalanceShowDecimal,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _AiCard extends StatefulWidget {
   const _AiCard();
 

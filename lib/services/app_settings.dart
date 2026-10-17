@@ -31,6 +31,8 @@ const _kLockTimeout = 'app_lock_timeout';
 const _kBiometric = 'app_biometric';
 const _kCardTheme = 'app_card_theme';
 const _kHomePeriod = 'home_period';
+const _kHomeDefaultPeriod = 'home_default_period';
+const _kBalanceShowDecimal = 'balance_show_decimal';
 
 /// Pengaturan aplikasi: bahasa, mata uang tampilan, skala font.
 /// Diisi di main() sebelum runApp; layar settings mengubah + simpan.
@@ -66,6 +68,14 @@ final cardTheme = ValueNotifier<String>('navy');
 /// 'calendar'. UI + state saja (belum di-wire ke pemuatan data Beranda
 /// yang tetap berbasis bulan via MonthPicker).
 final homePeriod = ValueNotifier<String>('month');
+
+/// Periode default Beranda saat dibuka: 'day' | 'week' | 'month' | 'year'.
+/// Dipakai sebagai nilai awal homePeriod bila belum ada pilihan tersimpan.
+final homeDefaultPeriod = ValueNotifier<String>('month');
+
+/// Tampilkan desimal nominal (default true = perilaku sekarang).
+/// Di-wire di CurrencyService.format (sentral, berlaku untuk semua amt()).
+final balanceShowDecimal = ValueNotifier<bool>(true);
 
 /// Format angka: 'id' (1.000.000) atau 'us' (1,000,000).
 final numberFormat = ValueNotifier<String>('id');
@@ -111,6 +121,11 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
           ct == 'steel')
       ? ct!
       : 'navy';
+  final hdp = prefs.getString(_kHomeDefaultPeriod);
+  homeDefaultPeriod.value =
+      (hdp == 'day' || hdp == 'week' || hdp == 'month' || hdp == 'year')
+          ? hdp!
+          : 'month';
   final hp = prefs.getString(_kHomePeriod);
   homePeriod.value = (hp == 'day' ||
           hp == 'week' ||
@@ -118,7 +133,8 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
           hp == 'year' ||
           hp == 'calendar')
       ? hp!
-      : 'month';
+      : homeDefaultPeriod.value;
+  balanceShowDecimal.value = prefs.getBool(_kBalanceShowDecimal) ?? true;
   homeMenuOrder.value = List<String>.of(
     prefs.getStringList(_kHomeMenuOrder) ?? [],
   );
@@ -220,6 +236,20 @@ Future<void> setHomePeriod(String v) async {
   homePeriod.value = nv;
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kHomePeriod, nv);
+}
+
+Future<void> setHomeDefaultPeriod(String v) async {
+  final nv =
+      (v == 'day' || v == 'week' || v == 'month' || v == 'year') ? v : 'month';
+  homeDefaultPeriod.value = nv;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kHomeDefaultPeriod, nv);
+}
+
+Future<void> setBalanceShowDecimal(bool v) async {
+  balanceShowDecimal.value = v;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool(_kBalanceShowDecimal, v);
 }
 
 Future<void> setHomeMenuOrder(List<String> v) async {

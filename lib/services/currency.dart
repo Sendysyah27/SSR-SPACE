@@ -87,7 +87,8 @@ class CurrencyService {
     final symbol = kCurrencySymbols[code] ?? 'Rp';
     // Standar BI: "Rp 1.250.000" (spasi setelah Rp). Non-IDR tak berubah.
     final sym = code == 'IDR' ? 'Rp ' : symbol;
-    final dec = kCurrencyDecimals(code);
+    final dec =
+        balanceShowDecimal.value ? kCurrencyDecimals(code) : 0;
     final v = convert(idrAmount);
     final locale = code == 'IDR'
         ? (numberFormat.value == 'us' ? 'en_US' : 'id_ID')
