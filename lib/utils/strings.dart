@@ -58,6 +58,10 @@ const _t = <String, Map<String, String>>{
   'hm_menu_recurring': {'id': 'Berulang', 'en': 'Recurring'},
   'hm_menu_goals': {'id': 'Target', 'en': 'Goals'},
   'hm_menu_bills': {'id': 'Tagihan', 'en': 'Bills'},
+  'hm_bar_ai': {'id': 'Asisten AI', 'en': 'AI Assistant'},
+  'hm_bar_scan': {'id': 'Scan Struk', 'en': 'Scan Receipt'},
+  'hm_bar_chat': {'id': 'Chat AI', 'en': 'AI Chat'},
+  'hm_bar_add': {'id': 'Tambah', 'en': 'Add'},
   // Transaksi
   'tx_err_load': {
     'id': 'Gagal memuat transaksi. Periksa koneksi.',

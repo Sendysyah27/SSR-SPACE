@@ -623,6 +623,14 @@ class BerandaScreenState extends State<BerandaScreen> {
     }
   }
 
+  /// Asisten AI: input suara -> sheet catat mode voice.
+  /// Beda dari Chat AI (_goMangAi) yang membuka room chat Mang AI.
+  Future<void> _goVoiceAi() async {
+    if (await openTxInputSheet(context, initialMode: TxInputMode.voice)) {
+      if (mounted) _load();
+    }
+  }
+
   void _openMonthTx() {
     Navigator.push(
       context,
@@ -887,11 +895,26 @@ class BerandaScreenState extends State<BerandaScreen> {
           const MaskToggle(),
         ],
       ),
-      body: AnimatedSwitcher(
-        duration: SsrMotion.base,
-        switchInCurve: SsrMotion.curve,
-        switchOutCurve: SsrMotion.curve,
-        child: _body(),
+      body: Stack(
+        children: [
+          AnimatedSwitcher(
+            duration: SsrMotion.base,
+            switchInCurve: SsrMotion.curve,
+            switchOutCurve: SsrMotion.curve,
+            child: _body(),
+          ),
+          Positioned(
+            left: SsrSpace.lg,
+            right: SsrSpace.lg,
+            bottom: SsrSpace.md,
+            child: _QuickBar(
+              onVoice: _goVoiceAi,
+              onScan: _goScan,
+              onChat: _goMangAi,
+              onAdd: _goCatat,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1447,6 +1470,75 @@ class _HomeMenuRow extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+
+/// Bar aksi cepat melayang ala Ollo di atas bottom nav Beranda (radius 24):
+/// Asisten AI, Scan Struk, Chat AI, Tambah. KEPUTUSAN: melengkapi seksi
+/// "Aksi Cepat" di tengah halaman, bukan menggantikan (seksi itu juga punya
+/// Laporan + Budget); bar ini selalu dalam jangkauan jempol tanpa scroll.
+/// Tidak ada FAB di Beranda sebelumnya -> tidak ada duplikasi FAB.
+/// Asisten AI = input suara (TxInputMode.voice); Chat AI = room Mang AI.
+class _QuickBar extends StatelessWidget {
+  final VoidCallback onVoice;
+  final VoidCallback onScan;
+  final VoidCallback onChat;
+  final VoidCallback onAdd;
+
+  const _QuickBar({
+    required this.onVoice,
+    required this.onScan,
+    required this.onChat,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: DribTokens.card,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: DribTokens.cardShadow,
+      ),
+      child: Row(
+        children: [
+          _item(theme, AppIcons.voice, tr('hm_bar_ai'), onVoice),
+          _item(theme, AppIcons.scan, tr('hm_bar_scan'), onScan),
+          _item(theme, Icons.smart_toy_outlined, tr('hm_bar_chat'), onChat),
+          _item(theme, AppIcons.add, tr('hm_bar_add'), onAdd),
+        ],
+      ),
+    );
+  }
+
+  Widget _item(
+      ThemeData theme, IconData icon, String label, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DuoIcon(icon, size: 24, color: DribTokens.navy),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: DribTokens.navy,
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
