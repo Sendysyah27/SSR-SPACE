@@ -1,34 +1,31 @@
 import 'package:ssr_space/services/achievement_notify.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/game_badges.dart';
+import 'package:ssr_space/services/game_store.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 
 /// Status gamifikasi dari server (migration_21 RPC `gamification_status`).
 ///
 /// Server = sumber kebenaran lintas-device untuk streak, XP/level, dan 8
-/// badge server-derivable. [stale] diisi pemanggil yang menyajikan hasil
-/// hitung lokal sebagai ganti; selalu false untuk bacaan server segar.
+/// badge server-derivable. Pemanggil fallback ke hitungan lokal jujur
+/// (`fallbackXp` di `game_badges.dart`) saat RPC tak tersedia.
 class GamificationStatus {
   final int streakDays;
-  final int streakBest;
   final int xp;
   final int level;
   final bool streakTodayDone;
   final bool streakGraceUsed;
   final Set<String> badges;
   final List<String> newBadges;
-  final bool stale;
 
   const GamificationStatus({
     this.streakDays = 0,
-    this.streakBest = 0,
     this.xp = 0,
     this.level = 0,
     this.streakTodayDone = false,
     this.streakGraceUsed = false,
     this.badges = const {},
     this.newBadges = const [],
-    this.stale = false,
   });
 }
 
@@ -44,7 +41,9 @@ int _asInt(dynamic v) {
 
 bool _asBool(dynamic v) => v == true;
 
-Set<String> _parseBadges(dynamic raw) {
+/// Parse daftar `badges` RPC (objek `{id, unlocked_at}` atau string id)
+/// menjadi set id yang dikenal klien. Terlihat untuk unit test.
+Set<String> parseBadgeSet(dynamic raw) {
   final out = <String>{};
   if (raw is List) {
     for (final e in raw) {
@@ -55,7 +54,9 @@ Set<String> _parseBadges(dynamic raw) {
   return out;
 }
 
-List<String> _parseNewBadges(dynamic raw) {
+/// Parse `new_badges` RPC (list id) — buang id asing & duplikat. Terlihat
+/// untuk unit test.
+List<String> parseNewBadgeList(dynamic raw) {
   final out = <String>[];
   if (raw is List) {
     for (final e in raw) {
@@ -78,13 +79,12 @@ Future<GamificationStatus?> fetchGamification(String orgId) async {
     final map = Map<String, dynamic>.from(res as Map);
     return GamificationStatus(
       streakDays: _asInt(map['streak_days']),
-      streakBest: _asInt(map['streak_best']),
       xp: _asInt(map['xp']),
       level: _asInt(map['level']),
       streakTodayDone: _asBool(map['streak_today_done']),
       streakGraceUsed: _asBool(map['streak_grace_used']),
-      badges: _parseBadges(map['badges']),
-      newBadges: _parseNewBadges(map['new_badges']),
+      badges: parseBadgeSet(map['badges']),
+      newBadges: parseNewBadgeList(map['new_badges']),
     );
   } catch (_) {
     return null;
@@ -105,11 +105,71 @@ Future<void> ackAchievements(List<String> ids) async {
   }
 }
 
-/// Satu-satunya hook notif pencapaian: badge baru -> tampilkan lalu ack
-/// segera (panggilan berikutnya kosong, cegah dobel Beranda+Arcade).
-Future<void> syncAchievements(GamificationStatus? s) async {
-  final ids = s?.newBadges;
-  if (ids == null || ids.isEmpty) return;
-  await AchievementNotify.showNew(ids);
-  await ackAchievements(ids);
+/// Sinkronisasi notifikasi pencapaian. Dipisah sebagai kelas yang bisa
+/// disuntik (test seam) — produksi memakai [AchievementNotify.showNew],
+/// [ackAchievements], dan [loadSeenBadges].
+///
+/// Aturan: tampilkan tiap badge baru SEKALI per device (dibanding
+/// `seen` prefs + set sesi), lalu `ack` SEMUA id yang dilaporkan server
+/// (termasuk yang dilewati) supaya tak memicu ulang. Panggilan beruntun
+/// diserialkan agar Beranda+Arcade tak notif dobel dalam satu device.
+class AchievementSync {
+  final Future<void> Function(List<String> ids) show;
+  final Future<void> Function(List<String> ids) ack;
+  final Future<Set<String>> Function() loadSeen;
+
+  final Set<String> _notifiedThisSession = <String>{};
+  Future<void>? _inflight;
+
+  AchievementSync({
+    required this.show,
+    required this.ack,
+    required this.loadSeen,
+  });
+
+  /// [incoming] = `new_badges` server. Idempoten: aman dipanggil overlap.
+  Future<void> sync(List<String>? incoming) async {
+    if (incoming == null || incoming.isEmpty) return;
+    final prev = _inflight;
+    if (prev != null) {
+      try {
+        await prev;
+      } catch (_) {}
+    }
+    final run = _run(incoming);
+    _inflight = run;
+    try {
+      await run;
+    } finally {
+      if (identical(_inflight, run)) _inflight = null;
+    }
+  }
+
+  Future<void> _run(List<String> incoming) async {
+    Set<String> seen;
+    try {
+      seen = await loadSeen();
+    } catch (_) {
+      seen = <String>{};
+    }
+    final fresh = <String>[];
+    for (final id in incoming) {
+      if (seen.contains(id)) continue;
+      if (!_notifiedThisSession.add(id)) continue;
+      fresh.add(id);
+    }
+    if (fresh.isNotEmpty) await show(fresh);
+    await ack(incoming);
+  }
 }
+
+final AchievementSync _achievementSync = AchievementSync(
+  show: AchievementNotify.showNew,
+  ack: ackAchievements,
+  loadSeen: loadSeenBadges,
+);
+
+/// Satu-satunya hook notif pencapaian: badge baru -> tampilkan yang belum
+/// pernah dilihat, lalu ack semua agar panggilan berikutnya kosong.
+Future<void> syncAchievements(GamificationStatus? s) =>
+    _achievementSync.sync(s?.newBadges);

@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/game_badges.dart';
 import 'package:ssr_space/utils/strings.dart';
 
 // Notifikasi pencapaian (badge baru), satu notif per badge. Pola
@@ -11,6 +12,13 @@ class AchievementNotify {
   static const String channelDesc = 'Pencapaian dan badge baru.';
 
   static const int _base = 7400;
+
+  /// Id notifikasi STABIL per badge (indeks tetap di [allBadges]) agar
+  /// panggilan satu-badge tak menimpa notifikasi badge lain.
+  static int _idFor(String badgeId) {
+    final i = allBadges.indexWhere((b) => b.id == badgeId);
+    return _base + (i < 0 ? 0 : i);
+  }
 
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -52,7 +60,7 @@ class AchievementNotify {
       for (var i = 0; i < badgeIds.length; i++) {
         final id = badgeIds[i];
         await _plugin.show(
-          id: _base + i,
+          id: _idFor(id),
           title: tr('b_${id}_t'),
           body: tr('b_${id}_d'),
           notificationDetails: details,

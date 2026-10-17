@@ -29,4 +29,30 @@ void main() {
     expect(isMilestone(8), isFalse);
     expect(newBadgesIn({'streak3', 'tx100'}, {'tx100'}), ['streak3']);
   });
+
+  test('fallbackXp semantik server (cap tx, badge server saja)', () {
+    expect(fallbackXp(const GameStats()), 0);
+    // tx cap 200 -> 2000; streak 10 -> streak3+streak7; tx 500 -> tx100.
+    expect(fallbackXp(const GameStats(txCount: 500, streakDays: 10)), 2200);
+    // badge lokal (goal/emsafe/save30) TIDAK menyumbang XP.
+    expect(
+      fallbackXp(const GameStats(
+        streakDays: 7,
+        goalsReached: 2,
+        emergencySafe: true,
+        save30Done: 1,
+      )),
+      135,
+    );
+    // streak3 + tx100 + save1m + clean30 (4 badge = 200).
+    expect(
+      fallbackXp(const GameStats(
+        streakDays: 3,
+        txCount: 100,
+        totalSaved: 1000000,
+        cleanMonth: true,
+      )),
+      1215,
+    );
+  });
 }

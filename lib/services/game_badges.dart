@@ -111,6 +111,17 @@ List<String> localUnlockedBadges(GameStats s) =>
 List<String> unlockedBadges(GameStats s) =>
     [...unlockedServerBadges(s), ...localUnlockedBadges(s)];
 
+/// XP fallback lokal saat RPC gamifikasi tak tersedia (offline / belum
+/// migrasi). Sengaja memakai SEMANTIK server supaya Beranda dan Arcade
+/// menampilkan angka yang sama: `least(txCount,200)*10 + streakDays*5 +
+/// jumlah badge server-terbuka*50`. Badge sinyal-lokal (goal1/emsafe/save30)
+/// TIDAK menyumbang XP — koleksi motivasi, bukan level.
+int fallbackXp(GameStats s) {
+  final tx = s.txCount < 0 ? 0 : (s.txCount > 200 ? 200 : s.txCount);
+  final st = s.streakDays < 0 ? 0 : s.streakDays;
+  return tx * 10 + st * 5 + unlockedServerBadges(s).length * 50;
+}
+
 /// Id di [unlocked] yang belum ada di [seen] (untuk chip Baru).
 List<String> newBadgesIn(Set<String> unlocked, Set<String> seen) =>
     unlocked.where((id) => !seen.contains(id)).toList();

@@ -56,8 +56,9 @@ bisa diturunkan server; badge bersinyal-lokal tetap lokal.
   save1m, clean30, goal1, tx100, emsafe, save30. `unlockedBadges`/`newBadges`.
   → pecah jadi `serverBadgeIds` (streak3/7/14/30/100, tx100, save1m, clean30) vs
   `localBadgeIds` (goal1, emsafe, save30); tambah `streak3`,`streak14` (koleksi 11).
-- `lib/services/game_level.dart` — `calcXp`, `levelFloors=[0,200,500,1000,2000,3500,5500]`,
-  `levelFor`, `levelProgress`, `xpToNext` (murni, dipakai ulang server-side).
+- `lib/services/game_level.dart` — `levelFloors=[0,200,500,1000,2000,3500,5500]`,
+  `levelFor`, `levelProgress`, `xpToNext` (murni). XP fallback lokal bersama
+  kini `fallbackXp` di `game_badges.dart` (semantik server; `calcXp` lama dibuang).
 - `lib/services/game_challenge.dart` — 3 tantangan mingguan, **tetap lokal**.
 - `lib/services/game_store.dart` — prefs `game_seen_badges` (chip "Baru", device-local),
   `game_challenges`. Tetap.
@@ -121,9 +122,15 @@ bisa diturunkan server; badge bersinyal-lokal tetap lokal.
      (user_id, badge_id) values (auth.uid(), id) on conflict (user_id, badge_id) do nothing;`
    - `new_badges` = `badge_id from user_achievements where user_id=auth.uid()
      and notified_at is null`.
-   - **xp** = `least(txCount,200)*10 + streak_days*5 + (jumlah badge di
-     user_achievements)*50`; level via ambang `[0,200,500,1000,2000,3500,5500]`
-     (server hitung, atau klien hitung ulang dengan `levelFor` — sama hasil).
+    - **xp** = `least(txCount,200)*10 + streak_days*5 + (jumlah badge di
+      user_achievements)*50`; level via ambang `[0,200,500,1000,2000,3500,5500]`.
+      **Kontrak jujur (dikoreksi):** saat RPC tersedia, Beranda & Arcade
+      menampilkan `xp`/`level` server apa adanya (bukan klaim "sama hasil"
+      lama). Saat RPC tak tersedia, kedua layar memakai SATU fungsi fallback
+      bersama `fallbackXp` (`game_badges.dart`) yang meniru rumus server;
+      badge sinyal-lokal **tidak** menyumbang XP. Scope berbeda yang disengaja:
+      `tx100`/`save1m` server global lintas workspace sedangkan fallback klien
+      memakai data lokal — angka bisa berbeda (diterima, bukan bug).
    - Return: `{streak_days, streak_best, streak_today_done, streak_grace_used,
      xp, level, badges:[{id,unlocked_at}], new_badges:[id...]}`.
      (`streak_today_done`/`streak_grace_used` disertakan agar kartu Beranda yang
@@ -143,17 +150,20 @@ yang `created_by = auth.uid()` lintas SEMUA workspace (paritas Ollo single-user)
 
 - `lib/services/gamification_service.dart` (baru):
   - `class ServerBadge { final String id; final DateTime? unlockedAt; }`
-  - `class GamificationStatus { final int streakDays, streakBest, xp, level;
-    final Set<String> badges; final List<String> newBadges; final bool stale; }`
+  - `class GamificationStatus { final int streakDays, xp, level;
+    final bool streakTodayDone, streakGraceUsed;
+    final Set<String> badges; final List<String> newBadges; }`
   - `Future<GamificationStatus?> fetchGamification(String orgId)` — RPC
     `gamification_status`; **return null** saat error (pemanggil fallback lokal).
     Jangan lempar.
   - `Future<void> ackAchievements(List<String> ids)` — RPC `ack_achievements`,
     fail-silent (`ErrorReporter.capture`).
   - `Future<void> syncAchievements(GamificationStatus? s)` — **satu-satunya** hook
-    notif: bila `s?.newBadges` tak kosong → `AchievementNotify.showNew` lalu
-    `ackAchievements` (ack segera → pemanggilan berikutnya kosong, cegah
-    double-notif Beranda+Arcade di sesi sama). Dipanggil dari Beranda & Arcade.
+    notif: bila `s?.newBadges` tak kosong → tampilkan hanya id yang belum pernah
+    dilihat (prefs `game_seen_badges` + set sesi, jadi peluncuran pertama pasca-migrasi
+    tak meledak), lalu `ackAchievements` SEMUA id yang dilaporkan (cegah dobel
+    Beranda+Arcade di sesi sama; panggilan overlap diserialkan). Dipanggil dari
+    Beranda & Arcade.
 - `lib/services/game_badges.dart`:
   - `const serverBadgeIds = ['streak3','streak7','streak14','streak30','streak100','tx100','save1m','clean30'];`
   - `const localBadgeIds = ['goal1','emsafe','save30'];`
@@ -228,9 +238,9 @@ yang `created_by = auth.uid()` lintas SEMUA workspace (paritas Ollo single-user)
   XP. Dijujurkan di spec/UI.
 - **`clean30` org-scoped** (budget memang per-org) walau streak global — campuran
   scope yang disengaja & didokumentasikan.
-- **Fallback lokal bisa beda** dari server (feat baru belum dimigrasi / offline):
-  klien tandai status `stale` bila perlu; tak blokir. Cross-device baru aktif
-  setelah user menjalankan `migration_21`.
+  - **Fallback lokal bisa beda** dari server (feat baru belum dimigrasi / offline):
+    klien hitung lokal lewat `fallbackXp` bersama; tak blokir. Cross-device baru
+    aktif setelah user menjalankan `migration_21`.
 - **Dedupe notif lintas-device** bergantung `notified_at`; bila panggilan
   `ack_achievements` gagal, badge bisa dinotifikasi ulang (device/jadwal lain) —
   fail-open yang dimaklumi (lebih baik dobel daripada hilang).

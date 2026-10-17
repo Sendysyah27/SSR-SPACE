@@ -131,11 +131,12 @@ class ArcadeScreenState extends State<ArcadeScreen> {
             spent[k] = (spent[k] ?? 0) + t.amount;
           }
           clean = limits.isNotEmpty &&
-              limits.every(
-                (b) =>
-                    isSavingCategory(b.category) ||
-                    (spent[b.category] ?? 0) <= b.limit,
-              );
+              limits.every((b) {
+                if (isSavingCategory(b.category)) return true;
+                final top = topOf(b.category);
+                final k = top.isEmpty ? tr('cat_other') : top;
+                return (spent[k] ?? 0) <= b.limit;
+              });
         } catch (_) {}
         // Darurat aman: butuh WalletService? tidak, pakai tabungan vs
         // belanja dari hist sudah dihitung? Sederhana: aman bila saved
@@ -227,21 +228,15 @@ class ArcadeScreenState extends State<ArcadeScreen> {
         ...localUnlockedBadges(st),
       };
       // Tandai badge terlihat (chip Baru hanya sekali, device-local).
+      // PENTING: simpan `seen` SETELAH syncAchievements, supaya sync
+      // membandingkan ke `seen` lama dan badge yang benar-benar baru tetap
+      // diberitakan sekali (lalu di-ack).
       var seen = <String>{};
       try {
         seen = await loadSeenBadges();
       } catch (_) {}
       final freshIds = newBadgesIn(unlockedIds, seen);
-      try {
-        await saveSeenBadges({...seen, ...unlockedIds});
-      } catch (_) {}
-      final xpVal = gs?.xp ??
-          calcXp(
-            txCount: st.txCount,
-            streakDays: st.streakDays,
-            challengesDone: st.challengesDone,
-            goalsReached: st.goalsReached,
-          );
+      final xpVal = gs?.xp ?? fallbackXp(st);
       if (!mounted) return;
       setState(() {
         stats = st;
@@ -255,6 +250,9 @@ class ArcadeScreenState extends State<ArcadeScreen> {
         loading = false;
       });
       await syncAchievements(gs);
+      try {
+        await saveSeenBadges({...seen, ...unlockedIds});
+      } catch (_) {}
     } catch (_) {
       if (!mounted) return;
       setState(() {

@@ -1,17 +1,7 @@
-/// Level + XP. Dart murni, deterministik dari state (tanpa event log).
-///
-/// XP = min(tx,200)*10 + streak*5 + tantangan*50 + goal*100.
-/// Cap tx 200 (=2000 XP) supaya user lama tak langsung mentok.
-int calcXp({
-  required int txCount,
-  required int streakDays,
-  required int challengesDone,
-  required int goalsReached,
-}) {
-  final tx = txCount < 0 ? 0 : (txCount > 200 ? 200 : txCount);
-  final st = streakDays < 0 ? 0 : streakDays;
-  return tx * 10 + st * 5 + challengesDone * 50 + goalsReached * 100;
-}
+// Level dari XP. Dart murni, deterministik dari state (tanpa event log).
+// Hitungan XP-nya sendiri tinggal di server (`gamification_status`) atau
+// fallback lokal bersama `fallbackXp` di `game_badges.dart` (semantik
+// identik). Di sini hanya ambang level + progres, agar satu sumber.
 
 /// Ambang bawah tiap level (indeks 0 = Lv 1). 7 level, mentok 5500+.
 const levelFloors = [0, 200, 500, 1000, 2000, 3500, 5500];

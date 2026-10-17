@@ -15,15 +15,4 @@ void main() {
     expect(xpToNext(100), 100);
     expect(levelProgress(100), closeTo(0.5, 1e-9));
   });
-
-  test('xp cap + negatif dijaga', () {
-    expect(
-      calcXp(txCount: 500, streakDays: 10, challengesDone: 1, goalsReached: 1),
-      2000 + 50 + 50 + 100,
-    );
-    expect(
-      calcXp(txCount: -5, streakDays: -1, challengesDone: 0, goalsReached: 0),
-      0,
-    );
-  });
 }
