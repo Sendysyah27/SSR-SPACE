@@ -264,7 +264,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     if (mounted) _reloadTab(index);
   }
 
-  /// Mang AI dibuka sebagai route (bukan tab): tombol robot di navbar.
+  /// Mang AI dibuka sebagai route (bukan tab): dari sheet Aksi Cepat.
   /// Kembali = muat ulang tab aktif.
   Future<void> _openMangAi() async {
     await Navigator.of(context).push(
@@ -333,7 +333,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       bottomNavigationBar: _DockedNav(
         index: index,
         onSelect: _select,
-        onMangAi: _openMangAi,
       ),
     );
   }
@@ -381,17 +380,15 @@ class _OfflineBar extends StatelessWidget {
 }
 
 /// Navigasi bawah TAHAP 2 restyle: BottomAppBar putih dengan coakan (notch)
-/// untuk FAB '+' di tengah, 4 tab (2 kiri + 2 kanan coakan), dan tombol
-/// chat AI floating di ujung kanan mengikuti navbar.
+/// untuk FAB '+' di tengah dan 4 tab (2 kiri + 2 kanan coakan).
+/// Chat AI tidak lagi di navbar; dibuka dari sheet "Aksi Cepat" (FAB '+').
 class _DockedNav extends StatelessWidget {
   final int index;
   final ValueChanged<int> onSelect;
-  final VoidCallback onMangAi;
 
   const _DockedNav({
     required this.index,
     required this.onSelect,
-    required this.onMangAi,
   });
 
   @override
@@ -427,17 +424,6 @@ class _DockedNav extends StatelessWidget {
             label: tr('nav_laporan'),
             selected: index == 3,
             onTap: () => onSelect(3),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: FloatingActionButton.small(
-              heroTag: 'mangai',
-              onPressed: onMangAi,
-              backgroundColor: DribTokens.navy,
-              foregroundColor: DribTokens.onNavy,
-              tooltip: tr('chat_title'),
-              child: const Icon(Icons.smart_toy_outlined),
-            ),
           ),
         ],
       ),
