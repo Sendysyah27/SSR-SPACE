@@ -748,6 +748,33 @@ const _t = <String, Map<String, String>>{
     'id': 'Mic gagal siap ({n} bahasa terdeteksi). Update aplikasi Google.',
     'en': 'Mic failed to ready ({n} locales). Update the Google app.',
   },
+  // Voice mode gaya Ollo (Batch 2.80)
+  'voice_listen_title': {'id': 'Mendengarkan...', 'en': 'Listening...'},
+  'voice_listen_hint': {
+    'id': 'Ucapkan transaksimu, mis. makan siang 25rb pakai GoPay',
+    'en': 'Say your transaction, e.g. lunch 25k with GoPay',
+  },
+  'voice_input_lang': {
+    'id': 'Bahasa Input Suara: Bahasa Indonesia',
+    'en': 'Voice Input Language: Indonesian',
+  },
+  'voice_stop': {'id': 'Stop & Proses', 'en': 'Stop & Process'},
+  'voice_retry': {'id': 'Coba Lagi', 'en': 'Try Again'},
+  'voice_err_empty': {
+    'id': 'Tidak terdengar jelas, coba lagi',
+    'en': "Couldn't hear you clearly, try again",
+  },
+  'voice_draft_title': {'id': 'Draft Siap', 'en': 'Draft Ready'},
+  'voice_d_title': {'id': 'Judul', 'en': 'Title'},
+  'voice_d_amount': {'id': 'Nominal', 'en': 'Amount'},
+  'voice_d_datetime': {'id': 'Tanggal', 'en': 'Date Time'},
+  'voice_d_wallet': {'id': 'Dompet', 'en': 'Wallet'},
+  'voice_d_category': {'id': 'Kategori', 'en': 'Category'},
+  'voice_d_subcategory': {'id': 'Subkategori', 'en': 'Subcategory'},
+  'voice_d_type': {'id': 'Tipe', 'en': 'Type'},
+  'voice_d_note': {'id': 'Catatan', 'en': 'Note'},
+  'voice_d_edit': {'id': 'Edit', 'en': 'Edit'},
+  'voice_d_save': {'id': 'Simpan', 'en': 'Save'},
   // Dashboard Beranda (Batch 16, kartu bisa disusun)
   'dash_title': {'id': 'Dashboard', 'en': 'Dashboard'},
   'dash_arrange': {'id': 'Susun', 'en': 'Arrange'},

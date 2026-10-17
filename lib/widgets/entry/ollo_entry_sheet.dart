@@ -15,6 +15,7 @@ import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/tx_validation.dart';
 import 'package:ssr_space/services/vision_scan_service.dart';
@@ -22,8 +23,10 @@ import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/currency.dart';
+import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/widgets/entry/voice_draft_sheet.dart';
 import 'package:ssr_space/widgets/premium/glass_sheet.dart';
 import 'package:ssr_space/widgets/success_lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -116,13 +119,92 @@ double? evalOlloExpr(String expr) {
   return acc;
 }
 
+/// Jalur simpan TUNGGAL untuk entry Ollo & draft suara (TASK C):
+/// validasi dilakukan pemanggil; di sini add + catat pemakaian dompet +
+/// alert budget + snapshot widget. Null = sukses; non-null = pesan
+/// error (sudah lewat tr()).
+Future<String?> persistOlloTx({
+  required String orgId,
+  required String type,
+  required double amountIdr,
+  String? walletId,
+  String? toWalletId,
+  String? category,
+  String? title,
+  String? note,
+  required DateTime day,
+  TimeOfDay? time,
+  bool useTime = false,
+}) async {
+  final when = txWhen(
+    day,
+    hour: useTime ? time?.hour : null,
+    minute: useTime ? time?.minute : null,
+  );
+  // Model transaksi tak punya kolom judul (tanpa migration): judul
+  // digabung ke depan catatan.
+  final parts = <String>[
+    if (title != null && title.trim().isNotEmpty) title.trim(),
+    if (note != null && note.trim().isNotEmpty) note.trim(),
+  ];
+  try {
+    await TransactionService().add(
+      orgId: orgId,
+      type: type,
+      amount: amountIdr,
+      walletId: walletId,
+      toWalletId: type == 'transfer' ? toWalletId : null,
+      category: category,
+      note: parts.join(' · '),
+      date: when.date,
+      createdAt: when.createdAt,
+    );
+    if (walletId != null) {
+      try {
+        await noteWalletUsed(walletId);
+      } catch (_) {}
+    }
+    if (type == 'transfer' && toWalletId != null) {
+      try {
+        await noteWalletUsed(toWalletId);
+      } catch (_) {}
+    }
+    // Sama seperti sheet existing: cek alert budget + snapshot widget.
+    unawaited(BudgetAlertNotify.check(orgId));
+    unawaited(refreshOlloWalletCache(orgId).catchError((_) {}));
+    return null;
+  } catch (e) {
+    return olloTxError(e);
+  }
+}
+
+/// Pesan error jujur (bukan teknis) untuk hasil [persistOlloTx].
+String olloTxError(Object e) {
+  if (e is SpaceException) return e.message;
+  if (e is PostgrestException) {
+    switch (e.code) {
+      case '42501':
+        return tr('tx_err_42501');
+      case '23503':
+        return tr('tx_err_23503');
+      case '23514':
+        return tr('tx_err_23514');
+      case '23505':
+        return tr('tx_err_23505');
+    }
+  }
+  return tr('tx_err_generic').replaceFirst('{a}', tr('tx_act_save'));
+}
+
 /// Bottom sheet entri transaksi gaya Ollo: tab Expense/Income/Transfer,
 /// lingkaran kategori pastel, chip subkategori, amount besar + numpad
 /// kalkulator, lalu simpan lewat [TransactionService] yang sama dengan
 /// sheet input existing. Kembalikan bila pemanggil perlu muat ulang —
 /// fungsi publik ini me-return void sesuai kontrak (sheet menutup
-/// sendiri setelah simpan sukses).
-Future<void> showOlloEntrySheet(BuildContext context) async {
+/// sendiri setelah simpan sukses). [initialDraft] (TASK C, draft suara)
+/// mengisi form dari hasil parse suara tanpa merusak pemanggil lama.
+Future<void> showOlloEntrySheet(BuildContext context,
+    {VoiceDraft? initialDraft, bool autoScan = false}) async {
   final orgId = await activeOrgId();
   if (orgId.isEmpty || !context.mounted) return;
   // Muat dompet seperti openTxInputSheet: cache dulu, fetch bila kosong.
@@ -130,7 +212,7 @@ Future<void> showOlloEntrySheet(BuildContext context) async {
   late final List<Wallet> wallets;
   if (cached != null) {
     wallets = cached.wallets;
-    unawaited(_refreshOlloWalletCache(orgId));
+    unawaited(refreshOlloWalletCache(orgId));
   } else {
     try {
       final results = await Future.wait([
@@ -161,7 +243,12 @@ Future<void> showOlloEntrySheet(BuildContext context) async {
       showHandle: false,
       child: SizedBox(
         height: MediaQuery.of(ctx).size.height * 0.93,
-        child: _OlloEntrySheet(orgId: orgId, wallets: wallets),
+        child: _OlloEntrySheet(
+          orgId: orgId,
+          wallets: wallets,
+          initialDraft: initialDraft,
+          autoScan: autoScan,
+        ),
       ),
     ),
   );
@@ -169,7 +256,7 @@ Future<void> showOlloEntrySheet(BuildContext context) async {
 
 /// Segarkan cache dompet diam-diam untuk pembukaan sheet berikutnya.
 /// Tak pernah melempar; sheet yang terbuka pakai snapshot.
-Future<void> _refreshOlloWalletCache(String orgId) async {
+Future<void> refreshOlloWalletCache(String orgId) async {
   try {
     final results = await Future.wait([
       WalletService().list(orgId),
@@ -184,8 +271,17 @@ Future<void> _refreshOlloWalletCache(String orgId) async {
 class _OlloEntrySheet extends StatefulWidget {
   final String orgId;
   final List<Wallet> wallets;
+  final VoiceDraft? initialDraft;
 
-  const _OlloEntrySheet({required this.orgId, required this.wallets});
+  /// Buka langsung picu dialog scan struk (dari menu + > Scan).
+  final bool autoScan;
+
+  const _OlloEntrySheet({
+    required this.orgId,
+    required this.wallets,
+    this.initialDraft,
+    this.autoScan = false,
+  });
 
   @override
   State<_OlloEntrySheet> createState() => _OlloEntrySheetState();
@@ -234,6 +330,45 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
       _walletId = widget.wallets.first.id;
       _currencyCode = widget.wallets.first.currency;
     }
+    _applyInitialDraft();
+    if (widget.autoScan) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _scan();
+      });
+    }
+  }
+
+  /// Prefill dari draft suara: tipe, kategori, dompet, nominal, judul,
+  /// catatan, tanggal. Default tak berubah bila draft null.
+  void _applyInitialDraft() {
+    final d = widget.initialDraft;
+    if (d == null) return;
+    _type = d.type == 'in' ? 'in' : 'out';
+    final cats = appCategories.value;
+    if (d.category != null && cats.contains(d.category)) {
+      _cat = d.category!;
+      _sub = '';
+    }
+    final wn = d.walletName?.trim().toLowerCase();
+    if (wn != null && wn.isNotEmpty) {
+      for (final w in widget.wallets) {
+        if (w.name.toLowerCase() == wn) {
+          _walletId = w.id;
+          _currencyCode = w.currency;
+          break;
+        }
+      }
+    }
+    // Nominal: IDR -> mata uang dompet -> buffer digit minor.
+    final major = _fromIdr(d.amount, _currencyCode);
+    var mult = 1;
+    for (var i = 0; i < _dec; i++) {
+      mult *= 10;
+    }
+    _digits = (major * mult).round().toString();
+    _titleC.text = d.title;
+    _noteC.text = d.note;
+    _day = DateTime(d.dateTime.year, d.dateTime.month, d.dateTime.day);
   }
 
   @override
