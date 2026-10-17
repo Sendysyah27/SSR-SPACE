@@ -1,6 +1,13 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.76.0+257.
+Versi terpasang: 2.77.0+259.
+
+## Yang baru di 2.77.0+259
+
+1. Dukungan bahasa penuh: terjemahan Indonesia dan Inggris di seluruh layar (1205 keys).
+2. Multi-mata uang: catat transaksi dengan 8 mata uang (IDR, USD, EUR, SGD, MYR, JPY, GBP, AUD) per dompet.
+3. Riwayat pembaruan: catatan perubahan tiap versi di satu tempat.
+4. Perbaikan font dropdown di Pengaturan (tidak lagi putih nabrak).
 
 ## Yang baru di 2.76.0+257
 
