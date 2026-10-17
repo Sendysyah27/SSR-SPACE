@@ -798,7 +798,7 @@ class _HeroStyleCard extends StatelessWidget {
             dropdownColor: Theme.of(context).colorScheme.surface,
             initialValue: value == 'emerald-calm' ? value : 'emerald-calm',
             decoration: const InputDecoration(),
-            items: const [
+            items: [
               DropdownMenuItem(
                 value: 'emerald-calm',
                 child: Text(
@@ -835,7 +835,9 @@ class _CardThemeCard extends StatelessWidget {
             children: [
               for (var k = 0; k < _themes.length; k++) ...[
                 if (k > 0) const SizedBox(width: 8),
-                Expanded(child: _preview(_themes[k], value == _themes[k])),
+                Expanded(
+                  child: _preview(context, _themes[k], value == _themes[k]),
+                ),
               ],
             ],
           ),
@@ -847,7 +849,7 @@ class _CardThemeCard extends StatelessWidget {
   /// Mockup kartu mini: gradient asli (navy/ocean/midnight/steel dari
   /// DribTokens) + label + indikator terpilih (border navy + check).
   /// Tap -> setCardTheme.
-  Widget _preview(String t, bool selected) {
+  Widget _preview(BuildContext context, String t, bool selected) {
     final gradient = switch (t) {
       'ocean' => DribTokens.oceanDeep,
       'midnight' => DribTokens.midnightBlue,
