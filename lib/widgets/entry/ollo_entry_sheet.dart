@@ -1153,7 +1153,7 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
           borderRadius: BorderRadius.circular(16),
           color: scheme.surfaceContainerHighest,
           border: to && _toWalletId == null
-              ? BorderSide(color: scheme.outlineVariant)
+              ? Border.fromBorderSide(BorderSide(color: scheme.outlineVariant))
               : null,
         ),
         padding:
