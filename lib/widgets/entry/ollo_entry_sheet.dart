@@ -9,7 +9,6 @@ import 'package:ssr_space/services/budget_alert_notify.dart';
 import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/category_meta.dart';
 import 'package:ssr_space/services/currency.dart';
-import 'package:ssr_space/services/offline_cache.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
@@ -1253,7 +1252,7 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
   }
 
   Widget _numpad(ColorScheme scheme) {
-    final digit = (String k) => _olloKey(
+    Widget digit(String k) => _olloKey(
           scheme,
           Text(k),
           () => _pressDigit(k),

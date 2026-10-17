@@ -60,7 +60,6 @@ import 'package:ssr_space/widgets/drib_card.dart';
 import 'package:ssr_space/widgets/restyle/balance_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/input_mode_sheet.dart';
-import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
@@ -613,13 +612,6 @@ class BerandaScreenState extends State<BerandaScreen> {
     );
   }
 
-  void _goMangAi() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AiChatScreen()),
-    );
-  }
-
   void _goBudget() {
     final cb = widget.onBudget;
     if (cb != null) {
@@ -630,33 +622,6 @@ class BerandaScreenState extends State<BerandaScreen> {
       context,
       MaterialPageRoute(builder: (_) => const BudgetsScreen()),
     );
-  }
-
-  void _goLaporan() {
-    final cb = widget.onLaporan;
-    if (cb != null) {
-      cb();
-      return;
-    }
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ReportsScreen()),
-    );
-  }
-
-  /// Batch 7 (2.61.0+170): aksi cepat — langsung buka mode scan struk.
-  Future<void> _goScan() async {
-    if (await openTxInputSheet(context, initialMode: TxInputMode.scanManual)) {
-      if (mounted) _load();
-    }
-  }
-
-  /// Asisten AI: input suara -> sheet catat mode voice.
-  /// Beda dari Chat AI (_goMangAi) yang membuka room chat Mang AI.
-  Future<void> _goVoiceAi() async {
-    if (await openTxInputSheet(context, initialMode: TxInputMode.voice)) {
-      if (mounted) _load();
-    }
   }
 
   void _openMonthTx() {
