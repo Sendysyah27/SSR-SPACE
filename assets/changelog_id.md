@@ -1,6 +1,13 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.75.0+254.
+Versi terpasang: 2.76.0+255.
+
+## Yang baru di 2.76.0+255
+
+1. Pengumuman: kabar produk langsung dari server — ada penanda belum dibaca dan notifikasi saat muncul pengumuman baru.
+2. Roadmap: daftar rencana produk dengan status Direncanakan / Sedang dikerjakan / Selesai.
+3. Catatan Perubahan kini kartu per-versi, lengkap dengan penanda versi terpasang.
+4. Bila server belum diperbarui atau kamu sedang offline, aplikasi menampilkan pengumuman bawaan (tetap aman dibuka).
 
 ## Yang baru di 2.75.0+254
 

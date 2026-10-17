@@ -1,7 +1,21 @@
 # HANDOFF — Adaptasi Ollo ke SSR SPACE (Fase 1: Entitlement + Limit)
 
-> Dibuat: 2026-10-16 · Status: **FASE 3 SELESAI 2026-10-17 — branch `feat/gamification-server`, CI hijau, APK ada, menunggu merge**
+> Dibuat: 2026-10-16 · Status: **FASE 4 SELESAI 2026-10-17 — branch `feat/announcements-roadmap`, CI hijau, APK ada, menunggu merge**
 > Fase 1 (entitlement) sudah merge ke main via PR #3. File ini arsip fase 1 + catatan fase 2 di bawah.
+
+## Fase 4 — Pengumuman + Roadmap + Update-log (selesai 2026-10-17, v2.76.0+255)
+
+Branch `feat/announcements-roadmap` (bertumpuk di atas `feat/gamification-server`). Scope:
+tiga permukaan informasi produk yang bisa diperbarui owner tanpa rilis APK — **Pengumuman**
+(badge belum-dibaca + notifikasi lokal), **Roadmap** (status Direncanakan/Sedang dikerjakan/Selesai),
+dan **Update-log** (`update_log_screen.dart` jadi kartu per-versi + penanda versi terpasang).
+Server-authoritative dengan fallback aset bawaan jujur (`assets/announcements_id.json`/`roadmap_id.json`).
+
+- Backend: `supabase/migration_22_announcements.sql` (idempotent) — tabel RPC-only
+  `announcements`/`roadmap_items`/`announcement_reads` + RPC `list_announcements`/`ack_announcements`/`list_roadmap`
+  + seed. RLS T36a–f. **Owner WAJIB jalankan `migration_22` sekali di Dashboard → SQL Editor** (aman diulang).
+- Tanpa dep baru, tanpa FCM; semua gratis. CI: `rls-test` + `apk` hijau.
+- APK `SSR-SPACE-2.76.0-255-arm64.apk`.
 
 ## 0. Cara lanjut di sesi baru
 
