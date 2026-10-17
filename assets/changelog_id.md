@@ -1,6 +1,20 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.77.0+262.
+Versi terpasang: 2.78.0+263.
+
+## Yang baru di 2.78.0+263
+
+1. Layar catat baru ala Ollo: tab Expense/Income/Transfer, kategori lingkaran pastel, chip subkategori, nominal besar + pilihan mata uang, numpad dengan tombol 000 dan kalkulator (+-×÷), tombol kamera untuk scan struk, tombol centang untuk simpan.
+2. Pilihan tema baru: Terang, Gelap, Otomatis. Mode Otomatis ganti tema sesuai jadwal (default terang 06:00–18:00; jam bisa diubah di Pengaturan). Penamaan "Noir" dihapus.
+3. Tombol + di tengah navbar kini membuka Aksi Cepat: Tambah Transaksi, Scan Struk, Asisten Suara, Chat AI. Tombol chat AI di navbar dihapus (tetap bisa dibuka dari Aksi Cepat).
+4. Beranda: seksi "Aksi Cepat" diganti "Pengingat" — menampilkan tagihan rutin terdekat; ketuk untuk membuka Tagihan Rutin.
+
+## What's new in 2.78.0+263
+
+1. New Ollo-style entry sheet: Expense/Income/Transfer tabs, pastel category circles, subcategory chips, big amount + currency picker, numpad with 000 key and calculator (+-×÷), camera button for receipt scan, check button to save.
+2. New theme choices: Light, Dark, Auto. Auto mode switches on a schedule (default light 06:00–18:00; times adjustable in Settings). The "Noir" name is gone.
+3. The center + button now opens Quick Actions: Add Transaction, Scan Receipt, Voice Assistant, AI Chat. The navbar AI chat button was removed (still available from Quick Actions).
+4. Home: the "Quick Actions" section is now "Reminders" — shows upcoming recurring bills; tap to open Recurring Bills.
 
 ## Yang baru di 2.77.0+262
 

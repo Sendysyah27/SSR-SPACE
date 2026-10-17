@@ -67,7 +67,7 @@ class GlassElevation {
       ];
 }
 
-/// Warna kaca untuk dark mode (Noir) — background harus cukup gelap
+/// Warna kaca untuk mode gelap — background harus cukup gelap
 /// agar efek blur + border putih terlihat.
 class GlassColors {
   /// Overlay gelap di belakang kartu kaca (untuk light mode fallback).
