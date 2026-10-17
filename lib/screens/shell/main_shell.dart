@@ -22,6 +22,9 @@ import 'package:ssr_space/screens/lainnya/ai_chat_screen.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_detail_sheet.dart';
+import 'package:ssr_space/widgets/entry/ollo_entry_sheet.dart';
+import 'package:ssr_space/widgets/premium/glass_sheet.dart';
+import 'package:ssr_space/widgets/nav_tile.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/widgets/input_mode_sheet.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
@@ -239,18 +242,95 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _openInput() async {
-    final mode = await showInputModeSheet(context);
-    if (mode == null || !mounted) return;
-    if (await openTxInputSheet(
-      context,
-      initialMode: mode == TxInputMode.live ? null : mode,
-    )) {
-      berandaKey.currentState?.reload();
-      txKey.currentState?.reload();
-      budgetKey.currentState?.reload();
-      reportsKey.currentState?.reload();
+  /// FAB '+' tengah: buka sheet "Aksi Cepat" berisi 4 jalan pintas.
+  /// - Tambah Transaksi -> entry sheet Ollo (TASK A).
+  /// - Scan Struk -> sheet catat, langsung picu scan vision (pola sama
+  ///   seperti pemanggil existing TxInputMode.scanVision).
+  /// - Asisten Suara -> sheet catat, langsung picu mode suara
+  ///   (TxInputMode.voice).
+  /// - Chat AI -> route Mang AI (_openMangAi).
+  Future<void> _openQuickActions() async {
+    final act = await _showQuickActionsSheet();
+    if (act == null || !mounted) return;
+    switch (act) {
+      case _QuickAction.addTx:
+        // Nilai balik showOlloEntrySheet sengaja diabaikan agar aman
+        // terhadap signature apapun dari TASK A; muat ulang selalu.
+        await showOlloEntrySheet(context);
+        if (mounted) _reloadAll();
+        break;
+      case _QuickAction.scan:
+        if (await openTxInputSheet(
+              context,
+              initialMode: TxInputMode.scanVision,
+            ) &&
+            mounted) {
+          _reloadAll();
+        }
+        break;
+      case _QuickAction.voice:
+        if (await openTxInputSheet(
+              context,
+              initialMode: TxInputMode.voice,
+            ) &&
+            mounted) {
+          _reloadAll();
+        }
+        break;
+      case _QuickAction.chat:
+        await _openMangAi();
+        break;
     }
+  }
+
+  /// Sheet bawah "Aksi Cepat": 4 item ikon + label (i18n),
+  /// gaya konsisten dengan sheet mode input (GlassSheetScaffold + NavTile).
+  Future<_QuickAction?> _showQuickActionsSheet() {
+    return showModalBottomSheet<_QuickAction>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => GlassSheetScaffold(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                tr('qa_sheet_title'),
+                style: Theme.of(ctx).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              NavTile(
+                icon: AppIcons.add,
+                title: tr('qa_add_tx'),
+                onTap: () => Navigator.pop(ctx, _QuickAction.addTx),
+              ),
+              const Divider(height: 1),
+              NavTile(
+                icon: AppIcons.scan,
+                title: tr('qa_scan'),
+                onTap: () => Navigator.pop(ctx, _QuickAction.scan),
+              ),
+              const Divider(height: 1),
+              NavTile(
+                icon: AppIcons.voice,
+                title: tr('qa_voice'),
+                onTap: () => Navigator.pop(ctx, _QuickAction.voice),
+              ),
+              const Divider(height: 1),
+              NavTile(
+                icon: Icons.smart_toy_outlined,
+                title: tr('qa_chat'),
+                onTap: () => Navigator.pop(ctx, _QuickAction.chat),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Profil dibuka sebagai route (bukan tab): avatar kiri-atas Beranda.
@@ -322,7 +402,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'catat',
-        onPressed: _openInput,
+        onPressed: _openQuickActions,
         backgroundColor: DribTokens.primary,
         foregroundColor: DribTokens.navy,
         tooltip: tr('act_catat'),
@@ -337,6 +417,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     );
   }
 }
+
+/// Pilihan item sheet Aksi Cepat (FAB '+').
+enum _QuickAction { addTx, scan, voice, chat }
 
 /// Strip offline global: data terakhir tersimpan + tombol muat ulang.
 /// Muncul bila panggilan jaringan gagal (tanpa plugin konektivitas).
