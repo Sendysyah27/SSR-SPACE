@@ -1,7 +1,7 @@
 # HANDOFF — Adaptasi Ollo ke SSR SPACE (Fase 1: Entitlement + Limit)
 
-> Dibuat: 2026-10-16 · Status: **SELESAI 2026-10-16 — branch `feat/entitlement-vip`, CI hijau, APK ada, menunggu merge + migration_20 oleh owner**
-> Baca file ini DI AWAL sesi baru. Semua konteks sesi sebelumnya ada di sini.
+> Dibuat: 2026-10-16 · Status: **FASE 2 SELESAI 2026-10-17 — branch `feat/widget-quickentry`, CI hijau, APK ada, menunggu merge**
+> Fase 1 (entitlement) sudah merge ke main via PR #3. File ini arsip fase 1 + catatan fase 2 di bawah.
 
 ## 0. Cara lanjut di sesi baru
 
@@ -137,3 +137,11 @@ SELESAI 2026-10-16 (semua dicentang):
 - Laporan RE Ollo: `/sdcard/Download/revapp-ollo/LAPORAN-ollo.md` (+ `fitur.json`, `ollo-reveng-v1.7.7.zip`)
 - Screenshot Ollo: `docs/reference/ollo-screenshots/` (12 SS — pola flow: quick entry numpad+grid kategori, wallet grouping + bottom bar AI chip FREE, home period tabs + menu grid, profile preferences grid)
 - Spec Midtrans lama (PAUSED): `docs/superpowers/specs/2026-09-29-billing-midtrans-design.md`
+
+## Fase 2 — Widget + Quick-Entry (SELESAI 2026-10-17)
+
+- Spec: `docs/superpowers/specs/2026-10-17-ollo-fase2-widget-design.md`, plan: `docs/superpowers/plans/2026-10-17-ollo-fase2-widget-design.md`, ledger: `.superpowers/sdd/2026-10-17-ollo-fase2-widget-design/`.
+- Scope approved owner: 3 widget (Hari-ini+Budget+Saldo), ketuk → sheet langsung (PIN-gate antre), QS+shortcut → sheet, deep-link `ssrspace://quick-entry`, share-gambar ikut (tanpa iOS).
+- Eksekusi SDD: T1 quick_link murni → T2 snapshot → T3 wiring+share → T4 native inject → T5 strings+rilis 2.74.0+252; review per task + final review Yes + 2 one-liner.
+- CI saga: mounted-guards 12x → dep 1.9.0 compileSdk 37 (pin 1.8.1) → JVM target (patch CI Java+Kotlin 17) → shortcut @string → assert salah alamat → HIJAU (rls + build-apk). APK `SSR-SPACE-2.74.0-252-arm64.apk` (41.234.307, ZIP-OK) di `/sdcard/Download/SSR-SPACE/`. Tanpa migration.
+- Sisa owner: merge ke main + device-check (3 widget, ketuk → sheet tipe benar, QS/shortcut, share 1 & multi, terkunci → antre).
