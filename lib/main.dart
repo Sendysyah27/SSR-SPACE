@@ -194,9 +194,8 @@ class SsrSpaceApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<String>(
-      valueListenable: themeChoice,
-      builder: (_, choice, ___) {
-        final isNoir = choice == 'noir';
+      valueListenable: themeEffective,
+      builder: (_, eff, ___) {
         return ValueListenableBuilder<String>(
           valueListenable: localeCode,
           builder: (_, __, ___) => ValueListenableBuilder<String>(
@@ -207,7 +206,8 @@ class SsrSpaceApp extends StatelessWidget {
                 title: 'SSR SPACE',
                 theme: AppTheme.light(),
                 darkTheme: AppTheme.dark(),
-                themeMode: isNoir ? ThemeMode.dark : ThemeMode.system,
+                themeMode:
+                    eff == 'gelap' ? ThemeMode.dark : ThemeMode.light,
                 home: SplashScreen(session: session),
                 debugShowCheckedModeBanner: false,
                 builder: (ctx, child) => MediaQuery(
