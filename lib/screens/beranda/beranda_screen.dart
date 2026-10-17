@@ -38,6 +38,7 @@ import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
 import 'package:ssr_space/screens/lainnya/recurring_bills_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_screen.dart';
 import 'package:ssr_space/screens/lainnya/subscriptions_screen.dart';
+import 'package:ssr_space/services/due_reminder.dart';
 import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
@@ -93,6 +94,10 @@ class BerandaScreenState extends State<BerandaScreen> {
   double figOut = 0;
   int figN = 0;
   List<RecurringBill> billsDue = [];
+  /// Tagihan rutin aktif terdekat (maks 5) untuk seksi Pengingat -
+  /// dihitung di _load dari allBills memakai daysUntilDue
+  /// (due_reminder.dart). Nol query baru.
+  List<RecurringBill> upcomingBills = [];
   bool loading = true;
   String? err;
   DailyStreak? streak;
@@ -143,6 +148,28 @@ class BerandaScreenState extends State<BerandaScreen> {
       context,
       MaterialPageRoute(builder: (_) => const GoalsScreen()),
     );
+  }
+
+  void _openBills() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const RecurringBillsScreen()),
+    );
+  }
+
+  /// Tagihan rutin aktif terdekat (maks 5) berdasar nextDue.
+  /// Urutan memakai daysUntilDue (due_reminder.dart) - logika yang sama
+  /// dengan billDues: termasuk yang sudah lewat, paling dekat di atas.
+  List<RecurringBill> _nearestBills(List<RecurringBill> all, DateTime today) {
+    final scored = <({RecurringBill bill, int left})>[];
+    for (final b in all) {
+      if (!b.active) continue;
+      final left = daysUntilDue(b.nextDue, today);
+      if (left == null) continue;
+      scored.add((bill: b, left: left));
+    }
+    scored.sort((a, b) => a.left.compareTo(b.left));
+    return [for (final e in scored.take(5)) e.bill];
   }
 
   void _openArcade() {
@@ -544,6 +571,7 @@ class BerandaScreenState extends State<BerandaScreen> {
         figOut = fig.totalOut;
         figN = fig.totalN;
         billsDue = dueBills(allBills, now);
+        upcomingBills = _nearestBills(allBills, now);
         streak = st;
         health = hb;
         healthDelta = delta;
@@ -1061,6 +1089,14 @@ class BerandaScreenState extends State<BerandaScreen> {
           _CalmWeeks(weeks: calm),
         ],
         const SizedBox(height: SsrSpace.md),
+        PremiumSectionHeader(
+          title: tr('reminder_title'),
+          actionLabel: tr('r_see_all'),
+          onAction: _openBills,
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        _ReminderCard(bills: upcomingBills, onTap: _openBills),
+        const SizedBox(height: SsrSpace.xl),
         if (billsDue.isNotEmpty) ...[
           _BillsSuggest(
             bills: billsDue,
@@ -2443,6 +2479,129 @@ class _BillsSuggest extends StatelessWidget {
             if (b != bills.last) const Divider(height: 1),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// TASK D (batch 2.78.0+263): seksi Pengingat - tagihan rutin aktif
+/// terdekat (maks 5) dari RecurringBill yang sudah dimuat di _load,
+/// diurutkan dengan daysUntilDue (due_reminder.dart; logika yang sama
+/// dengan billDues). Tap baris / "Lihat semua" -> RecurringBillsScreen.
+/// Kosong -> kartu pesan ramah (bukan seksi kosong).
+class _ReminderCard extends StatelessWidget {
+  const _ReminderCard({required this.bills, required this.onTap});
+
+  final List<RecurringBill> bills;
+  final VoidCallback onTap;
+
+  /// Latar chip pastel - palet yang sama dengan menu 4 ikon Ollo
+  /// (tanpa ungu/indigo, konsisten dengan design tokens).
+  static const _chipBg = <Color>[
+    Color(0xFFFFF3D6),
+    Color(0xFFDCE9FF),
+    Color(0xFFD9F2E3),
+    Color(0xFFFFE8D6),
+  ];
+
+  String _daysText(int left) {
+    if (left == 0) return tr('due_today');
+    if (left > 0) return tr('due_in_days').replaceFirst('{n}', '$left');
+    return tr('due_overdue').replaceFirst('{n}', '${-left}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    return DribCard(
+      child: bills.isEmpty
+          ? _emptyBody(theme)
+          : Column(
+              children: [
+                for (var i = 0; i < bills.length; i++) ...[
+                  _billRow(theme, bills[i], now, i),
+                  if (i < bills.length - 1) const Divider(height: 1),
+                ],
+              ],
+            ),
+    );
+  }
+
+  Widget _emptyBody(ThemeData theme) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFFDCE9FF),
+            borderRadius: BorderRadius.circular(GlassRadius.md),
+          ),
+          child: const DuoIcon(
+            AppIcons.calendar,
+            size: 22,
+            color: DribTokens.navy,
+          ),
+        ),
+        const SizedBox(width: GlassSpace.sm),
+        Expanded(
+          child: Text(
+            tr('reminder_empty'),
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _billRow(ThemeData theme, RecurringBill bill, DateTime now, int index) {
+    final left = daysUntilDue(bill.nextDue, now) ?? 0;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _chipBg[index % _chipBg.length],
+                borderRadius: BorderRadius.circular(GlassRadius.md),
+              ),
+              child: const DuoIcon(
+                AppIcons.bills,
+                size: 22,
+                color: DribTokens.navy,
+              ),
+            ),
+            const SizedBox(width: GlassSpace.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    bill.label,
+                    style: theme.textTheme.titleSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${amt(bill.amount)} · ${_daysText(left)}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
       ),
     );
   }
