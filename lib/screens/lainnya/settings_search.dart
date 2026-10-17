@@ -281,6 +281,18 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     route: 'changelog',
   ),
   SettingsSearchEntry(
+    titleKey: 'an_title',
+    en: 'announcements news info promo update',
+    sectionKey: 'pf_about',
+    route: 'announcements',
+  ),
+  SettingsSearchEntry(
+    titleKey: 'rm_title',
+    en: 'roadmap plans upcoming features',
+    sectionKey: 'pf_about',
+    route: 'roadmap',
+  ),
+  SettingsSearchEntry(
     titleKey: 'ab_help',
     en: 'help support tutorial faq',
     sectionKey: 'pf_about',

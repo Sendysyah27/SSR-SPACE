@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/announcement_notify.dart';
+import 'package:ssr_space/services/announcement_service.dart';
 import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/services/auto_saved_notify.dart';
 import 'package:ssr_space/services/budget_alert_notify.dart';
@@ -54,6 +56,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     NotifTrack.ensureListening(force: true);
     unawaited(ForegroundTrack.syncFromPrefs());
     unawaited(_ensureRealtime());
+    // Pengumuman baru: notif sekali per id + segarkan badge hub (fail-silent).
+    unawaited(_checkAnnouncements());
     netOnline.addListener(_onNetChanged);
     // Probe kunci untuk ShareIntake (jalur hangat tak punya SessionService).
     ShareIntake.isLocked = () {
@@ -117,6 +121,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     } catch (_) {}
   }
 
+  /// Pengumuman baru: notif lokal sekali per id + segarkan angka badge di
+  /// hub. Idempoten, fail-silent (RPC belum dimigrasi / offline aman).
+  Future<void> _checkAnnouncements() async {
+    try {
+      await AnnouncementNotify.checkAndNotify();
+      await refreshUnreadBadge();
+    } catch (_) {}
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -130,6 +143,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       unawaited(_ensureRealtime());
       // Alert budget baru dari perangkat lain (idempoten, fail-silent).
       unawaited(_checkBudgetAlerts());
+      // Pengumuman baru + segarkan badge (idempoten, fail-silent).
+      unawaited(_checkAnnouncements());
       unawaited(_checkDetailThenQuick());
       _checkRecovery();
       // Poll budget alerts tiap resume supaya banner/badge segar

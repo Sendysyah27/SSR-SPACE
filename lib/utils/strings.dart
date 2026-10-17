@@ -1717,6 +1717,7 @@ const _t = <String, Map<String, String>>{
   'rm_progress': {'id': 'Sedang dikerjakan', 'en': 'In progress'},
   'rm_done': {'id': 'Selesai', 'en': 'Done'},
   'rm_empty': {'id': 'Belum ada rencana.', 'en': 'Nothing planned yet.'},
+  'ul_installed': {'id': 'Versi terpasang', 'en': 'Installed version'},
   'tx_quick_hint': {
     'id': 'Ketik cepat: "makan siang 35rb"',
     'en': 'Quick type: "lunch 35k"',
