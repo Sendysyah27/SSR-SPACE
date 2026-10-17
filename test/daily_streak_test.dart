@@ -48,12 +48,13 @@ void main() {
     expect(s.days, 0);
   });
 
-  test('milestone 7/30/100', () {
+  test('milestone 3/7/14/30/100', () {
     expect(nextMilestone(3), 7);
-    expect(nextMilestone(7), 30);
+    expect(nextMilestone(7), 14);
     expect(nextMilestone(30), 100);
     expect(nextMilestone(100), null);
     expect(isMilestone(7), true);
+    expect(isMilestone(14), true);
     expect(isMilestone(30), true);
     expect(isMilestone(100), true);
     expect(isMilestone(29), false);

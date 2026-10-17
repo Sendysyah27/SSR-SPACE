@@ -1696,6 +1696,28 @@ const _t = <String, Map<String, String>>{
     'id': 'Data tersimpan aman di cloud dan hanya bisa diakses dalam workspace-mu.',
     'en': 'Data is stored securely in the cloud and only accessible within your workspace.',
   },
+  // Pengumuman & roadmap (Fase 4)
+  'an_title': {'id': 'Pengumuman', 'en': 'Announcements'},
+  'an_new': {'id': 'Baru', 'en': 'New'},
+  'an_empty': {'id': 'Belum ada pengumuman.', 'en': 'No announcements yet.'},
+  'an_kind_info': {'id': 'Info', 'en': 'Info'},
+  'an_kind_promo': {'id': 'Promo', 'en': 'Promo'},
+  'an_kind_update': {'id': 'Pembaruan', 'en': 'Update'},
+  'an_fallback_note': {
+    'id': 'Menampilkan bawaan — sambungkan internet untuk kabar terbaru.',
+    'en': 'Showing built-in — connect to the internet for the latest news.',
+  },
+  'an_notif_title': {'id': 'Pengumuman baru', 'en': 'New announcement'},
+  'an_notif_body': {
+    'id': 'Ada kabar terbaru. Ketuk untuk membuka.',
+    'en': 'There is something new. Tap to open.',
+  },
+  'rm_title': {'id': 'Roadmap', 'en': 'Roadmap'},
+  'rm_planned': {'id': 'Direncanakan', 'en': 'Planned'},
+  'rm_progress': {'id': 'Sedang dikerjakan', 'en': 'In progress'},
+  'rm_done': {'id': 'Selesai', 'en': 'Done'},
+  'rm_empty': {'id': 'Belum ada rencana.', 'en': 'Nothing planned yet.'},
+  'ul_installed': {'id': 'Versi terpasang', 'en': 'Installed version'},
   'tx_quick_hint': {
     'id': 'Ketik cepat: "makan siang 35rb"',
     'en': 'Quick type: "lunch 35k"',
@@ -2258,10 +2280,20 @@ const _t = <String, Map<String, String>>{
   'lvl_7': {'id': 'Legenda Ledger', 'en': 'Ledger Legend'},
   'game_badges': {'id': 'Badge', 'en': 'Badges'},
   'game_new': {'id': 'Baru', 'en': 'New'},
+  'b_streak3_t': {'id': '3 Hari Beruntun', 'en': '3-Day Streak'},
+  'b_streak3_d': {
+    'id': 'Catat 3 hari beruntun.',
+    'en': 'Log 3 days in a row.',
+  },
   'b_streak7_t': {'id': 'Seminggu Konsisten', 'en': 'Consistent Week'},
   'b_streak7_d': {
     'id': 'Catat 7 hari beruntun.',
     'en': 'Log 7 days in a row.',
+  },
+  'b_streak14_t': {'id': '2 Minggu Beruntun', 'en': '2-Week Streak'},
+  'b_streak14_d': {
+    'id': 'Catat 14 hari beruntun.',
+    'en': 'Log 14 days in a row.',
   },
   'b_streak30_t': {'id': 'Sebulan Penuh', 'en': 'Full Month'},
   'b_streak30_d': {
@@ -2583,6 +2615,19 @@ const _t = <String, Map<String, String>>{
   },
   'fi_swipe_ex': {'id': 'Geser untuk menghapus', 'en': 'Slide to delete'},
   'fi_swipe_ok': {'id': 'Contoh saja — data aman.', 'en': 'Just an example — data is safe.'},
+  // Gagal boot (init inti gagal — pengganti layar putih).
+  'boot_fail_title': {
+    'id': 'Gagal memulai aplikasi',
+    'en': 'App failed to start',
+  },
+  'boot_fail_body': {
+    'id':
+        'Penyiapan awal tidak selesai. Coba tutup lalu buka ulang aplikasi. '
+        'Bila tetap gagal, pasang ulang versi terbaru.',
+    'en':
+        'Startup did not finish. Close and reopen the app. '
+        'If it keeps failing, reinstall the latest version.',
+  },
 };
 
 String tr(String key) => _t[key]?[localeCode.value] ?? _t[key]?['id'] ?? key;

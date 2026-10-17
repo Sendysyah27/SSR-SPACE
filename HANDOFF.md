@@ -1,7 +1,21 @@
 # HANDOFF — Adaptasi Ollo ke SSR SPACE (Fase 1: Entitlement + Limit)
 
-> Dibuat: 2026-10-16 · Status: **FASE 2 SELESAI 2026-10-17 — branch `feat/widget-quickentry`, CI hijau, APK ada, menunggu merge**
+> Dibuat: 2026-10-16 · Status: **FASE 4 SELESAI 2026-10-17 — branch `feat/announcements-roadmap`, CI hijau, APK ada, menunggu merge**
 > Fase 1 (entitlement) sudah merge ke main via PR #3. File ini arsip fase 1 + catatan fase 2 di bawah.
+
+## Fase 4 — Pengumuman + Roadmap + Update-log (selesai 2026-10-17, v2.76.0+255)
+
+Branch `feat/announcements-roadmap` (bertumpuk di atas `feat/gamification-server`). Scope:
+tiga permukaan informasi produk yang bisa diperbarui owner tanpa rilis APK — **Pengumuman**
+(badge belum-dibaca + notifikasi lokal), **Roadmap** (status Direncanakan/Sedang dikerjakan/Selesai),
+dan **Update-log** (`update_log_screen.dart` jadi kartu per-versi + penanda versi terpasang).
+Server-authoritative dengan fallback aset bawaan jujur (`assets/announcements_id.json`/`roadmap_id.json`).
+
+- Backend: `supabase/migration_22_announcements.sql` (idempotent) — tabel RPC-only
+  `announcements`/`roadmap_items`/`announcement_reads` + RPC `list_announcements`/`ack_announcements`/`list_roadmap`
+  + seed. RLS T36a–f. **Owner WAJIB jalankan `migration_22` sekali di Dashboard → SQL Editor** (aman diulang).
+- Tanpa dep baru, tanpa FCM; semua gratis. CI: `rls-test` + `apk` hijau.
+- APK `SSR-SPACE-2.76.0-255-arm64.apk`.
 
 ## 0. Cara lanjut di sesi baru
 
@@ -145,3 +159,14 @@ SELESAI 2026-10-16 (semua dicentang):
 - Eksekusi SDD: T1 quick_link murni → T2 snapshot → T3 wiring+share → T4 native inject → T5 strings+rilis 2.74.0+252; review per task + final review Yes + 2 one-liner.
 - CI saga: mounted-guards 12x → dep 1.9.0 compileSdk 37 (pin 1.8.1) → JVM target (patch CI Java+Kotlin 17) → shortcut @string → assert salah alamat → HIJAU (rls + build-apk). APK `SSR-SPACE-2.74.0-252-arm64.apk` (41.234.307, ZIP-OK) di `/sdcard/Download/SSR-SPACE/`. Tanpa migration.
 - Sisa owner: merge ke main + device-check (3 widget, ketuk → sheet tipe benar, QS/shortcut, share 1 & multi, terkunci → antre).
+
+## Fase 3 — Gamifikasi Server (SELESAI 2026-10-17)
+
+- Spec: `docs/superpowers/specs/2026-10-17-ollo-fase3-gamification-design.md`, plan: `docs/superpowers/plans/2026-10-17-ollo-fase3-gamification.md`, ledger: `.superpowers/sdd/2026-10-17-ollo-fase3-gamification/`.
+- Scope approved owner: gamifikasi server-authoritative (streak global lintas-device, XP/level server, 8 badge server-derivable) + notifikasi pencapaian + fallback lokal jujur; badge sinyal-lokal (goal1/emsafe/save30) tetap klien; tantangan mingguan tetap lokal.
+- Eksekusi SDD (6 task, commits `8e4397e` `ac18a89` `09c5bcc` `7871561` `7b33d34` `3608c2f`): T1 `migration_21` + `run.sh` → T2 RLS T35+ → T3 `game_badges`/`calm_streak` → T4 `gamification_service`+`achievement_notify`+strings → T5 wiring Arcade+Beranda → T6 rilis 2.75.0+253.
+- Server: `migration_21_gamification.sql` (indeks `transactions(created_by,date)`, tabel RPC-only `user_achievements`, RPC `gamification_status` read-time + `ack_achievements` dedupe). Klien: server-dulu, return null → fallback lokal (tidak blokir).
+- **OWNER WAJIB: jalankan `supabase/migration_21_gamification.sql` SEKALI di Dashboard → SQL Editor (idempotent).** Cross-device baru aktif setelah itu.
+- CI hijau: rls-test `38991705492` + build-apk `38991702839` (analyze 0, test lulus, build arm64). APK `SSR-SPACE-2.75.0-253-arm64.apk` (41.234.475 B) di `/sdcard/Download/SSR-SPACE/`.
+- Sisa owner: merge ke main + device-check (catat tx beberapa hari → streak naik, milestone 3 hari → notif "Pencapaian", HP-2 → streak/badge sama, offline → fallback lokal tanpa crash).
+- Fix wave final review (2.75.0+254, klien saja tanpa migration): `fallbackXp` bersama Beranda+Arcade (server menang saat ada), notif pencapaian sekali (seen-filter + ack semua + serial sesi), paritas clean30 `topOf`, buang `stale`/`streakBest`, id notif stabil per badge, tes parser+sync.

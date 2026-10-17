@@ -22,12 +22,14 @@ void main() {
       emergencySafe: true,
       challengesDone: 1,
     ));
-    expect(u.length, 7);
+    expect(u.length, 9);
     expect(u, isNot(contains('tx100')));
   });
 
   test('baru vs sudah dilihat', () {
-    expect(newBadges(const GameStats(streakDays: 7), {'streak7'}), isEmpty);
-    expect(newBadges(const GameStats(streakDays: 7), {}), ['streak7']);
+    expect(newBadges(const GameStats(streakDays: 7), {'streak3', 'streak7'}),
+        isEmpty);
+    expect(newBadges(const GameStats(streakDays: 7), {}),
+        ['streak3', 'streak7']);
   });
 }

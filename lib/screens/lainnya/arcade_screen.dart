@@ -6,6 +6,7 @@ import 'package:ssr_space/services/game_badges.dart';
 import 'package:ssr_space/services/game_challenge.dart';
 import 'package:ssr_space/services/game_level.dart';
 import 'package:ssr_space/services/game_store.dart';
+import 'package:ssr_space/services/gamification_service.dart';
 import 'package:ssr_space/services/goal_store.dart';
 import 'package:ssr_space/services/calm_streak.dart';
 import 'package:ssr_space/services/month.dart';
@@ -36,7 +37,9 @@ class ArcadeScreen extends StatefulWidget {
 class ArcadeScreenState extends State<ArcadeScreen> {
   GameStats stats = const GameStats();
   List<String> fresh = [];
+  Set<String> unlocked = {};
   int xp = 0;
+  int level = 0;
   Map<String, ChallengeState> evals = {};
   Map<String, int> stored = {};
   String week = '';
@@ -128,11 +131,12 @@ class ArcadeScreenState extends State<ArcadeScreen> {
             spent[k] = (spent[k] ?? 0) + t.amount;
           }
           clean = limits.isNotEmpty &&
-              limits.every(
-                (b) =>
-                    isSavingCategory(b.category) ||
-                    (spent[b.category] ?? 0) <= b.limit,
-              );
+              limits.every((b) {
+                if (isSavingCategory(b.category)) return true;
+                final top = topOf(b.category);
+                final k = top.isEmpty ? tr('cat_other') : top;
+                return (spent[k] ?? 0) <= b.limit;
+              });
         } catch (_) {}
         // Darurat aman: butuh WalletService? tidak, pakai tabungan vs
         // belanja dari hist sudah dihitung? Sederhana: aman bila saved
@@ -216,30 +220,39 @@ class ArcadeScreenState extends State<ArcadeScreen> {
           save30Done: save30Wins,
         );
       }
-      // Tandai badge terlihat (chip Baru hanya sekali).
+      // Server dulu: streak/XP/level + 8 badge server-derivable. Null
+      // (RPC belum ada / offline / error) -> fallback hitung lokal penuh.
+      final gs = orgId.isEmpty ? null : await fetchGamification(orgId);
+      final unlockedIds = <String>{
+        if (gs != null) ...gs.badges else ...unlockedServerBadges(st),
+        ...localUnlockedBadges(st),
+      };
+      // Tandai badge terlihat (chip Baru hanya sekali, device-local).
+      // PENTING: simpan `seen` SETELAH syncAchievements, supaya sync
+      // membandingkan ke `seen` lama dan badge yang benar-benar baru tetap
+      // diberitakan sekali (lalu di-ack).
       var seen = <String>{};
       try {
         seen = await loadSeenBadges();
       } catch (_) {}
-      final freshIds = newBadges(st, seen);
-      try {
-        await saveSeenBadges({...seen, ...unlockedBadges(st)});
-      } catch (_) {}
+      final freshIds = newBadgesIn(unlockedIds, seen);
+      final xpVal = gs?.xp ?? fallbackXp(st);
       if (!mounted) return;
       setState(() {
         stats = st;
         fresh = freshIds;
-        xp = calcXp(
-          txCount: st.txCount,
-          streakDays: st.streakDays,
-          challengesDone: st.challengesDone,
-          goalsReached: st.goalsReached,
-        );
+        unlocked = unlockedIds;
+        xp = xpVal;
+        level = gs?.level ?? levelFor(xpVal);
         evals = evalMap;
         stored = storedMap;
         week = wk;
         loading = false;
       });
+      await syncAchievements(gs);
+      try {
+        await saveSeenBadges({...seen, ...unlockedIds});
+      } catch (_) {}
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -296,14 +309,12 @@ class ArcadeScreenState extends State<ArcadeScreen> {
         body: ErrorView(message: err!, onRetry: _load),
       );
     }
-    final lv = levelFor(xp);
-    final unlocked = unlockedBadges(stats).toSet();
     return Scaffold(
       appBar: AppBar(title: Text(tr('game_title'))),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
-          _LevelCard(xp: xp, level: lv),
+          _LevelCard(xp: xp, level: level),
           const SizedBox(height: SsrSpace.md),
           _BadgesCard(unlocked: unlocked, fresh: fresh.toSet()),
           const SizedBox(height: SsrSpace.md),

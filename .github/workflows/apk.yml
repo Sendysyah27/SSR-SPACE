@@ -1886,6 +1886,10 @@ jobs:
           # Scan struk ML Kit (fix 2.8.0+61): R8/shrink tanpa rules men-strip
           # class TextRecognizerOptions + modul bahasa -> NPE saat processImage
           # di device padahal build lolos. Keep inti, dontwarn modul opsional.
+          # PLUS shared_preferences (fix 2.76.0+257): android 2.5.0 + R8
+          # full-mode men-strip method Pigeon -> NoSuchMethodError
+          # SharedPreferencesApiRegistrar.getAll saat boot -> layar putih
+          # (flutter#153075). Keep paksa kelas Pigeon-nya.
           rules = pathlib.Path('android/app/proguard-rules.pro')
           want = (
               '-keep class com.google.mlkit.** { *; }\n'
@@ -1893,13 +1897,14 @@ jobs:
               '-dontwarn com.google.mlkit.vision.text.devanagari.**\n'
               '-dontwarn com.google.mlkit.vision.text.japanese.**\n'
               '-dontwarn com.google.mlkit.vision.text.korean.**\n'
+              '-keep class io.flutter.plugins.sharedpreferences.** { *; }\n'
           )
-          if rules.exists():
-              s = rules.read_text()
-              if 'com.google.mlkit' not in s:
-                  rules.write_text(s.rstrip() + '\n' + want)
-          else:
-              rules.write_text(want)
+          existing = rules.read_text() if rules.exists() else ''
+          missing = [ln for ln in want.splitlines(keepends=True)
+                     if ln.strip() and ln.strip() not in existing]
+          if missing:
+              rules.write_text(
+                  (existing.rstrip() + '\n' if existing else '') + ''.join(missing))
           kts = pathlib.Path('android/app/build.gradle.kts')
           groovy = pathlib.Path('android/app/build.gradle')
           target = kts if kts.exists() else groovy
@@ -1921,7 +1926,8 @@ jobs:
           t = target.read_text()
           assert 'proguard-rules.pro' in t, 'proguard wiring gagal'
           assert 'com.google.mlkit' in rules.read_text()
-          print('mlkit proguard ok:', target)
+          assert 'io.flutter.plugins.sharedpreferences' in rules.read_text()
+          print('mlkit+shared_preferences proguard ok:', target)
           EOF
       - run: flutter analyze
       - run: flutter test

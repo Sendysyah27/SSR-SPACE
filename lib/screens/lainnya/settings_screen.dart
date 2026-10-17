@@ -342,6 +342,10 @@ class _CurrencyCard extends StatelessWidget {
         const SizedBox(height: SsrSpace.sm),
         OutlinedButton(
           onPressed: fxBusy ? null : onRefresh,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: DribTokens.primary,
+            side: const BorderSide(color: DribTokens.primary),
+          ),
           child: Text(tr('st_fx_refresh')),
         ),
       ],
@@ -369,6 +373,7 @@ class _FontCard extends StatelessWidget {
           max: 1.3,
           divisions: 9,
           label: value.toStringAsFixed(2),
+          activeColor: DribTokens.primary,
           onChanged: onChanged,
         ),
       ],
@@ -1473,7 +1478,7 @@ class _PinCardState extends State<_PinCard> {
         if (step == 'checkOld') ...[
           Text(tr('st_pin_old'), style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: SsrSpace.sm),
-          PinField(controller: oldC, length: 6),
+          PinField(controller: oldC, length: 6, digitColor: Colors.white),
           const SizedBox(height: SsrSpace.md),
           PinPad(controller: oldC, length: 6),
           const SizedBox(height: SsrSpace.md),
@@ -1489,6 +1494,9 @@ class _PinCardState extends State<_PinCard> {
                     step = 'idle';
                     err = null;
                   }),
+            style: TextButton.styleFrom(
+              foregroundColor: DribTokens.primary,
+            ),
             child: Text(tr('st_pin_forgot')),
           ),
         ],
@@ -1526,7 +1534,7 @@ class _PinFeedback extends StatelessWidget {
           Text(
             err!,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.error,
+              color: Colors.red.shade200,
               fontSize: 12,
             ),
           ),
@@ -1553,6 +1561,9 @@ class _WaitLink extends StatelessWidget {
         const SizedBox(height: SsrSpace.md),
         TextButton(
           onPressed: busy ? null : onResend,
+          style: TextButton.styleFrom(
+            foregroundColor: DribTokens.primary,
+          ),
           child: Text(tr('st_pin_resend')),
         ),
       ],
@@ -1612,6 +1623,7 @@ class _NewPinFormState extends State<_NewPinForm> {
           length: 6,
           selected: _activePin == 0,
           onTap: () => _select(0),
+          digitColor: Colors.white,
         ),
         const SizedBox(height: SsrSpace.md),
         PinField(
@@ -1619,6 +1631,7 @@ class _NewPinFormState extends State<_NewPinForm> {
           length: 6,
           selected: _activePin == 1,
           onTap: () => _select(1),
+          digitColor: Colors.white,
         ),
         const SizedBox(height: SsrSpace.lg),
         PinPad(

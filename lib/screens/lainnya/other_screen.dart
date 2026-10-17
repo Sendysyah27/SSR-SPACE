@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/utils/mask.dart';
+import 'package:ssr_space/services/announcement_service.dart';
 import 'package:ssr_space/services/backup_export.dart';
 import 'package:ssr_space/services/budget_alerts.dart';
 import 'package:ssr_space/services/billing_service.dart';
@@ -46,6 +47,8 @@ import 'package:ssr_space/screens/lainnya/notif_settings_screen.dart';
 import 'package:ssr_space/screens/lainnya/nfc_cards_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_search.dart';
 import 'package:ssr_space/screens/lainnya/update_log_screen.dart';
+import 'package:ssr_space/screens/lainnya/announcements_screen.dart';
+import 'package:ssr_space/screens/lainnya/roadmap_screen.dart';
 import 'package:ssr_space/screens/workspace/org_switcher_screen.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
 import 'package:ssr_space/screens/dompet/wallets_screen.dart';
@@ -80,10 +83,28 @@ class _OtherScreenState extends State<OtherScreen> {
   /// Naik tiap _openBudgets selesai: picu _DataSection ambil ulang badge.
   int _budgetNonce = 0;
 
+  /// Jumlah pengumuman belum dibaca (badge tile Tentang).
+  int _annUnread = 0;
+
   @override
   void initState() {
     super.initState();
     _metaFuture = _meta();
+    _loadAnnouncements();
+  }
+
+  /// Muat angka badge pengumuman (dari prefs/service). Fail-silent.
+  Future<void> _loadAnnouncements() async {
+    try {
+      final n = await refreshUnreadBadge();
+      if (mounted) setState(() => _annUnread = n);
+    } catch (_) {}
+  }
+
+  /// Buka Pengumuman lalu segarkan badge (angka turun setelah dibaca).
+  Future<void> _openAnnouncements() async {
+    await _push(const AnnouncementsScreen());
+    await _loadAnnouncements();
   }
 
   Future<_OtherMeta> _meta() async {
@@ -345,6 +366,10 @@ class _OtherScreenState extends State<OtherScreen> {
         await _push(const BillingScreen());
       case 'changelog':
         await _push(const UpdateLogScreen());
+      case 'announcements':
+        await _openAnnouncements();
+      case 'roadmap':
+        await _push(const RoadmapScreen());
       case 'help':
         await _push(const HelpScreen());
       case 'backup':
@@ -472,6 +497,9 @@ class _OtherScreenState extends State<OtherScreen> {
             onSettings: (f) => _push(SettingsScreen(focus: f)),
             onChangelog: () => _push(const UpdateLogScreen()),
             onHelp: () => _push(const HelpScreen()),
+            unreadCount: _annUnread,
+            onAnnouncements: _openAnnouncements,
+            onRoadmap: () => _push(const RoadmapScreen()),
             onLogout: _confirmLogout,
           );
         },
@@ -515,6 +543,9 @@ class _HubList extends StatelessWidget {
   final void Function(String?) onSettings;
   final VoidCallback onChangelog;
   final VoidCallback onHelp;
+  final int unreadCount;
+  final VoidCallback onAnnouncements;
+  final VoidCallback onRoadmap;
   final VoidCallback onLogout;
 
   const _HubList({
@@ -551,6 +582,9 @@ class _HubList extends StatelessWidget {
     required this.onSettings,
     required this.onChangelog,
     required this.onHelp,
+    required this.unreadCount,
+    required this.onAnnouncements,
+    required this.onRoadmap,
     required this.onLogout,
   });
 
@@ -608,7 +642,13 @@ class _HubList extends StatelessWidget {
       _LangMoneySection(onSettings: onSettings),
       _ReminderSection(onSettings: onSettings),
       _SecuritySection(onSettings: onSettings, onLogout: onLogout),
-      _AboutSection(onChangelog: onChangelog, onHelp: onHelp),
+      _AboutSection(
+        onChangelog: onChangelog,
+        onHelp: onHelp,
+        unreadCount: unreadCount,
+        onAnnouncements: onAnnouncements,
+        onRoadmap: onRoadmap,
+      ),
     ];
   }
 
@@ -1233,8 +1273,17 @@ class _SecuritySection extends StatelessWidget {
 class _AboutSection extends StatelessWidget {
   final VoidCallback onChangelog;
   final VoidCallback onHelp;
+  final int unreadCount;
+  final VoidCallback onAnnouncements;
+  final VoidCallback onRoadmap;
 
-  const _AboutSection({required this.onChangelog, required this.onHelp});
+  const _AboutSection({
+    required this.onChangelog,
+    required this.onHelp,
+    required this.unreadCount,
+    required this.onAnnouncements,
+    required this.onRoadmap,
+  });
 
   Future<void> _info(BuildContext context, String titleKey, String body) {
     return showDialog<void>(
@@ -1269,6 +1318,25 @@ class _AboutSection extends StatelessWidget {
         children: [
           _SectionLabel(icon: AppIcons.menu, label: tr('pf_about')),
           const SizedBox(height: SsrSpace.xs),
+        NavTile(
+          icon: AppIcons.autoBadge,
+          title: tr('an_title'),
+          chip: unreadCount > 0
+              ? StatusChip(
+                  label: '$unreadCount',
+                  tone: StatusTone.accent,
+                  isSmall: true,
+                )
+              : null,
+          onTap: onAnnouncements,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.history,
+          title: tr('rm_title'),
+          onTap: onRoadmap,
+        ),
+        const Divider(height: 1),
         NavTile(
           icon: AppIcons.menu,
           title: tr('ab_about'),

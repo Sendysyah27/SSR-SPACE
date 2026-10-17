@@ -1,6 +1,39 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.74.0+252.
+Versi terpasang: 2.76.0+257.
+
+## Yang baru di 2.76.0+257
+
+1. Perbaikan layar putih setelah pembaruan: versi aplikasi kini terkunci agar tidak mengambil komponen sistem yang bermasalah.
+2. Bila ada kegagalan penyiapan awal, aplikasi menampilkan pesan jelas (bukan layar putih kosong).
+
+## Yang baru di 2.76.0+256
+
+1. Pengumuman bawaan kini diberi catatan jelas saat kamu offline atau server belum diperbarui — tidak lagi terlihat seperti kabar terbaru.
+2. Pengumuman yang sudah dibaca saat offline tetap "sudah dibaca" setelah tersambung internet; statusnya tidak balik jadi Baru dan lencana tidak naik lagi.
+3. Tanpa migration baru (perbaikan klien + penyempurnaan RPC yang belum dirilis).
+
+## Yang baru di 2.76.0+255
+
+1. Pengumuman: kabar produk langsung dari server — ada penanda belum dibaca dan notifikasi saat muncul pengumuman baru.
+2. Roadmap: daftar rencana produk dengan status Direncanakan / Sedang dikerjakan / Selesai.
+3. Catatan Perubahan kini kartu per-versi, lengkap dengan penanda versi terpasang.
+4. Bila server belum diperbarui atau kamu sedang offline, aplikasi menampilkan pengumuman bawaan (tetap aman dibuka).
+
+## Yang baru di 2.75.0+254
+
+1. Level & XP kini konsisten antara Beranda dan Pencapaian — satu hitungan, server jadi acuan saat tersedia.
+2. Notifikasi pencapaian tidak lagi menumpuk saat pertama kali aktif: badge yang sudah pernah dilihat tidak diberitakan ulang, dan tidak dobel dalam satu perangkat.
+3. Paritas badge "bulan bersih" (clean30) untuk kategori bersub-kategori disamakan server ↔ perangkat.
+4. Tanpa migration baru (perbaikan klien saja).
+
+## Yang baru di 2.75.0+253
+
+1. Gamifikasi pindah ke server: streak harian, XP, dan level dihitung lintas-device — sama dari HP mana pun kamu login.
+2. Badge baru streak 3 & 14 hari; total 11 badge (8 dari server, 3 dari perangkat).
+3. Notifikasi pencapaian saat badge baru terbuka (channel "Pencapaian").
+4. Tanpa internet atau server belum dimigrasi: tetap dihitung di perangkat seperti biasa, tidak diblokir.
+5. Perlu migration_21 di Supabase (sekali saja, aman diulang).
 
 ## Yang baru di 2.74.0+252
 

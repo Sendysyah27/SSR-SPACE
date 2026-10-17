@@ -22,6 +22,10 @@ class PinField extends StatefulWidget {
   /// Ketuk kotak → pilih kolom ini sebagai sasaran pad (form dua-kolom).
   final VoidCallback? onTap;
 
+  /// Warna digit eksplisit (mis. putih di atas kartu navy).
+  /// Null = scheme.onSurface (latar terang).
+  final Color? digitColor;
+
   const PinField({
     super.key,
     required this.controller,
@@ -31,6 +35,7 @@ class PinField extends StatefulWidget {
     this.obscure = true,
     this.selected = true,
     this.onTap,
+    this.digitColor,
   });
 
   @override
@@ -91,7 +96,7 @@ class _PinFieldState extends State<PinField> {
           fontFamily: SsrFonts.numeric,
           fontSize: 18,
           fontWeight: FontWeight.w700,
-          color: scheme.onSurface,
+          color: widget.digitColor ?? scheme.onSurface,
         ),
       ),
     );

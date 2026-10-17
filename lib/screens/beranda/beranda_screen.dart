@@ -23,9 +23,9 @@ import 'package:ssr_space/services/weekly_insight.dart';
 import 'package:ssr_space/services/savings_goal.dart';
 import 'package:ssr_space/services/goal_forecast.dart';
 import 'package:ssr_space/services/goal_store.dart';
+import 'package:ssr_space/services/game_badges.dart';
 import 'package:ssr_space/services/game_level.dart';
-import 'package:ssr_space/services/game_store.dart';
-import 'package:ssr_space/services/save30_store.dart';
+import 'package:ssr_space/services/gamification_service.dart';
 import 'package:ssr_space/screens/dompet/wallets_screen.dart';
 import 'package:ssr_space/screens/lainnya/arcade_screen.dart';
 import 'package:ssr_space/screens/lainnya/bill_splits_screen.dart';
@@ -263,13 +263,23 @@ class BerandaScreenState extends State<BerandaScreen> {
       }
       dashNet = nw;
       final now = DateTime.now();
-      // Streak: tanggal ringan lintas bulan, fail-open (kartu sembunyi).
+      // Streak: server dulu (global lintas-device), fallback lokal org.
+      // Fail-open: kartu sembunyi bila dua-duanya gagal.
       DailyStreak? st;
+      GamificationStatus? gameStatus;
       try {
-        st = dailyStreak(await TransactionService().listDates(orgId), now);
+        gameStatus = await fetchGamification(orgId);
+        st = gameStatus != null
+            ? DailyStreak(
+                days: gameStatus.streakDays,
+                todayDone: gameStatus.streakTodayDone,
+                graceUsed: gameStatus.streakGraceUsed,
+              )
+            : dailyStreak(await TransactionService().listDates(orgId), now);
       } catch (_) {
         st = null;
       }
+      await syncAchievements(gameStatus);
       // Health + pace: hanya bulan berjalan (limit budget milik bulan
       // berjalan). Bulan lampau tak dihitung, kartu sembunyi.
       HealthBreakdown? hb;
@@ -490,28 +500,37 @@ class BerandaScreenState extends State<BerandaScreen> {
           near = open.first;
           nearSum = sums[near.id] ?? 0;
         }
-        var doneCh = 0;
+        // clean30 untuk fallback XP; paritas server: belanja digrup per
+        // kategori lapis-atas, dibanding topOf(budget.category).
+        var clean = false;
         try {
-          final storedCh = await loadChallenges();
-          for (final c in storedCh) {
-            if (c.status == 1) doneCh++;
+          final limits = await fetchBudgetLimits(orgId);
+          final cur = await TransactionService()
+              .listMonth(orgId, currentMonth());
+          final spent = <String, double>{};
+          for (final t in cur) {
+            if (t.type != 'out') continue;
+            if (isSavingCategory(t.category)) continue;
+            final top = topOf(t.category);
+            final k = top.isEmpty ? tr('cat_other') : top;
+            spent[k] = (spent[k] ?? 0) + t.amount;
           }
-          try {
-            doneCh += (await loadSave30History())
-                .where((e) => e.success)
-                .length;
-          } catch (_) {}
+          clean = limits.isNotEmpty &&
+              limits.every((b) {
+                if (isSavingCategory(b.category)) return true;
+                final top = topOf(b.category);
+                final k = top.isEmpty ? tr('cat_other') : top;
+                return (spent[k] ?? 0) <= b.limit;
+              });
         } catch (_) {}
-        var goalsHit = 0;
-        for (final g in gs) {
-          if (g.remaining(sums[g.id] ?? 0) <= 0) goalsHit++;
-        }
-        gameXp = calcXp(
-          txCount: hist.length,
+        // XP satu sumber lintas layar: server dulu, fallback semantik server.
+        final fallbackStats = GameStats(
           streakDays: st?.days ?? 0,
-          challengesDone: doneCh,
-          goalsReached: goalsHit,
+          totalSaved: saved,
+          txCount: hist.length,
+          cleanMonth: clean,
         );
+        gameXp = gameStatus?.xp ?? fallbackXp(fallbackStats);
       } catch (_) {
         em = null;
         near = null;
