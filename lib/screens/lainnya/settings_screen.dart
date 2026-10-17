@@ -170,29 +170,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           PremiumSectionHeader(title: tr('st_group_display')),
           const SizedBox(height: SsrSpace.sm),
-          ValueListenableBuilder<double>(
-            valueListenable: fontScale,
-            builder: (context, fs, _) => Container(
-              key: _fontKey,
-              child: _FontCard(value: fs, onChanged: (v) => setFontScale(v)),
-            ),
+          // Grup Tampilan: grid 2 kolom (Batch Ollo 2). Kartu
+          // _CardThemeCard & _WidgetCard full-width (butuh lebar penuh untuk
+          // preview horizontal / konten lega). Focus key dipertahankan.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ValueListenableBuilder<double>(
+                  valueListenable: fontScale,
+                  builder: (context, fs, _) => Container(
+                    key: _fontKey,
+                    child:
+                        _FontCard(value: fs, onChanged: (v) => setFontScale(v)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: SsrSpace.md),
+              Expanded(
+                child: Container(
+                  key: _animsKey,
+                  child: const _AnimsCard(),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: SsrSpace.md),
-          Container(key: _animsKey, child: const _AnimsCard()),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  key: _listKey,
+                  child: const _ListStyleCard(),
+                ),
+              ),
+              const SizedBox(width: SsrSpace.md),
+              Expanded(
+                child: Container(
+                  key: _dateKey,
+                  child: const _DateStyleCard(),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: SsrSpace.md),
-          Container(key: _listKey, child: const _ListStyleCard()),
-          const SizedBox(height: SsrSpace.md),
-          Container(key: _dateKey, child: const _DateStyleCard()),
-          const SizedBox(height: SsrSpace.md),
-          Container(key: _heroKey, child: const _HeroStyleCard()),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  key: _heroKey,
+                  child: const _HeroStyleCard(),
+                ),
+              ),
+              const SizedBox(width: SsrSpace.md),
+              Expanded(
+                child: ValueListenableBuilder<String>(
+                  valueListenable: themeChoice,
+                  builder: (context, theme) => _ThemeCard(
+                      value: theme, onChanged: (v) => setThemeChoice(v)),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: SsrSpace.md),
           Container(key: _cardThemeKey, child: const _CardThemeCard()),
-          const SizedBox(height: SsrSpace.md),
-          ValueListenableBuilder<String>(
-            valueListenable: themeChoice,
-            builder: (context, theme, _) =>
-                _ThemeCard(value: theme, onChanged: (v) => setThemeChoice(v)),
-          ),
           const SizedBox(height: SsrSpace.md),
           Container(key: _widgetKey, child: const _WidgetCard()),
           const SizedBox(height: SsrSpace.md),
