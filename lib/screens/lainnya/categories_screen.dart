@@ -9,12 +9,12 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 
-/// Palet 8 warna kategori (dikurasi, bukan color wheel bebas).
+/// Palet 12 warna kategori (dikurasi, bukan color wheel bebas).
 /// Slot 0..2 memakai varian ledger yang hidup di kedua mode
 /// (primary/error/gold; dulu emerald/rust/gold);
 /// urutan slot tetap sehingga indeks tersimpan tidak bergeser makna.
 List<Color> _metaPalette(BuildContext context) {
-  return List<Color>.generate(8, (i) => metaSlotColor(context, i));
+  return List<Color>.generate(12, (i) => metaSlotColor(context, i));
 }
 
 /// Ikon terkurasi untuk picker (kunci = nama field AppIcons).

@@ -4,6 +4,7 @@ import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/services/tx_wallet_check.dart';
 import 'package:ssr_space/services/space_logic.dart';
 import 'package:ssr_space/services/supabase_config.dart';
+import 'package:ssr_space/services/app_settings.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/models/transaction.dart';
@@ -138,41 +139,49 @@ class TxRow extends StatelessWidget {
       },
       background: _buildEditBg(context, scheme),
       secondaryBackground: _buildDeleteBg(context, scheme),
-      child: DribCard(
-        margin: const EdgeInsets.symmetric(
-            vertical: GlassSpace.xs, horizontal: GlassSpace.xs),
-        padding: const EdgeInsets.symmetric(
-            vertical: GlassSpace.sm, horizontal: GlassSpace.md),
-        child: GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _title(theme, amountColor),
-                    const SizedBox(height: 6),
-                    Wrap(spacing: 4, runSpacing: 2, children: _chips(myId)),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
-                    ],
-                    if (tx.note != null && tx.note!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      GestureDetector(
-                        onTap: () => showNoteDialog(context, tx.note!),
-                        child: Text(tx.note!, style: theme.textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      ),
-                    ],
-                  ],
-                ),
+      child: ValueListenableBuilder<String>(
+        valueListenable: uiListStyle,
+        builder: (context, listStyle, _) {
+          // P3: gaya list compact/comfortable dari Settings (_ListStyleCard).
+          final compact = listStyle == 'compact';
+          return DribCard(
+            margin: const EdgeInsets.symmetric(
+                vertical: GlassSpace.xs, horizontal: GlassSpace.xs),
+            padding: EdgeInsets.symmetric(
+                vertical: compact ? 4.0 : GlassSpace.sm,
+                horizontal: GlassSpace.md),
+            child: GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _title(theme, amountColor),
+                        SizedBox(height: compact ? 3.0 : 6.0),
+                        Wrap(spacing: 4, runSpacing: 2, children: _chips(myId)),
+                        if (subtitle.isNotEmpty) ...[
+                          SizedBox(height: compact ? 2.0 : 4.0),
+                          Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
+                        ],
+                        if (tx.note != null && tx.note!.isNotEmpty) ...[
+                          SizedBox(height: compact ? 2.0 : 4.0),
+                          GestureDetector(
+                            onTap: () => showNoteDialog(context, tx.note!),
+                            child: Text(tx.note!, style: theme.textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

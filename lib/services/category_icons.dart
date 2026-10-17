@@ -130,11 +130,19 @@ Color metaSlotColor(BuildContext context, int index) {
     case 3:
       return const Color(0xFF2563EB);
     case 4:
-      return const Color(0xFF7C3AED);
+      return const Color(0xFF0D9488); // teal (ganti ungu)
     case 5:
-      return const Color(0xFFDB2777);
+      return const Color(0xFFE07B39); // oranye (ganti pink)
     case 6:
       return const Color(0xFF65A30D);
+    case 8:
+      return const Color(0xFF0891B2); // cyan
+    case 9:
+      return const Color(0xFF1F3C88); // navy
+    case 10:
+      return const Color(0xFFD9541E); // oranye tua
+    case 11:
+      return const Color(0xFF14957F); // hijau teal
     default:
       return const Color(0xFF64748B);
   }
