@@ -138,7 +138,8 @@ begin
         from transactions t
         where t.org_id = p_org_id
           and t.type = 'out'
-          and not (lower(t.category) like '%tabung%' or lower(t.category) like '%saving%')
+          and not (lower(coalesce(t.category, '')) like '%tabung%'
+                   or lower(coalesce(t.category, '')) like '%saving%')
           and t.date >= date_trunc('month', current_date)::date
           and t.date < (date_trunc('month', current_date) + interval '1 month')::date
         group by 1
