@@ -29,6 +29,10 @@ const _brands = <List<dynamic>>[
   ['octo', 'CIMB', 0xFFC8102E],
   ['isaku', 'IS', 0xFF6A1B9A],
   ['hana', 'HANA', 0xFF00857C],
+  ['linkaja', 'LA', 0xFFD42B1E],
+  ['permata', 'PM', 0xFF00A19A],
+  ['bsi', 'BSI', 0xFF009A44],
+  ['danamon', 'DNM', 0xFF007A33],
 ];
 
 WalletBrand? brandForWallet(String? name) {
