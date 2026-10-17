@@ -1179,6 +1179,132 @@ end $$;
 set role authenticated;
 set test.user_id = '11111111-1111-4111-8111-111111111111';
 
+-- ===== T35: gamifikasi server (migration_21) =====
+-- RPC gamification_status + ack_achievements + tabel RPC-only user_achievements.
+-- Fixture user 1111... (alice) sudah punya transaksi created_by pada current_date;
+-- assert toleran (>= / cek-anggota / delta) karena fixture bisa memicu unlock awal.
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+
+-- T35a: grant — authenticated boleh, anon ditolak (revoke pola T34j).
+select t_assert(has_function_privilege('authenticated', 'public.gamification_status(uuid)', 'execute'),
+  'T35a authenticated boleh execute gamification_status');
+select t_assert(not has_function_privilege('anon', 'public.gamification_status(uuid)', 'execute'),
+  'T35a anon tak boleh execute gamification_status');
+select t_assert(has_function_privilege('authenticated', 'public.ack_achievements(text[])', 'execute'),
+  'T35a authenticated boleh execute ack_achievements');
+select t_assert(not has_function_privilege('anon', 'public.ack_achievements(text[])', 'execute'),
+  'T35a anon tak boleh execute ack_achievements');
+set role anon;
+set test.user_id = '';
+do $$
+begin
+  perform public.gamification_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
+  raise exception 'ASSERT GAGAL: T35a anon bisa gamification_status';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+do $$
+begin
+  perform public.ack_achievements(array['streak3']);
+  raise exception 'ASSERT GAGAL: T35a anon bisa ack_achievements';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+set role authenticated;
+
+-- T35b: user login non-member p_org_id → NOT_MEMBER (pola T31/T34j).
+set test.user_id = '77777777-7777-4777-8777-777777777777';
+do $$
+begin
+  perform public.gamification_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
+  raise exception 'ASSERT GAGAL: T35b non-member bisa gamification_status';
+exception when others then
+  if sqlerrm not like '%NOT_MEMBER%' then raise; end if;
+end $$;
+
+-- T35c: streak benar — 3 hari beruntun berakhir hari ini → streak_days >= 3 + streak3.
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+insert into transactions (org_id, type, amount, date, created_by)
+values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'in', 100, current_date,
+   '11111111-1111-4111-8111-111111111111'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'in', 100, current_date - 1,
+   '11111111-1111-4111-8111-111111111111'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'in', 100, current_date - 2,
+   '11111111-1111-4111-8111-111111111111');
+select t_assert(
+  (public.gamification_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1')->>'streak_days')::int >= 3,
+  'T35c streak_days >= 3 setelah 3 hari beruntun');
+select t_assert(
+  exists (select 1 from jsonb_array_elements(
+    public.gamification_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1')->'badges') e
+    where e->>'id' = 'streak3'),
+  'T35c badge streak3 unlock');
+
+-- T35d: unlock idempoten — panggil 2x lagi → tetap 1 baris (PK + on conflict).
+select public.gamification_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
+select public.gamification_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
+reset role;
+select t_assert(
+  (select count(*) from user_achievements
+   where user_id = '11111111-1111-4111-8111-111111111111'
+     and badge_id = 'streak3') = 1,
+  'T35d unlock streak3 idempoten (tepat 1 baris)');
+select t_assert(
+  (select unlocked_at is not null from user_achievements
+   where user_id = '11111111-1111-4111-8111-111111111111'
+     and badge_id = 'streak3'),
+  'T35d unlocked_at terisi');
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+
+-- T35e: new_badges memuat id belum-notified; ack → tak lagi muncul.
+select t_assert(
+  (public.gamification_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1')->'new_badges')
+    @> '["streak3"]'::jsonb,
+  'T35e new_badges memuat streak3 sebelum ack');
+select public.ack_achievements(array['streak3']);
+select t_assert(
+  not ((public.gamification_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1')->'new_badges')
+    @> '["streak3"]'::jsonb),
+  'T35e new_badges tak memuat streak3 setelah ack');
+reset role;
+select t_assert(
+  (select notified_at is not null from user_achievements
+   where user_id = '11111111-1111-4111-8111-111111111111'
+     and badge_id = 'streak3'),
+  'T35e notified_at terisi setelah ack');
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+
+-- T35f: isolasi antar-user — badge streak3 alice tak muncul di status bob.
+set test.user_id = '22222222-2222-4222-8222-222222222222';
+select t_assert(
+  not exists (select 1 from jsonb_array_elements(
+    public.gamification_status('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2')->'badges') e
+    where e->>'id' = 'streak3'),
+  'T35f streak3 alice tak bocor ke status bob');
+reset role;
+select t_assert(
+  (select count(*) from user_achievements
+   where user_id = '22222222-2222-4222-8222-222222222222'
+     and badge_id = 'streak3') = 0,
+  'T35f bob tak punya baris streak3');
+set role authenticated;
+set test.user_id = '22222222-2222-4222-8222-222222222222';
+
+-- T35g: client tak bisa akses user_achievements langsung (RPC-only).
+select t_assert((select count(*) from user_achievements) = 0,
+  'T35g user_achievements tak terbaca client (RLS deny)');
+do $$
+begin
+  insert into user_achievements (user_id, badge_id)
+  values ('22222222-2222-4222-8222-222222222222', 'streak3');
+  raise exception 'ASSERT GAGAL: T35g client INSERT user_achievements lolos';
+exception when sqlstate '42501' then null;
+end $$;
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');
