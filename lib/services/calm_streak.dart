@@ -74,13 +74,17 @@ DailyStreak dailyStreak(List<DateTime> dates, DateTime now) {
   );
 }
 
-/// Milestone streak: 7, 30, 100 hari. Null bila sudah lewat semua.
+/// Milestone streak: 3, 7, 14, 30, 100 hari. Dipakai [nextMilestone] dan
+/// [isMilestone] sekaligus jadi sumber tunggal ambang perayaan.
+const streakMilestones = [3, 7, 14, 30, 100];
+
+/// Milestone berikutnya yang belum dilewati. Null bila sudah lewat semua.
 int? nextMilestone(int days) {
-  for (final m in const [7, 30, 100]) {
+  for (final m in streakMilestones) {
     if (days < m) return m;
   }
   return null;
 }
 
-/// True tepat saat streak menyentuh 7, 30, atau 100.
-bool isMilestone(int days) => days == 7 || days == 30 || days == 100;
+/// True tepat saat streak menyentuh salah satu [streakMilestones].
+bool isMilestone(int days) => streakMilestones.contains(days);
