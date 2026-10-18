@@ -317,7 +317,7 @@ class TransactionService {
     String? sourcePackage,
     String? sourceHash,
   }) async {
-    assert(amount > 0);
+    if (amount <= 0) throw ArgumentError('amount harus > 0');
     Map<String, dynamic> row;
     try {
       row = await SupabaseConfig.client
@@ -372,7 +372,7 @@ class TransactionService {
     String? date,
     String? createdAt,
   }) async {
-    assert(amount > 0);
+    if (amount <= 0) throw ArgumentError('amount harus > 0');
     try {
       await SupabaseConfig.client
           .from('transactions')
