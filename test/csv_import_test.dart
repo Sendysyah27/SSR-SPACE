@@ -196,4 +196,21 @@ void main() {
     expect(p.rows.first.type, 'transfer');
     expect(p.rows.first.toWalletName, 'BCA');
   });
+
+  test('tolak teks > 5MB', () {
+    final big = 'x' * (5 * 1024 * 1024 + 1);
+    final p = parseCsvPreview(big);
+    expect(p.rows, isEmpty);
+    expect(p.errors.first.message, contains('5 MB'));
+  });
+
+  test('cap 10.000 baris + pesan jujur', () {
+    final sb = StringBuffer('tanggal,nominal,jenis\n');
+    for (var i = 0; i < 10005; i++) {
+      sb.writeln('2026-01-01,1000,keluar');
+    }
+    final p = parseCsvPreview(sb.toString());
+    expect(p.rows.length, 10000);
+    expect(p.errors.any((e) => e.message.contains('10.000')), true);
+  });
 }

@@ -327,6 +327,12 @@ String? resolveToWalletId({
 /// sel formula dinetralkan untuk field teks, tapi nominal formula
 /// = error baris. Tak pernah throw untuk error data.
 CsvImportPreview parseCsvPreview(String text) {
+  // Batas jujur: teks > 5 MB ditolak mentah-mentah (paste raksasa = hang/OOM).
+  if (text.length > 5 * 1024 * 1024) {
+    return const CsvImportPreview([], [
+      CsvImportError(0, 'file terlalu besar (maks 5 MB)'),
+    ]);
+  }
   final delim = detectDelimiter(text);
   final lines = text.split('\n');
   if (lines.isEmpty || lines.every((l) => l.trim().isEmpty)) {
@@ -358,6 +364,12 @@ CsvImportPreview parseCsvPreview(String text) {
   final rows = <CsvImportRow>[];
   final errors = <CsvImportError>[];
   for (var li = 1; li < lines.length; li++) {
+    // Cap jujur: hanya 10.000 baris pertama diproses.
+    if (rows.length >= 10000) {
+      errors.add(const CsvImportError(
+          0, 'melebihi 10.000 baris: hanya 10.000 baris pertama diproses'));
+      break;
+    }
     final line = lines[li];
     if (line.trim().isEmpty) continue;
     final lineNo = li + 1;
