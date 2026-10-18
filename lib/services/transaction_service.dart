@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/month_figures.dart';
 import 'package:ssr_space/services/offline_cache.dart';
@@ -316,7 +318,8 @@ class TransactionService {
   }
 
   /// Insert dulu (code nullable), baru mint + update, supaya nomor TX tidak
-  /// terbakar bila insert gagal (duplikat hash, RLS, dll).
+  /// terbakar bila insert gagal (duplikat hash, RLS, dll). Celah app-mati
+  /// di antaranya ditutup oleh backfillMissingCodes() tiap start.
   Future<String?> add({
     required String orgId,
     required String type,
@@ -372,6 +375,34 @@ class TransactionService {
       // kode nomor opsional, transaksi tetap tersimpan
     }
     return id;
+  }
+
+  /// Backfill kode TX yang kosong (NICE-TO-HAVE #N2).
+  /// Menutup celah non-atomik add(): app terbunuh antara insert & mint code
+  /// meninggalkan baris permanen tanpa code. Urutan insert-first dipertahankan
+  /// (nomor TX tidak terbakar bila insert gagal); yang tertinggal diisi di sini.
+  /// Best-effort per baris, cap 100/start agar startup tetap ringan.
+  Future<void> backfillMissingCodes(String orgId) async {
+    final rows = await SupabaseConfig.client
+        .from('transactions')
+        .select('id')
+        .eq('org_id', orgId)
+        .isFilter('code', null)
+        .limit(100);
+    for (final r in (rows as List)) {
+      final id = (r as Map)['id']?.toString();
+      if (id == null || id.isEmpty) continue;
+      try {
+        final minted = await mintCode(orgId);
+        await SupabaseConfig.client
+            .from('transactions')
+            .update({'code': minted})
+            .eq('id', id);
+      } catch (e) {
+        // best-effort: baris ini dilewati, dicoba lagi di start berikutnya
+        debugPrint('[backfill] skip $id: $e');
+      }
+    }
   }
 
   Future<void> update({

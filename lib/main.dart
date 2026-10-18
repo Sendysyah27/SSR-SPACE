@@ -16,6 +16,8 @@ import 'package:ssr_space/services/save30_notify.dart';
 import 'package:ssr_space/services/save30_store.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
+import 'package:ssr_space/services/transaction_service.dart';
+import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/screens/auth/splash_screen.dart';
@@ -127,6 +129,8 @@ Future<void> main() async {
   // Heartbeat anti-pause (max 1/hari, fail-silent): aktivitas API harian
   // menjaga project free-tier tetap hidup walau semua cron diam.
   unawaited(touchHeartbeatDaily());
+  // NICE-TO-HAVE #N2: backfill kode TX tertinggal (best-effort).
+  unawaited(_backfillTxCodes());
   DiagLog.write('DIAG sebelum SessionService');
   final app = SsrSpaceApp(session: SessionService(prefs));
   DiagLog.write('DIAG runApp dipanggil');
@@ -137,6 +141,19 @@ Future<void> main() async {
       ErrorReporter.capture(err, stack, context: 'zone');
     },
   );
+}
+
+/// Backfill kode transaksi yang kosong (NICE-TO-HAVE #N2).
+/// Best-effort: gagal = log saja; transaksi tetap tersimpan tanpa kode.
+/// (Konvensi error AGENTS.md aturan 10: swallow best-effort + alasan + debugPrint.)
+Future<void> _backfillTxCodes() async {
+  try {
+    final orgId = await activeOrgId();
+    if (orgId.isEmpty) return;
+    await TransactionService().backfillMissingCodes(orgId);
+  } catch (e) {
+    debugPrint('[backfill] kode TX gagal: $e');
+  }
 }
 
 /// Startup minimal saat init inti gagal (mis. plugin native hilang karena
