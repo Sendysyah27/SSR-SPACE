@@ -206,6 +206,7 @@ Future<RestoreResult> restoreBackup(
       failed += chunk.length;
     }
   }
+  return RestoreResult(
     walletsCreated: created,
     ok: ok,
     skipped: skipped,
