@@ -7,4 +7,16 @@ void main() {
     expect(w.name, 'Cash');
     expect(w.orgId, 'o1');
   });
+
+  test('wallet fromMap tanpa id -> ArgumentError (bukan string "null")', () {
+    expect(
+        () => Wallet.fromMap({'org_id': 'o1', 'name': 'Cash', 'type': 'cash'}),
+        throwsArgumentError);
+  });
+
+  test('wallet fromMap tanpa org_id -> ArgumentError', () {
+    expect(
+        () => Wallet.fromMap({'id': '1', 'name': 'Cash', 'type': 'cash'}),
+        throwsArgumentError);
+  });
 }

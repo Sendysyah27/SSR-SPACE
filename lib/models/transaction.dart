@@ -32,8 +32,8 @@ class SaasTransaction {
     this.createdBy,
   });
   factory SaasTransaction.fromMap(Map<String, dynamic> m) => SaasTransaction(
-        id: m['id'].toString(),
-        orgId: m['org_id'].toString(),
+        id: _req(m, 'id'),
+        orgId: _req(m, 'org_id'),
         type: (m['type'] ?? '').toString(),
         amount: (m['amount'] as num).toDouble(),
         walletId: m['wallet_id']?.toString(),
@@ -47,6 +47,17 @@ class SaasTransaction {
         sourceHash: m['source_hash']?.toString(),
         createdBy: m['created_by']?.toString(),
       );
+
+
+  /// Field wajib: field hilang -> ArgumentError eksplisit
+  /// (bukan string "null" yang lolos diam-diam).
+  static String _req(Map<String, dynamic> m, String key) {
+    final v = m[key];
+    if (v == null) {
+      throw ArgumentError('SaasTransaction.fromMap: field wajib "$key" hilang');
+    }
+    return v.toString();
+  }
 
   /// Varian defensif [fromMap]: baris rusak -> null (di-skip pemanggil)
   /// alih-alih menumbangkan seluruh list. Hanya untuk mapping list;
