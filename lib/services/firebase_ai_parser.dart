@@ -16,12 +16,17 @@ import 'ai_draft.dart';
 // teks, BUKAN isi struk user.
 const firebaseAiTimeout = Duration(seconds: 60);
 
-/// Log diagnosis (durasi + panjang teks, bukan isi struk). Sengaja print
-/// mentah: file ini harus tetap jalan di `dart` murni tanpa Flutter,
-/// jadi tak bisa pakai debugPrint/logging framework.
+/// Log diagnosis (durasi + panjang teks, bukan isi struk).
+/// NICE-TO-HAVE #N10: print hanya di debug (assert) -> di rilis = no-op,
+/// menutup risiko isi struk bocor ke logcat. Tetap pure-Dart (tanpa Flutter,
+/// jadi tak bisa debugPrint); assert juga menjaga log tetap satu baris.
 void _aiLog(String s) {
-  // ignore: avoid_print
-  print(s);
+  assert(() {
+    assert(!s.contains(String.fromCharCode(10)), 'aiLog: log diagnosis harus satu baris');
+    // ignore: avoid_print
+    print(s);
+    return true;
+  }());
 }
 
 class AiFailure implements Exception {
