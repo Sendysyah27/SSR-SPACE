@@ -1491,7 +1491,11 @@ class _AmountDisplay extends StatelessWidget {
             builder: (_, d, __) {
               final idr =
                   CurrencyService.toIdr(majorFromDigits(d, dec: dec));
-              return Container(
+              // NICE-TO-HAVE #N12: nominal dibacakan screen reader.
+              return Semantics(
+                label: "${tr('tx_f_nominal')}: ${CurrencyService.format(idr)}",
+                excludeSemantics: true,
+                child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
                     vertical: 18, horizontal: 16),
@@ -1506,6 +1510,7 @@ class _AmountDisplay extends StatelessWidget {
                   style: DribTokens.bigNumber(
                       size: 32, color: DribTokens.onNavy),
                   textAlign: TextAlign.center,
+                ),
                 ),
               );
             },

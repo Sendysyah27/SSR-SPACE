@@ -65,7 +65,17 @@ class _PremiumButtonState extends State<PremiumButton>
           end: Alignment.bottomRight,
           colors: [accent, accent.withValues(alpha: 0.82)],
         );
-    final btn = GestureDetector(
+    // NICE-TO-HAVE #N12: GestureDetector mentah tak terbaca sebagai tombol
+    // oleh screen reader — bungkus Semantics (label + role button + status).
+    final btn = Semantics(
+      button: true,
+      enabled: widget.onPressed != null && !widget.loading,
+      label: widget.label,
+      onTap: (widget.onPressed == null || widget.loading)
+          ? null
+          : () => widget.onPressed!(),
+      excludeSemantics: true,
+      child: GestureDetector(
       onTapDown: (_) => _ctrl.forward(),
       onTapUp: (_) => _ctrl.reverse(),
       onTapCancel: () => _ctrl.reverse(),
@@ -116,6 +126,7 @@ class _PremiumButtonState extends State<PremiumButton>
                 ),
         ),
       ),
+    ),
     );
     if (widget.fullWidth) {
       return SizedBox(width: double.infinity, child: btn);
