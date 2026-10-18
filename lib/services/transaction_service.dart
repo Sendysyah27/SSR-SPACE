@@ -272,7 +272,14 @@ class TransactionService {
         },
       );
       markOnline();
-      final m = Map<String, dynamic>.from(res as Map);
+      // NICE-TO-HAVE #N3: validasi tipe sebelum cast — RPC yang me-return
+      // null/array tidak lagi TypeError mentah, melainkan fallback cache.
+      final m = res is Map ? Map<String, dynamic>.from(res) : null;
+      if (m == null) {
+        final cached = await readMixCache(orgId, month, walletId);
+        if (cached != null) return _mixFromMap(cached);
+        throw StateError('month_mix: respons RPC bukan Map');
+      }
       unawaited(writeMixCache(orgId, month, walletId, m));
       return _mixFromMap(m);
     } catch (e) {
@@ -287,11 +294,11 @@ class TransactionService {
   ({List<MonthMixRow> rows, int totalN}) _mixFromMap(
     Map<String, dynamic> m,
   ) {
-    final raw = (m['rows'] as List? ?? []);
+    final raw = m['rows'] is List ? (m['rows'] as List) : const [];
     return (
       rows: [
         for (final r in raw)
-          MonthMixRow.fromMap(Map<String, dynamic>.from(r as Map)),
+          if (r is Map) MonthMixRow.fromMap(Map<String, dynamic>.from(r)),
       ],
       totalN: (m['total_n'] as num?)?.toInt() ?? 0,
     );
