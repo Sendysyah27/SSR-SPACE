@@ -693,3 +693,21 @@ Revisi workstream A (komplain user) + B/C/D.
   4 tombol pastel shadow 2 lapis + press scale 0.97/120ms.
 - Fix: manifest merger camera_android_camerax (tools:replace maxSdkVersion).
 - CI hijau run 39084205714. APK 42.173.488 B, sha256 47672c80...
+
+## 2.82.1+268 (2026-10-18)
+Hapus fitur desain mati (audit tema, permintaan user).
+- Hapus _AnimsCard (uiAnims tak pernah dibaca), _DateStyleCard
+  (uiDateStyle tak pernah dibaca), _HeroStyleCard (uiHeroStyle tak
+  pernah dibaca, cuma 1 opsi) dari settings_screen.dart; Row 2 kolom
+  jadi Container full-width (_FontCard, _ListStyleCard, _ThemeCard).
+- Hapus ValueNotifier + const keys + setter + load logic ketiganya
+  dari app_settings.dart.
+- Hapus 3 SettingsSearchEntry (focus anims/date/hero) dari
+  settings_search.dart.
+- Hapus class GlassColors (tak dipakai) dari theme/tokens.dart.
+- Hapus keys st_anims/st_date_style/st_hero_style (ID+EN) dari strings.dart.
+- Update test app_settings_ext_test.dart.
+- Yang dipertahankan: _ThemeCard, _CardThemeCard, _ListStyleCard,
+  _FontCard, uiListStyle, cardTheme, themeChoice, GlassSpace/GlassRadius/
+  GlassDuration/GlassElevation.
+- CI hijau run 39110633513.
