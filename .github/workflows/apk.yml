@@ -452,7 +452,14 @@ jobs:
           if 'android.permission.WRITE_EXTERNAL_STORAGE' not in s:
               s = s.replace(
                   '</manifest>',
-                  '    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>\n</manifest>',
+                  '    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" tools:replace="android:maxSdkVersion"/>\n</manifest>',
+              )
+          # Pastikan xmlns:tools ada untuk tools:replace (konflik camera_android_camerax)
+          if 'xmlns:tools=' not in s:
+              s = s.replace(
+                  '<manifest ',
+                  '<manifest xmlns:tools="http://schemas.android.com/tools" ',
+                  1,
               )
           if 'android.permission.MANAGE_EXTERNAL_STORAGE' not in s:
               s = s.replace(
