@@ -22,7 +22,8 @@ void main() {
   var changed = false;
 
   // 1. Selaraskan "Versi terpasang".
-  final verLine = RegExp(r'Versi terpasang: [^.\n]+\.?');
+  // \S+ menelan versi+titik akhir sekaligus (versi mengandung titik).
+  final verLine = RegExp(r'Versi terpasang: \S+');
   if (verLine.hasMatch(text)) {
     final updated = text.replaceFirst(verLine, 'Versi terpasang: $ver.');
     if (updated != text) {

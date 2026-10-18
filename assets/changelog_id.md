@@ -1,6 +1,18 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.4+271.
+Versi terpasang: 2.82.5+272.
+
+## Yang baru di 2.82.5+272
+
+1. Operasional: tool `dart tool/changelog_ensure.dart` memastikan catatan perubahan selalu selaras dengan versi aplikasi (wajib jalan tiap rilis).
+2. Operasional: kebijakan rilis kini menyimpan 3 versi APK terakhir untuk jalur rollback cepat.
+3. Fondasi feature flag: tabel `app_config` + layanan fail-closed untuk rollout bertahap dan kill-switch fitur besar berikutnya (perlu migration_25 dijalankan manual sekali).
+
+## What's new in 2.82.5+272
+
+1. Ops: the `dart tool/changelog_ensure.dart` tool keeps the changelog in sync with the app version (must run on every release).
+2. Ops: releases now keep the last 3 APK versions for a fast rollback path.
+3. Feature-flag foundation: `app_config` table + fail-closed service for gradual rollouts and kill-switches (requires running migration_25 manually once).
 
 ## Yang baru di 2.82.4+271
 
