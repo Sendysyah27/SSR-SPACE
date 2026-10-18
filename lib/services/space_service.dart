@@ -42,7 +42,6 @@ class SpaceService {
         params: {'p_org_id': orgId, 'p_mode': mode},
       );
     } on Exception catch (err) {
-      final msg = '$err';
       if (pgIsNotAdmin(err)) throw SpaceException(tr('sp_adminonly'));
       if (pgIsBadMode(err)) throw SpaceException(tr('sp_badmode'));
       rethrow;
