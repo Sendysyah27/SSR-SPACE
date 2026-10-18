@@ -241,6 +241,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
     final res = await showModalBottomSheet<TxFilter>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: DribTokens.cardOf(context),
       builder: (_) => _FilterSheet(initial: _filter, categories: cats),
     );
     if (res != null && mounted) {
