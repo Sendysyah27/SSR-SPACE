@@ -74,14 +74,6 @@ class SessionService {
     }
   }
 
-  Future<void> _secDelete(String k) async {
-    try {
-      await _storage.delete(key: k);
-    } catch (_) {
-      _mem.remove('sec:$k');
-    }
-  }
-
   String _hashPin(String salt, String pin) =>
       sha256.convert(utf8.encode('$salt::$pin')).toString();
 
