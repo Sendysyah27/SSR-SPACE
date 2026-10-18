@@ -128,7 +128,9 @@ Future<BudgetMonth> fetchBudgets(String orgId) async {
   try {
     final c = SupabaseConfig.client;
     final rows = await c.from('budgets').select().eq('org_id', orgId).eq('month', month);
-    final txs = await TransactionService().list(orgId);
+    // Ambil transaksi BULAN BERJALAN di server (bukan 100 terakhir lintas
+    // bulan) agar total budget tidak undercount.
+    final txs = await TransactionService().listMonth(orgId, month);
     final spent = <String, double>{};
     for (final t in txs) {
       if (t.type == 'out' && (t.date ?? '').startsWith(month)) {
