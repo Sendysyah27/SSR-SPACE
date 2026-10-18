@@ -29,9 +29,17 @@ String decryptBackup(String payload, String password) {
   } catch (_) {
     throw const BackupDecryptException('payload rusak (base64)');
   }
-  late final Archive archive;
+  // Catatan: ArchiveException password-salah baru muncul saat content
+  // dibaca (lazy decode), jadi seluruh baca dibungkus try yang sama.
   try {
-    archive = ZipDecoder().decodeBytes(zipBytes, password: password);
+    final archive = ZipDecoder().decodeBytes(zipBytes, password: password);
+    if (archive.files.isEmpty) {
+      throw const BackupDecryptException('arsip kosong');
+    }
+    final content = archive.files.first.content as List<int>;
+    return utf8.decode(content);
+  } on BackupDecryptException {
+    rethrow;
   } on ArchiveException catch (e) {
     // archive 4.x: password salah = ArchiveException('Wrong password ...').
     if (e.message.toLowerCase().contains('password')) {
@@ -41,11 +49,6 @@ String decryptBackup(String payload, String password) {
   } catch (_) {
     throw const BackupDecryptException('arsip rusak');
   }
-  if (archive.files.isEmpty) {
-    throw const BackupDecryptException('arsip kosong');
-  }
-  final content = archive.files.first.content as List<int>;
-  return utf8.decode(content);
 }
 
 class BackupDecryptException implements Exception {
