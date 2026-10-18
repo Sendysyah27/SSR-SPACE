@@ -280,6 +280,12 @@ class NotifTrack {
   /// Pref key: kategori belanja (opsional), bukan nama app.
   static String catPrefKey(String label) => 'track_cat_$label';
 
+  /// NICE-TO-HAVE #N7: memo memori hasil resolveWalletId (org+label -> id).
+  /// Cache-miss sebelumnya = query full wallets tiap notifikasi masuk.
+  /// TTL 60 detik: rename dompet paling lambat 60 dtk terasa di auto-match;
+  /// mapping eksplisit via prefs selalu diutamakan (tanpa memo).
+  static final Map<String, ({String? id, DateTime at})> _walletMemo = {};
+
   static Future<String?> resolveWalletId(
     String orgId,
     String label,
@@ -287,27 +293,46 @@ class NotifTrack {
   ) async {
     final mapped = prefs.getString(walletPrefKey(label));
     if (mapped != null && mapped.isNotEmpty) return mapped;
+    final key = orgId + String.fromCharCode(124) + label.toLowerCase();
+    final hit = _walletMemo[key];
+    if (hit != null &&
+        DateTime.now().difference(hit.at) < const Duration(seconds: 60)) {
+      return hit.id;
+    }
+    String? found;
     try {
       final wallets = await WalletService().list(orgId);
       final target = label.toLowerCase();
       for (final w in wallets) {
         final n = w.name.toLowerCase();
-        if (n == target || n.contains(target)) return w.id;
+        if (n == target || n.contains(target)) {
+          found = w.id;
+          break;
+        }
       }
-      final aliases = <String, List<String>>{
-        'mybca': ['bca'],
-        'livin mandiri': ['mandiri'],
-        'blu': ['blu', 'bca digital'],
-        'gopay': ['gopay', 'gojek'],
-        'shopeepay': ['shopee'],
-      };
-      for (final keys in aliases[label.toLowerCase()] ?? const <String>[]) {
-        for (final w in wallets) {
-          if (w.name.toLowerCase().contains(keys)) return w.id;
+      if (found == null) {
+        final aliases = <String, List<String>>{
+          'mybca': ['bca'],
+          'livin mandiri': ['mandiri'],
+          'blu': ['blu', 'bca digital'],
+          'gopay': ['gopay', 'gojek'],
+          'shopeepay': ['shopee'],
+        };
+        var aliasHit = false;
+        for (final keys in aliases[target] ?? const <String>[]) {
+          if (aliasHit) break;
+          for (final w in wallets) {
+            if (w.name.toLowerCase().contains(keys)) {
+              found = w.id;
+              aliasHit = true;
+              break;
+            }
+          }
         }
       }
     } catch (_) {}
-    return null;
+    _walletMemo[key] = (id: found, at: DateTime.now());
+    return found;
   }
 
   /// Auto-gabung transfer: bila tx baru berpasangan out+in auto+auto
