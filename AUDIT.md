@@ -833,6 +833,27 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.82.8+275 (2026-10-19)
+Batch temuan user di 2.82.7+274: 2 bug + 1 request adaptasi (tanpa ubah logika
+bisnis; model TxFilter utuh).
+- [B1] Detail transaksi: lingkaran ikon tampil karakter aneh karena raw Icon()
+  pakai fontFamily PhosphorDuotone yang TIDAK ter-bundle (pubspec hanya declare
+  PhosphorFill) -> ganti ke DuoIcon SVG-first; mapping 0xe041/0xe093 ke
+  Arrow_Down_MD/Arrow_Up_MD sudah ada di cool_icons.dart. tx_row.dart sudah
+  DuoIcon, tidak diubah.
+- [B2] Panel filter: _FilterSheet tanpa background -> tembus pandang di dark
+  mode. Tambah backgroundColor DribTokens.cardOf di showModalBottomSheet +
+  wrapper Container opaque.
+- [R1] Panel filter di-restyle pill-dropdown ala konsep Ollo (tanpa merek/aset/
+  teks Ollo): 4 baris Periode/Jenis/Kategori/Rentang Nominal, tap expand/
+  collapse via state lokal; semua fungsi filter dipertahankan (types multi,
+  cats multi cap-20, _pickDate, min/maks nominal, Terapkan/Bersihkan); 5 kunci
+  strings baru; widget privat _PillRow; sadar dark mode; tanpa ungu/indigo.
+- Rilis: CI run 39150714439 hijau; APK arm64 42306492 byte di
+  /sdcard/Download/SSR-SPACE/SSR-SPACE-2.82.8-275-arm64.apk; release ci-apk
+  di-prune watchdog ke 4 aset 2.82.8-275 (catatan: retensi 3 versi tidak
+  dipatuhi watchdog - aset 2.82.7-274 terhapus dari release); Telegram msg 373
+  terkirim via watchdog 00:49 WIB (koordinator SKIP kirim ulang anti-duplikat).
 ## 2.82.7+274 (2026-10-18)
 Wave 5 audit 4-skill-dev: 13 NICE-TO-HAVE tersisa (tanpa ubah logika bisnis;
 audit menghitung 12, daftar rinci berisi 13 — semua dikerjakan).
