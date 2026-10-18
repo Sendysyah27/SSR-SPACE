@@ -1,7 +1,21 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.5+272.
+Versi terpasang: 2.82.6+273.
 
+## Yang baru di 2.82.6+273
+
+1. Performa: restore backup kini jauh lebih cepat — kode transaksi disiapkan dulu lalu data dimasukkan sekaligus (bukan satu per satu).
+2. Stabilitas: daftar transaksi tidak lagi duplikat/terlewat saat ada data baru masuk ketika Anda menggulir.
+3. Kejujuran data: batas backup kini satu angka yang jelas (2000 transaksi); bila data melebihi batas, aplikasi memberi tahu eksplisit.
+4. Keamanan: seluruh pemetaan error database kini lewat satu kontrak terpusat — pesan error lebih konsisten.
+5. Stabilitas: galeri foto struk dibatasi resolusinya agar tidak kehabisan memori di HP kelas menengah.
+## What's new in 2.82.6+273
+
+1. Performance: backup restore is now much faster — transaction codes are prepared upfront, then data is inserted in bulk.
+2. Stability: the transaction list no longer duplicates or skips rows when new data arrives while scrolling.
+3. Data honesty: backup now uses one clear limit (2000 transactions); the app tells you explicitly when data exceeds it.
+4. Security: all database error mappings now go through one centralized contract — more consistent error messages.
+5. Stability: receipt gallery photos are resolution-capped to avoid out-of-memory on mid-range phones.
 ## Yang baru di 2.82.5+272
 
 1. Operasional: tool `dart tool/changelog_ensure.dart` memastikan catatan perubahan selalu selaras dengan versi aplikasi (wajib jalan tiap rilis).
