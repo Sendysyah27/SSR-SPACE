@@ -1,6 +1,34 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.79.0+264.
+Versi terpasang: 2.82.4+271.
+
+## Yang baru di 2.82.4+271
+
+1. Keamanan: opsi "Buat cadangan terenkripsi" — file cadangan diproteksi password (AES-256) sebelum dibagikan; file sementara otomatis dihapus setelah dibagikan.
+2. Keamanan: PIN kini disimpan di penyimpanan aman HP (Keystore/Keychain), bukan lagi di preferensi biasa. PIN lama otomatis dipindahkan saat pertama kali dipakai.
+3. Keamanan: tautan ganti PIN kini memverifikasi host callback, menutup celah session-fixation.
+4. Impor CSV: file di atas 5 MB ditolak dan maksimal 10.000 baris diproses, dengan pesan yang jelas.
+
+## What's new in 2.82.4+271
+
+1. Security: new "Make encrypted backup" option — the backup file is password-protected (AES-256) before sharing; the temporary file is auto-deleted after sharing.
+2. Security: PIN is now stored in the phone's secure storage (Keystore/Keychain) instead of plain preferences. Old PINs migrate automatically on first use.
+3. Security: PIN-reset links now verify the callback host, closing a session-fixation gap.
+4. CSV import: files over 5 MB are rejected and at most 10,000 rows are processed, with clear messages.
+
+## Yang baru di 2.82.3+270
+
+1. Perbaikan data: perintah transfer via chat AI tanpa dompet tujuan kini ditolak (tidak ada lagi saldo keluar tanpa pasangan masuk).
+2. Perbaikan data: budget dihitung dari transaksi bulan berjalan (sebelumnya bisa salah hitung bila transaksi banyak).
+3. Validasi nominal kini berlaku juga di aplikasi rilis (sebelumnya hanya saat debug).
+4. Daftar transaksi tidak lagi gagal total bila ada satu baris data rusak — baris rusak dilewati dengan catatan.
+
+## What's new in 2.82.3+270
+
+1. Data fix: AI-chat transfer commands without a destination wallet are now rejected (no more unmatched outgoing balances).
+2. Data fix: budgets are computed from the current month's transactions (previously could miscount with many transactions).
+3. Amount validation now also applies in release builds (previously debug-only).
+4. The transaction list no longer fails entirely when one data row is corrupt — bad rows are skipped with a log.
 
 ## Yang baru di 2.79.0+264
 
