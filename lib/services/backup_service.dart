@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:ssr_space/services/backup_json.dart';
 import 'package:ssr_space/services/export_files.dart';
 import 'package:ssr_space/services/supabase_config.dart';
+import 'package:ssr_space/services/pg_trigger_codes.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -111,7 +112,7 @@ Future<RestoreResult> restoreBackup(
       // (transaksi yang butuh dompet ini jadi skipped di bawah).
       quotaBlocked++;
     } on PostgrestException catch (e) {
-      if (e.message.contains('QUOTA_EXCEEDED')) {
+      if (pgIsQuotaExceeded(e)) {
         quotaBlocked++;
       } else {
         rethrow;
@@ -157,7 +158,7 @@ Future<RestoreResult> restoreBackup(
       // QUOTA = tertahan kuota paket → hitung jujur, bukan gagal generik.
       if (e.code == '23505') {
         skipped++;
-      } else if (e.message.contains('QUOTA_EXCEEDED')) {
+      } else if (pgIsQuotaExceeded(e)) {
         quotaBlocked++;
       } else {
         failed++;

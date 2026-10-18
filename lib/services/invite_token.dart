@@ -1,3 +1,4 @@
+import 'package:ssr_space/services/pg_trigger_codes.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
@@ -65,10 +66,10 @@ String inviteErrorMessage(String rpcMessage) {
   if (rpcMessage.contains('INVITE_INVALID')) {
     return tr('iv_invalid');
   }
-  if (rpcMessage.contains('NOT_AUTHENTICATED')) {
+  if (pgIsNotAuthenticated(rpcMessage)) {
     return tr('iv_needlogin');
   }
-  if (rpcMessage.contains('QUOTA_EXCEEDED')) {
+  if (pgIsQuotaExceeded(rpcMessage)) {
     return tr('iv_quota');
   }
   return tr('iv_joinfail');

@@ -1,3 +1,4 @@
+import 'package:ssr_space/services/pg_trigger_codes.dart';
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/family_summary.dart';
 import 'package:ssr_space/services/invite_service.dart';
@@ -154,8 +155,8 @@ class FamilyScreenState extends State<FamilyScreen> {
 
   String _kickError(PostgrestException e) {
     if (e.code == '42883') return tr('wsm_nomigration');
-    if (e.message.contains('KICK_LAST_OWNER')) return tr('wsm_kick_last');
-    if (e.message.contains('NOT_ADMIN')) return tr('wsm_kick_denied');
+    if (pgIsKickLastOwner(e)) return tr('wsm_kick_last');
+    if (pgIsNotAdmin(e)) return tr('wsm_kick_denied');
     return tr('fam_kick_fail');
   }
 

@@ -17,6 +17,7 @@ import 'package:ssr_space/services/transfer_detect.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/supabase_config.dart';
+import 'package:ssr_space/services/pg_trigger_codes.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 
@@ -66,10 +67,10 @@ String connectionLabel({
 /// RATE_LIMITED = trigger rate limit auto-insert (migration_11).
 /// QUOTA_EXCEEDED = trigger kuota paket (migration_17).
 String saveErrorStatus(PostgrestException err) {
-  if (err.message.contains('RATE_LIMITED')) {
+  if (pgIsRateLimited(err)) {
     return tr('svc_rate');
   }
-  if (err.message.contains('QUOTA_EXCEEDED')) {
+  if (pgIsQuotaExceeded(err)) {
     return tr('q_auto')
         .replaceFirst('{n}', '${PlanLimits.freeAutoPerMonth}');
   }

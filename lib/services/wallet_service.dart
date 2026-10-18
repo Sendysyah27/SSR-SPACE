@@ -1,5 +1,6 @@
 import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
+import 'package:ssr_space/services/pg_trigger_codes.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -44,7 +45,7 @@ class WalletService {
       } on PostgrestException catch (e) {
         // Trigger kuota (migration_20): tawarkan Pro, bukan error teknis.
         // _guardSpace di luar tetap memetakan 42501 Bendahara.
-        if (e.message.contains('QUOTA_EXCEEDED')) {
+        if (pgIsQuotaExceeded(e)) {
           throw QuotaExceededException(tr('q_wallet_exceeded'));
         }
         rethrow;

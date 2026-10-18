@@ -5,6 +5,7 @@ import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/offline_cache.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/supabase_config.dart';
+import 'package:ssr_space/services/pg_trigger_codes.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -184,7 +185,7 @@ Future<void> setBudget(
       onConflict: 'org_id,category,month',
     );
   } on PostgrestException catch (e) {
-    if (e.message.contains('QUOTA_EXCEEDED')) {
+    if (pgIsQuotaExceeded(e)) {
       throw QuotaExceededException(tr('q_budget_exceeded'));
     }
     rethrow;

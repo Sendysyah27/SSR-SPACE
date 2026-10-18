@@ -1,3 +1,4 @@
+import 'package:ssr_space/services/pg_trigger_codes.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -120,7 +121,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
       if (!mounted) return;
       // Trigger server menembak duluan (user belum refresh daftar):
       // tawarkan Pro, bukan error generik.
-      if ('$e'.contains('QUOTA_EXCEEDED')) {
+      if (pgIsQuotaExceeded(e)) {
         setState(() => busy = false);
         await requirePro(
           context,

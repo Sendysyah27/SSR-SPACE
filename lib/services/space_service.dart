@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/space_logic.dart';
 import 'package:ssr_space/services/supabase_config.dart';
+import 'package:ssr_space/services/pg_trigger_codes.dart';
 import 'package:ssr_space/utils/strings.dart';
 
 class SpaceException implements Exception {
@@ -42,8 +43,8 @@ class SpaceService {
       );
     } on Exception catch (err) {
       final msg = '$err';
-      if (msg.contains('NOT_ADMIN')) throw SpaceException(tr('sp_adminonly'));
-      if (msg.contains('BAD_MODE')) throw SpaceException(tr('sp_badmode'));
+      if (pgIsNotAdmin(err)) throw SpaceException(tr('sp_adminonly'));
+      if (pgIsBadMode(err)) throw SpaceException(tr('sp_badmode'));
       rethrow;
     }
   }
