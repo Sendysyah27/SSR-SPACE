@@ -31,7 +31,7 @@ dependencies:
   # Jangan longgarkan ke ^ tanpa cek ulang string yang di-patch.
   notification_listener_service: 1.0.0
   # NFC e-money (read-only, tanpa top-up).
-  prepaid_lib_flutter_null_safety: ^1.0.1
+  prepaid_lib_flutter_null_safety: 1.0.1
   # NFC gate: cek dukungan/switch HP (API terverifikasi docs 3.6.2).
   flutter_nfc_kit: ^3.6.2
   app_links: ^7.2.1

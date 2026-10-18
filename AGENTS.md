@@ -264,6 +264,17 @@ Urutan list penting: **myBCA sebelum BCA**.
 - Push `main` → Actions: `flutter pub get` → generate `android/` bila belum → inject NotificationListenerService ke Manifest → `flutter analyze` (wajib 0 issue, tambahan Fase 2 D1) → `flutter test` → inject signing dari secrets → `flutter build apk --release --dart-define=SUPABASE_*` → upload artifact.
 - Secrets: `SSR_KEYSTORE_B64`, `SSR_KEYSTORE_PASS`, `SSR_KEY_ALIAS`, `SSR_KEY_PASS`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
 - Folder `android/` **tidak di-commit** (di-generate CI).
+- **Patch plugin pihak ketiga (NICE-TO-HAVE #N13):** CI mem-patch 3 plugin
+  di `~/.pub-cache` via heredoc Python (fragil bila plugin bump). Daftar patch:
+  1. notification_listener_service (pin exact 1.0.0): baca EXTRA_BIG_TEXT
+     bila EXTRA_TEXT kosong (SeaBank taruh detail di BigText).
+  2. receive_sharing_intent (pin exact 1.8.1): samakan Java+Kotlin ke 17
+     (compileOptions + kotlinOptions jvmTarget).
+  3. prepaid_lib_flutter_null_safety (pin exact 1.0.1): jcenter→mavenCentral,
+     namespace dari package= di manifest plugin, compileSdk minimal 35.
+  Aturan: SEMUA versi plugin yang di-patch CI wajib pin exact di pubspec
+  (tanpa ^). Tiap bump plugin: cek ulang pola patch masih cocok (assert CI
+  akan vonis cepat bila tidak), lalu update daftar ini.
 - **Inventaris Manifest (NICE-TO-HAVE #N9):** `android/` tidak di repo = blind
   spot audit; permission & komponen di-inject CI (`apk.yml`). Daftar per
   2.82.7+274 — ubah daftar ini tiap tambah permission di CI:
