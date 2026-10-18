@@ -711,3 +711,17 @@ Hapus fitur desain mati (audit tema, permintaan user).
   _FontCard, uiListStyle, cardTheme, themeChoice, GlassSpace/GlassRadius/
   GlassDuration/GlassElevation.
 - CI hijau run 39110633513.
+
+## 2.82.2+269 (2026-10-18)
+Fix kontras teks Pengaturan di tema cerah (laporan user: teks samar).
+- GlassLabeledCard (lib/widgets/labeled_section_card.dart): bungkus Column
+  children dengan DefaultTextStyle(color: Colors.white) — Text() polos
+  sebelumnya mewarisi DefaultTextStyle app (gelap di light theme) -> samar
+  di atas navy. Label/icon eksplisit tak berubah.
+- _CardThemeCard._preview (settings_screen.dart): label gradient
+  onSurface (gelap) -> Colors.white70.
+- ssrSegmentedStyle (lib/widgets/tx_type_selector.dart): unselected
+  backgroundColor scheme.surface (putih) -> Colors.transparent — di kartu
+  navy tampil navy + teks putih; di layar terang tampil bg terang + teks
+  gelap. Selected state tetap (bg primary, fg onPrimary).
+- CI hijau run 39111988845 (APK 2.82.2+269).
