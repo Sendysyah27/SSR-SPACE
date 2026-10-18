@@ -390,7 +390,7 @@ class _OlloTxDetailSheetState extends State<_OlloTxDetailSheet> {
               color: amountColor.withValues(alpha: 0.15),
             ),
             alignment: Alignment.center,
-            child: Icon(arrowIcon, size: 30, color: amountColor),
+            child: DuoIcon(arrowIcon, size: 30, color: amountColor),
           ),
           const SizedBox(height: 12),
           // Amount besar
