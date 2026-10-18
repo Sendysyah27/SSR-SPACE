@@ -1,8 +1,19 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+
+/// PIN: hash+garam di secure storage (Keystore/Keychain), bukan prefs.
+/// Yang tetap di prefs hanya penanda non-rahasia `pin_set` agar [hasPin]
+/// tetap sinkron, plus counter lockout (tidak sensitif).
+/// Migrasi: hash lama di prefs diverifikasi sekali saat PIN benar, lalu
+/// dipindah ke secure storage + dihapus dari prefs.
+const _kPinHash = 'pin_hash';
+const _kPinSalt = 'pin_salt';
+const _kPinSet = 'pin_set';
+const _storage = FlutterSecureStorage();
 
 class SessionService {
   final Map<String, Object> _mem;
@@ -36,8 +47,55 @@ class SessionService {
     }
   }
 
+  Future<void> _remove(String k) async {
+    if (_inMemory) {
+      _mem.remove(k);
+    } else {
+      await _prefs!.remove(k);
+    }
+  }
+
+  /// Baca rahasia: secure storage dulu; bila platform tak tersedia (test),
+  /// fallback memori terpisah (`sec:`) agar tak bentrok kunci prefs.
+  /// Gagal total = null (fail-closed).
+  Future<String?> _secRead(String k) async {
+    try {
+      return await _storage.read(key: k);
+    } catch (_) {
+      return _mem['sec:$k'] as String?;
+    }
+  }
+
+  Future<void> _secWrite(String k, String v) async {
+    try {
+      await _storage.write(key: k, value: v);
+    } catch (_) {
+      _mem['sec:$k'] = v;
+    }
+  }
+
+  Future<void> _secDelete(String k) async {
+    try {
+      await _storage.delete(key: k);
+    } catch (_) {
+      _mem.remove('sec:$k');
+    }
+  }
+
+  String _hashPin(String salt, String pin) =>
+      sha256.convert(utf8.encode('$salt::$pin')).toString();
+
+  String _newSalt() => List.generate(
+          16,
+          (_) =>
+              Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0'))
+      .join();
+
   bool get isFirstRun => (_get<bool>('onboarding_done') ?? false) == false;
-  bool get hasPin => _get<String>('pin_hash') != null;
+
+  /// Sinkron: penanda prefs + fallback hash lama (pra-migrasi).
+  bool get hasPin =>
+      (_get<bool>(_kPinSet) ?? false) || _get<String>(_kPinHash) != null;
 
   Future<void> completeOnboarding(String name) async {
     await _set('onboarding_done', true);
@@ -47,19 +105,40 @@ class SessionService {
   }
 
   Future<void> setPin(String pin) async {
-    final salt = List.generate(16, (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0')).join();
-    await _set('pin_hash', sha256.convert(utf8.encode('$salt::$pin')).toString());
-    await _set('pin_salt', salt);
+    final salt = _newSalt();
+    await _secWrite(_kPinHash, _hashPin(salt, pin));
+    await _secWrite(_kPinSalt, salt);
+    await _set(_kPinSet, true);
+    // Bersihkan format lama bila tersisa.
+    await _remove(_kPinHash);
+    await _remove(_kPinSalt);
+    await _secDelete(_kPinHash + '_legacy');
     await _set('pin_fail', 0);
   }
 
   Future<bool> verifyPin(String pin) async {
     final lockUntil = _get<int>('pin_lock_until') ?? 0;
     if (DateTime.now().millisecondsSinceEpoch < lockUntil) return false;
-    final hash = _get<String>('pin_hash');
-    final salt = _get<String>('pin_salt');
-    if (hash == null || salt == null) return false;
-    final ok = sha256.convert(utf8.encode('$salt::$pin')).toString() == hash;
+    var hash = await _secRead(_kPinHash);
+    var salt = await _secRead(_kPinSalt);
+    if (hash == null || salt == null) {
+      // Migrasi satu-kali dari prefs lama: PIN benar -> pindah.
+      final legacyHash = _get<String>(_kPinHash);
+      final legacySalt = _get<String>(_kPinSalt);
+      if (legacyHash != null &&
+          legacySalt != null &&
+          _hashPin(legacySalt, pin) == legacyHash) {
+        await _secWrite(_kPinHash, legacyHash);
+        await _secWrite(_kPinSalt, legacySalt);
+        await _remove(_kPinHash);
+        await _remove(_kPinSalt);
+        await _set(_kPinSet, true);
+        hash = legacyHash;
+        salt = legacySalt;
+      }
+    }
+    final ok =
+        hash != null && salt != null && _hashPin(salt, pin) == hash;
     if (ok) {
       await _set('pin_fail', 0);
       unlockAt = DateTime.now();
