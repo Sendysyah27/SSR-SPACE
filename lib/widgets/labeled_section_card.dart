@@ -114,29 +114,32 @@ class GlassLabeledCard extends StatelessWidget {
             suffixIconColor: Colors.white70,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (ic == null)
-              Text(label,
-                  style: const TextStyle(color: labelColor))
-            else
-              Row(
-                children: [
-                  DuoIcon(
-                    ic,
-                    size: 14,
-                    color: DribTokens.primary,
-                  ),
-                  const SizedBox(width: SsrSpace.xs),
-                  Text(label,
-                      style:
-                          const TextStyle(color: labelColor)),
-                ],
-              ),
-            const SizedBox(height: SsrSpace.xs),
-            ...children,
-          ],
+        child: DefaultTextStyle(
+          style: const TextStyle(color: Colors.white),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (ic == null)
+                Text(label,
+                    style: const TextStyle(color: labelColor))
+              else
+                Row(
+                  children: [
+                    DuoIcon(
+                      ic,
+                      size: 14,
+                      color: DribTokens.primary,
+                    ),
+                    const SizedBox(width: SsrSpace.xs),
+                    Text(label,
+                        style:
+                            const TextStyle(color: labelColor)),
+                  ],
+                ),
+              const SizedBox(height: SsrSpace.xs),
+              ...children,
+            ],
+          ),
         ),
       ),
     );

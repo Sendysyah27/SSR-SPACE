@@ -748,7 +748,7 @@ class _CardThemeCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: Colors.white70,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

@@ -13,7 +13,7 @@ ButtonStyle ssrSegmentedStyle(BuildContext context) {
       if (states.contains(WidgetState.selected)) {
         return scheme.primary;
       }
-      return scheme.surface;
+      return Colors.transparent;
     }),
     foregroundColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.selected)) {
