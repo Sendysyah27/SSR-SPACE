@@ -43,7 +43,10 @@ Future<void> _write(String key, Object value) async {
   try {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(key, jsonEncode(value));
-  } catch (_) {}
+  } catch (e) {
+    // best-effort: cache lokal gagal tulis bukan fatal (data utama di cloud).
+    debugPrint('[offline_cache] tulis $key gagal: $e');
+  }
 }
 
 Future<dynamic> _read(String key) async {

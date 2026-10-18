@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -786,7 +787,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
         date: when.date,
         createdAt: when.createdAt,
       );
-    } catch (_) {
+    } catch (e) {
+      // Gagal simpan aksi AI: user diberi tahu via bubble error (bukan silent).
+      debugPrint('[ai_chat] simpan aksi gagal: $e');
       if (!mounted) return;
       setState(() {
         _items.add(_ChatMsg(

@@ -389,6 +389,14 @@ ls -t /sdcard/DCIM/Screenshots | head -5
 6. **Test** untuk logic murni (parse, hash, budget math) wajib; jalankan via CI.
 7. File deliverable → `/sdcard/Download/SSR-SPACE/`. **Tester: hanya varian kecil `*-arm64.apk`** (universal di-skip, hemat tempat & share). **Unduh APK wajib berpola: `gh release download ci-apk` SELALU pakai `-p "<nama-file-versi-baru>"`; JANGAN pernah tanpa pola** (rilis rolling berisi seluruh arsip lama, ikut keunduh semua).
 8. Konfirmasi sebelum commit besar / push kalau user belum minta.
+10. **Konvensi penanganan error (fix #17):** `catch (_)` telanjang DILARANG tanpa
+    komentar alasan. Swallow HANYA boleh untuk operasi best-effort yang
+    kegagalannya tidak mengubah kebenaran data/fitur (contoh: tulis cache
+    lokal, log diagnostik) — dan WAJIB ada komentar `// best-effort:` +
+    `debugPrint` agar kegagalan tetap terlacak. Error yang memengaruhi user
+    (gagal simpan, gagal restore, gagal auth) TIDAK boleh di-swallow: tampilkan
+    pesan jujur ke user dan/atau lempar ulang. Pemetaan error trigger Postgres
+    WAJIB lewat `lib/services/pg_trigger_codes.dart` (kontrak tunggal).
 9. **Version wajib naik tiap update app (Skema A):** setiap perubahan kode (`lib/`, `supabase/`, `.github/`, `pubspec.yaml`, `assets/`) yang di-push ke `main` wajib bump version — `pubspec.yaml` (`version:`) dan `lib/utils/app_info.dart` (`AppInfo.version`) harus identik; fix kecil → `+build` saja (`2.3.9+22` → `2.3.9+23`), fitur/perilaku baru → `+patch/minor`; catat versi baru di `AUDIT.md` §7. **Tiap bump version wajib tambah entri `assets/changelog_id.md`** (seksi "Yang baru di X.Y.Z" paling atas + sesuaikan "Versi terpasang") — changelog adalah janji ke user, jangan basi. Docs-only (`AGENTS.md`/`AUDIT.md`/`README.md`/`docs/`) boleh tanpa bump. Tanpa bump = jangan push.
 
 ---
