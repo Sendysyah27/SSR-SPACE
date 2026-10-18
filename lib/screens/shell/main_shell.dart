@@ -24,6 +24,7 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 import 'package:ssr_space/widgets/entry/ollo_entry_sheet.dart';
 import 'package:ssr_space/widgets/entry/voice_draft_sheet.dart';
+import 'package:ssr_space/widgets/entry/ocr_scan_sheet.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/screens/auth/set_password_screen.dart';
 import 'package:ssr_space/screens/beranda/beranda_screen.dart';
@@ -260,6 +261,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         await showOlloEntrySheet(context, autoScan: true);
         if (mounted) _reloadAll();
         break;
+      case _QuickAction.ocr:
+        // Scan OCR on-device (tanpa AI/cloud): kamera/galeri -> parse -> draft.
+        if (await openOcrFlow(context) && mounted) _reloadAll();
+        break;
       case _QuickAction.voice:
         if (await openOlloVoiceFlow(context) && mounted) _reloadAll();
         break;
@@ -269,95 +274,28 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     }
   }
 
-  /// Sheet bawah "Aksi Cepat" gaya Ollo: 4 lingkaran pastel (ikon + label).
+  /// Sheet bawah "Aksi Cepat": 5 lingkaran pastel (ikon + label).
+  /// Urutan muncul: tengah dulu lalu menyebar (index 2, 1, 3, 0, 4);
+  /// satu AnimationController 380ms (scale + fade), tetap ringan.
   Future<_QuickAction?> _showQuickActionsSheet() {
     return showModalBottomSheet<_QuickAction>(
       context: context,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final scheme = Theme.of(ctx).colorScheme;
-        final items = <_QaItem>[
+      builder: (ctx) => _QaSheet(
+        items: [
           _QaItem(_QuickAction.addTx, tr('qa_add_tx'), AppIcons.add,
               const Color(0xFF5B9BF5)),
           _QaItem(_QuickAction.scan, tr('qa_scan'), AppIcons.scan,
               const Color(0xFF22B07D)),
+          _QaItem(_QuickAction.ocr, tr('qa_ocr'),
+              Icons.document_scanner_outlined, const Color(0xFFC07A1A)),
           _QaItem(_QuickAction.voice, tr('qa_voice'), AppIcons.voice,
               const Color(0xFFFF9F43)),
           _QaItem(_QuickAction.chat, tr('qa_chat'),
               Icons.smart_toy_outlined, const Color(0xFF00A19A)),
-        ];
-        return Container(
-          decoration: BoxDecoration(
-            color: DribTokens.cardOf(ctx),
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(DribTokens.sheetRadius),
-            ),
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
-                  color: scheme.outlineVariant,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                tr('qa_sheet_title'),
-                style: Theme.of(ctx)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final it in items) _qaCircle(ctx, scheme, it),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// Satu lingkaran pastel aksi cepat (adaptasi lingkaran kategori Ollo).
-  Widget _qaCircle(BuildContext ctx, ColorScheme scheme, _QaItem it) {
-    return GestureDetector(
-      onTap: () => Navigator.pop(ctx, it.action),
-      child: SizedBox(
-        width: 72,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: it.color.withValues(alpha: 0.15),
-              ),
-              alignment: Alignment.center,
-              child: Icon(it.icon, size: 28, color: it.color),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              it.label,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: scheme.onSurface),
-            ),
-          ],
-        ),
+        ],
+        onSelect: (act) => Navigator.pop(ctx, act),
       ),
     );
   }
@@ -448,7 +386,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 }
 
 /// Pilihan item sheet Aksi Cepat (FAB '+').
-enum _QuickAction { addTx, scan, voice, chat }
+enum _QuickAction { addTx, scan, ocr, voice, chat }
 
 /// Item lingkaran pastel untuk sheet aksi cepat gaya Ollo.
 class _QaItem {
@@ -457,6 +395,147 @@ class _QaItem {
   final IconData icon;
   final Color color;
   const _QaItem(this.action, this.label, this.icon, this.color);
+}
+
+/// Sheet aksi cepat 5 item dengan stagger animasi (1 AnimationController,
+/// 380ms). Urutan muncul: tengah dulu (index 2), lalu 1, 3, 0, 4 menyebar.
+/// Background lingkaran transparan soft (light 0.16 / dark 0.30), ikon
+/// dicerahkan 25% di dark mode agar terbaca.
+class _QaSheet extends StatefulWidget {
+  final List<_QaItem> items;
+  final ValueChanged<_QuickAction?> onSelect;
+  const _QaSheet({required this.items, required this.onSelect});
+  @override
+  State<_QaSheet> createState() => _QaSheetState();
+}
+
+class _QaSheetState extends State<_QaSheet>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// Urutan stagger: tengah (2) dulu, lalu menyebar (1, 3, 0, 4).
+  int _orderIndex(int i) {
+    const order = [2, 1, 3, 0, 4];
+    return order.indexOf(i);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: DribTokens.cardOf(context),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(DribTokens.sheetRadius),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(2),
+              color: scheme.outlineVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            tr('qa_sheet_title'),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var i = 0; i < widget.items.length; i++)
+                _staggerItem(widget.items[i], i),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Satu item lingkaran pastel dengan animasi stagger (scale + fade).
+  Widget _staggerItem(_QaItem it, int index) {
+    final step = _orderIndex(index) / widget.items.length;
+    final start = (step * 0.6).clamp(0.0, 0.6);
+    final anim = CurvedAnimation(
+      parent: _controller,
+      curve: Interval(start, (start + 0.4).clamp(0.0, 1.0),
+          curve: Curves.easeOut),
+    );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = it.color.withValues(alpha: isDark ? 0.30 : 0.16);
+    final iconColor =
+        isDark ? Color.lerp(it.color, Colors.white, 0.25)! : it.color;
+    return AnimatedBuilder(
+      animation: anim,
+      builder: (ctx, _) {
+        final t = anim.value;
+        return Opacity(
+          opacity: t,
+          child: Transform.scale(
+            scale: 0.5 + 0.5 * t,
+            child: GestureDetector(
+              onTap: () => widget.onSelect(it.action),
+              child: SizedBox(
+                width: 64,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: bg,
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(it.icon, size: 28, color: iconColor),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      it.label,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: Theme.of(ctx).colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// Strip offline global: data terakhir tersimpan + tombol muat ulang.

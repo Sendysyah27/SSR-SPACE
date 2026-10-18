@@ -74,6 +74,18 @@ const _t = <String, Map<String, String>>{
   'qa_scan': {'id': 'Scan Struk', 'en': 'Scan Receipt'},
   'qa_voice': {'id': 'Asisten Suara', 'en': 'Voice Assistant'},
   'qa_chat': {'id': 'Chat AI', 'en': 'AI Chat'},
+  'qa_ocr': {'id': 'Scan OCR', 'en': 'Scan OCR'},
+  'ocr_src_title': {'id': 'Pilih Sumber Gambar', 'en': 'Choose Image Source'},
+  'ocr_src_camera': {'id': 'Kamera', 'en': 'Camera'},
+  'ocr_src_gallery': {'id': 'Galeri', 'en': 'Gallery'},
+  'ocr_settings_title': {'id': 'Pengaturan OCR', 'en': 'OCR Settings'},
+  'ocr_enhance': {'id': 'Tingkatkan kontras', 'en': 'Enhance contrast'},
+  'ocr_enhance_sub': {'id': 'Grayscale + kontras untuk struk pudar', 'en': 'Grayscale + contrast for faded receipts'},
+  'ocr_process': {'id': 'Proses', 'en': 'Process'},
+  'ocr_processing': {'id': 'Membaca struk…', 'en': 'Reading receipt…'},
+  'ocr_err_empty': {'id': 'Teks tidak terbaca. Coba foto yang lebih jelas.', 'en': 'No text detected. Try a clearer photo.'},
+  'ocr_retry': {'id': 'Coba Lagi', 'en': 'Try Again'},
+  'ocr_merchant_default': {'id': 'Toko', 'en': 'Store'},
   // Transaksi
   'tx_err_load': {
     'id': 'Gagal memuat transaksi. Periksa koneksi.',
