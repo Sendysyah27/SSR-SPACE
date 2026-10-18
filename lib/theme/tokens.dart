@@ -67,13 +67,3 @@ class GlassElevation {
       ];
 }
 
-/// Warna kaca untuk mode gelap — background harus cukup gelap
-/// agar efek blur + border putih terlihat.
-class GlassColors {
-  /// Overlay gelap di belakang kartu kaca (untuk light mode fallback).
-  static const scrim = Color(0x99000000);
-
-  /// Tint aksen untuk highlight kaca.
-  static Color tint(Color base, double alpha) =>
-      base.withValues(alpha: alpha);
-}

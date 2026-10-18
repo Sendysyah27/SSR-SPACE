@@ -198,32 +198,11 @@ const kSettingsSearchEntries = <SettingsSearchEntry>[
     focus: 'topn',
   ),
   SettingsSearchEntry(
-    titleKey: 'st_anims',
-    en: 'animations',
-    sectionKey: 'st_title',
-    route: 'settings',
-    focus: 'anims',
-  ),
-  SettingsSearchEntry(
     titleKey: 'st_list_style',
     en: 'list style compact comfortable',
     sectionKey: 'st_title',
     route: 'settings',
     focus: 'list',
-  ),
-  SettingsSearchEntry(
-    titleKey: 'st_date_style',
-    en: 'date style format',
-    sectionKey: 'st_title',
-    route: 'settings',
-    focus: 'date',
-  ),
-  SettingsSearchEntry(
-    titleKey: 'st_hero_style',
-    en: 'summary style hero',
-    sectionKey: 'st_title',
-    route: 'settings',
-    focus: 'hero',
   ),
   SettingsSearchEntry(
     titleKey: 'st_card_theme',

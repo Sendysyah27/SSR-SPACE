@@ -10,10 +10,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final p = await SharedPreferences.getInstance();
     await loadAppSettings(p);
-    expect(uiAnims.value, true);
     expect(uiListStyle.value, 'comfortable');
-    expect(uiDateStyle.value, 'system');
-    expect(uiHeroStyle.value, 'emerald-calm');
     expect(reportsTopN.value, true);
     expect(reminderEnabled.value, false);
     expect(reminderHour.value, 7);

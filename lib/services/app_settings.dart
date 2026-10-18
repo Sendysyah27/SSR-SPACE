@@ -7,10 +7,7 @@ import 'package:ssr_space/services/wallet_usage.dart';
 const _kLocale = 'app_locale';
 const _kCurrency = 'app_currency';
 const _kFontScale = 'app_font_scale';
-const _kUiAnims = 'ui_anims';
 const _kUiListStyle = 'ui_list_style';
-const _kUiDateStyle = 'ui_date_style';
-const _kUiHeroStyle = 'ui_hero_style';
 const _kHomeMenuOrder = 'home_menu_order';
 const _kInputDefaultCurrency = 'input_default_currency';
 const _kReportsTopN = 'reports_topn';
@@ -42,10 +39,7 @@ const _kBalanceShowDecimal = 'balance_show_decimal';
 final localeCode = ValueNotifier<String>('id');
 final currencyCode = ValueNotifier<String>('IDR');
 final fontScale = ValueNotifier<double>(1.0);
-final uiAnims = ValueNotifier<bool>(true);
 final uiListStyle = ValueNotifier<String>('comfortable');
-final uiDateStyle = ValueNotifier<String>('system');
-final uiHeroStyle = ValueNotifier<String>('emerald-calm');
 final homeMenuOrder = ValueNotifier<List<String>>([]);
 final inputDefaultCurrency = ValueNotifier<String>('IDR');
 final reportsTopN = ValueNotifier<bool>(true);
@@ -116,17 +110,10 @@ Future<void> loadAppSettings(SharedPreferences prefs) async {
   currencyCode.value = kCurrencySymbols.containsKey(cur) ? cur : 'IDR';
   final fs = prefs.getDouble(_kFontScale) ?? 1.0;
   fontScale.value = fs.clamp(0.85, 1.3);
-  uiAnims.value = prefs.getBool(_kUiAnims) ?? true;
   final ls = prefs.getString(_kUiListStyle);
   uiListStyle.value = (ls == 'compact' || ls == 'comfortable')
       ? ls!
       : 'comfortable';
-  final ds = prefs.getString(_kUiDateStyle);
-  uiDateStyle.value = (ds == 'system' || ds == 'calendar' || ds == 'spinner')
-      ? ds!
-      : 'system';
-  final hs = prefs.getString(_kUiHeroStyle);
-  uiHeroStyle.value = (hs == 'emerald-calm') ? hs! : 'emerald-calm';
   final ct = prefs.getString(_kCardTheme);
   cardTheme.value = (ct == 'navy' ||
           ct == 'ocean' ||
@@ -211,33 +198,11 @@ Future<void> setFontScale(double v) async {
   await prefs.setDouble(_kFontScale, fontScale.value);
 }
 
-Future<void> setUiAnims(bool v) async {
-  uiAnims.value = v;
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setBool(_kUiAnims, v);
-}
-
 Future<void> setUiListStyle(String v) async {
   final nv = (v == 'compact' || v == 'comfortable') ? v : 'comfortable';
   uiListStyle.value = nv;
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kUiListStyle, nv);
-}
-
-Future<void> setUiDateStyle(String v) async {
-  final nv = (v == 'system' || v == 'calendar' || v == 'spinner')
-      ? v
-      : 'system';
-  uiDateStyle.value = nv;
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(_kUiDateStyle, nv);
-}
-
-Future<void> setUiHeroStyle(String v) async {
-  final nv = (v == 'emerald-calm') ? v : 'emerald-calm';
-  uiHeroStyle.value = nv;
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(_kUiHeroStyle, nv);
 }
 
 Future<void> setCardTheme(String v) async {

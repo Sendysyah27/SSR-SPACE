@@ -54,10 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _pinKey = GlobalKey();
   final _currencyKey = GlobalKey();
   final _topnKey = GlobalKey();
-  final _animsKey = GlobalKey();
   final _listKey = GlobalKey();
-  final _dateKey = GlobalKey();
-  final _heroKey = GlobalKey();
   final _cardThemeKey = GlobalKey();
   final _widgetKey = GlobalKey();
   final _homeViewKey = GlobalKey();
@@ -80,10 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'pin' => _pinKey,
         'currency' => _currencyKey,
         'topn' => _topnKey,
-        'anims' => _animsKey,
         'list' => _listKey,
-        'date' => _dateKey,
-        'hero' => _heroKey,
         'card-theme' => _cardThemeKey,
         'widget' => _widgetKey,
         'numformat' => _numKey,
@@ -172,69 +166,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: SsrSpace.md),
           PremiumSectionHeader(title: tr('st_group_display')),
           const SizedBox(height: SsrSpace.sm),
-          // Grup Tampilan: grid 2 kolom (Batch Ollo 2). Kartu
-          // _CardThemeCard & _WidgetCard full-width (butuh lebar penuh untuk
-          // preview horizontal / konten lega). Focus key dipertahankan.
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: ValueListenableBuilder<double>(
-                  valueListenable: fontScale,
-                  builder: (context, fs, _) => Container(
-                    key: _fontKey,
-                    child:
-                        _FontCard(value: fs, onChanged: (v) => setFontScale(v)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: SsrSpace.md),
-              Expanded(
-                child: Container(
-                  key: _animsKey,
-                  child: const _AnimsCard(),
-                ),
-              ),
-            ],
+          // Grup Tampilan: kartu full-width.
+          // _CardThemeCard & _WidgetCard butuh lebar penuh untuk
+          // preview horizontal / konten lega. Focus key dipertahankan.
+          Container(
+            key: _fontKey,
+            child: ValueListenableBuilder<double>(
+              valueListenable: fontScale,
+              builder: (context, fs, _) =>
+                  _FontCard(value: fs, onChanged: (v) => setFontScale(v)),
+            ),
           ),
           const SizedBox(height: SsrSpace.md),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Container(
-                  key: _listKey,
-                  child: const _ListStyleCard(),
-                ),
-              ),
-              const SizedBox(width: SsrSpace.md),
-              Expanded(
-                child: Container(
-                  key: _dateKey,
-                  child: const _DateStyleCard(),
-                ),
-              ),
-            ],
-          ),
+          Container(key: _listKey, child: const _ListStyleCard()),
           const SizedBox(height: SsrSpace.md),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Container(
-                  key: _heroKey,
-                  child: const _HeroStyleCard(),
-                ),
-              ),
-              const SizedBox(width: SsrSpace.md),
-              Expanded(
-                child: ValueListenableBuilder<String>(
-                  valueListenable: themeChoice,
-                  builder: (context, theme, _) => _ThemeCard(
-                      value: theme, onChanged: (v) { setThemeChoice(v); }),
-                ),
-              ),
-            ],
+          ValueListenableBuilder<String>(
+            valueListenable: themeChoice,
+            builder: (context, theme, _) => _ThemeCard(
+                value: theme, onChanged: (v) { setThemeChoice(v); }),
           ),
           const SizedBox(height: SsrSpace.md),
           Container(key: _cardThemeKey, child: const _CardThemeCard()),
@@ -687,31 +636,6 @@ class _TopNCard extends StatelessWidget {
   }
 }
 
-/// Animasi UI.
-class _AnimsCard extends StatelessWidget {
-  const _AnimsCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassLabeledCard(
-      label: tr('st_anims'),
-      icon: AppIcons.menu,
-      children: [
-        ValueListenableBuilder<bool>(
-          valueListenable: uiAnims,
-          builder: (context, value, _) => SwitchListTile(
-            activeThumbColor: DribTokens.primary,
-            contentPadding: EdgeInsets.zero,
-            title: Text(tr('st_anims')),
-            value: value,
-            onChanged: setUiAnims,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// Gaya daftar: rapat / lega.
 class _ListStyleCard extends StatelessWidget {
   const _ListStyleCard();
@@ -743,73 +667,6 @@ class _ListStyleCard extends StatelessWidget {
             },
             showSelectedIcon: false,
             onSelectionChanged: (s) => setUiListStyle(s.first),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Gaya pemilih tanggal.
-class _DateStyleCard extends StatelessWidget {
-  const _DateStyleCard();
-
-  static const _styles = ['system', 'calendar', 'spinner'];
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassLabeledCard(
-      label: tr('st_date_style'),
-      icon: AppIcons.calendar,
-      children: [
-        ValueListenableBuilder<String>(
-          valueListenable: uiDateStyle,
-          builder: (context, value, _) => DropdownButtonFormField<String>(
-            dropdownColor: Theme.of(context).colorScheme.surface,
-            initialValue: _styles.contains(value) ? value : 'system',
-            decoration: const InputDecoration(),
-            items: [
-              for (final s in _styles)
-                DropdownMenuItem(value: s, child: Text(s, style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
-            ],
-            onChanged: (v) {
-              if (v != null) setUiDateStyle(v);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Gaya ringkasan: satu varian dulu, sisanya tahap P2.
-class _HeroStyleCard extends StatelessWidget {
-  const _HeroStyleCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassLabeledCard(
-      label: tr('st_hero_style'),
-      icon: AppIcons.eye,
-      children: [
-        ValueListenableBuilder<String>(
-          valueListenable: uiHeroStyle,
-          builder: (context, value, _) => DropdownButtonFormField<String>(
-            dropdownColor: Theme.of(context).colorScheme.surface,
-            initialValue: value == 'emerald-calm' ? value : 'emerald-calm',
-            decoration: const InputDecoration(),
-            items: [
-              DropdownMenuItem(
-                value: 'emerald-calm',
-                child: Text(
-                  'emerald-calm',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-                ),
-              ),
-            ],
-            onChanged: (v) {
-              if (v != null) setUiHeroStyle(v);
-            },
           ),
         ),
       ],
