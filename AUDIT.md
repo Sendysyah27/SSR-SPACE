@@ -778,3 +778,28 @@ Wave 2 audit 4-skill-dev: keamanan boundary (tanpa migration).
   fatal untuk warning (unnecessary_null_comparison, unused_element,
   prefer_interpolation_to_compose_strings). 4x push fix-forward sebelum hijau.
 - CI hijau run 39137830748 (APK 2.82.4+271).
+
+## 2.82.5+272 (2026-10-18)
+Wave 3 audit 4-skill-dev: operasional (tanpa migration; migration_25 manual).
+- [PENTING #14] tool/changelog_ensure.dart (baru): script Dart murni
+  (jalan via `dart`, tanpa flutter) yang menyelaraskan
+  assets/changelog_id.md dari pubspec.yaml — betulkan baris
+  "Versi terpasang" + sisipkan stub seksi "Yang baru di <v>" (ID/EN)
+  bila belum ada. WAJIB dijalankan tiap commit bump versi karena CI
+  men-skip **.md (paths-ignore apk.yml). Terbukti dipakai di rilis ini.
+  Pelajaran: regex awal [^.\n]+ salah untuk versi bertitik (2.82.4+271)
+  -> ganti \S+.
+- [PENTING #15] Kebijakan rilis: simpan 3 versi APK terakhir di release
+  ci-apk (rollback cepat); sebelumnya "hanya terbaru". Dicatat di
+  playbook ssr-space-dev SKILL.md langkah 5. Rilis ini: hanya ada 271 di
+  release, jadi belum ada yang di-prune.
+- [PENTING #16] Fondasi feature flag: supabase/migration_25_app_config.sql
+  (tabel app_config key PK/value/updated_at, RLS, policy SELECT untuk
+  authenticated saja; idempotent; CONTOH pakai di komentar) +
+  lib/services/app_config_service.dart (cache 1 jam, refresh(), isEnabled
+  fail-closed default false, getString, debugSeed/debugReset untuk test) +
+  test/app_config_service_test.dart (3 test). Catatan: migration_25 WAJIB
+  user jalankan manual sekali di SQL Editor (pola repo); service belum
+  di-wire ke main (fondasi untuk fitur besar berikutnya).
+- CI hijau run 39139111628 (APK 2.82.5+272).
+
