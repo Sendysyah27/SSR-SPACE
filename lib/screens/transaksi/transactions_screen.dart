@@ -918,6 +918,13 @@ double? _parseAmt(String s) {
   return double.tryParse(digits);
 }
 
+String _shortDay(String? ymd) {
+  if (ymd == null || ymd.length < 10) return '–';
+  final m = int.tryParse(ymd.substring(5, 7)) ?? 0;
+  if (m < 1 || m > 12) return ymd;
+  return '${ymd.substring(8, 10)} ${tr('s${m.toString().padLeft(2, '0')}')}';
+}
+
 /// Lembar filter multi-kriteria. Kembalikan [TxFilter] via pop,
 /// atau null bila ditutup tanpa menerapkan.
 class _FilterSheet extends StatefulWidget {
@@ -935,6 +942,7 @@ class _FilterSheetState extends State<_FilterSheet> {
   late Set<String> _cats;
   String? _from;
   String? _to;
+  String? _expanded;
   late TextEditingController _minC;
   late TextEditingController _maxC;
 
@@ -1005,131 +1013,258 @@ class _FilterSheetState extends State<_FilterSheet> {
     );
   }
 
+  void _toggleExpanded(String key) =>
+      setState(() => _expanded = _expanded == key ? null : key);
+
   @override
   Widget build(BuildContext context) {
-    const typeDefs = [('in', 'tx_in'), ('out', 'tx_out'), ('transfer', 'tx_transfer')];
+    const typeDefs = [
+      ('in', 'tx_in'),
+      ('out', 'tx_out'),
+      ('transfer', 'tx_transfer'),
+    ];
+    final lo = _parseAmt(_minC.text);
+    final hi = _parseAmt(_maxC.text);
+
+    final periodValue = (_from == null && _to == null)
+        ? tr('txf_all_time')
+        : '${_shortDay(_from)} - ${_shortDay(_to)}';
+    final typeValue =
+        _types.isEmpty ? tr('txf_all') : _types.map((t) => tr('tx_$t')).join(', ');
+    final catValue = _cats.isEmpty
+        ? tr('txf_all')
+        : tr('txf_selected').replaceFirst('{n}', '${_cats.length}');
+    final String nominalValue;
+    if (lo == null && hi == null) {
+      nominalValue = tr('txf_all');
+    } else if (lo != null && hi != null) {
+      nominalValue = '${amt(lo)} - ${amt(hi)}';
+    } else if (lo != null) {
+      nominalValue = '≥ ${amt(lo)}';
+    } else if (hi != null) {
+      nominalValue = '≤ ${amt(hi)}';
+    } else {
+      nominalValue = tr('txf_all');
+    }
+
     return SafeArea(
-      child: Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(SsrSpace.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      tr('txf_filter'),
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const DuoIcon(AppIcons.close),
-                    tooltip: tr('td_close'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: SsrSpace.md),
-              Text(tr('txf_type'), style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: SsrSpace.sm),
-              Wrap(
-                spacing: SsrSpace.sm,
-                children: [
-                  for (final def in typeDefs)
-                    FilterChip(
-                      label: Text(tr(def.$2)),
-                      selected: _types.contains(def.$1),
-                      onSelected: (_) => _toggle(_types, def.$1),
-                    ),
-                ],
-              ),
-              const SizedBox(height: SsrSpace.md),
-              Text(tr('txf_cat'), style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: SsrSpace.sm),
-              if (widget.categories.isEmpty)
-                const SizedBox.shrink()
-              else
-                Wrap(
-                  spacing: SsrSpace.sm,
+      child: Container(
+        color: DribTokens.cardOf(context),
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(SsrSpace.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
                   children: [
-                    for (final c in widget.categories.take(20))
-                      FilterChip(
-                        label: Text(c),
-                        selected: _cats.contains(c),
-                        onSelected: (_) => _toggle(_cats, c),
+                    Expanded(
+                      child: Text(
+                        tr('txf_filter'),
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const DuoIcon(AppIcons.close),
+                      tooltip: tr('td_close'),
+                    ),
                   ],
                 ),
-              const SizedBox(height: SsrSpace.md),
-              Text(tr('txf_date'), style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: SsrSpace.sm),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => _pickDate(true),
-                      child: Text('${tr('txf_from')}: ${_from ?? '–'}'),
-                    ),
-                  ),
-                  const SizedBox(width: SsrSpace.sm),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => _pickDate(false),
-                      child: Text('${tr('txf_to')}: ${_to ?? '–'}'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: SsrSpace.md),
-              Text(tr('txf_amount'), style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: SsrSpace.sm),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _minC,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hintText: tr('txf_min'),
-                        border: const OutlineInputBorder(),
-                        isDense: true,
+                const SizedBox(height: SsrSpace.md),
+                _PillRow(
+                  title: tr('txf_period'),
+                  value: periodValue,
+                  expanded: _expanded == 'period',
+                  onTap: () => _toggleExpanded('period'),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _pickDate(true),
+                          child: Text('${tr('txf_from')}: ${_from ?? '–'}'),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: SsrSpace.sm),
-                  Expanded(
-                    child: TextField(
-                      controller: _maxC,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hintText: tr('txf_max'),
-                        border: const OutlineInputBorder(),
-                        isDense: true,
+                      const SizedBox(width: SsrSpace.sm),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _pickDate(false),
+                          child: Text('${tr('txf_to')}: ${_to ?? '–'}'),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: SsrSpace.lg),
-              PrimaryButton(
-                label: tr('txf_apply'),
-                onPressed: _apply,
-              ),
-              const SizedBox(height: SsrSpace.sm),
-              Center(
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(const TxFilter()),
-                  child: Text(tr('clear')),
                 ),
-              ),
-            ],
+                const SizedBox(height: SsrSpace.sm),
+                _PillRow(
+                  title: tr('txf_type'),
+                  value: typeValue,
+                  expanded: _expanded == 'type',
+                  onTap: () => _toggleExpanded('type'),
+                  child: Wrap(
+                    spacing: SsrSpace.sm,
+                    children: [
+                      for (final def in typeDefs)
+                        FilterChip(
+                          label: Text(tr(def.$2)),
+                          selected: _types.contains(def.$1),
+                          onSelected: (_) => _toggle(_types, def.$1),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: SsrSpace.sm),
+                _PillRow(
+                  title: tr('txf_cat'),
+                  value: catValue,
+                  expanded: _expanded == 'cat',
+                  onTap: () => _toggleExpanded('cat'),
+                  child: widget.categories.isEmpty
+                      ? null
+                      : Wrap(
+                          spacing: SsrSpace.sm,
+                          children: [
+                            for (final c in widget.categories.take(20))
+                              FilterChip(
+                                label: Text(c),
+                                selected: _cats.contains(c),
+                                onSelected: (_) => _toggle(_cats, c),
+                              ),
+                          ],
+                        ),
+                ),
+                const SizedBox(height: SsrSpace.sm),
+                _PillRow(
+                  title: tr('txf_nominal_range'),
+                  value: nominalValue,
+                  expanded: _expanded == 'amount',
+                  onTap: () => _toggleExpanded('amount'),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _minC,
+                          keyboardType: TextInputType.number,
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            hintText: tr('txf_min'),
+                            border: const OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: SsrSpace.sm),
+                      Expanded(
+                        child: TextField(
+                          controller: _maxC,
+                          keyboardType: TextInputType.number,
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            hintText: tr('txf_max'),
+                            border: const OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: SsrSpace.lg),
+                PrimaryButton(
+                  label: tr('txf_apply'),
+                  onPressed: _apply,
+                ),
+                const SizedBox(height: SsrSpace.sm),
+                Center(
+                  child: TextButton(
+                    onPressed: () =>
+                        Navigator.of(context).pop(const TxFilter()),
+                    child: Text(tr('clear')),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Baris pill-dropdown filter: judul + nilai + chevron, tap untuk
+/// membuka isi filter di bawahnya.
+class _PillRow extends StatelessWidget {
+  final String title;
+  final String value;
+  final bool expanded;
+  final VoidCallback onTap;
+  final Widget? child;
+
+  const _PillRow({
+    required this.title,
+    required this.value,
+    required this.expanded,
+    required this.onTap,
+    this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: SsrSpace.md,
+              vertical: SsrSpace.sm + 2,
+            ),
+            decoration: BoxDecoration(
+              color: DribTokens.cardOf(context),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: scheme.outlineVariant),
+            ),
+            child: Row(
+              children: [
+                Text(title, style: Theme.of(context).textTheme.titleSmall),
+                const Spacer(),
+                Flexible(
+                  child: Text(
+                    value,
+                    textAlign: TextAlign.end,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                AnimatedRotation(
+                  turns: expanded ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 150),
+                  child: DuoIcon(
+                    AppIcons.chevron,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (expanded && child != null) ...[
+          const SizedBox(height: SsrSpace.sm),
+          child!,
+        ],
+      ],
     );
   }
 }
