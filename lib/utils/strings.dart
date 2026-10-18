@@ -260,6 +260,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Tak ada teks di foto ini.',
     'en': 'No text found in this photo.',
   },
+  'rcp_too_big': {
+    'id': 'File terlalu besar (maks 25 MB).',
+    'en': 'File too large (max 25 MB).',
+  },
   'rcp_raw_title': {
     'id': 'Teks OCR mentah (diagnosis)',
     'en': 'Raw OCR text (diagnostics)',

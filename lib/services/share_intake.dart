@@ -67,8 +67,16 @@ Future<({String? path, bool hadMore, bool wasQueued})> takeSharePath() async {
 /// OCR gratis (ML Kit on-device) dari path berkas yang sudah ada.
 /// Tanpa picker, tanpa upload, TANPA hapus berkas. AI-fallback bukan di
 /// sini: tombol scan di sheet tetap menyediakan jalur AI berkuota.
+/// Batas ukuran file share-intent (NICE-TO-HAVE #N11): cegah OOM baca
+/// file raksasa dari aplikasi luar ke memori.
+const shareIntakeMaxBytes = 25 * 1024 * 1024;
+
 Future<ReceiptData> scanSharedFile(String path) async {
-  final bytes = await File(path).readAsBytes();
+  final f = File(path);
+  if (await f.length() > shareIntakeMaxBytes) {
+    throw const ReceiptScanException('rcp_too_big');
+  }
+  final bytes = await f.readAsBytes();
   if (bytes.isEmpty) throw const ReceiptScanException('rcp_empty');
   final text = await ocrBytesToText(bytes);
   lastRawOcrText = text;
