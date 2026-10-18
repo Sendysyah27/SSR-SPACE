@@ -55,28 +55,24 @@ Future<void> main() async {
   DiagLog.write('DIAG ErrorReporter init ok');
   // Init inti dibungkus: kegagalan plugin native (mis. Pigeon di-strip R8)
   // TIDAK boleh jadi layar putih tanpa jejak — tampilkan pesan jujur.
+  // NICE-TO-HAVE #N6: dua init independen jalan PARALEL (bukan sekuensial);
+  // atribusi error tetap dipisah via _guardedInit (penting untuk diagnosa).
+  late final dynamic prefs;
   try {
-    await SupabaseConfig.init();
-    DiagLog.write('DIAG Supabase init ok');
-  } catch (e, s) {
-    DiagLog.error('DIAG Supabase init gagal', e, s);
-    ErrorReporter.capture(e, s, context: 'SupabaseConfig.init');
+    final inits = await Future.wait<dynamic>([
+      _guardedInit<void>(
+          SupabaseConfig.init(), 'SupabaseConfig.init', 'DIAG Supabase init'),
+      _guardedInit<SharedPreferences>(SharedPreferences.getInstance(),
+          'SharedPreferences.getInstance', 'DIAG SharedPreferences'),
+    ]);
+    prefs = inits[1] as SharedPreferences;
+  } catch (_) {
+    // _guardedInit sudah log + capture spesifik; di sini cukup boot gagal.
     _bootFailed();
     return;
   }
   ForegroundTrack.initOnce();
   PinLinkVerify.initOnce();
-  DiagLog.write('DIAG sebelum SharedPreferences.getInstance');
-  late final dynamic prefs;
-  try {
-    prefs = await SharedPreferences.getInstance();
-    DiagLog.write('DIAG SharedPreferences ok');
-  } catch (e, s) {
-    DiagLog.error('SharedPreferences.getInstance', e, s);
-    ErrorReporter.capture(e, s, context: 'SharedPreferences.getInstance');
-    _bootFailed();
-    return;
-  }
   // Optimasi startup: task independen jalan paralel (bukan sekuensial).
   await Future.wait([
     loadMaskAmounts(prefs),
@@ -154,6 +150,23 @@ Future<void> _backfillTxCodes() async {
   } catch (e) {
     debugPrint('[backfill] kode TX gagal: $e');
   }
+}
+
+/// Bungkus satu init agar bisa jalan di Future.wait paralel dengan atribusi
+/// error sendiri: tulis DiagLog + capture ErrorReporter konteks spesifik,
+/// lalu rethrow supaya pemanggil bisa _bootFailed().
+Future<T> _guardedInit<T>(Future<T> f, String context, String diagTag) {
+  return f.then(
+    (v) {
+      DiagLog.write('$diagTag ok');
+      return v;
+    },
+    onError: (Object e, StackTrace st) {
+      DiagLog.error('$diagTag gagal', e, st);
+      ErrorReporter.capture(e, st, context: context);
+      throw e;
+    },
+  );
 }
 
 /// Startup minimal saat init inti gagal (mis. plugin native hilang karena
