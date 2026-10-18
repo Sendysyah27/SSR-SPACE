@@ -55,16 +55,22 @@ class SpaceService {
         .eq('org_id', orgId)
         .order('created_at', ascending: false)
         .limit(limit);
-    return List<Map<String, dynamic>>.from(rows)
-        .map(
-          (m) => SpaceActivity(
-            (m['event'] ?? '').toString(),
-            m['actor_user_id']?.toString(),
-            Map<String, dynamic>.from(m['meta'] ?? {}),
-            DateTime.parse(m['created_at'].toString()).toLocal(),
-          ),
-        )
-        .toList();
+    final out = <SpaceActivity>[];
+    for (final m in List<Map<String, dynamic>>.from(rows)) {
+      // created_at malformed -> baris log ini dilewati, bukan menumbangkan
+      // seluruh daftar aktivitas (pola sama: transaction_service tryFromMap).
+      final ts = DateTime.tryParse((m['created_at'] ?? '').toString());
+      if (ts == null) continue;
+      out.add(
+        SpaceActivity(
+          (m['event'] ?? '').toString(),
+          m['actor_user_id']?.toString(),
+          Map<String, dynamic>.from(m['meta'] ?? {}),
+          ts.toLocal(),
+        ),
+      );
+    }
+    return out;
   }
 
   Future<DateTime?> lastSeen(String orgId) async {
