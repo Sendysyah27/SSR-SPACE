@@ -803,3 +803,67 @@ Wave 3 audit 4-skill-dev: operasional (tanpa migration; migration_25 manual).
   di-wire ke main (fondasi untuk fitur besar berikutnya).
 - CI hijau run 39139111628 (APK 2.82.5+272).
 
+
+## 2.82.6+273 (2026-10-18)
+Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
+- [PENTING #18] space_service.dart activity(): DateTime.parse -> tryParse,
+  baris malformed di-skip (defensif, bukan crash).
+- [PENTING #11] ocr_scan_sheet.dart pickImage galeri: maxWidth 2048
+  (anti OOM foto 12MP full-res; pola vision_scan_service.dart).
+- [PENTING #10] Cap backup/restore disatukan: konstanta tunggal 2000
+  (export CSV, backup, restore); peringatan eksplisit bx_backup_capped
+  ke user sebelum export bila data melebihi cap.
+- [PENTING #12] Kontrak kode trigger Postgres disentralkan ke
+  lib/services/pg_trigger_codes.dart (10 file); andalkan e.code
+  (23505/42501), bukan contains('...') pada pesan SQL.
+- [PENTING #17] Konvensi error di AGENTS.md aturan 10: catch(_)
+  swallow hanya untuk best-effort + wajib komentar alasan + debugPrint;
+  2 swallow ceroboh dirapikan jadi log eksplisit.
+- [PENTING #9] Keyset pagination listMonthPage(after:) ganti offset
+  .range() (3 call site diupdate) — anti duplikat/terlewat saat scroll.
+- [PENTING #6] Bulk restore: mint kode upfront + insert per 200 baris
+  + fallback satuan (ganti N+1: INSERT+RPC+UPDATE per baris).
+- CI merah 2x lalu hijau run 39141354472: (1) patch #6 tak sengaja
+  hapus `return RestoreResult(` -> fix; (2) unused_local_variable msg
+  sisa refactor #12 -> fix. APK 2.82.6-273-arm64 (42306200 byte).
+- ANOMALI RILIS (catat, belum jelas sebab): release ci-apk hanya
+  berisi 1 aset arm64 2.82.6-273; varian full/v7a/x64 tidak ter-upload
+  dan aset 2.82.4-271 + 2.82.5-272 hilang. Upload step CI ✓ tapi log
+  output-nya kosong. Butuh investigasi / re-run CI bila varian lain
+  dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
+  (hanya 1 aset tersisa).
+
+## 2.82.7+274 (2026-10-18)
+Wave 5 audit 4-skill-dev: 13 NICE-TO-HAVE tersisa (tanpa ubah logika bisnis;
+audit menghitung 12, daftar rinci berisi 13 — semua dikerjakan).
+- [N1] fromMap: field wajib (id, org_id) validasi eksplisit -> ArgumentError
+  jelas, bukan string literal "null" (transaction.dart, wallet.dart + test).
+- [N2] add() non-atomik: job backfillMissingCodes() tiap start (cap 100)
+  mengisi kode TX yang tertinggal bila app mati antara insert & mint;
+  urutan insert-first dipertahankan (nomor tak terbakar).
+- [N3] monthMix: validasi tipe res sebelum cast (null/array -> fallback cache,
+  bukan TypeError); _mixFromMap defensif (rows non-List -> [], baris non-Map
+  di-skip).
+- [N4] TransactionService.add(): Future<String?> -> Future<String>;
+  2 null-check palsu di notif_track_service.dart di-unwrap.
+- [N5] Beranda: groupDayBuckets/calmWeeks/_todaySummary di-memoize per
+  identitas list (bukan tiap build); _greetingCard terima summary memo.
+- [N6] main(): SupabaseConfig.init + SharedPreferences.getInstance paralel
+  via Future.wait; atribusi error tetap dipisah via _guardedInit.
+- [N7] resolveWalletId: memo memori TTL 60 dtk (org+label -> id);
+  mapping eksplisit prefs tetap diutamakan.
+- [N8] ai_chat pickImage: tambah maxHeight 1600 (sebelumnya hanya maxWidth).
+- [N9] AGENTS.md: inventaris permission/komponen Manifest yang di-inject CI
+  (android/ tidak di repo) + catatan allowBackup default true.
+- [N10] firebase_ai_parser _aiLog: print hanya di debug (assert) -> rilis
+  no-op; assert jaga log tetap satu baris (anti bocor isi struk ke logcat).
+- [N11] share_intake: tolak file >25MB sebelum readAsBytes (kunci rcp_too_big).
+- [N12] A11y: PremiumButton dibungkus Semantics (role button + status);
+  display nominal dibacakan screen reader.
+- [N13] prepaid_lib pin exact 1.0.1 (sebelumnya ^1.0.1); daftar 3 patch
+  plugin CI didokumentasikan di AGENTS.md + aturan pin exact.
+- CI hijau run 39145284552 (langsung hijau, tanpa fix-forward).
+- APK 2.82.7-274-arm64 (42306200 byte, cocok aset release).
+- RILIS: anomali Wave 4 TIDAK terulang — keempat varian (arm64/full/v7a/x64)
+  2.82.7-274 ter-upload. Prune "sisakan 3 terbaru": tidak ada yang dihapus
+  (hanya 1 versi di release; aset 2.82.6-273 tertimpa --clobber oleh CI).
