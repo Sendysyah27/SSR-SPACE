@@ -747,3 +747,34 @@ Fix kontras teks Pengaturan di tema cerah (laporan user: teks samar).
   navy tampil navy + teks putih; di layar terang tampil bg terang + teks
   gelap. Selected state tetap (bg primary, fg onPrimary).
 - CI hijau run 39111988845 (APK 2.82.2+269).
+
+## 2.82.4+271 (2026-10-18)
+Wave 2 audit 4-skill-dev: keamanan boundary (tanpa migration).
+- [PENTING #3] lib/services/backup_crypto.dart (baru): opsi "Buat cadangan
+  terenkripsi" — JSON -> zip AES-256 berpassword (package archive) -> base64
+  bermarker SSR-ENC1: -> share sebagai .enc.txt. Password min 8 char +
+  konfirmasi di dialog; file temp DIHAPUS setelah share (finally).
+  backup_screen.dart: tombol + subtitle anjuran, deteksi marker saat
+  tempel -> dialog password -> dekripsi -> parse JSON seperti biasa.
+  Test backup_crypto_test.dart (roundtrip, password salah, marker salah,
+  base64 rusak). strings: bx_enc_* (ID/EN).
+- [PENTING #7] lib/services/session_service.dart: pin_hash/pin_salt pindah
+  ke flutter_secure_storage (Keystore/Keychain). hasPin tetap sinkron via
+  penanda non-rahasia pin_set di prefs + fallback hash lama. Migrasi
+  satu-kali: PIN benar dengan hash lama -> tulis ke secure storage, hapus
+  dari prefs. verifyPin fail-closed bila secure storage tak terbaca.
+- [PENTING #8] lib/services/pin_link_verify.dart: consume() kini cek
+  uri.host == pinLinkHost (sebelumnya hanya scheme) — tutup celah
+  session-fixation deep-link.
+- [PENTING #13] lib/services/csv_import_logic.dart: parseCsvPreview tolak
+  teks > 5 MB + cap 10.000 baris pertama dengan pesan jujur. Test
+  csv_import_test.dart (+2).
+- assets/changelog_id.md: "Versi terpasang" 2.79.0+264 -> 2.82.4+271 +
+  seksi ID/EN untuk 2.82.3+270 & 2.82.4+271 (manual; tooling otomatis
+  menyusul di Wave 3 #14).
+- Pelajaran CI: (1) ArchivePasswordException tak ada di archive 4.5.2 —
+  password salah = ArchiveException('Wrong password...') dan BARU muncul
+  saat lazy read content (bungkus baca dalam try yang sama); (2) analyzer
+  fatal untuk warning (unnecessary_null_comparison, unused_element,
+  prefer_interpolation_to_compose_strings). 4x push fix-forward sebelum hijau.
+- CI hijau run 39137830748 (APK 2.82.4+271).
