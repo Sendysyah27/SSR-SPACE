@@ -86,6 +86,10 @@ const _t = <String, Map<String, String>>{
   'ocr_err_empty': {'id': 'Teks tidak terbaca. Coba foto yang lebih jelas.', 'en': 'No text detected. Try a clearer photo.'},
   'ocr_retry': {'id': 'Coba Lagi', 'en': 'Try Again'},
   'ocr_merchant_default': {'id': 'Toko', 'en': 'Store'},
+  'ocr_settings_desc': {'id': 'Sesuaikan agar teks struk terbaca dengan benar.', 'en': 'Adjust so receipt text reads correctly.'},
+  'ocr_cam_title': {'id': 'Ambil Foto Struk', 'en': 'Capture Receipt'},
+  'ocr_cam_none': {'id': 'Kamera tidak tersedia.', 'en': 'Camera not available.'},
+  'ocr_flash': {'id': 'Flash', 'en': 'Flash'},
   // Transaksi
   'tx_err_load': {
     'id': 'Gagal memuat transaksi. Periksa koneksi.',

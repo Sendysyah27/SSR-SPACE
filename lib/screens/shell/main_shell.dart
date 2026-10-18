@@ -289,7 +289,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           _QaItem(_QuickAction.scan, tr('qa_scan'), AppIcons.scan,
               const Color(0xFF22B07D)),
           _QaItem(_QuickAction.ocr, tr('qa_ocr'),
-              Icons.document_scanner_outlined, const Color(0xFFC07A1A)),
+              Icons.text_snippet_outlined, const Color(0xFFC07A1A)),
           _QaItem(_QuickAction.voice, tr('qa_voice'), AppIcons.voice,
               const Color(0xFFFF9F43)),
           _QaItem(_QuickAction.chat, tr('qa_chat'),
@@ -487,8 +487,11 @@ class _QaSheetState extends State<_QaSheet>
       curve: Interval(start, (start + 0.4).clamp(0.0, 1.0),
           curve: Curves.easeOut),
     );
+    // Rounded square (bukan lingkaran), background BENAR-BENAR transparan:
+    // alpha 0.10-0.12 + border 1px alpha 0.2, di light & dark.
+    final bg = it.color.withValues(alpha: 0.11);
+    final border = it.color.withValues(alpha: 0.20);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = it.color.withValues(alpha: isDark ? 0.30 : 0.16);
     final iconColor =
         isDark ? Color.lerp(it.color, Colors.white, 0.25)! : it.color;
     return AnimatedBuilder(
@@ -510,8 +513,9 @@ class _QaSheetState extends State<_QaSheet>
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(20),
                         color: bg,
+                        border: Border.all(color: border, width: 1),
                       ),
                       alignment: Alignment.center,
                       child: Icon(it.icon, size: 28, color: iconColor),

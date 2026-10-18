@@ -6,6 +6,7 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/widgets/entry/ocr_camera_screen.dart';
 import 'package:ssr_space/widgets/entry/voice_draft_sheet.dart';
 
 /// Hasil urai OCR dari struk (nominal dalam IDR).
@@ -30,13 +31,20 @@ Future<bool> openOcrFlow(BuildContext context) async {
   final source = await _pickOcrSource(context);
   if (source == null || !context.mounted) return false;
 
-  final XFile? file = await ImagePicker().pickImage(
-    source: source,
-    imageQuality: 92,
-  );
-  if (file == null || !context.mounted) return false;
+  // Kamera: layar khusus dengan toggle flash. Galeri: image_picker.
+  String? path;
+  if (source == ImageSource.camera) {
+    path = await openOcrCamera(context);
+  } else {
+    final XFile? file = await ImagePicker().pickImage(
+      source: source,
+      imageQuality: 92,
+    );
+    path = file?.path;
+  }
+  if (path == null || !context.mounted) return false;
 
-  final bool? enhance = await _showOcrSettingsSheet(context, file.path);
+  final bool? enhance = await _showOcrSettingsSheet(context, path);
   if (enhance == null || !context.mounted) return false;
 
   // OCR dengan loading + opsi coba lagi bila teks tak terbaca.
@@ -46,7 +54,7 @@ Future<bool> openOcrFlow(BuildContext context) async {
     if (!context.mounted) return false;
     _showOcrLoading(context);
     try {
-      rawText = await _runOcr(file.path, enhance: enhance);
+      rawText = await _runOcr(path, enhance: enhance);
     } finally {
       if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
     }
@@ -150,12 +158,20 @@ Future<bool?> _showOcrSettingsSheet(BuildContext context, String imagePath) {
                   .titleMedium
                   ?.copyWith(fontWeight: FontWeight.w700),
             ),
+            const SizedBox(height: 4),
+            Text(
+              tr('ocr_settings_desc'),
+              textAlign: TextAlign.center,
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                  ),
+            ),
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.file(
                 File(imagePath),
-                height: 170,
+                height: 220,
                 width: double.infinity,
                 fit: BoxFit.cover,
               ),

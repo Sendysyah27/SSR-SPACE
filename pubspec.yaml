@@ -1,7 +1,7 @@
 name: ssr_space
 description: SSR SPACE - Simple. Secure. Reliable. Your Finance Space. Pencatatan keuangan multi-dompet dengan workspace bersama dan auto-track notifikasi bank.
 publish_to: 'none'
-version: 2.81.0+266
+version: 2.82.0+267
 environment:
   sdk: '>=3.11.0 <4.0.0'
 dependencies:
@@ -40,6 +40,7 @@ dependencies:
   flutter_local_notifications: ^22.3.1
   google_mlkit_text_recognition: ^0.15.0
   image_picker: ^1.1.2
+  camera: ^0.11.1
   image: ^4.2.0
   # Share gambar dari app lain -> scan struk (Fase 2 widget suite).
   # Dipin exact 1.8.1: 1.9.0 butuh compileSdk 37 > maks AGP 9.1.0 (36).
