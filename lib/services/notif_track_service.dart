@@ -445,28 +445,26 @@ class NotifTrack {
         unawaited(BudgetAlertNotify.check(orgId));
         // Snapshot + refresh widget home: fail-silent.
         unawaited(refreshBudgetWidgetSnapshot(orgId).catchError((_) {}));
-        if (txId != null) {
-          final pair = await _tryAutoMerge(orgId, txId);
-          if (pair != null) {
-            final outLabel =
-                matchWatchedApp(pair.outTx.sourcePackage ?? '') ??
-                    n.appLabel ??
-                    pkg;
-            await AutoSavedNotify.showSaved(
-              txId: pair.outTx.id,
-              type: 'transfer',
-              amount: pair.amount,
-              app: outLabel,
-              appTo: matchWatchedApp(pair.inTx.sourcePackage ?? ''),
-            );
-          } else {
-            await AutoSavedNotify.showSaved(
-              txId: txId,
-              type: n.type!,
-              amount: n.amount!,
-              app: n.appLabel ?? pkg,
-            );
-          }
+        final pair = await _tryAutoMerge(orgId, txId);
+        if (pair != null) {
+          final outLabel =
+              matchWatchedApp(pair.outTx.sourcePackage ?? '') ??
+                  n.appLabel ??
+                  pkg;
+          await AutoSavedNotify.showSaved(
+            txId: pair.outTx.id,
+            type: 'transfer',
+            amount: pair.amount,
+            app: outLabel,
+            appTo: matchWatchedApp(pair.inTx.sourcePackage ?? ''),
+          );
+        } else {
+          await AutoSavedNotify.showSaved(
+            txId: txId,
+            type: n.type!,
+            amount: n.amount!,
+            app: n.appLabel ?? pkg,
+          );
         }
       } on PostgrestException catch (err) {
         ErrorReporter.capture(
@@ -517,14 +515,12 @@ class NotifTrack {
       unawaited(BudgetAlertNotify.check(orgId));
       // Snapshot + refresh widget home: fail-silent.
       unawaited(refreshBudgetWidgetSnapshot(orgId).catchError((_) {}));
-      if (txId != null) {
-        await AutoSavedNotify.showSaved(
-          txId: txId,
-          type: type,
-          amount: n.amount!,
-          app: label,
-        );
-      }
+      await AutoSavedNotify.showSaved(
+        txId: txId,
+        type: type,
+        amount: n.amount!,
+        app: label,
+      );
       return tr('st_saved');
     } on PostgrestException catch (err) {
       ErrorReporter.capture(err, StackTrace.current, context: 'notif_force');

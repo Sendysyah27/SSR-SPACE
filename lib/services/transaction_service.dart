@@ -320,7 +320,7 @@ class TransactionService {
   /// Insert dulu (code nullable), baru mint + update, supaya nomor TX tidak
   /// terbakar bila insert gagal (duplikat hash, RLS, dll). Celah app-mati
   /// di antaranya ditutup oleh backfillMissingCodes() tiap start.
-  Future<String?> add({
+  Future<String> add({
     required String orgId,
     required String type,
     required double amount,
