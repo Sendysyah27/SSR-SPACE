@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class SaasTransaction {
   final String id;
   final String orgId;
@@ -45,6 +47,18 @@ class SaasTransaction {
         sourceHash: m['source_hash']?.toString(),
         createdBy: m['created_by']?.toString(),
       );
+
+  /// Varian defensif [fromMap]: baris rusak -> null (di-skip pemanggil)
+  /// alih-alih menumbangkan seluruh list. Hanya untuk mapping list;
+  /// get satuan tetap pakai [fromMap] agar error ketahuan.
+  static SaasTransaction? tryFromMap(Map<String, dynamic> m) {
+    try {
+      return SaasTransaction.fromMap(m);
+    } catch (e) {
+      debugPrint('[SaasTransaction] skip baris rusak: $e');
+      return null;
+    }
+  }
 
   /// Kebalikan fromMap (cache offline). Key identik supaya round-trip utuh.
   Map<String, dynamic> toMap() => {

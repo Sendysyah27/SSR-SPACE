@@ -95,7 +95,7 @@ class TransactionService {
         .order('created_at', ascending: false)
         .limit(100);
     return List<Map<String, dynamic>>.from(rows)
-        .map(SaasTransaction.fromMap)
+        .map(SaasTransaction.tryFromMap).whereType<SaasTransaction>()
         .toList();
   }
 
@@ -113,7 +113,7 @@ class TransactionService {
       markOnline();
       unawaited(writeTxCache(orgId, month, List<dynamic>.from(rows)));
       return List<Map<String, dynamic>>.from(rows)
-          .map(SaasTransaction.fromMap)
+          .map(SaasTransaction.tryFromMap).whereType<SaasTransaction>()
           .toList();
     } catch (e) {
       // Offline: sodorkan cache terakhir; tanpa cache = lempar asli.
@@ -121,7 +121,7 @@ class TransactionService {
       markOffline();
       final cached = await readTxCache(orgId, month);
       if (cached != null) {
-        return cached.map(SaasTransaction.fromMap).toList();
+        return cached.map(SaasTransaction.tryFromMap).whereType<SaasTransaction>().toList();
       }
       rethrow;
     }
@@ -142,7 +142,7 @@ class TransactionService {
         .order('created_at', ascending: false)
         .limit(200);
     return List<Map<String, dynamic>>.from(rows)
-        .map(SaasTransaction.fromMap)
+        .map(SaasTransaction.tryFromMap).whereType<SaasTransaction>()
         .toList();
   }
 
@@ -170,7 +170,7 @@ class TransactionService {
         unawaited(writeTxCache(orgId, month, List<dynamic>.from(rows)));
       }
       return List<Map<String, dynamic>>.from(rows)
-          .map(SaasTransaction.fromMap)
+          .map(SaasTransaction.tryFromMap).whereType<SaasTransaction>()
           .toList();
     } catch (e) {
       if (!isNetworkError(e)) rethrow;
@@ -180,7 +180,7 @@ class TransactionService {
       if (offset > 0) return [];
       final cached = await readTxCache(orgId, month);
       if (cached != null) {
-        return cached.map(SaasTransaction.fromMap).toList();
+        return cached.map(SaasTransaction.tryFromMap).whereType<SaasTransaction>().toList();
       }
       rethrow;
     }
@@ -218,7 +218,7 @@ class TransactionService {
         .order('date', ascending: false)
         .limit(limit);
     return List<Map<String, dynamic>>.from(rows)
-        .map(SaasTransaction.fromMap)
+        .map(SaasTransaction.tryFromMap).whereType<SaasTransaction>()
         .toList();
   }
 
@@ -233,7 +233,7 @@ class TransactionService {
         .order('created_at', ascending: false)
         .limit(100);
     return List<Map<String, dynamic>>.from(rows)
-        .map(SaasTransaction.fromMap)
+        .map(SaasTransaction.tryFromMap).whereType<SaasTransaction>()
         .toList();
   }
 
