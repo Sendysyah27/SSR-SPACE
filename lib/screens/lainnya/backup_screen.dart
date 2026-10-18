@@ -75,9 +75,14 @@ class _BackupScreenState extends State<BackupScreen> {
         await Share.shareXFiles([XFile(f.path)], text: tr('bx_share'));
       }
       if (!mounted) return;
+      // Fix #10: jujur bila backup menyentuh cap (dulu dipotong diam-diam).
+      final cappedNote = b.txs.length >= backupExportTxCap
+          ? ' ${tr('bx_backup_capped').replaceFirst('{n}', '$backupExportTxCap')}'
+          : '';
       setState(() {
         backupMsg = tr('bx_backup_ok')
-            .replaceFirst('{n}', '${b.txs.length}');
+                .replaceFirst('{n}', '${b.txs.length}') +
+            cappedNote;
       });
     } catch (e, st) {
       ErrorReporter.capture(e, st, context: 'backup-json');

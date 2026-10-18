@@ -12,6 +12,11 @@ class BackupInvalid implements Exception {
 /// Maks transaksi per restore (lindungi kuota/egress/waktu).
 const restoreTxCap = 2000;
 
+/// Maks transaksi per export backup JSON. DISAMAKAN dengan restoreTxCap
+/// (fix #10): dulu export 3000 vs restore 2000, sehingga backup tak bisa
+/// di-restore utuh karena dipotong diam-diam.
+const backupExportTxCap = restoreTxCap;
+
 Map<String, dynamic> buildBackup({
   required String orgId,
   required String orgName,

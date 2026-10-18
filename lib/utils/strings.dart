@@ -2247,6 +2247,10 @@ const _t = <String, Map<String, String>>{
     'id': 'Cadangan {n} transaksi tersimpan + dibagikan.',
     'en': 'Backup of {n} transactions saved + shared.',
   },
+  'bx_backup_capped': {
+    'id': 'Catatan: mencapai batas {n} transaksi per backup.',
+    'en': 'Note: reached the {n}-transaction backup limit.',
+  },
   'bx_backup_fail': {
     'id': 'Cadangan gagal. Cek internet lalu coba lagi.',
     'en': 'Backup failed. Check internet and try again.',

@@ -25,7 +25,8 @@ class RestoreResult {
   });
 }
 
-/// Ambil seluruh data org untuk backup (cap tx 3000 baris).
+/// Ambil seluruh data org untuk backup (cap = backupExportTxCap, sama
+/// dengan restoreTxCap agar backup selalu bisa di-restore utuh).
 Future<ParsedBackup> fetchBackup(String orgId, String orgName) async {
   final c = SupabaseConfig.client;
   final wallets = await c
@@ -38,7 +39,7 @@ Future<ParsedBackup> fetchBackup(String orgId, String orgName) async {
       .select()
       .eq('org_id', orgId)
       .order('date')
-      .limit(3000);
+      .limit(backupExportTxCap);
   final budgets = await c
       .from('budgets')
       .select()
