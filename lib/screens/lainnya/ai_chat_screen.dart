@@ -242,6 +242,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
       final shot = await ImagePicker().pickImage(
         source: ImageSource.gallery,
         maxWidth: 1600,
+        maxHeight: 1600, // NICE-TO-HAVE #N8: batasi tinggi juga (anti OOM foto portrait)
         imageQuality: 85,
       );
       if (shot == null || !mounted) return;
