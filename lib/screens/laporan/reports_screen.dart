@@ -638,7 +638,7 @@ class ReportsScreenState extends State<ReportsScreen> {
     }
     return [
       head,
-      ..._TxListCard(items: parts.visible).slivers(context),
+      ..._TxListCard(items: parts.visible, onTapTx: (tx) => _openTxDetail(tx)).slivers(context),
       ..._pageFooter(totalN: totalN, loaded: filtered.length),
     ];
   }
@@ -1184,8 +1184,9 @@ class _ReportsScaffold extends StatelessWidget {
 /// Kartu daftar transaksi bulan terpilih: judul + baris TxRow berdivider.
 class _TxListCard extends StatelessWidget {
   final List<SaasTransaction> items;
+  final ValueChanged<SaasTransaction>? onTapTx;
 
-  const _TxListCard({required this.items});
+  const _TxListCard({required this.items, this.onTapTx});
 
   @override
   Widget build(BuildContext context) {
@@ -1209,7 +1210,7 @@ class _TxListCard extends StatelessWidget {
                 DayHeader(dateKey: b.key, count: b.items.length),
                 for (var i = 0; i < b.items.length; i++) ...[
                   if (i > 0) const Divider(height: 1),
-                  TxRow(tx: b.items[i], onTap: () => _openTxDetail(b.items[i])),
+                  TxRow(tx: b.items[i], onTap: onTapTx == null ? null : () => onTapTx!(b.items[i])),
                 ],
               ],
             ],
