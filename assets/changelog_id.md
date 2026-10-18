@@ -1,6 +1,18 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.6+273.
+Versi terpasang: 2.82.8+275.
+
+## Yang baru di 2.82.8+275
+
+1. Detail transaksi: ikon lingkaran kini tampil benar (panah masuk/keluar) — sebelumnya karakter aneh di sebagian HP.
+2. Layar filter: background panel kini solid, tidak lagi tembus pandang di mode gelap.
+3. Panel filter transaksi tampil baru model pill-dropdown (Periode, Jenis, Kategori, Rentang Nominal) — fungsi filter tetap sama.
+
+## What's new in 2.82.8+275
+
+1. Transaction detail: the circle icon now renders correctly (in/out arrows) — previously garbled characters on some phones.
+2. Filter screen: panel background is now solid, no longer see-through in dark mode.
+3. New pill-dropdown transaction filter panel (Period, Type, Category, Amount Range) — filtering works exactly as before.
 
 ## Yang baru di 2.82.6+273
 
