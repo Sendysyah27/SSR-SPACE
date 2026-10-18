@@ -264,6 +264,24 @@ Urutan list penting: **myBCA sebelum BCA**.
 - Push `main` → Actions: `flutter pub get` → generate `android/` bila belum → inject NotificationListenerService ke Manifest → `flutter analyze` (wajib 0 issue, tambahan Fase 2 D1) → `flutter test` → inject signing dari secrets → `flutter build apk --release --dart-define=SUPABASE_*` → upload artifact.
 - Secrets: `SSR_KEYSTORE_B64`, `SSR_KEYSTORE_PASS`, `SSR_KEY_ALIAS`, `SSR_KEY_PASS`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
 - Folder `android/` **tidak di-commit** (di-generate CI).
+- **Inventaris Manifest (NICE-TO-HAVE #N9):** `android/` tidak di repo = blind
+  spot audit; permission & komponen di-inject CI (`apk.yml`). Daftar per
+  2.82.7+274 — ubah daftar ini tiap tambah permission di CI:
+  - Permission: INTERNET, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED,
+    FOREGROUND_SERVICE_SPECIAL_USE, NFC, RECORD_AUDIO, USE_BIOMETRIC,
+    WRITE_EXTERNAL_STORAGE (maxSdkVersion 29), MANAGE_EXTERNAL_STORAGE.
+  - Service `notification.listener.service.NotificationListener`:
+    `android:exported="true"` + permission BIND_NOTIFICATION_LISTENER_SERVICE
+    (wajib true — sistem yang bind).
+  - Service `com.pravera.flutter_foreground_task.service.ForegroundService`:
+    `exported="false"` + property SPECIAL_USE.
+  - Receiver `ScheduledNotificationBootReceiver`: `exported="false"`.
+  - Receiver `.TodayWidgetProvider`: `exported="false"`.
+  - Activity `.ai.AiSettingsActivity`: `exported="false"`.
+  - Catatan keamanan: `android:allowBackup` default **true** (tak di-set CI)
+    → file app ikut auto-backup Google; PIN sudah di flutter_secure_storage
+    (Wave 2 #7). Bila menambah secret file-based baru, pertimbangkan
+    `allowBackup="false"` atau backup rules eksplisit.
 
 ### 4.9 Fase 2 hardening (v2.3.7+20)
 
