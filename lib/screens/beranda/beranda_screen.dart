@@ -98,6 +98,13 @@ class BerandaScreenState extends State<BerandaScreen> {
   /// (due_reminder.dart). Nol query baru.
   List<RecurringBill> upcomingBills = [];
   bool loading = true;
+  // NICE-TO-HAVE #N5: agregat turunan di-memoize — dihitung ulang hanya bila
+  // identitas list transaksi berganti, bukan tiap build (DateTime.tryParse
+  // per item itu mahal bila build sering).
+  List<SaasTransaction>? _memoSrc;
+  List<DayBucket>? _memoBuckets;
+  List<bool>? _memoCalm;
+  ({double inToday, double outToday, List<SaasTransaction> txs})? _memoToday;
   String? err;
   DailyStreak? streak;
   HealthBreakdown? health;
@@ -944,8 +951,10 @@ class BerandaScreenState extends State<BerandaScreen> {
   /// Kartu sapaan fungsional: sapaan + ringkasan hari ini (masuk & keluar).
   /// Tap -> sheet daftar transaksi hari ini.
   Widget _greetingCard(
-      ThemeData theme, ColorScheme scheme, List<SaasTransaction> items) {
-    final s = _todaySummary(items);
+    ThemeData theme,
+    ColorScheme scheme,
+    ({double inToday, double outToday, List<SaasTransaction> txs}) s,
+  ) {
     return GestureDetector(
       onTap: () =>
           _showTxListSheet(context, tr('beranda_today_tx'), s.txs),
@@ -969,6 +978,19 @@ class BerandaScreenState extends State<BerandaScreen> {
         ],
       ),
     );
+  }
+
+  /// Pastikan agregat turunan sesuai [items]; hitung ulang hanya bila
+  /// identitas list berganti (setState tiap _load memberi list baru).
+  void _ensureMemo(List<SaasTransaction> items) {
+    if (identical(_memoSrc, items)) return;
+    _memoSrc = items;
+    _memoBuckets = groupDayBuckets(items);
+    final calmDates = [
+      for (final t in items) DateTime.tryParse(t.date ?? ''),
+    ].whereType<DateTime>().toList();
+    _memoCalm = calmWeeks(calmDates, DateTime.now());
+    _memoToday = _todaySummary(items);
   }
 
   /// Hitung total masuk/keluar hari ini dari [items].
@@ -1047,11 +1069,9 @@ class BerandaScreenState extends State<BerandaScreen> {
     final denom = totalIn + totalOut;
     final inShare = denom <= 0 ? 0.0 : totalIn / denom;
     final pctOut = totalOut <= 0 ? null : (surplus / totalOut * 100).round();
-    final buckets = groupDayBuckets(items);
-    final calmDates = [
-      for (final t in items) DateTime.tryParse(t.date ?? ''),
-    ].whereType<DateTime>().toList();
-    final calm = calmWeeks(calmDates, DateTime.now());
+    _ensureMemo(items);
+    final buckets = _memoBuckets!;
+    final calm = _memoCalm!;
     return ListView(
       key: key,
       padding: const EdgeInsets.fromLTRB(
@@ -1063,7 +1083,7 @@ class BerandaScreenState extends State<BerandaScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: SsrSpace.sm),
-          child: _greetingCard(theme, scheme, items),
+          child: _greetingCard(theme, scheme, _memoToday!),
         ),
         if (orgName.isNotEmpty && orgName != '-') ...[
           Row(
