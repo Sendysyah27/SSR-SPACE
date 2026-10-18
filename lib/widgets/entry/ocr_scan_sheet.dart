@@ -42,16 +42,18 @@ Future<bool> openOcrFlow(BuildContext context) async {
   // OCR dengan loading + opsi coba lagi bila teks tak terbaca.
   String? rawText;
   var retry = true;
-  while (retry && context.mounted) {
+  while (retry) {
+    if (!context.mounted) return false;
     _showOcrLoading(context);
     try {
       rawText = await _runOcr(file.path, enhance: enhance);
     } finally {
       if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
     }
+    if (!context.mounted) return false;
     if (rawText == null || rawText.trim().isEmpty) {
-      if (!context.mounted) return false;
       retry = await _showOcrErrorSheet(context) ?? false;
+      if (!context.mounted) return false;
       rawText = null;
     } else {
       retry = false;
@@ -85,7 +87,7 @@ Future<ImageSource?> _pickOcrSource(BuildContext context) {
     builder: (ctx) => Container(
       decoration: BoxDecoration(
         color: DribTokens.cardOf(ctx),
-        borderRadius: BorderRadius.vertical(
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(DribTokens.sheetRadius),
         ),
       ),
@@ -131,7 +133,7 @@ Future<bool?> _showOcrSettingsSheet(BuildContext context, String imagePath) {
       builder: (ctx, setState) => Container(
         decoration: BoxDecoration(
           color: DribTokens.cardOf(ctx),
-          borderRadius: BorderRadius.vertical(
+          borderRadius: const BorderRadius.vertical(
             top: Radius.circular(DribTokens.sheetRadius),
           ),
         ),
@@ -225,7 +227,7 @@ Future<bool?> _showOcrErrorSheet(BuildContext context) {
       return Container(
         decoration: BoxDecoration(
           color: DribTokens.cardOf(ctx),
-          borderRadius: BorderRadius.vertical(
+          borderRadius: const BorderRadius.vertical(
             top: Radius.circular(DribTokens.sheetRadius),
           ),
         ),
