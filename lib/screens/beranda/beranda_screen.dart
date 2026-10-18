@@ -62,6 +62,7 @@ import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
+import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/widgets/premium/premium_section_header.dart';
 
@@ -202,6 +203,31 @@ class BerandaScreenState extends State<BerandaScreen> {
         insightDismissKey = null;
       });
     }
+  }
+
+  /// Buka detail transaksi ala Ollo; muat ulang bila ada perubahan.
+  Future<void> _openTxDetail(SaasTransaction tx) async {
+    if (await showOlloTxDetailSheet(context, tx) && mounted) _load();
+  }
+
+  /// Sheet daftar transaksi; tap item -> detail (lalu muat ulang bila berubah).
+  Future<void> _showTxListSheet(
+      BuildContext context, String title, List<SaasTransaction> items) {
+    return showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _TxListSheet(
+        title: title,
+        items: items,
+        onTapItem: (tx) async {
+          Navigator.of(ctx).pop();
+          await Future.delayed(const Duration(milliseconds: 200));
+          if (mounted) _openTxDetail(tx);
+        },
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -915,6 +941,69 @@ class BerandaScreenState extends State<BerandaScreen> {
     return _content(key: const ValueKey('beranda-content'));
   }
 
+  /// Kartu sapaan fungsional: sapaan + ringkasan hari ini (masuk & keluar).
+  /// Tap -> sheet daftar transaksi hari ini.
+  Widget _greetingCard(
+      ThemeData theme, ColorScheme scheme, List<SaasTransaction> items) {
+    final s = _todaySummary(items);
+    return GestureDetector(
+      onTap: () =>
+          _showTxListSheet(context, tr('beranda_today_tx'), s.txs),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _greeting(),
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            "${tr('beranda_today')}: +${amt(s.inToday)} \u00b7 \u2212${amt(s.outToday)}",
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Hitung total masuk/keluar hari ini dari [items].
+  ({double inToday, double outToday, List<SaasTransaction> txs})
+      _todaySummary(List<SaasTransaction> items) {
+    final now = DateTime.now();
+    var inT = 0.0;
+    var outT = 0.0;
+    final txs = <SaasTransaction>[];
+    for (final t in items) {
+      final d = DateTime.tryParse(t.date ?? '');
+      if (d == null) continue;
+      if (d.year == now.year && d.month == now.month && d.day == now.day) {
+        txs.add(t);
+        if (t.type == 'in') inT += t.amount;
+        if (t.type == 'out') outT += t.amount;
+      }
+    }
+    return (inToday: inT, outToday: outT, txs: txs);
+  }
+
+  /// Filter [items] untuk bulan berjalan + tipe tertentu.
+  List<SaasTransaction> _monthFiltered(
+      List<SaasTransaction> items, String type) {
+    final now = DateTime.now();
+    final out = <SaasTransaction>[];
+    for (final t in items) {
+      if (t.type != type) continue;
+      final d = DateTime.tryParse(t.date ?? '');
+      if (d == null) continue;
+      if (d.year == now.year && d.month == now.month) out.add(t);
+    }
+    return out;
+  }
+
   /// Sapaan hangat berdasarkan waktu, ganti tiap jam (deterministik).
   String _greeting() {
     final now = DateTime.now();
@@ -974,10 +1063,7 @@ class BerandaScreenState extends State<BerandaScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: SsrSpace.sm),
-          child: Text(
-            _greeting(),
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
+          child: _greetingCard(theme, scheme, items),
         ),
         if (orgName.isNotEmpty && orgName != '-') ...[
           Row(
@@ -1096,7 +1182,7 @@ class BerandaScreenState extends State<BerandaScreen> {
                   DayHeader(dateKey: b.key, count: b.items.length),
                   for (var i = 0; i < b.items.take(5).length; i++) ...[
                     if (i > 0) const Divider(height: 1),
-                    TxRow(tx: b.items[i]),
+                    TxRow(tx: b.items[i], onTap: () => _openTxDetail(b.items[i])),
                   ],
                 ],
               ),
@@ -1120,10 +1206,32 @@ class BerandaScreenState extends State<BerandaScreen> {
   ) {
     final positive = surplus >= 0;
     const onHero = DribTokens.onNavy;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: GlassDuration.slow,
-      curve: GlassDuration.curve,
+    // Efek 3D premium: layered shadow 3 lapis halus di kartu SURPLUS.
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(DribTokens.sheetRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+          BoxShadow(
+            color: DribTokens.navy.withValues(alpha: 0.08),
+            blurRadius: 48,
+            offset: const Offset(0, 24),
+          ),
+        ],
+      ),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: GlassDuration.slow,
+        curve: GlassDuration.curve,
       builder: (context, value, child) {
         return Opacity(
           opacity: value,
@@ -1136,6 +1244,9 @@ class BerandaScreenState extends State<BerandaScreen> {
       child: BalanceCard(
         label: positive ? tr('beranda_surplus') : tr('beranda_defisit'),
         amount: amt(surplus),
+        onAmountTap: widget.onLaporan == null
+            ? null
+            : () => widget.onLaporan!.call(),
         footer: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1162,12 +1273,20 @@ class BerandaScreenState extends State<BerandaScreen> {
               children: [
                 Expanded(
                   child: _heroMini(tr('tx_in'), amt(totalIn),
-                      AppIcons.arrowDown, Colors.green.shade300),
+                      AppIcons.arrowDown, Colors.green.shade300,
+                      onTap: () => _showTxListSheet(
+                          context,
+                          tr('beranda_month_in'),
+                          _monthFiltered(items, 'in'))),
                 ),
                 const SizedBox(width: GlassSpace.sm),
                 Expanded(
                   child: _heroMini(tr('tx_out'), amt(totalOut),
-                      AppIcons.arrowUp, Colors.red.shade300),
+                      AppIcons.arrowUp, Colors.red.shade300,
+                      onTap: () => _showTxListSheet(
+                          context,
+                          tr('beranda_month_out'),
+                          _monthFiltered(items, 'out'))),
                 ),
               ],
             ),
@@ -1218,17 +1337,23 @@ class BerandaScreenState extends State<BerandaScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
   /// Kotak mini di hero: ikon + label + nominal putih di atas navy.
+  /// [onTap]: bila diisi, kotak bisa di-tap (mis. ke daftar bulan ini).
   Widget _heroMini(
-      String label, String value, IconData icon, Color tint) {
+      String label, String value, IconData icon, Color tint,
+      {VoidCallback? onTap}) {
     const labelStyle = TextStyle(
       color: DribTokens.onNavy,
       fontSize: 12,
     );
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: onTap == null ? null : HitTestBehavior.opaque,
+      child: Container(
       padding: const EdgeInsets.all(GlassSpace.sm),
       decoration: BoxDecoration(
         color: DribTokens.onNavy.withValues(alpha: 0.12),
@@ -1264,6 +1389,7 @@ class BerandaScreenState extends State<BerandaScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -1331,6 +1457,106 @@ class _PeriodPills extends StatelessWidget {
 }
 
 
+/// Sheet daftar transaksi (ringkasan hari ini / pemasukan & pengeluaran
+/// bulan ini). Tap item -> detail ala Ollo.
+class _TxListSheet extends StatelessWidget {
+  final String title;
+  final List<SaasTransaction> items;
+  final ValueChanged<SaasTransaction> onTapItem;
+  const _TxListSheet({
+    required this.title,
+    required this.items,
+    required this.onTapItem,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: DribTokens.cardOf(context),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(DribTokens.sheetRadius),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.75,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(2),
+              color: scheme.outlineVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Flexible(
+            child: items.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Text(
+                      tr('beranda_empty_day'),
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (_, i) => TxRow(
+                      tx: items[i],
+                      onTap: () => onTapItem(items[i]),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Skala tekan halus (0.97, 120ms) untuk tombol pastel — tanpa animasi berat.
+class _PressScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  const _PressScale({required this.child, required this.onTap});
+
+  @override
+  State<_PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<_PressScale> {
+  var _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
 /// Menu 4 ikon pastel ala Ollo di bawah kartu saldo: Anggaran, Berulang,
 /// Target, Tagihan. Tap -> layar yang sudah ada (tanpa logika baru).
 /// Pemetaan: Anggaran->BudgetsScreen, Berulang->RecurringBillsScreen,
@@ -1382,7 +1608,7 @@ class _HomeMenuRow extends StatelessWidget {
         for (var i = 0; i < items.length; i++) ...[
           if (i > 0) const SizedBox(width: 10),
           Expanded(
-            child: GestureDetector(
+            child: _PressScale(
               onTap: () => _go(context, items[i].screen),
               child: Container(
                 padding:
@@ -1390,6 +1616,19 @@ class _HomeMenuRow extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: items[i].bg,
                   borderRadius: BorderRadius.circular(20),
+                  // Efek 3D premium: layered shadow 2 lapis halus.
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

@@ -49,6 +49,7 @@ import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/tx_day_slivers.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
+import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -100,6 +101,11 @@ class ReportsScreenState extends State<ReportsScreen> {
   }
 
   Future<void> reload() => _load();
+
+  /// Buka detail transaksi ala Ollo; muat ulang bila ada perubahan.
+  Future<void> _openTxDetail(SaasTransaction tx) async {
+    if (await showOlloTxDetailSheet(context, tx) && mounted) _load();
+  }
 
   Future<void> _load() async {
     setState(() {
@@ -1203,7 +1209,7 @@ class _TxListCard extends StatelessWidget {
                 DayHeader(dateKey: b.key, count: b.items.length),
                 for (var i = 0; i < b.items.length; i++) ...[
                   if (i > 0) const Divider(height: 1),
-                  TxRow(tx: b.items[i]),
+                  TxRow(tx: b.items[i], onTap: () => _openTxDetail(b.items[i])),
                 ],
               ],
             ],

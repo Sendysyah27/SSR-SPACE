@@ -42,8 +42,28 @@ class TransactionItem extends StatelessWidget {
     this.onTap,
   });
 
+  /// Cerahkan tint di dark mode agar ikon tetap terbaca.
+  /// Light mode: tint asli (identik seperti sebelumnya).
+  Color _adaptiveTint(BuildContext context, Color tint) {
+    if (Theme.of(context).brightness != Brightness.dark) return tint;
+    return Color.lerp(tint, Colors.white, 0.35) ?? tint;
+  }
+
+  /// Warna nominal sadar-tema: shade700 di light, shade300 di dark.
+  Color _amountColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (neutral) {
+      return isDark ? Theme.of(context).colorScheme.onSurface : DribTokens.navy;
+    }
+    if (isIncome) {
+      return isDark ? Colors.green.shade300 : Colors.green.shade700;
+    }
+    return isDark ? Colors.red.shade300 : Colors.red.shade700;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final tint = _adaptiveTint(context, this.tint);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -86,7 +106,7 @@ class TransactionItem extends StatelessWidget {
                       date,
                       style: TextStyle(
                         fontSize: 12,
-                        color: DribTokens.navy.withValues(alpha: 0.55),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -97,11 +117,7 @@ class TransactionItem extends StatelessWidget {
                 amount,
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: neutral
-                      ? DribTokens.navy
-                      : isIncome
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
+                  color: _amountColor(context),
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),

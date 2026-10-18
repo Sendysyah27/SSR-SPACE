@@ -25,12 +25,16 @@ class BalanceCard extends StatelessWidget {
   /// Varian gradient tetap; null = ikut [cardTheme] global.
   final String? themeId;
 
+  /// Tap pada angka nominal (mis. ke Laporan). Null = tidak bisa di-tap.
+  final VoidCallback? onAmountTap;
+
   const BalanceCard({
     super.key,
     required this.label,
     required this.amount,
     this.footer,
     this.themeId,
+    this.onAmountTap,
   });
 
   /// Gradient untuk satu id tema; tak dikenal -> navy (bawaan).
@@ -60,9 +64,14 @@ class BalanceCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            amount,
-            style: DribTokens.bigNumber(size: 34, color: DribTokens.onNavy),
+          GestureDetector(
+            onTap: onAmountTap,
+            behavior:
+                onAmountTap == null ? null : HitTestBehavior.opaque,
+            child: Text(
+              amount,
+              style: DribTokens.bigNumber(size: 34, color: DribTokens.onNavy),
+            ),
           ),
           if (footer != null) ...[
             const SizedBox(height: 12),

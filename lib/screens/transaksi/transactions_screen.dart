@@ -26,6 +26,7 @@ import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/tx_day_slivers.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
 import 'package:ssr_space/widgets/restyle/transaction_item.dart';
+import 'package:ssr_space/widgets/tx_detail_sheet.dart';
 
 String txHistoryTitle(String m) {
   final label = localeCode.value == 'en'
@@ -200,7 +201,8 @@ class TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Future<void> _openEdit(SaasTransaction t) async {
-    if (await openTxInputSheet(context, editing: t)) await _load();
+    // Buka detail ala Ollo dulu (Edit/Hapus di dalam); muat ulang bila berubah.
+    if (await showOlloTxDetailSheet(context, t)) await _load();
   }
 
   void _onMonthChanged(String m) {
