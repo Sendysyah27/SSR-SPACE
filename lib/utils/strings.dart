@@ -2280,6 +2280,35 @@ const _t = <String, Map<String, String>>{
     'id': 'Pulihkan gagal. Cek internet lalu coba lagi.',
     'en': 'Restore failed. Check internet and try again.',
   },
+  'bx_enc_btn': {
+    'id': 'Buat cadangan terenkripsi',
+    'en': 'Make encrypted backup'
+  },
+  'bx_enc_s': {
+    'id':
+        'Disarankan: file diproteksi password (AES-256). Jangan sampai lupa — password hilang = tak bisa dipulihkan.',
+    'en':
+        'Recommended: password-protected file (AES-256). Keep it safe — a forgotten password means unrecoverable.',
+  },
+  'bx_enc_pass_t': {'id': 'Password cadangan', 'en': 'Backup password'},
+  'bx_enc_pass_hint': {'id': 'Min. 8 karakter', 'en': 'Min. 8 characters'},
+  'bx_enc_pass2_hint': {'id': 'Ulangi password', 'en': 'Repeat password'},
+  'bx_enc_pass_short': {
+    'id': 'Password minimal 8 karakter.',
+    'en': 'Password needs at least 8 characters.'
+  },
+  'bx_enc_pass_mismatch': {
+    'id': 'Password tidak sama, coba lagi.',
+    'en': 'Passwords do not match, try again.'
+  },
+  'bx_enc_wrong': {
+    'id': 'Password salah atau file rusak.',
+    'en': 'Wrong password or corrupted file.'
+  },
+  'bx_enc_ok': {
+    'id': 'Cadangan terenkripsi {n} transaksi dibagikan.',
+    'en': 'Encrypted backup of {n} transactions shared.',
+  },
   // Batch 10: notifikasi lokal alert budget
   'ba_n_warn_t': {'id': 'Budget hampir habis', 'en': 'Budget almost spent'},
   'ba_n_breach_t': {'id': 'Budget jebol', 'en': 'Budget exceeded'},
