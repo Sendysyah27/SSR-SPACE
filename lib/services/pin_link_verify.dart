@@ -48,7 +48,9 @@ class PinLinkVerify {
 
   static Future<bool> consume(Uri uri) async {
     try {
-      if (uri.scheme != pinLinkScheme) return false;
+      if (uri.scheme != pinLinkScheme || uri.host != pinLinkHost) {
+        return false;
+      }
       final t = parseAuthLinkToken(uri);
       if (t == null) return false;
       if (t.type == 'magiclink') {
