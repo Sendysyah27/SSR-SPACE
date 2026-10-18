@@ -36,8 +36,12 @@ Future<bool> openOcrFlow(BuildContext context) async {
   if (source == ImageSource.camera) {
     path = await openOcrCamera(context);
   } else {
+    // Batasi resolusi: foto 12MP full-res -> decode ~48MB+ rawan OOM di HP
+    // mid-range (fix #11). 2048px cukup untuk OCR struk.
     final XFile? file = await ImagePicker().pickImage(
       source: source,
+      maxWidth: 2048,
+      maxHeight: 2048,
       imageQuality: 92,
     );
     path = file?.path;
