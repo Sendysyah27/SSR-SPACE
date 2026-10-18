@@ -712,6 +712,28 @@ Hapus fitur desain mati (audit tema, permintaan user).
   GlassDuration/GlassElevation.
 - CI hijau run 39110633513.
 
+## 2.82.3+270 (2026-10-18)
+Wave 1 fix data-correctness (audit 4-skill-dev 2026-10-18). Read-only audit,
+4 commit kecil, tanpa perubahan logika bisnis selain fix.
+- [KRITIS] lib/services/ai_chat_parse.dart: aksi AI chat type 'transfer'
+  DITOLAK fail-closed (reason 'transfer_tanpa_tujuan') — kontrak JSON tak
+  punya dompet tujuan, transfer via simpan-satu-ketuk pasti tersimpan tanpa
+  to_wallet_id (baris korup). User tetap bisa catat manual via form (ada
+  picker dompet tujuan). Test: 'type transfer ditolak' di
+  test/ai_chat_parse_test.dart (c602909).
+- [PENTING] lib/services/budget_service.dart: fetchBudgets pakai
+  TransactionService().listMonth(orgId, month) — sebelumnya list(orgId)
+  (100 terakhir lintas bulan) lalu filter di client -> undercount untuk
+  user >100 transaksi lintas bulan (7f6800d).
+- [PENTING] lib/services/transaction_service.dart: assert(amount > 0)
+  (2x, di add() & update()) -> if (amount <= 0) throw ArgumentError —
+  assert di-strip di build release (75668ef).
+- [PENTING] lib/models/transaction.dart: SaasTransaction.tryFromMap()
+  defensif (skip baris rusak + debugPrint) — 8 call site mapping list di
+  transaction_service.dart pakai tryFromMap; get satuan tetap strict
+  via fromMap (cc44647).
+- CI hijau run 39135028558 (APK 2.82.3+270).
+
 ## 2.82.2+269 (2026-10-18)
 Fix kontras teks Pengaturan di tema cerah (laporan user: teks samar).
 - GlassLabeledCard (lib/widgets/labeled_section_card.dart): bungkus Column
