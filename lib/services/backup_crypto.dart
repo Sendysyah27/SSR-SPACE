@@ -35,8 +35,12 @@ String decryptBackup(String payload, String password) {
   late final Archive archive;
   try {
     archive = ZipDecoder().decodeBytes(zipBytes, password: password);
-  } on ArchivePasswordException {
-    throw const BackupDecryptException('password salah');
+  } on ArchiveException catch (e) {
+    // archive 4.x: password salah = ArchiveException('Wrong password ...').
+    if (e.message.toLowerCase().contains('password')) {
+      throw const BackupDecryptException('password salah');
+    }
+    throw const BackupDecryptException('arsip rusak');
   } catch (_) {
     throw const BackupDecryptException('arsip rusak');
   }
