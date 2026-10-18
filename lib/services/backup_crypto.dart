@@ -13,9 +13,6 @@ String encryptBackup(String plainJson, String password) {
   final archive = Archive()
     ..add(ArchiveFile.string('backup.json', plainJson));
   final zipBytes = ZipEncoder(password: password).encodeBytes(archive);
-  if (zipBytes == null) {
-    throw const BackupDecryptException('gagal enkripsi');
-  }
   return encBackupMarker + base64Encode(zipBytes);
 }
 
@@ -47,11 +44,8 @@ String decryptBackup(String payload, String password) {
   if (archive.files.isEmpty) {
     throw const BackupDecryptException('arsip kosong');
   }
-  final content = archive.files.first.content;
-  if (content == null) {
-    throw const BackupDecryptException('arsip kosong');
-  }
-  return utf8.decode(content as List<int>);
+  final content = archive.files.first.content as List<int>;
+  return utf8.decode(content);
 }
 
 class BackupDecryptException implements Exception {

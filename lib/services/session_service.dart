@@ -112,7 +112,6 @@ class SessionService {
     // Bersihkan format lama bila tersisa.
     await _remove(_kPinHash);
     await _remove(_kPinSalt);
-    await _secDelete(_kPinHash + '_legacy');
     await _set('pin_fail', 0);
   }
 
