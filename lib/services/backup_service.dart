@@ -122,12 +122,17 @@ Future<RestoreResult> restoreBackup(
   var ok = 0;
   var skipped = plan.skipped;
   var failed = 0;
+  // Fix #6: bulk restore. Dulu tiap baris = INSERT + mint RPC + UPDATE
+  // (3 round-trip serial via add()); 1000 baris = ~3000 request, belasan
+  // menit di jaringan lemot. Sekarang: kode di-mint dulu (RPC ringan),
+  // lalu SATU bulk insert per 200 baris. Chunk yang gagal (mis. 23505)
+  // difallback ke insert satuan agar hitungan tetap jujur per baris.
+  final payloads = <Map<String, dynamic>>[];
+  final uid = SupabaseConfig.client.auth.currentUser?.id;
   for (final r in plan.ready) {
     final wid = nameToId[(r['wallet_name'] ?? '').toString().toLowerCase()];
     final toName = (r['to_wallet_name'] ?? '').toString();
-    final toId = toName.isEmpty
-        ? null
-        : nameToId[toName.toLowerCase()];
+    final toId = toName.isEmpty ? null : nameToId[toName.toLowerCase()];
     if (wid == null || wid.isEmpty) {
       skipped++;
       continue;
@@ -136,38 +141,71 @@ Future<RestoreResult> restoreBackup(
       skipped++;
       continue;
     }
+    final amount = (r['amount'] as num?)?.toDouble() ?? 0;
+    if (amount <= 0) {
+      failed++; // add() melempar ArgumentError untuk nominal ini
+      continue;
+    }
     final date = (r['date'] ?? '').toString();
     final createdAt = (r['created_at'] ?? '').toString();
     final cat = (r['category'] ?? '').toString();
     final note = (r['note'] ?? '').toString();
+    payloads.add(txInsertPayload(
+      orgId: orgId,
+      type: (r['type'] ?? '').toString(),
+      amount: amount,
+      walletId: wid,
+      toWalletId: toId,
+      category: cat.isEmpty ? null : cat,
+      note: note.isEmpty ? null : note,
+      date: date.isEmpty ? null : date,
+      createdAt: createdAt.isEmpty ? null : createdAt,
+      createdBy: uid,
+    ));
+  }
+  // Mint kode upfront (tanpa UPDATE per baris seperti add()).
+  final svc = TransactionService();
+  for (final pl in payloads) {
     try {
-      await TransactionService().add(
-        orgId: orgId,
-        type: (r['type'] ?? '').toString(),
-        amount: (r['amount'] as num?)?.toDouble() ?? 0,
-        walletId: wid,
-        toWalletId: toId,
-        category: cat.isEmpty ? null : cat,
-        note: note.isEmpty ? null : note,
-        date: date.isEmpty ? null : date,
-        createdAt: createdAt.isEmpty ? null : createdAt,
-      );
-      ok++;
-    } on PostgrestException catch (e) {
-      // Duplikat hash = baris sudah ada → lewati, bukan gagal.
-      // QUOTA = tertahan kuota paket → hitung jujur, bukan gagal generik.
-      if (e.code == '23505') {
-        skipped++;
-      } else if (pgIsQuotaExceeded(e)) {
-        quotaBlocked++;
-      } else {
-        failed++;
-      }
+      pl['code'] = await svc.mintCode(orgId);
     } catch (_) {
-      failed++;
+      // Kode opsional: baris tetap di-restore tanpa kode (semantik add()).
     }
   }
-  return RestoreResult(
+  const chunkSize = 200;
+  for (var i = 0; i < payloads.length; i += chunkSize) {
+    final end = (i + chunkSize).clamp(0, payloads.length);
+    final chunk = payloads.sublist(i, end);
+    try {
+      await SupabaseConfig.client.from('transactions').insert(chunk);
+      ok += chunk.length;
+    } on PostgrestException catch (e) {
+      if (e.code == '23505' || pgIsQuotaExceeded(e)) {
+        for (final pl in chunk) {
+          try {
+            await SupabaseConfig.client.from('transactions').insert(pl);
+            ok++;
+          } on PostgrestException catch (re) {
+            // Duplikat hash = baris sudah ada → lewati, bukan gagal.
+            // QUOTA = tertahan kuota paket → hitung jujur, bukan gagal generik.
+            if (re.code == '23505') {
+              skipped++;
+            } else if (pgIsQuotaExceeded(re)) {
+              quotaBlocked++;
+            } else {
+              failed++;
+            }
+          } catch (_) {
+            failed++;
+          }
+        }
+      } else {
+        failed += chunk.length;
+      }
+    } catch (_) {
+      failed += chunk.length;
+    }
+  }
     walletsCreated: created,
     ok: ok,
     skipped: skipped,
