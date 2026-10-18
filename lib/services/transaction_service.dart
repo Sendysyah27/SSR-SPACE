@@ -146,27 +146,41 @@ class TransactionService {
         .toList();
   }
 
-  /// Satu halaman bulan berjalan (untuk infinite scroll). `offset` dari 0.
-  /// Order identik dengan [listMonth] agar sambungan antar-halaman mulus.
+  /// Satu halaman bulan berjalan (untuk infinite scroll).
+  ///
+  /// Keyset pagination via [after] (fix #9): offset `.range()` rawan drift —
+  /// insert baru saat scroll menggeser baris sehingga duplikat/terlewat.
+  /// Kursor = item terakhir halaman sebelumnya; order (date, created_at, id)
+  /// DESC dengan id sebagai tiebreaker deterministik.
   Future<List<SaasTransaction>> listMonthPage(
     String orgId,
     String month, {
-    int offset = 0,
+    SaasTransaction? after,
     int limit = txPageSize,
   }) async {
     try {
-      final rows = await SupabaseConfig.client
+      var q = SupabaseConfig.client
           .from('transactions')
           .select()
           .eq('org_id', orgId)
           .gte('date', monthStart(month))
-          .lt('date', monthEnd(month))
+          .lt('date', monthEnd(month));
+      final ad = after?.date;
+      final ac = after?.createdAt;
+      if (after != null && ad != null && ac != null) {
+        // Baris SETELAH kursor dalam order DESC.
+        q = q.or('date.lt.$ad,'
+            'and(date.eq.$ad,created_at.lt.$ac),'
+            'and(date.eq.$ad,created_at.eq.$ac,id.lt.${after.id})');
+      }
+      final rows = await q
           .order('date', ascending: false)
           .order('created_at', ascending: false)
-          .range(offset, offset + limit - 1);
+          .order('id', ascending: false)
+          .limit(limit);
       markOnline();
       // Cache hanya halaman pertama (tampilan awal offline).
-      if (offset == 0) {
+      if (after == null) {
         unawaited(writeTxCache(orgId, month, List<dynamic>.from(rows)));
       }
       return List<Map<String, dynamic>>.from(rows)
@@ -177,7 +191,7 @@ class TransactionService {
       markOffline();
       // Offline: halaman lanjutan tak ada → list kosong (hasMore padam
       // di pemanggil bila tanpa cache); halaman pertama pakai cache.
-      if (offset > 0) return [];
+      if (after != null) return [];
       final cached = await readTxCache(orgId, month);
       if (cached != null) {
         return cached.map(SaasTransaction.tryFromMap).whereType<SaasTransaction>().toList();

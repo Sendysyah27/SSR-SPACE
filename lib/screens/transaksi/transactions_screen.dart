@@ -180,8 +180,11 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         setState(() => loadingMore = false);
         return;
       }
-      final t = await TransactionService()
-          .listMonthPage(orgId, month, offset: items.length);
+      final t = await TransactionService().listMonthPage(
+        orgId,
+        month,
+        after: items.isEmpty ? null : items.last,
+      );
       if (!mounted) return;
       setState(() {
         items = [...items, ...t];

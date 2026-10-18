@@ -272,8 +272,11 @@ class ReportsScreenState extends State<ReportsScreen> {
         setState(() => loadingMore = false);
         return;
       }
-      final t = await TransactionService()
-          .listMonthPage(orgId, month, offset: items.length);
+      final t = await TransactionService().listMonthPage(
+        orgId,
+        month,
+        after: items.isEmpty ? null : items.last,
+      );
       if (!mounted) return;
       setState(() {
         items = [...items, ...t];
@@ -296,13 +299,14 @@ class ReportsScreenState extends State<ReportsScreen> {
   Future<List<SaasTransaction>> _allItems() async {
     final orgId = await activeOrgId();
     final all = <SaasTransaction>[];
-    var offset = 0;
     for (var i = 0; i < 20; i++) {
-      final page = await TransactionService()
-          .listMonthPage(orgId, month, offset: offset);
+      final page = await TransactionService().listMonthPage(
+        orgId,
+        month,
+        after: all.isEmpty ? null : all.last,
+      );
       all.addAll(page);
       if (!txPageHasMore(page.length, txPageSize)) break;
-      offset += page.length;
     }
     return all;
   }
