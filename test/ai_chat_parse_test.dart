@@ -22,15 +22,22 @@ void main() {
     expect(r.action!['note'], 'kopi');
   });
 
-  test('type transfer valid', () {
+  test('type transfer ditolak (tanpa dompet tujuan di kontrak)', () {
     final r = parseChatReply(
       '{"reply":"Ok.","action":{"type":"transfer","amount":50000,'
       '"category":"Lainnya","wallet":"DANA"}}',
       wallets: _wallets,
       categories: _cats,
     );
-    expect(r.action, isNotNull);
-    expect(r.action!['type'], 'transfer');
+    expect(r.action, isNull);
+    expect(
+      validateChatActionReason(
+        {'type': 'transfer', 'amount': 50000, 'category': 'Lainnya', 'wallet': 'DANA'},
+        wallets: _wallets,
+        categories: _cats,
+      ),
+      'transfer_tanpa_tujuan',
+    );
   });
 
   test('JSON dalam fence ```json', () {

@@ -12,8 +12,9 @@
 //
 // Kode alasan (reason) untuk debug-only logging — HANYA kode, tanpa
 // isi pesan/nominal/gambar:
-//   parse_gagal, action_null, type_invalid, amount_invalid,
-//   wallet_kosong, wallet_tidak_cocok, kategori_kosong, kategori_tidak_cocok
+//   parse_gagal, action_null, type_invalid, transfer_tanpa_tujuan,
+//   amount_invalid, wallet_kosong, wallet_tidak_cocok,
+//   kategori_kosong, kategori_tidak_cocok
 import 'dart:convert';
 
 import 'quick_input_parse.dart';
@@ -31,6 +32,13 @@ String? validateChatActionReason(
   final type = m['type'];
   if (type != 'in' && type != 'out' && type != 'transfer') {
     return 'type_invalid';
+  }
+  if (type == 'transfer') {
+    // Kontrak tak punya dompet tujuan: transfer via chat pasti tersimpan
+    // tanpa to_wallet_id (baris korup) lewat simpan-satu-ketuk.
+    // Tolak fail-closed; user tetap bisa catat manual via form
+    // (ada picker dompet tujuan).
+    return 'transfer_tanpa_tujuan';
   }
 
   final amount = m['amount'];
@@ -65,7 +73,8 @@ String? validateChatActionReason(
 }
 
 /// Validasi ketat aksi transaksi dari model.
-/// - type: hanya 'in' | 'out' | 'transfer'.
+/// - type: hanya 'in' | 'out'. 'transfer' DITOLAK (kontrak tak punya
+///   dompet tujuan -> baris korup tanpa to_wallet_id).
 /// - amount: HARUS int > 0. Tolak double, string, negatif, nol.
 ///   Uang = int (rupiah); jangan konversi longgar di sini.
 /// - wallet: cocok dengan daftar wallet app (fuzzy via [matchWalletName],
