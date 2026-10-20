@@ -97,7 +97,7 @@ Future<({String text, String provider})> aiChatViaServer(
             'type': 'image_url',
             'image_url': {
               'url':
-                  'data:${mimeType ?? 'image/jpeg'};base64,${base64Encode(imageBytes!)}',
+                  'data:${mimeType ?? 'image/jpeg'};base64,${base64Encode(imageBytes)}',
             },
           },
         ]
