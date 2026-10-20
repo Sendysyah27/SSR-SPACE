@@ -1,7 +1,7 @@
 name: ssr_space
 description: SSR SPACE - Simple. Secure. Reliable. Your Finance Space. Pencatatan keuangan multi-dompet dengan workspace bersama dan auto-track notifikasi bank.
 publish_to: 'none'
-version: 2.82.8+275
+version: 2.82.9+276
 environment:
   sdk: '>=3.11.0 <4.0.0'
 dependencies:
@@ -19,6 +19,7 @@ dependencies:
   provider: ^6.1.1
   fl_chart: ^1.2.0
   flutter_svg: ^2.3.0
+  qr_flutter: ^4.1.0
   lottie: ^3.6.1
   skeletonizer: ^3.0.0
   csv: ^6.0.0

@@ -833,6 +833,28 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.82.9+276 (2026-10-20)
+Batch 2b pembayaran QRIS — UI klien untuk backend yang sudah live
+(migration_26 plan_pricing/payment_orders + Edge Functions
+create-qris-order, confirm-qris-order, qris-notif-webhook di project
+tkuwmwyxptqhloxqdkhs).
+- [Service] services/qris_payment_service.dart: fetchQrisPlans (query
+  plan_pricing aktif urut harga), createQrisOrder + confirmQrisOrder
+  lewat functions.invoke — hasil QrisResult, pesan error server
+  diteruskan jujur ke UI; fetchQrisOrder best-effort untuk polling.
+- [UI] Seksi "Bayar Pro via QRIS" di Billing (di bawah kartu Pro, di
+  atas tile VIP): kartu per paket server (6bulan Rp30.000/180 hari,
+  1tahun Rp120.000/365 hari, permanen Rp133.000) + tombol Bayar QRIS.
+  State muat sendiri: gagal muat seksi tidak menjatuhkan layar.
+  Kartu Gratis/Pro/VIP lama tidak diubah isinya.
+- [UI] widgets/qris_payment_sheet.dart: sheet pembayaran — QR besar
+  (dep baru qr_flutter ^4.1.0), nominal amount_total dengan 3 digit
+  terakhir (kode unik) ditebalkan + warna aksen, instruksi bayar
+  persis, countdown dari expires_at, tombol "Saya sudah bayar"
+  (pending -> awaiting_confirmation), polling status tiap 15 detik:
+  paid -> sukses + reload Billing; expired -> QR dinonaktifkan +
+  tombol Buat QR baru; rejected -> status akhir ditampilkan.
+- [Strings] 19 kunci bl_qris_* ID+EN. Tanpa migration baru.
 ## 2.82.8+275 (2026-10-19)
 Batch temuan user di 2.82.7+274: 2 bug + 1 request adaptasi (tanpa ubah logika
 bisnis; model TxFilter utuh).
