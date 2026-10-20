@@ -218,6 +218,7 @@ class _BillingScreenState extends State<BillingScreen> {
       return _BillingScaffold(ErrorView(message: err!, onRetry: _load));
     }
     final isPro = plan == 'pro';
+    final isPermanentPro = isPro && (expiresAt == null || expiresAt!.isEmpty);
     return _BillingScaffold(
       ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
@@ -236,13 +237,20 @@ class _BillingScreenState extends State<BillingScreen> {
           ],
           const SizedBox(height: SsrSpace.lg),
           _FreePlanCard(isPro: isPro),
-          _QrisPlansSection(
-            loading: qrisLoading,
-            error: qrisError,
-            plans: qrisPlans,
-            onRetry: _loadQris,
-            onPay: _openQrisSheet,
-          ),
+          if (isPermanentPro) ...[
+            const SizedBox(height: SsrSpace.lg),
+            Text(
+              tr('bl_pro_permanent_note'),
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ] else
+            _QrisPlansSection(
+              loading: qrisLoading,
+              error: qrisError,
+              plans: qrisPlans,
+              onRetry: _loadQris,
+              onPay: _openQrisSheet,
+            ),
           _VipCodeTile(onTap: _redeemVip),
         ],
       ),

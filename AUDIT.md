@@ -833,6 +833,22 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.82.12+279 (2026-10-20)
+Perbaikan logika Billing dari tes user di 2.82.11+278: pengguna Pro
+permanen masih ditawari membeli paket QRIS — render-gate saja,
+tanpa ubah logika bisnis/pembayaran/API/state/routing.
+- [Billing] build() billing_screen.dart: flag isPermanentPro (plan
+  Pro + expiresAt kosong). Bila permanen, _QrisPlansSection tidak
+  dirender — diganti catatan kecil (SizedBox lg + Text
+  bl_pro_permanent_note, bodyMedium). Pro bertanggal tetap melihat
+  seksi QRIS untuk perpanjangan. _FreePlanCard, _VipCodeTile, fetch
+  plan, daftar keuntungan Pro (278) tidak berubah.
+- [Strings] 1 kunci baru bl_pro_permanent_note ID+EN.
+- [Docs] AUDIT 278 difinalisasi (CI run 39426719379 SUCCESS);
+  assets/changelog_id.md diperbarui (penanda versi terpasang +
+  catatan 2.82.12+279).
+- Rilis: CI run pending — diisi setelah hijau.
+
 ## 2.82.11+278 (2026-10-20)
 Permintaan user: tampilkan semua keuntungan Pro di penawaran Pro —
 tampilan saja, tanpa ubah logika bisnis/pembayaran/API/state/routing.
@@ -847,7 +863,7 @@ tampilan saja, tanpa ubah logika bisnis/pembayaran/API/state/routing.
 - [Docs] AUDIT 277 difinalisasi (CI run 39423984711 SUCCESS);
   assets/changelog_id.md diperbarui (penanda versi terpasang +
   catatan 2.82.9+276 / 2.82.10+277 / 2.82.11+278).
-- Rilis: CI run pending — diisi setelah hijau.
+- Rilis: CI run 39426719379 (build-apk) SUCCESS — hijau.
 
 ## 2.82.10+277 (2026-10-20)
 Fix UI dari tes user di 2.82.9+276 — restyle murni, tanpa ubah logika

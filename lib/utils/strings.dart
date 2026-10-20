@@ -1317,6 +1317,10 @@ const _t = <String, Map<String, String>>{
     'en': 'Pro payments are being prepared. Free quotas still apply and are now enforced server-side.',
   },
   'bl_pro_until': {'id': 'Pro sampai {d}', 'en': 'Pro until {d}'},
+  'bl_pro_permanent_note': {
+    'id': 'Kamu sudah Pro permanen — semua fitur tanpa batas sudah aktif, tidak perlu membeli lagi.',
+    'en': 'You\'re already on permanent Pro — every unlimited feature is active, no purchase needed.',
+  },
   'bl_vip_title': {'id': 'Masukkan kode VIP', 'en': 'Enter VIP code'},
   'bl_vip_hint': {
     'id': 'Tulis kode persis seperti yang diberikan.',

@@ -1,6 +1,14 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.11+278.
+Versi terpasang: 2.82.12+279.
+
+## Yang baru di 2.82.12+279
+
+1. Billing: seksi Bayar Pro via QRIS kini disembunyikan bagi pengguna Pro permanen — semua fitur tanpa batas sudah aktif, tidak perlu membeli lagi. Pengguna Pro bertanggal tetap bisa memperpanjang seperti biasa.
+
+## What's new in 2.82.12+279
+
+1. Billing: the Pay for Pro via QRIS section is now hidden for permanent Pro users — every unlimited feature is already active, no purchase needed. Dated Pro users can still renew as usual.
 
 ## Yang baru di 2.82.11+278
 
