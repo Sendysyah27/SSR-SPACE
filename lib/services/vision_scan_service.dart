@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:image_picker/image_picker.dart';
-import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_quota.dart';
 import 'package:ssr_space/services/ai_cli_client.dart';
+import 'package:ssr_space/services/ai_server_client.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
@@ -22,9 +22,9 @@ class VisionScanException implements Exception {
   const VisionScanException(this.trKey, [this.detail]);
 }
 
-/// Foto struk (kamera/galeri) -> OpenCode LOKAL vision langsung, TANPA OCR.
-/// TIDAK ADA fallback ke Zen langsung (free tier 403).
-/// Gagal vision -> OCR lokal -> OpenCode lokal (teks), KECUALI [strictVision]
+/// Foto struk (kamera/galeri) -> Mang AI SERVER vision langsung
+/// (model VL via Edge Function mang-ai-chat), TANPA OCR.
+/// Gagal vision -> OCR lokal -> Mang AI server (teks), KECUALI [strictVision]
 /// true (mode "AI Vision" eksplisit pilihan user): tanpa fallback diam-diam,
 /// error vision dilempar apa adanya agar user tahu mode yang dipakai gagal.
 /// File foto dihapus. Null = user batal.
@@ -55,12 +55,6 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
         ? 'image/png'
         : 'image/jpeg';
 
-    // WAJIB OpenCode lokal — tidak ada jalur Zen langsung di scan struk.
-    final pass = await readLocalPass();
-    if (pass == null || pass.isEmpty) {
-      throw const VisionScanException('rcp_fail',
-          'Butuh OpenCode lokal: jalankan opencode serve di Termux dan isi password di Mang AI.');
-    }
     final categories = appCategories.value;
     final system = scanReceiptSystemPrompt(categories);
 
@@ -76,8 +70,9 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
 
     ReceiptScanResult? scanned;
     String? lastDetail;
+    var usedProvider = serverProviderName;
 
-    // 1) Vision langsung via OpenCode lokal (part file, skema /doc).
+    // 1) Vision langsung via Mang AI server (model VL).
     try {
       final r = await aiChatViaCli(
         'Uraikan struk pada gambar terlampir.',
@@ -85,9 +80,11 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
         mimeType: mime,
         system: system,
         forceLocal: true,
+        kind: 'receipt',
         // Struk 43 item -> JSON ribuan token; 30 dtk terlalu sempit.
         timeout: visionScanTimeout,
       );
+      usedProvider = r.provider;
       // Format baris teks dulu (robust utk banyak item); fallback JSON lama.
       scanned = parseReceiptScanText(_stripFence(r.text), categories) ??
           parseReceiptScanJson(_stripFence(r.text), categories);
@@ -100,7 +97,7 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
       lastDetail = _snip(e.toString());
     }
 
-    // 2) OCR lokal -> OpenCode lokal (teks), untuk model yang buta gambar.
+    // 2) OCR lokal -> Mang AI server (teks), untuk model yang buta gambar.
     // Dilewati bila strictVision: user memilih "AI Vision" eksplisit, jadi
     // kegagalan vision dilaporkan jujur tanpa pindah mode diam-diam.
     if (scanned == null && !strictVision) {
@@ -111,7 +108,9 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
             scanReceiptOcrPrompt(ocr, categories),
             system: system,
             forceLocal: true,
+            kind: 'receipt',
           );
+          usedProvider = r.provider;
           scanned = parseReceiptScanText(_stripFence(r.text), categories) ??
               parseReceiptScanJson(_stripFence(r.text), categories);
           if (scanned == null) {
@@ -156,7 +155,7 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
         confident: true,
         detailText: detailText,
       ),
-      provider: 'OpenCode lokal',
+      provider: usedProvider,
       category: s.category,
     );
   } catch (e, st) {

@@ -76,7 +76,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   List<int>? _pendingImage;
   String? _pendingMime;
   String _dataCtx = '';
-  String _providerId = 'zen';
+  String _providerId = 'server';
   int _animFrom = 0;
 
   /// Kunci prefs arsip riwayat chat (teks saja, maks 50 pesan terakhir).
@@ -205,22 +205,26 @@ class _AiChatScreenState extends State<AiChatScreen> {
     final d = e.detail ?? '';
     if (d.startsWith('[Gambar]')) return d;
     final low = d.toLowerCase();
-    // Server OpenCode lokal mati / tak terjangkau.
-    if (low.contains('server lokal') ||
+    // Pesan server yang sudah utuh untuk user (kuota habis dari Edge
+    // Function / sesi berakhir): tampilkan apa adanya.
+    if (low.contains('kuota ai bulan ini habis') ||
+        low.contains('sesi login berakhir')) {
+      return d.replaceFirst('[AI] ', '');
+    }
+    // Server Mang AI bermasalah / gateway tak terjangkau.
+    if (low.contains('ai gateway') ||
+        low.contains('ai_upstream') ||
+        low.contains('server ai') ||
         low.contains('opencode serve') ||
         low.contains('connection refused') ||
         low.contains('failed to connect') ||
         low.contains('127.0.0.1') ||
         low.contains('localhost')) {
-      return tr('ai_err_local_down');
+      return tr('ai_err_server');
     }
     // Timeout (Dart) maupun timeout native.
     if (e.code == 'timeout' || low.contains('timeout')) {
       return tr('ai_err_timeout');
-    }
-    // Password OpenCode lokal belum diisi.
-    if (low.contains('belum ada password')) {
-      return tr('ai_err_local_pass');
     }
     if (e.code == 'denied') return tr('ai_key_invalid');
     // Respons kosong / tak valid dari model.
@@ -233,6 +237,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
       return tr('ai_err_rate_limit');
     }
     if (e.code == 'empty') return tr('ai_fail');
+    // Error server lain (gateway/upstream) -> pesan server generik.
+    if (e.code == 'server') return tr('ai_err_server');
     // Selain itu: model benar-benar sibuk.
     return tr('ai_busy');
   }
@@ -543,14 +549,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
     }
   }
 
-  /// Pilih provider AI (Zen API / OpenCode lokal) + baseUrl + password.
-  /// Password tersimpan di secure storage, tak pernah di-log/di-debug.
+  /// Pilih provider AI: Mang AI Server (default — gratis, kuota per
+  /// plan, tanpa setup) atau OpenCode Zen (API key sendiri, diatur di
+  /// Pengaturan AI). Jalur OpenCode lokal sudah dihapus di 2.82.13+280.
   Future<void> _openProvider() async {
-    var pick = _providerId == 'local' ? 'local' : 'zen';
-    final urlC = TextEditingController(text: await aiBaseUrl());
-    final passC = TextEditingController();
-    final hasPass = await readLocalPass() != null;
-    if (!mounted) return;
+    var pick = _providerId == 'zen' ? 'zen' : 'server';
     await showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
@@ -574,68 +577,21 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 SegmentedButton<String>(
                   segments: [
                     ButtonSegment(
-                        value: 'zen', label: Text(tr('ai_prov_zen'))),
+                        value: 'server', label: Text(tr('ai_prov_server'))),
                     ButtonSegment(
-                        value: 'local', label: Text(tr('ai_prov_local'))),
+                        value: 'zen', label: Text(tr('ai_prov_zen'))),
                   ],
                   selected: {pick},
                   onSelectionChanged: (s) =>
                       setSheet(() => pick = s.first),
                 ),
-                if (pick == 'local') ...[
-                  const SizedBox(height: SsrSpace.sm),
-                  TextField(
-                    controller: urlC,
-                    keyboardType: TextInputType.url,
-                    decoration: InputDecoration(
-                      labelText: tr('ai_prov_url'),
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                  ),
-                  const SizedBox(height: SsrSpace.sm),
-                  TextField(
-                    controller: passC,
-                    obscureText: true,
-                    enableSuggestions: false,
-                    autocorrect: false,
-                    decoration: InputDecoration(
-                      labelText:
-                          '${tr('ai_prov_pass')}${hasPass ? ' (***)' : ''}',
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(tr('ai_prov_hint'),
-                      style: Theme.of(ctx).textTheme.bodySmall),
-                ],
                 const SizedBox(height: SsrSpace.sm),
                 Row(
                   children: [
-                    if (pick == 'local')
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            await clearLocalPass();
-                            if (ctx.mounted) Navigator.pop(ctx);
-                          },
-                          child: Text(tr('ai_prov_clear')),
-                        ),
-                      ),
-                    if (pick == 'local')
-                      const SizedBox(width: SsrSpace.sm),
                     Expanded(
                       child: FilledButton(
                         onPressed: () async {
                           await setAiProviderId(pick);
-                          if (pick == 'local') {
-                            await setAiBaseUrl(urlC.text);
-                            // Kosong = biarkan password lama.
-                            if (passC.text.trim().isNotEmpty) {
-                              await writeLocalPass(passC.text);
-                            }
-                          }
                           if (mounted) {
                             setState(() => _providerId = pick);
                           }
@@ -652,8 +608,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
         ),
       ),
     );
-    urlC.dispose();
-    passC.dispose();
   }
 
   /// Nama-nama dompet workspace aktif, untuk validasi aksi AI.
@@ -1077,9 +1031,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ActionChip(
-                    label: Text(_providerId == 'local'
-                        ? tr('ai_prov_local')
-                        : tr('ai_prov_zen')),
+                    label: Text(_providerId == 'zen'
+                        ? tr('ai_prov_zen')
+                        : tr('ai_prov_server')),
                     avatar: const Icon(Icons.smart_toy_outlined, size: 16),
                     onPressed: _sending ? null : _openProvider,
                   ),

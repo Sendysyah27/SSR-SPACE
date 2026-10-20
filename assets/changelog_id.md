@@ -1,6 +1,14 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.12+279.
+Versi terpasang: 2.82.13+280.
+
+## Yang baru di 2.82.13+280
+
+1. Mang AI sekarang berjalan di server — chat AI dan scan struk tidak lagi butuh Termux/opencode lokal, bisa dipakai semua pengguna. Kuota Gratis 30x/bulan, Pro tanpa batas.
+
+## What's new in 2.82.13+280
+
+1. Mang AI now runs on the server — AI chat and receipt scanning no longer need a local Termux/OpenCode setup, available to every user. Free plan: 30 uses/month, Pro: unlimited.
 
 ## Yang baru di 2.82.12+279
 

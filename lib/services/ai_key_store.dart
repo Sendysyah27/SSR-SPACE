@@ -65,24 +65,26 @@ Future<void> clearLocalPass() async {
   } catch (_) {}
 }
 
-// Pilihan provider AI (prefs biasa, bukan rahasia): 'zen' | 'local'.
-// Default + fallback aman = 'zen'.
+// Pilihan provider AI (prefs biasa, bukan rahasia): 'server' | 'zen'.
+// Default + fallback aman = 'server' (Mang AI server, sejak
+// 2.82.13+280). Nilai lama 'local' (OpenCode lokal, sudah dihapus
+// dari jalur eksekusi) bermigrasi ke 'server'.
 const _kAiProvider = 'ai_provider';
 
 Future<String> aiProviderId() async {
   try {
     final v =
         (await SharedPreferences.getInstance()).getString(_kAiProvider);
-    return v == 'local' ? 'local' : 'zen';
+    return v == 'zen' ? 'zen' : 'server';
   } catch (_) {
-    return 'zen';
+    return 'server';
   }
 }
 
 Future<void> setAiProviderId(String v) async {
   try {
     await (await SharedPreferences.getInstance())
-        .setString(_kAiProvider, v == 'local' ? 'local' : 'zen');
+        .setString(_kAiProvider, v == 'zen' ? 'zen' : 'server');
   } catch (_) {}
 }
 

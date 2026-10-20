@@ -833,6 +833,46 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.82.13+280 (2026-10-21)
+Mang AI pindah ke server (adaptasi opencode-free-bridge): chat AI +
+scan struk tidak lagi bergantung OpenCode lokal di Termux — siap
+dibagikan ke user lain. Tanpa migration/dep baru.
+- [AI] File baru lib/services/ai_server_client.dart: aiChatViaServer
+  memanggil Edge Function mang-ai-chat (JWT + anggota org + kuota
+  check_quota server-side); komposisi prompt identik jalur lama
+  (chatHistoryBlock + dataContext + masking nomor >=10 digit);
+  system = system pemanggil, fallback aiSoul (dulu default dari
+  native Kotlin); gambar sebagai part image_url data-URI + model
+  nemotron-3.5-super-vl-free; 403/QUOTA_EXCEEDED -> noteQuotaHit +
+  pesan kuota; 401 -> sesi berakhir.
+- [AI] ai_cli_client jadi router: provider 'server' (default) |
+  'zen'; cabang 'local' dihapus dari jalur eksekusi (MethodChannel
+  hanya untuk zen 'complete'; completeWithImage tak dipakai lagi);
+  aiChatViaCli tambah parameter kind (chat|receipt|quick) yang
+  diteruskan ke server; aiHasKey: server = ada sesi Supabase,
+  zen = hasKey native.
+- [AI] ai_key_store: aiProviderId 'zen' hanya bila prefs 'zen',
+  selain itu 'server' (nilai lama 'local'/null bermigrasi otomatis);
+  fungsi password/baseUrl lokal dipertahankan (data user lama),
+  tidak lagi dipakai UI/jalur baru.
+- [UI] ai_chat_screen: dialog provider 2 opsi (server/zen), field
+  baseUrl + password lokal dihapus; chip provider server/zen;
+  _providerId default 'server'; klasifikasi error lokal diganti
+  ai_err_server (gateway/upstream); pesan kuota habis / sesi
+  berakhir dari server ditampilkan apa adanya.
+- [Scan] vision_scan_service: syarat password OpenCode lokal
+  dihapus; dua panggilan aiChatViaCli teruskan kind 'receipt';
+  label provider berasal dari respons server (mang-ai-server).
+- [Strings] 2 kunci baru ai_prov_server + ai_err_server ID+EN.
+- [Backend] Salinan repo Edge Function supabase/functions/
+  mang-ai-chat/index.ts (isi persis versi ter-deploy; gateway
+  Cloudflare Worker oc-relay membentuk request ala OpenCode CLI
+  ke free-tier OpenCode).
+- [Docs] AUDIT 279 difinalisasi (CI run 39429657792 SUCCESS);
+  assets/changelog_id.md diperbarui (penanda versi terpasang +
+  catatan 2.82.13+280).
+- Rilis: CI run pending — diisi setelah hijau.
+
 ## 2.82.12+279 (2026-10-20)
 Perbaikan logika Billing dari tes user di 2.82.11+278: pengguna Pro
 permanen masih ditawari membeli paket QRIS — render-gate saja,
@@ -847,7 +887,7 @@ tanpa ubah logika bisnis/pembayaran/API/state/routing.
 - [Docs] AUDIT 278 difinalisasi (CI run 39426719379 SUCCESS);
   assets/changelog_id.md diperbarui (penanda versi terpasang +
   catatan 2.82.12+279).
-- Rilis: CI run pending — diisi setelah hijau.
+- Rilis: CI run 39429657792 (build-apk) SUCCESS — hijau.
 
 ## 2.82.11+278 (2026-10-20)
 Permintaan user: tampilkan semua keuntungan Pro di penawaran Pro —

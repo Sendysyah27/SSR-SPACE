@@ -2673,6 +2673,7 @@ const _t = <String, Map<String, String>>{
   'ai_test': {'id': 'Tes AI', 'en': 'Test AI'},
   'ai_prov_t': {'id': 'Provider AI', 'en': 'AI provider'},
   'ai_prov_zen': {'id': 'Zen API', 'en': 'Zen API'},
+  'ai_prov_server': {'id': 'Mang AI Server (gratis)', 'en': 'Mang AI Server (free)'},
   'ai_prov_local': {'id': 'OpenCode lokal', 'en': 'Local OpenCode'},
   'ai_prov_url': {
     'id': 'Base URL (cth. http://127.0.0.1:4096)',
@@ -2785,6 +2786,10 @@ const _t = <String, Map<String, String>>{
   'ai_err_rate_limit': {
     'id': 'Batas pemakaian AI tercapai. Tunggu sebentar, lalu coba lagi.',
     'en': 'AI usage limit reached. Wait a moment, then retry.',
+  },
+  'ai_err_server': {
+    'id': 'Server AI sedang bermasalah. Coba lagi sebentar.',
+    'en': 'The AI server is having trouble. Try again shortly.',
   },
   'ai_cancel': {'id': 'Batal', 'en': 'Cancel'},
   'ai_tx_save': {'id': 'Simpan', 'en': 'Save'},
