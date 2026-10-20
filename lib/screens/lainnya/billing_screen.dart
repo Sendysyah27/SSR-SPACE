@@ -327,7 +327,6 @@ class _VipCodeTile extends StatelessWidget {
 /// daftar fitur bertanda centang, dan blok opsional (pesan + tombol).
 class _PlanCard extends StatelessWidget {
   final EdgeInsetsGeometry margin;
-  final Color? borderColor;
   final String title;
   final Widget? statusChip;
   final Widget price;
@@ -336,7 +335,6 @@ class _PlanCard extends StatelessWidget {
 
   const _PlanCard({
     this.margin = EdgeInsets.zero,
-    this.borderColor,
     required this.title,
     required this.statusChip,
     required this.price,
@@ -368,7 +366,6 @@ class _PlanCard extends StatelessWidget {
     final chip = statusChip;
     return SectionCard(
       margin: margin,
-      borderColor: borderColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
