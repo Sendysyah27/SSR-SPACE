@@ -833,6 +833,22 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.82.10+277 (2026-10-20)
+Fix UI dari tes user di 2.82.9+276 — restyle murni, tanpa ubah logika
+bisnis/API/state/routing.
+- [UI] Divider menu global jadi samar: dividerTheme tema terang di
+  lib/theme/app_theme.dart kini memakai color AppColors.lineL
+  (0xFFE5E5EA); sebelumnya tanpa warna sehingga Divider tampil hitam
+  pekat di semua layout menu. Tema gelap tidak diubah (sudah
+  AppColors.lineDark).
+- [UI] Kartu Pro legacy Rp25.000/bulan dihapus dari Billing: class
+  _ProPlanCard + pemakaiannya di lib/screens/lainnya/billing_screen.dart
+  dibuang; const proPrice di lib/services/billing_service.dart ikut
+  dihapus (satu-satunya pemakai adalah kartu itu). Harga resmi sekarang
+  dari plan_pricing QRIS (Rp30.000 6 bulan / Rp120.000 1 tahun /
+  Rp133.000 permanen). Kartu Gratis, seksi QRIS, tile VIP tidak berubah.
+- Rilis: CI run pending — diisi setelah hijau.
+
 ## 2.82.9+276 (2026-10-20)
 Batch 2b pembayaran QRIS — UI klien untuk backend yang sudah live
 (migration_26 plan_pricing/payment_orders + Edge Functions

@@ -236,7 +236,6 @@ class _BillingScreenState extends State<BillingScreen> {
           ],
           const SizedBox(height: SsrSpace.lg),
           _FreePlanCard(isPro: isPro),
-          _ProPlanCard(isPro: isPro),
           _QrisPlansSection(
             loading: qrisLoading,
             error: qrisError,
@@ -289,40 +288,6 @@ class _FreePlanCard extends StatelessWidget {
         tr('bl_limit_goals'),
         tr('bl_limit_debts'),
         tr('bl_limit_bills'),
-      ],
-    );
-  }
-}
-
-/// Kartu paket Pro: harga, fitur, chip status. Tanpa tombol bayar —
-/// pembayaran dalam persiapan ("segera hadir", Batch 3 Sprint): tak ada
-/// lagi baris `pending` palsu yang tak pernah diproses.
-class _ProPlanCard extends StatelessWidget {
-  final bool isPro;
-
-  const _ProPlanCard({required this.isPro});
-
-  @override
-  Widget build(BuildContext context) {
-    return _PlanCard(
-      borderColor: Theme.of(context).colorScheme.primary,
-      title: tr('bl_pro'),
-      statusChip: isPro
-          ? StatusChip(label: tr('bl_active_chip'), tone: StatusTone.accent)
-          : StatusChip(label: tr('bl_soon'), tone: StatusTone.neutral),
-      price: Text(
-        '${rp(proPrice)}/bulan',
-        style: AppTheme.money.copyWith(
-          fontSize: 18,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      ),
-      features: [tr('bl_f_pro1'), tr('bl_f_pro2'), tr('bl_f_pro3')],
-      extra: [
-        if (!isPro) ...[
-          const SizedBox(height: SsrSpace.sm),
-          Text(tr('bl_soon_s'), style: Theme.of(context).textTheme.bodySmall),
-        ],
       ],
     );
   }

@@ -229,7 +229,7 @@ class AppTheme {
           vertical: 14,
         ),
       ),
-      dividerTheme: const DividerThemeData(thickness: 0.8, space: 1),
+      dividerTheme: const DividerThemeData(thickness: 0.8, space: 1, color: AppColors.lineL),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: Ind.ink,
