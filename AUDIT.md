@@ -833,6 +833,22 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.82.11+278 (2026-10-20)
+Permintaan user: tampilkan semua keuntungan Pro di penawaran Pro —
+tampilan saja, tanpa ubah logika bisnis/pembayaran/API/state/routing.
+- [UI] Daftar 9 keuntungan Pro di seksi "Bayar Pro via QRIS" Billing
+  (lib/screens/lainnya/billing_screen.dart, _QrisPlansSection): blok
+  checklist di antara subjudul dan kartu paket — workspace, anggota,
+  auto-track, dompet, budget, Mang AI, target nabung tanpa batas,
+  utang-piutang & tagihan rutin tanpa batas, export laporan PDF
+  (angka batas Gratis persis lib/services/plan_limits.dart). Ikon
+  centang meniru pola _checkItem di _PlanCard.
+- [Strings] 10 kunci baru bl_benefit_title + bl_ben1..bl_ben9 ID+EN.
+- [Docs] AUDIT 277 difinalisasi (CI run 39423984711 SUCCESS);
+  assets/changelog_id.md diperbarui (penanda versi terpasang +
+  catatan 2.82.9+276 / 2.82.10+277 / 2.82.11+278).
+- Rilis: CI run pending — diisi setelah hijau.
+
 ## 2.82.10+277 (2026-10-20)
 Fix UI dari tes user di 2.82.9+276 — restyle murni, tanpa ubah logika
 bisnis/API/state/routing.
@@ -847,7 +863,7 @@ bisnis/API/state/routing.
   dihapus (satu-satunya pemakai adalah kartu itu). Harga resmi sekarang
   dari plan_pricing QRIS (Rp30.000 6 bulan / Rp120.000 1 tahun /
   Rp133.000 permanen). Kartu Gratis, seksi QRIS, tile VIP tidak berubah.
-- Rilis: CI run pending — diisi setelah hijau.
+- Rilis: CI run 39423984711 (build-apk) SUCCESS — hijau.
 
 ## 2.82.9+276 (2026-10-20)
 Batch 2b pembayaran QRIS — UI klien untuk backend yang sudah live

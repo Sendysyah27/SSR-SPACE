@@ -409,6 +409,25 @@ class _QrisPlansSection extends StatelessWidget {
     required this.onPay,
   });
 
+  Widget _benefitItem(BuildContext context, String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: SsrSpace.sm),
+      child: Row(
+        children: [
+          DuoIcon(
+            AppIcons.check,
+            size: 18,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: SsrSpace.sm),
+          Expanded(
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -425,6 +444,24 @@ class _QrisPlansSection extends StatelessWidget {
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: SsrSpace.md),
+        Text(
+          tr('bl_benefit_title'),
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        for (final k in const [
+          'bl_ben1',
+          'bl_ben2',
+          'bl_ben3',
+          'bl_ben4',
+          'bl_ben5',
+          'bl_ben6',
+          'bl_ben7',
+          'bl_ben8',
+          'bl_ben9',
+        ])
+          _benefitItem(context, tr(k)),
+        const SizedBox(height: SsrSpace.sm),
         if (loading)
           const Center(
             child: Padding(

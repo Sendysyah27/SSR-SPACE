@@ -1268,6 +1268,46 @@ const _t = <String, Map<String, String>>{
   'bl_f_pro1': {'id': 'Workspace banyak', 'en': 'Many workspaces'},
   'bl_f_pro2': {'id': 'Export laporan', 'en': 'Report export'},
   'bl_f_pro3': {'id': 'Tanpa batas', 'en': 'No limits'},
+  'bl_benefit_title': {
+    'id': 'Semua paket Pro termasuk:',
+    'en': 'All Pro plans include:',
+  },
+  'bl_ben1': {
+    'id': 'Workspace tanpa batas (Gratis maks 2)',
+    'en': 'Unlimited workspaces (Free max 2)',
+  },
+  'bl_ben2': {
+    'id': 'Anggota workspace tanpa batas (Gratis maks 3)',
+    'en': 'Unlimited workspace members (Free max 3)',
+  },
+  'bl_ben3': {
+    'id': 'Auto-track notifikasi tanpa batas (Gratis 150/bulan)',
+    'en': 'Unlimited auto-track notifications (Free 150/month)',
+  },
+  'bl_ben4': {
+    'id': 'Dompet tanpa batas (Gratis maks 7)',
+    'en': 'Unlimited wallets (Free max 7)',
+  },
+  'bl_ben5': {
+    'id': 'Budget tanpa batas (Gratis 7/bulan)',
+    'en': 'Unlimited budgets (Free 7/month)',
+  },
+  'bl_ben6': {
+    'id': 'Mang AI tanpa batas (Gratis 30/bulan)',
+    'en': 'Unlimited Mang AI (Free 30/month)',
+  },
+  'bl_ben7': {
+    'id': 'Target nabung tanpa batas (Gratis maks 3)',
+    'en': 'Unlimited savings goals (Free max 3)',
+  },
+  'bl_ben8': {
+    'id': 'Utang-piutang & tagihan rutin tanpa batas (Gratis maks 5)',
+    'en': 'Unlimited debts & recurring bills (Free max 5)',
+  },
+  'bl_ben9': {
+    'id': 'Export laporan PDF (Gratis cuma CSV)',
+    'en': 'PDF report export (Free CSV only)',
+  },
   'bl_sent': {'id': 'Permintaan terkirim', 'en': 'Request sent'},
   'bl_failed': {'id': 'Gagal', 'en': 'Failed'},
   'bl_cta': {'id': 'Naik ke Pro', 'en': 'Upgrade to Pro'},

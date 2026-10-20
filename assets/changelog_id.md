@@ -1,6 +1,34 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.8+275.
+Versi terpasang: 2.82.11+278.
+
+## Yang baru di 2.82.11+278
+
+1. Billing: daftar lengkap keuntungan Pro kini tampil di seksi Bayar Pro via QRIS — workspace, anggota, auto-track, dompet, budget, Mang AI, target nabung, serta utang-piutang & tagihan rutin tanpa batas, plus export laporan PDF.
+
+## What's new in 2.82.11+278
+
+1. Billing: the full list of Pro benefits is now shown in the Pay for Pro via QRIS section — unlimited workspaces, members, auto-track, wallets, budgets, Mang AI, savings goals, debts & recurring bills, plus PDF report export.
+
+## Yang baru di 2.82.10+277
+
+1. Tampilan: garis pembatas antar menu kini samar mengikuti tema — tidak lagi hitam pekat.
+2. Billing: kartu harga Pro lama (Rp25.000/bulan) yang sudah tidak dipakai dihapus — paket Pro resmi hanya tampil di seksi QRIS.
+
+## What's new in 2.82.10+277
+
+1. Appearance: divider lines between menus are now subtle and follow the theme — no longer solid black.
+2. Billing: the legacy Pro price card (Rp25,000/month) that is no longer used has been removed — official Pro plans are shown only in the QRIS section.
+
+## Yang baru di 2.82.9+276
+
+1. Billing: Bayar Pro via QRIS — pilih paket (6 bulan, 1 tahun, atau permanen), lalu scan QR pakai e-wallet atau m-banking apa pun.
+2. Pembayaran: nominal pas dengan kode unik, hitung mundur masa berlaku QR, dan paket aktif otomatis setelah pembayaran terkonfirmasi.
+
+## What's new in 2.82.9+276
+
+1. Billing: Pay for Pro via QRIS — pick a plan (6 months, 1 year, or lifetime), then scan the QR with any e-wallet or mobile banking app.
+2. Payment: exact amount with a unique code, a QR expiry countdown, and your plan activates automatically once the payment is confirmed.
 
 ## Yang baru di 2.82.8+275
 
