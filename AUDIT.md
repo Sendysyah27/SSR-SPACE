@@ -837,7 +837,7 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
 Fix UI dari tes user di 2.82.9+276 — restyle murni, tanpa ubah logika
 bisnis/API/state/routing.
 - [UI] Divider menu global jadi samar: dividerTheme tema terang di
-  lib/theme/app_theme.dart kini memakai color AppColors.lineL
+  lib/theme/app_theme.dart kini memakai color Ind.lineL
   (0xFFE5E5EA); sebelumnya tanpa warna sehingga Divider tampil hitam
   pekat di semua layout menu. Tema gelap tidak diubah (sudah
   AppColors.lineDark).
