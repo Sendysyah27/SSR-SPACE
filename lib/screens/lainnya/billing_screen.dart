@@ -3,6 +3,8 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/money.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/services/billing_service.dart';
+import 'package:ssr_space/services/qris_payment_service.dart';
+import 'package:ssr_space/widgets/qris_payment_sheet.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -26,10 +28,67 @@ class _BillingScreenState extends State<BillingScreen> {
   bool loading = true;
   String? err;
 
+  // Seksi paket QRIS: state sendiri — gagal memuat seksi ini TIDAK
+  // menjatuhkan seluruh layar (state loading/error utama tak disentuh).
+  List<Map<String, dynamic>> qrisPlans = [];
+  bool qrisLoading = true;
+  bool qrisError = false;
+  String qrisOrgId = '';
+
   @override
   void initState() {
     super.initState();
     _load();
+    _loadQris();
+  }
+
+  /// Muat daftar paket QRIS (plan_pricing) + org aktif untuk transaksi.
+  Future<void> _loadQris() async {
+    setState(() {
+      qrisLoading = true;
+      qrisError = false;
+    });
+    try {
+      final orgId = await activeOrgId();
+      final plans = await fetchQrisPlans();
+      if (!mounted) return;
+      setState(() {
+        qrisOrgId = orgId;
+        qrisPlans = plans;
+        qrisLoading = false;
+      });
+    } catch (e) {
+      // Kegagalan seksi saja: pesan jujur tampil di seksi QRIS dan
+      // detailnya dicatat agar tetap terlacak.
+      debugPrint('muat paket QRIS gagal: $e');
+      if (!mounted) return;
+      setState(() {
+        qrisLoading = false;
+        qrisError = true;
+      });
+    }
+  }
+
+  /// Buka sheet pembayaran QRIS untuk satu paket; setelah terbayar
+  /// (onPaid) status paket utama dimuat ulang.
+  Future<void> _openQrisSheet(Map<String, dynamic> plan) async {
+    var orgId = qrisOrgId;
+    if (orgId.isEmpty) orgId = await activeOrgId();
+    if (!mounted) return;
+    if (orgId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('bl_qris_err'))),
+      );
+      return;
+    }
+    await showQrisPaymentSheet(
+      context,
+      orgId: orgId,
+      plan: plan,
+      onPaid: () {
+        _load();
+      },
+    );
   }
 
   Future<void> _load() async {
@@ -178,6 +237,13 @@ class _BillingScreenState extends State<BillingScreen> {
           const SizedBox(height: SsrSpace.lg),
           _FreePlanCard(isPro: isPro),
           _ProPlanCard(isPro: isPro),
+          _QrisPlansSection(
+            loading: qrisLoading,
+            error: qrisError,
+            plans: qrisPlans,
+            onRetry: _loadQris,
+            onPay: _openQrisSheet,
+          ),
           _VipCodeTile(onTap: _redeemVip),
         ],
       ),
@@ -359,6 +425,114 @@ class _PlanCard extends StatelessWidget {
           ...extra,
         ],
       ),
+    );
+  }
+}
+
+/// Seksi "Bayar Pro via QRIS": daftar paket dari `plan_pricing`
+/// (server) dengan tombol bayar per paket. Punya state muat sendiri:
+/// loading kecil / pesan error + coba lagi, tanpa menjatuhkan layar.
+class _QrisPlansSection extends StatelessWidget {
+  final bool loading;
+  final bool error;
+  final List<Map<String, dynamic>> plans;
+  final VoidCallback onRetry;
+  final void Function(Map<String, dynamic> plan) onPay;
+
+  const _QrisPlansSection({
+    required this.loading,
+    required this.error,
+    required this.plans,
+    required this.onRetry,
+    required this.onPay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: SsrSpace.lg),
+        Text(
+          tr('bl_qris_title'),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: SsrSpace.xs),
+        Text(
+          tr('bl_qris_sub'),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: SsrSpace.md),
+        if (loading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(SsrSpace.md),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (error)
+          SectionCard(
+            child: Row(
+              children: [
+                Expanded(child: Text(tr('bl_qris_load_err'))),
+                TextButton(
+                  onPressed: onRetry,
+                  child: Text(tr('retry')),
+                ),
+              ],
+            ),
+          )
+        else
+          for (final p in plans)
+            _QrisPlanCard(plan: p, onPay: () => onPay(p)),
+      ],
+    );
+  }
+}
+
+/// Kartu satu paket QRIS: nama, harga, durasi (+ benefit dari server
+/// bila ada), dan tombol "Bayar QRIS" yang membuka sheet pembayaran.
+class _QrisPlanCard extends StatelessWidget {
+  final Map<String, dynamic> plan;
+  final VoidCallback onPay;
+
+  const _QrisPlanCard({required this.plan, required this.onPay});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (plan['name'] ?? '').toString();
+    final price = (plan['price_idr'] as num?)?.toInt() ?? 0;
+    final durationDays = (plan['duration_days'] as num?)?.toInt();
+    final durationLabel = durationDays == null
+        ? tr('bl_qris_perm')
+        : tr('bl_qris_days').replaceFirst('{n}', '$durationDays');
+    final benefitsRaw = plan['benefits'];
+    final benefits = <String>[
+      durationLabel,
+      if (benefitsRaw is List)
+        for (final b in benefitsRaw) b.toString(),
+    ];
+    return _PlanCard(
+      margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      title: name,
+      statusChip: durationDays == null
+          ? StatusChip(label: tr('bl_qris_perm'), tone: StatusTone.accent)
+          : null,
+      price: Text(
+        rp(price),
+        style: AppTheme.money.copyWith(
+          fontSize: 18,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+      features: benefits,
+      extra: [
+        const SizedBox(height: SsrSpace.sm),
+        FilledButton(
+          onPressed: onPay,
+          child: Text(tr('bl_qris_pay')),
+        ),
+      ],
     );
   }
 }

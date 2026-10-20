@@ -1316,6 +1316,55 @@ const _t = <String, Map<String, String>>{
     'id': 'Maks 5 tagihan berulang',
     'en': 'Max 5 recurring bills',
   },
+  // Seksi pembayaran QRIS di Billing (Batch 2b, 2.82.9+276).
+  'bl_qris_title': {'id': 'Bayar Pro via QRIS', 'en': 'Pay for Pro via QRIS'},
+  'bl_qris_sub': {
+    'id': 'Scan QR pakai e-wallet atau m-banking apa pun.',
+    'en': 'Scan the QR with any e-wallet or mobile banking app.',
+  },
+  'bl_qris_pay': {'id': 'Bayar QRIS', 'en': 'Pay with QRIS'},
+  'bl_qris_perm': {'id': 'Permanen', 'en': 'Lifetime'},
+  'bl_qris_days': {'id': '{n} hari', 'en': '{n} days'},
+  'bl_qris_creating': {
+    'id': 'Membuat kode QR...',
+    'en': 'Creating QR code...',
+  },
+  'bl_qris_scan_hint': {
+    'id': 'Scan kode QR ini untuk membayar.',
+    'en': 'Scan this QR code to pay.',
+  },
+  'bl_qris_exact': {
+    'id':
+        'Bayar tepat sampai 3 digit terakhir agar pembayaran terverifikasi otomatis.',
+    'en':
+        'Pay the exact amount down to the last 3 digits so your payment verifies automatically.',
+  },
+  'bl_qris_expires_in': {'id': 'Sisa waktu {t}', 'en': 'Time left {t}'},
+  'bl_qris_paid_btn': {'id': 'Saya sudah bayar', 'en': "I've paid"},
+  'bl_qris_waiting': {
+    'id': 'Menunggu verifikasi pembayaran...',
+    'en': 'Waiting for payment verification...',
+  },
+  'bl_qris_success': {
+    'id': 'Pembayaran berhasil! Paket Pro sekarang aktif.',
+    'en': 'Payment successful! Your Pro plan is now active.',
+  },
+  'bl_qris_expired': {'id': 'Kode QR kedaluwarsa', 'en': 'QR code expired'},
+  'bl_qris_new_qr': {'id': 'Buat QR baru', 'en': 'Create new QR'},
+  'bl_qris_rejected': {'id': 'Pembayaran ditolak', 'en': 'Payment rejected'},
+  'bl_qris_status_pending': {
+    'id': 'Menunggu pembayaran',
+    'en': 'Waiting for payment',
+  },
+  'bl_qris_err': {
+    'id': 'Terjadi kendala. Silakan coba lagi.',
+    'en': 'Something went wrong. Please try again.',
+  },
+  'bl_qris_load_err': {
+    'id': 'Paket QRIS belum bisa dimuat.',
+    'en': 'QRIS plans could not be loaded.',
+  },
+  'bl_qris_done': {'id': 'Selesai', 'en': 'Done'},
   'q_ai_exceeded': {
     'id': 'Batas AI Gratis (30/bln). Naik ke Pro.',
     'en': 'Free AI limit (30/mo). Upgrade to Pro.',
