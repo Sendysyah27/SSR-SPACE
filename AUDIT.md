@@ -855,6 +855,11 @@ tkuwmwyxptqhloxqdkhs).
   paid -> sukses + reload Billing; expired -> QR dinonaktifkan +
   tombol Buat QR baru; rejected -> status akhir ditampilkan.
 - [Strings] 19 kunci bl_qris_* ID+EN. Tanpa migration baru.
+- Rilis: CI run 39419841947 (build-apk, analyze+test lolos) dan
+  39419841898 (rls-test) hijau; APK arm64 42437752 byte di
+  /sdcard/Download/SSR-SPACE/SSR-SPACE-2.82.9-276-arm64.apk (byte
+  cocok aset release); release ci-apk hanya berisi versi ini (4 aset
+  ABI) sehingga prune retensi 3 versi tidak menghapus apa pun.
 ## 2.82.8+275 (2026-10-19)
 Batch temuan user di 2.82.7+274: 2 bug + 1 request adaptasi (tanpa ubah logika
 bisnis; model TxFilter utuh).
