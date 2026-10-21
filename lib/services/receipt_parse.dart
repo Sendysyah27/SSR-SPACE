@@ -146,7 +146,7 @@ final _codeKey = RegExp(
 );
 /// Fragmen non-produk: server/wifi, order, alamat, member, kontak, dsb.
 final _fragKey = RegExp(
-  r'server|wifi|password|username|user\s?name|login|order|jalan|\bjl\b|kec\b|kab\b|kel\b|npwp|trxid|member|terima|kasih|layanan|stamp|poin|struk|transaksi|whatsapp|whats|tlp|telp|telepon|hubungi|\bhp\b|http|www|@|^pt\b|^cv\b|^ud\b|tbk',
+  r'server|wifi|password|username|user\s?name|login|order|jalan|\bjl\b|kec\b|kab\b|kel\b|npwp|trxid|member|terima|kasih|layanan|stamp|poin|struk|transaksi|whatsapp|whats|tlp|telp|telepon|hubungi|\bhp\b|http|www|@[a-z]|^pt\b|^cv\b|^ud\b|tbk',
   caseSensitive: false,
 );
 
@@ -267,7 +267,9 @@ String _merchantName(String hit) {
   if (l.contains('alfamidi')) return 'ALFAMIDI';
   return hit.toUpperCase();
 }
-final _voucherKey = RegExp(r'voucher|diskon|potongan', caseSensitive: false);
+final _voucherKey = RegExp(
+    r'voucher|diskon|potongan|discount|\bdisc\b',
+    caseSensitive: false);
 
 /// `172,300` / `172.300` / `507,600.00` -> rupiah. Null bila tak valid.
 double? _toIdr(String raw) {

@@ -21,27 +21,83 @@ class AiDraftItem {
 class AiDraft {
   final String? merchant;
   final String? date;
+
+  /// Jam struk 'HH:mm' (batch 286: parser lokal menangkap jam; draft
+  /// AI dari server tidak punya jam -> null).
+  final String? time;
   final List<AiDraftItem> items;
   final double? subtotal;
   final double? tax;
+
+  /// Diskon/voucher (nominal positif, batch 286).
+  final double? discount;
   final double? total;
   final String? payment;
   const AiDraft({
     this.merchant,
     this.date,
+    this.time,
     this.items = const [],
     this.subtotal,
     this.tax,
+    this.discount,
     this.total,
     this.payment,
   });
 
+  /// Dari hasil parser lokal ([ReceiptData]) — dipakai alur OCR
+  /// on-device supaya review-nya sama dengan draft AI (batch 286).
+  factory AiDraft.fromReceiptData(ReceiptData d) {
+    String? dateStr;
+    final dd = d.date;
+    if (dd != null) {
+      dateStr = '${dd.year.toString().padLeft(4, '0')}-'
+          '${dd.month.toString().padLeft(2, '0')}-'
+          '${dd.day.toString().padLeft(2, '0')}';
+    }
+    var timeStr = d.time;
+    if (timeStr == null && dd != null && (dd.hour != 0 || dd.minute != 0)) {
+      timeStr = '${dd.hour.toString().padLeft(2, '0')}:'
+          '${dd.minute.toString().padLeft(2, '0')}';
+    }
+    double? subtotal;
+    if (d.lineItems.isNotEmpty) {
+      subtotal = d.lineItems.fold<double>(0.0, (s, e) => s + e.price);
+    }
+    return AiDraft(
+      merchant: d.merchant,
+      date: dateStr,
+      time: timeStr,
+      items: [
+        for (final it in d.lineItems)
+          AiDraftItem(name: it.name, qty: it.qty, price: it.price),
+      ],
+      subtotal: subtotal,
+      tax: d.tax,
+      discount: d.voucher,
+      total: d.amount,
+      payment: d.payType,
+    );
+  }
+
   /// Ke ReceiptData untuk prefill form (jujur: confident ikut total).
+  /// Tanggal + jam digabung; pajak/diskon/jenis bayar ikut terbawa.
   ReceiptData toReceiptData() {
     DateTime? day;
     final ds = date;
     if (ds != null && RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(ds)) {
       day = DateTime.tryParse(ds);
+    }
+    final ts = time;
+    if (day != null && ts != null) {
+      final m = RegExp(r'^(\d{1,2}):(\d{2})').firstMatch(ts);
+      if (m != null) {
+        final h = int.tryParse(m.group(1)!);
+        final mi = int.tryParse(m.group(2)!);
+        if (h != null && mi != null && h <= 23 && mi <= 59) {
+          day = DateTime(day.year, day.month, day.day, h, mi);
+        }
+      }
     }
     return ReceiptData(
       amount: total,
@@ -57,6 +113,10 @@ class AiDraft {
         for (final it in items)
           ReceiptItem(name: it.name, qty: it.qty, price: it.price),
       ],
+      voucher: discount,
+      tax: tax,
+      time: time,
+      payType: payment,
       confident: total != null && total! > 0,
     );
   }

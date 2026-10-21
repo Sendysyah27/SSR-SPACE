@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/entry/ocr_camera_screen.dart';
@@ -342,122 +343,33 @@ Future<String> _enhanceContrast(String path) async {
   }
 }
 
-/// Parse heuristik teks struk: total = angka terbesar di baris ber-keyword
-/// (abaikan kembalian), tanggal multi-pola, merchant = baris pertama
-/// yang bermakna.
+/// Parse teks struk memakai parser heuristik utama ([parseReceipt])
+/// yang sama dengan jalur scan lain: merchant diambil dari baris brand
+/// (label "Sales No"/"Date"/"Cashier" tak pernah jadi judul), total =
+/// Grand Total sesudah diskon (termasuk pola dua kolom label/angka
+/// terpisah), tanggal menangkap jam struk. (Parser lokal lama di file
+/// ini pensiun di batch 286 — persis tiga kegagalan itu yang ia buat.)
 OcrDraft _parseOcr(String rawText) {
-  final lines = rawText.split('\n');
-
-  double maxTotal = 0;
-  const keywords = ['total', 'grand total', 'jumlah', 'bayar', 'tunai', 'cash'];
-  for (final line in lines) {
-    final lower = line.toLowerCase();
-    if (lower.contains('kembalian') || lower.contains('change')) continue;
-    if (!keywords.any(lower.contains)) continue;
-    for (final m in RegExp(r'\d[\d.,]*').allMatches(line)) {
-      final v = _parseIdr(m.group(0)!);
-      if (v != null && v > maxTotal) maxTotal = v;
+  final d = parseReceipt(rawText);
+  var date = d.date ?? DateTime.now();
+  final t = d.time;
+  if (t != null) {
+    final m = RegExp(r'^(\d{1,2}):(\d{2})').firstMatch(t);
+    if (m != null) {
+      final h = int.tryParse(m.group(1)!);
+      final mi = int.tryParse(m.group(2)!);
+      if (h != null && mi != null) {
+        date = DateTime(date.year, date.month, date.day, h, mi);
+      }
     }
   }
-
-  DateTime date = DateTime.now();
-  final dateMatch = RegExp(
-    r'(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})'
-    r'|(\d{1,2})\s+(Jan|Feb|Mar|Apr|Mei|Jun|Jul|Agu|Sep|Okt|Nov|Des'
-    r'|January|February|March|April|May|June|July|August|September'
-    r'|October|November|December)\s+(\d{2,4})',
-    caseSensitive: false,
-  ).firstMatch(rawText);
-  if (dateMatch != null) {
-    final parsed = _parseDateMatch(dateMatch);
-    if (parsed != null) date = parsed;
-  }
-
-  var merchant = tr('ocr_merchant_default');
-  for (final line in lines) {
-    final t = line.trim();
-    if (t.isEmpty || t.length < 3 || t.length > 40) continue;
-    if (RegExp(r'^[\d\s.,/\-:]+$').hasMatch(t)) continue;
-    merchant = t;
-    break;
-  }
-
+  final merchant = d.merchant?.trim();
   return OcrDraft(
-    merchant: merchant,
-    amount: maxTotal,
+    merchant: (merchant != null && merchant.isNotEmpty)
+        ? merchant
+        : tr('ocr_merchant_default'),
+    amount: d.amount ?? 0,
     date: date,
     rawText: rawText,
   );
-}
-
-/// Parse angka format Indonesia: "26.900" -> 26900, "26.900,00" -> 26900.00.
-/// Null bila bukan angka valid / di luar batas wajar.
-double? _parseIdr(String s) {
-  var t = s.replaceAll(RegExp(r'[^\d.,]'), '');
-  if (t.isEmpty) return null;
-  if (t.contains(',')) {
-    // Gaya Indonesia: titik = ribuan, koma = desimal.
-    t = t.replaceAll('.', '').replaceFirst(',', '.');
-  } else {
-    // Tanpa koma: titik diikuti tepat 3 digit di akhir = pemisah ribuan.
-    final parts = t.split('.');
-    if (parts.length > 1 && parts.last.length == 3) {
-      t = parts.join('');
-    }
-  }
-  final v = double.tryParse(t);
-  if (v == null || v <= 0 || v > 1000000000) return null;
-  return v;
-}
-
-DateTime? _parseDateMatch(RegExpMatch m) {
-  try {
-    if (m.group(1) != null) {
-      final day = int.parse(m.group(1)!);
-      final month = int.parse(m.group(2)!);
-      var year = int.parse(m.group(3)!);
-      if (year < 100) year += 2000;
-      if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
-        return DateTime(year, month, day);
-      }
-      return null;
-    }
-    final day = int.parse(m.group(4)!);
-    var year = int.parse(m.group(6)!);
-    if (year < 100) year += 2000;
-    const months = {
-      'jan': 1,
-      'feb': 2,
-      'mar': 3,
-      'apr': 4,
-      'mei': 5,
-      'may': 5,
-      'jun': 6,
-      'jul': 7,
-      'agu': 8,
-      'aug': 8,
-      'sep': 9,
-      'okt': 10,
-      'oct': 10,
-      'nov': 11,
-      'des': 12,
-      'dec': 12,
-      'january': 1,
-      'february': 2,
-      'march': 3,
-      'april': 4,
-      'june': 6,
-      'july': 7,
-      'august': 8,
-      'september': 9,
-      'october': 10,
-      'november': 11,
-      'december': 12,
-    };
-    final month = months[m.group(5)!.toLowerCase()];
-    if (month != null && day >= 1 && day <= 31) {
-      return DateTime(year, month, day);
-    }
-  } catch (_) {}
-  return null;
 }
