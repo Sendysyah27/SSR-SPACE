@@ -14,6 +14,7 @@ import 'package:ssr_space/services/ai_correction.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_memory.dart';
 import 'package:ssr_space/services/ai_merchant_alias.dart';
+import 'package:ssr_space/services/ai_parse_rules.dart';
 import 'package:ssr_space/services/ai_persona.dart';
 import 'package:ssr_space/services/ai_chat_parse.dart';
 import 'package:ssr_space/services/ai_soul.dart';
@@ -380,9 +381,18 @@ class _AiChatScreenState extends State<AiChatScreen> {
         if (aliasHit != null) aliasHint = '\n${aliasHintBlock(aliasHit)}';
       } catch (_) {}
     }
+    // Batch 281D tahap 3: aturan parse dari server (app_config
+    // quick_record_rules; cache lokal; fail-open ke bawaan app).
+    var rulesHint = '';
+    if (!asisten) {
+      try {
+        final rules = await loadParseRules();
+        rulesHint = '\n${parseRulesBlock(rules)}';
+      } catch (_) {}
+    }
     final prompt = text.isEmpty
         ? '$ctxBlock\nJelaskan gambar terlampir.'
-        : '$ctxBlock$aliasHint\nUser: $text';
+        : '$ctxBlock$rulesHint$aliasHint\nUser: $text';
     setState(() {
       _animFrom = _visibleItems.length;
       _items.add(_ChatMsg(
