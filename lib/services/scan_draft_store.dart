@@ -54,7 +54,7 @@ class ScanDraftStore {
     try {
       final p = await SharedPreferences.getInstance();
       final raw = p.getString(_key);
-      if (raw == null || raw.isEmpty) return const [];
+      if (raw == null || raw.isEmpty) return <ScanDraftEntry>[];
       final decoded = jsonDecode(raw);
       if (decoded is! List) return const [];
       final out = <ScanDraftEntry>[];
@@ -65,7 +65,7 @@ class ScanDraftStore {
       out.sort((a, b) => b.savedAt.compareTo(a.savedAt));
       return out;
     } catch (_) {
-      return const [];
+      return <ScanDraftEntry>[];
     }
   }
 
