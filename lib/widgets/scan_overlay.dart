@@ -15,16 +15,16 @@ class ScanOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: const Container(
+      child: Container(
         color: Colors.black54,
-        child: const Center(
-          child: const Column(
+        child: Center(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _LaserBox(),
-              SizedBox(height: SsrSpace.md),
+              const _LaserBox(),
+              const SizedBox(height: SsrSpace.md),
               ScanStatusText(
-                style: TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white),
               ),
             ],
           ),
@@ -117,7 +117,10 @@ class _LaserPainter extends CustomPainter {
 class ScanStatusText extends StatefulWidget {
   final TextStyle? style;
   final TextAlign? textAlign;
-  const ScanStatusText({super.key, this.style, this.textAlign});
+  // Konstruktor SENGAJA non-const: widget digerakkan Timer
+  // (stateful); const di sini memicu rantai prefer_const_*
+  // yang tak bisa dipenuhi analyzer (const_with_non_const).
+  ScanStatusText({super.key, this.style, this.textAlign});
 
   @override
   State<ScanStatusText> createState() => _ScanStatusTextState();
