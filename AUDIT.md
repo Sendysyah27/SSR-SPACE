@@ -872,7 +872,7 @@ review-first tetap (semua eksekusi lewat kartu konfirmasi).
   menampilkan teks asli user.
 - [Docs] assets/changelog_id.md diperbarui (penanda versi
   terpasang + catatan 2.82.16+283).
-- Rilis: CI run pending - diisi setelah hijau.
+- Rilis: CI final 39574354970 SUCCESS; rilis 2.82.16+283 (APK SSR-SPACE-2.82.16-283-arm64.apk ±41MB di /sdcard/Download/SSR-SPACE/, backup Telegram terkirim, last_version.txt 2.82.16+283). migration_28 SUDAH di-apply ke Supabase live 21 Okt ±16:37 WIB (verifikasi dashboard lolos).
 
 ## 2.82.15+282 (2026-10-21)
 Mang AI Mode Asisten ala Ollo (batch 281C): satu layar chat, dua mode
