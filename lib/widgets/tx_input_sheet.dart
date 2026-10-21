@@ -6,7 +6,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/models/wallet.dart';
 import 'package:ssr_space/models/wallet_balance.dart';
-import 'package:ssr_space/screens/lainnya/ai_draft_screen.dart';
 import 'package:ssr_space/services/ai_draft.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
 import 'package:ssr_space/services/app_categories.dart';
@@ -26,6 +25,8 @@ import 'package:ssr_space/services/ai_scan_note_builder.dart';
 import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_scan_validate.dart';
 import 'package:ssr_space/services/vision_scan_service.dart';
+import 'package:ssr_space/screens/lainnya/scan_draft_list_screen.dart';
+import 'package:ssr_space/widgets/entry/receipt_draft_review.dart';
 import 'package:ssr_space/widgets/input_mode_sheet.dart';
 import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/today_widget.dart';
@@ -511,6 +512,7 @@ class _TxInputSheetState extends State<TxInputSheet> {
 
   /// Dialog sumber foto lalu OCR; hasil prefill form (preview, tanpa simpan).
   Future<void> _pickScanSource() async {
+    var wantDrafts = false;
     final src = await showGlassDialog<ImageSource>(
       context: context,
       title: Text(tr('rcp_scan')),
@@ -524,10 +526,51 @@ class _TxInputSheetState extends State<TxInputSheet> {
           onPressed: () => Navigator.pop(context, ImageSource.gallery),
           child: Text(tr('rcp_gallery')),
         ),
+        TextButton(
+          onPressed: () {
+            wantDrafts = true;
+            Navigator.pop(context);
+          },
+          child: Text(tr('scan_drafts')),
+        ),
       ],
     );
+    if (wantDrafts) {
+      await _openScanDrafts();
+      return;
+    }
     if (src == null || !mounted) return;
     await _runOcrScan(source: src);
+  }
+
+  /// Daftar draft scan tersimpan (batch 286 tahap C): draft yang
+  /// dipakai user diproses seperti hasil scan baru (konversi kurs,
+  /// validasi, catatan terstruktur, prefill, sheet hasil).
+  Future<void> _openScanDrafts() async {
+    final picked = await Navigator.of(context).push<ReceiptData>(
+      MaterialPageRoute(builder: (_) => const ScanDraftListScreen()),
+    );
+    if (picked == null || !mounted) return;
+    final data = await applyFxConversion(picked);
+    if (!mounted) return;
+    final warns = await validateReceiptData(data);
+    unawaited(recordScanAmount(data));
+    if (!mounted) return;
+    final scanNote = await buildScanNoteFor(data);
+    if (!mounted) return;
+    _applyReceiptPrefill(data, scanNote: scanNote);
+    if (mounted) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => ReceiptResultSheet(
+          data: data,
+          warnings: warns,
+          mirror: _visionMirror(data),
+          onShowRaw: () => _showRawOcrDialog(data.merchant ?? ''),
+        ),
+      );
+    }
   }
 
   /// Jalankan scan OCR: dari [source] (foto baru) atau [bytes]
@@ -555,14 +598,22 @@ class _TxInputSheetState extends State<TxInputSheet> {
       if (!data.confident || inconsistent) {
         final ai = await _tryAiDraft(raw);
         if (!mounted) return;
-        if (ai != null) {
-          final edited = await Navigator.of(context).push<ReceiptData>(
-            MaterialPageRoute(builder: (_) => AiDraftScreen(initial: ai)),
-          );
-          if (!mounted) return;
-          if (edited != null) data = edited;
-        }
+        if (ai != null) data = ai.toReceiptData();
       }
+      // Batch 286 tahap C: SEMUA hasil scan (rule maupun AI) lewat
+      // review terstruktur yang sama sebelum prefill — bukan cuma
+      // jalur fallback. Buang = batal scan; Simpan Draft = simpan
+      // lokal & batal (user diberi tahu).
+      final outcome = await reviewScanDraft(context, data);
+      if (!mounted) return;
+      if (outcome.savedDraft) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('scan_draft_saved'))),
+        );
+        return;
+      }
+      if (outcome.data == null) return;
+      data = outcome.data!;
       data = await applyFxConversion(data);
       if (!mounted) return;
       final warns = await validateReceiptData(data);
@@ -657,7 +708,18 @@ class _TxInputSheetState extends State<TxInputSheet> {
       if (!mounted) return;
       setState(() => _scanning = false);
       if (out == null) return;
-      final data = await applyFxConversion(out.data);
+      // Batch 286 tahap C: hasil scan AI juga lewat review
+      // terstruktur yang sama sebelum prefill.
+      final outcome = await reviewScanDraft(context, out.data);
+      if (!mounted) return;
+      if (outcome.savedDraft) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('scan_draft_saved'))),
+        );
+        return;
+      }
+      if (outcome.data == null) return;
+      final data = await applyFxConversion(outcome.data!);
       if (!mounted) return;
       final warns = await validateReceiptData(data);
       unawaited(recordScanAmount(data));

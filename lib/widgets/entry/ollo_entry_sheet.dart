@@ -28,6 +28,8 @@ import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/currency.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/screens/lainnya/scan_draft_list_screen.dart';
+import 'package:ssr_space/widgets/entry/receipt_draft_review.dart';
 import 'package:ssr_space/widgets/entry/voice_draft_sheet.dart';
 import 'package:ssr_space/widgets/premium/glass_sheet.dart';
 import 'package:ssr_space/widgets/success_lottie.dart';
@@ -679,6 +681,7 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
 
   // ---- Scan struk (alur existing: scanReceiptVision, prefill saja) ----
   Future<void> _scan() async {
+    var wantDrafts = false;
     final src = await showGlassDialog<ImageSource>(
       context: context,
       title: Text(tr('rcp_scan')),
@@ -692,10 +695,42 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
           onPressed: () => Navigator.pop(context, ImageSource.gallery),
           child: Text(tr('rcp_gallery')),
         ),
+        TextButton(
+          onPressed: () {
+            wantDrafts = true;
+            Navigator.pop(context);
+          },
+          child: Text(tr('scan_drafts')),
+        ),
       ],
     );
+    if (wantDrafts) {
+      await _openScanDrafts();
+      return;
+    }
     if (src == null || !mounted) return;
     await _runScan(() => scanReceiptVision(src));
+  }
+
+  /// Daftar draft scan tersimpan (batch 286 tahap C): draft yang
+  /// dipakai diprefill seperti hasil scan baru.
+  Future<void> _openScanDrafts() async {
+    final picked = await Navigator.of(context).push<ReceiptData>(
+      MaterialPageRoute(builder: (_) => const ScanDraftListScreen()),
+    );
+    if (picked == null || !mounted) return;
+    final data = await applyFxConversion(picked);
+    if (!mounted) return;
+    final scanNote = await buildScanNoteFor(data);
+    if (!mounted) return;
+    _applyScan(data, null, scanNote: scanNote);
+    final warns = await validateReceiptData(data);
+    unawaited(recordScanAmount(data));
+    if (warns.isNotEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(warns.map((w) => w.message).join('\n'))),
+      );
+    }
   }
 
   /// Jalankan operasi scan vision + tangani hasil/error-nya (dipakai
@@ -713,7 +748,18 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
       if (!mounted) return;
       setState(() => _scanning = false);
       if (out == null) return;
-      final data = await applyFxConversion(out.data);
+      // Batch 286 tahap C: hasil scan AI lewat review terstruktur
+      // yang sama sebelum prefill form.
+      final outcome = await reviewScanDraft(context, out.data);
+      if (!mounted) return;
+      if (outcome.savedDraft) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('scan_draft_saved'))),
+        );
+        return;
+      }
+      if (outcome.data == null) return;
+      final data = await applyFxConversion(outcome.data!);
       if (!mounted) return;
       final scanNote = await buildScanNoteFor(data);
       if (!mounted) return;

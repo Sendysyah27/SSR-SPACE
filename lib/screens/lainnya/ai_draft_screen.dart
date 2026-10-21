@@ -26,7 +26,27 @@ class _RowEdit {
 /// Kembali null = buang; ReceiptData = pakai (prefill form).
 class AiDraftScreen extends StatefulWidget {
   final AiDraft initial;
-  const AiDraftScreen({super.key, required this.initial});
+
+  /// Hasil parse asal (batch 286): field yang tak tampil di review
+  /// (alamat, kasir, nomor struk, detail mentah, kurs asing)
+  /// dipertahankan saat draft dipakai — tidak dibuang diam-diam.
+  final ReceiptData? carry;
+
+  /// Bila diisi, tombol "Simpan draft" tampil; callback menerima
+  /// draft persis seperti yang sedang tampil di form.
+  final Future<void> Function(AiDraft draft)? onSaveDraft;
+
+  /// Dipanggil saat user menekan "Buang" (mis. menghapus entri draft
+  /// tersimpan yang sedang dibuka).
+  final VoidCallback? onDiscard;
+
+  const AiDraftScreen({
+    super.key,
+    required this.initial,
+    this.carry,
+    this.onSaveDraft,
+    this.onDiscard,
+  });
 
   @override
   State<AiDraftScreen> createState() => AiDraftScreenState();
@@ -39,6 +59,9 @@ class AiDraftScreenState extends State<AiDraftScreen> {
   late TextEditingController taxC;
   late TextEditingController totalC;
   late TextEditingController payC;
+  late TextEditingController timeC;
+  late TextEditingController discC;
+  bool _saving = false;
   final List<_RowEdit> _rows = [];
 
   @override
@@ -57,6 +80,10 @@ class AiDraftScreenState extends State<AiDraftScreen> {
       text: d.total == null ? '' : d.total!.toInt().toString(),
     );
     payC = TextEditingController(text: d.payment ?? '');
+    timeC = TextEditingController(text: d.time ?? '');
+    discC = TextEditingController(
+      text: d.discount == null ? '' : d.discount!.toInt().toString(),
+    );
     for (final it in d.items) {
       _rows.add(
         _RowEdit(
@@ -76,6 +103,8 @@ class AiDraftScreenState extends State<AiDraftScreen> {
     taxC.dispose();
     totalC.dispose();
     payC.dispose();
+    timeC.dispose();
+    discC.dispose();
     for (final r in _rows) {
       r.dispose();
     }
@@ -88,37 +117,61 @@ class AiDraftScreenState extends State<AiDraftScreen> {
     return v;
   }
 
-  void _use() {
-    final items = <ReceiptItem>[];
-    final strs = <String>[];
+  /// Draft persis seperti yang sedang tampil di form — satu sumber
+  /// kebenaran untuk tombol Pakai & Simpan Draft (batch 286).
+  AiDraft _currentDraft() {
+    final items = <AiDraftItem>[];
     for (final r in _rows) {
       final name = r.name.text.trim();
       if (name.isEmpty) continue;
       var qty = int.tryParse(r.qty.text.trim()) ?? 1;
       if (qty < 1 || qty > 99) qty = 1;
-      final price = _num(r.price.text) ?? 0;
-      items.add(ReceiptItem(name: name, qty: qty, price: price));
-      strs.add(
-        qty > 1
-            ? '$name x$qty ${price.toInt()}'
-            : '$name ${price.toInt()}',
+      items.add(
+        AiDraftItem(name: name, qty: qty, price: _num(r.price.text) ?? 0),
       );
     }
     var date = dateC.text.trim();
     if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date)) date = '';
-    final total = _num(totalC.text);
-    Navigator.of(context).pop(
-      ReceiptData(
-        amount: total,
-        date: date.isEmpty ? null : DateTime.tryParse(date),
-        merchant: merchantC.text.trim().isEmpty
-            ? null
-            : merchantC.text.trim(),
-        items: strs,
-        lineItems: items,
-        confident: total != null && total > 0,
-      ),
+    final ts = timeC.text.trim();
+    return AiDraft(
+      merchant: merchantC.text.trim().isEmpty ? null : merchantC.text.trim(),
+      date: date.isEmpty ? null : date,
+      time: RegExp(r'^([01]?\d|2[0-3]):[0-5]\d$').hasMatch(ts) ? ts : null,
+      items: items,
+      subtotal: _num(subC.text),
+      tax: _num(taxC.text),
+      discount: _num(discC.text),
+      total: _num(totalC.text),
+      payment: payC.text.trim().isEmpty ? null : payC.text.trim(),
     );
+  }
+
+  void _use() {
+    var out = _currentDraft().toReceiptData();
+    final c = widget.carry;
+    if (c != null) {
+      out = out.copyWith(
+        address: c.address,
+        cashier: c.cashier,
+        phone: c.phone,
+        receiptNo: c.receiptNo,
+        detailText: c.detailText,
+        fxCurrency: c.fxCurrency,
+        fxOriginal: c.fxOriginal,
+        fxRate: c.fxRate,
+        dateFromReceipt: c.dateFromReceipt,
+      );
+    }
+    Navigator.of(context).pop(out);
+  }
+
+  Future<void> _saveDraft() async {
+    final cb = widget.onSaveDraft;
+    if (cb == null || _saving) return;
+    setState(() => _saving = true);
+    await cb(_currentDraft());
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   @override
@@ -131,6 +184,7 @@ class AiDraftScreenState extends State<AiDraftScreen> {
           _HeadCard(
             merchantC: merchantC,
             dateC: dateC,
+            timeC: timeC,
             payC: payC,
           ),
           const SizedBox(height: SsrSpace.md),
@@ -143,13 +197,26 @@ class AiDraftScreenState extends State<AiDraftScreen> {
             }),
           ),
           const SizedBox(height: SsrSpace.md),
-          _TotalsCard(subC: subC, taxC: taxC, totalC: totalC),
+          _TotalsCard(subC: subC, discC: discC, taxC: taxC, totalC: totalC),
           const SizedBox(height: SsrSpace.lg),
           PrimaryButton(label: tr('ai_use'), onPressed: _use),
+          if (widget.onSaveDraft != null) ...[
+            const SizedBox(height: SsrSpace.sm),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _saving ? null : _saveDraft,
+                child: Text(tr('scan_draft_save')),
+              ),
+            ),
+          ],
           const SizedBox(height: SsrSpace.sm),
           Center(
             child: TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                widget.onDiscard?.call();
+                Navigator.of(context).pop();
+              },
               child: Text(tr('ai_discard')),
             ),
           ),
@@ -189,10 +256,12 @@ class _Field extends StatelessWidget {
 class _HeadCard extends StatelessWidget {
   final TextEditingController merchantC;
   final TextEditingController dateC;
+  final TextEditingController timeC;
   final TextEditingController payC;
   const _HeadCard({
     required this.merchantC,
     required this.dateC,
+    required this.timeC,
     required this.payC,
   });
 
@@ -205,6 +274,11 @@ class _HeadCard extends StatelessWidget {
           _Field(
             controller: dateC,
             hint: tr('ai_date'),
+            keyboard: TextInputType.datetime,
+          ),
+          _Field(
+            controller: timeC,
+            hint: tr('ai_time'),
             keyboard: TextInputType.datetime,
           ),
           _Field(controller: payC, hint: tr('ai_payment')),
@@ -284,10 +358,12 @@ class _ItemsCard extends StatelessWidget {
 
 class _TotalsCard extends StatelessWidget {
   final TextEditingController subC;
+  final TextEditingController discC;
   final TextEditingController taxC;
   final TextEditingController totalC;
   const _TotalsCard({
     required this.subC,
+    required this.discC,
     required this.taxC,
     required this.totalC,
   });
@@ -300,6 +376,11 @@ class _TotalsCard extends StatelessWidget {
           _Field(
             controller: subC,
             hint: tr('rcp_subtotal'),
+            keyboard: TextInputType.number,
+          ),
+          _Field(
+            controller: discC,
+            hint: tr('rcp_discount'),
             keyboard: TextInputType.number,
           ),
           _Field(

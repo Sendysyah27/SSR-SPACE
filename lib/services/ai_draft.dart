@@ -80,6 +80,52 @@ class AiDraft {
     );
   }
 
+  /// Serialisasi untuk draft scan persisten (batch 286 tahap C).
+  Map<String, dynamic> toJson() => {
+        if (merchant != null) 'merchant': merchant,
+        if (date != null) 'date': date,
+        if (time != null) 'time': time,
+        'items': [
+          for (final it in items)
+            {'name': it.name, 'qty': it.qty, 'price': it.price},
+        ],
+        if (subtotal != null) 'subtotal': subtotal,
+        if (tax != null) 'tax': tax,
+        if (discount != null) 'discount': discount,
+        if (total != null) 'total': total,
+        if (payment != null) 'payment': payment,
+      };
+
+  /// Kebalikan [toJson] — fail-open per field seperti parser JSON AI.
+  factory AiDraft.fromJson(Map<String, dynamic> m) {
+    final items = <AiDraftItem>[];
+    final rawItems = m['items'];
+    if (rawItems is List) {
+      for (final v in rawItems) {
+        if (v is! Map) continue;
+        final mm = Map<String, dynamic>.from(v);
+        final name = _str(mm['name']);
+        if (name == null || name.isEmpty) continue;
+        items.add(AiDraftItem(
+          name: name,
+          qty: _qty(mm['qty']),
+          price: _num(mm['price']) ?? 0,
+        ));
+      }
+    }
+    return AiDraft(
+      merchant: _str(m['merchant']),
+      date: _str(m['date']),
+      time: _str(m['time']),
+      items: items,
+      subtotal: _num(m['subtotal']),
+      tax: _num(m['tax']),
+      discount: _num(m['discount']),
+      total: _num(m['total']),
+      payment: _str(m['payment']),
+    );
+  }
+
   /// Ke ReceiptData untuk prefill form (jujur: confident ikut total).
   /// Tanggal + jam digabung; pajak/diskon/jenis bayar ikut terbawa.
   ReceiptData toReceiptData() {

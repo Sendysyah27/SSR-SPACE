@@ -8,29 +8,34 @@ import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/entry/ocr_camera_screen.dart';
+import 'package:ssr_space/screens/lainnya/scan_draft_list_screen.dart';
+import 'package:ssr_space/services/app_categories.dart';
+import 'package:ssr_space/services/receipt_kind.dart';
+import 'package:ssr_space/widgets/entry/ollo_entry_sheet.dart';
+import 'package:ssr_space/widgets/entry/receipt_draft_review.dart';
 import 'package:ssr_space/widgets/entry/voice_draft_sheet.dart';
 
-/// Hasil urai OCR dari struk (nominal dalam IDR).
-class OcrDraft {
-  final String merchant;
-  final double amount;
-  final DateTime date;
-  final String rawText;
-
-  const OcrDraft({
-    required this.merchant,
-    required this.amount,
-    required this.date,
-    required this.rawText,
-  });
-}
+/// Sumber yang dipilih user di picker OCR (batch 286: + draft).
+enum _OcrPick { camera, gallery, drafts }
 
 /// Alur Scan OCR on-device (TANPA AI/cloud): sumber gambar -> pengaturan ->
-/// OCR -> parse heuristik -> draft review (UI ala voice draft) -> simpan.
-/// true bila transaksi tersimpan.
+/// OCR -> parser utama -> review draft terstruktur (batch 286 tahap C,
+/// pola AiDraftScreen yang sama dengan scan AI) -> form entri Ollo.
+/// true bila alur selesai dibuka (form entri me-return void seperti
+/// jalur Edit draft suara; pemanggil memuat ulang datanya).
 Future<bool> openOcrFlow(BuildContext context) async {
-  final source = await _pickOcrSource(context);
-  if (source == null || !context.mounted) return false;
+  final pick = await _pickOcrSource(context);
+  if (pick == null || !context.mounted) return false;
+  if (pick == _OcrPick.drafts) {
+    final data = await Navigator.of(context).push<ReceiptData>(
+      MaterialPageRoute(builder: (_) => const ScanDraftListScreen()),
+    );
+    if (data == null || !context.mounted) return false;
+    return _openEntryFromScan(context, data);
+  }
+  final source = pick == _OcrPick.camera
+      ? ImageSource.camera
+      : ImageSource.gallery;
 
   // Kamera: layar khusus dengan toggle flash. Galeri: image_picker.
   String? path;
@@ -76,24 +81,49 @@ Future<bool> openOcrFlow(BuildContext context) async {
     return false;
   }
 
-  final draft = _parseOcr(rawText);
+  // Batch 286 tahap C: hasil OCR masuk review terstruktur yang sama
+  // seperti scan AI (bukan lagi sheet generik "Draft Siap").
+  final data = parseReceipt(rawText);
   if (!context.mounted) return false;
-
-  // Pakai ulang UI draft ala voice: konversi ke VoiceDraft.
-  return showVoiceDraftSheet(
-    context,
-    VoiceDraft(
-      amount: draft.amount,
-      type: 'out',
-      title: draft.merchant,
-      dateTime: draft.date,
-    ),
-  );
+  final outcome = await reviewScanDraft(context, data);
+  if (!context.mounted) return false;
+  if (outcome.savedDraft) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(tr('scan_draft_saved'))),
+    );
+    return false;
+  }
+  final edited = outcome.data;
+  if (edited == null) return false;
+  return _openEntryFromScan(context, edited);
 }
 
-/// Dialog pilih sumber gambar: kamera / galeri.
-Future<ImageSource?> _pickOcrSource(BuildContext context) {
-  return showModalBottomSheet<ImageSource>(
+/// Buka form entri Ollo terprefill dari hasil review scan (pola draft
+/// suara): dompet default & kategori tebakan terisi di form; user
+/// mengoreksi lalu menyimpan di sana.
+Future<bool> _openEntryFromScan(BuildContext context, ReceiptData data) async {
+  final guess = suggestReceiptCategory(
+    merchant: data.merchant,
+    items: data.items,
+    categories: appCategories.value,
+  );
+  await showOlloEntrySheet(
+    context,
+    initialDraft: VoiceDraft(
+      amount: data.amount ?? 0,
+      type: 'out',
+      title: data.merchant ?? '',
+      note: receiptNote(data),
+      dateTime: data.date ?? DateTime.now(),
+      category: guess,
+    ),
+  );
+  return true;
+}
+
+/// Dialog pilih sumber gambar: kamera / galeri / draft tersimpan.
+Future<_OcrPick?> _pickOcrSource(BuildContext context) {
+  return showModalBottomSheet<_OcrPick>(
     context: context,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
@@ -121,12 +151,17 @@ Future<ImageSource?> _pickOcrSource(BuildContext context) {
           ListTile(
             leading: const Icon(Icons.photo_camera_outlined),
             title: Text(tr('ocr_src_camera')),
-            onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            onTap: () => Navigator.pop(ctx, _OcrPick.camera),
           ),
           ListTile(
             leading: const Icon(Icons.photo_library_outlined),
             title: Text(tr('ocr_src_gallery')),
-            onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            onTap: () => Navigator.pop(ctx, _OcrPick.gallery),
+          ),
+          ListTile(
+            leading: const Icon(Icons.drafts_outlined),
+            title: Text(tr('scan_drafts')),
+            onTap: () => Navigator.pop(ctx, _OcrPick.drafts),
           ),
         ],
       ),
@@ -341,35 +376,4 @@ Future<String> _enhanceContrast(String path) async {
   } catch (_) {
     return path;
   }
-}
-
-/// Parse teks struk memakai parser heuristik utama ([parseReceipt])
-/// yang sama dengan jalur scan lain: merchant diambil dari baris brand
-/// (label "Sales No"/"Date"/"Cashier" tak pernah jadi judul), total =
-/// Grand Total sesudah diskon (termasuk pola dua kolom label/angka
-/// terpisah), tanggal menangkap jam struk. (Parser lokal lama di file
-/// ini pensiun di batch 286 — persis tiga kegagalan itu yang ia buat.)
-OcrDraft _parseOcr(String rawText) {
-  final d = parseReceipt(rawText);
-  var date = d.date ?? DateTime.now();
-  final t = d.time;
-  if (t != null) {
-    final m = RegExp(r'^(\d{1,2}):(\d{2})').firstMatch(t);
-    if (m != null) {
-      final h = int.tryParse(m.group(1)!);
-      final mi = int.tryParse(m.group(2)!);
-      if (h != null && mi != null) {
-        date = DateTime(date.year, date.month, date.day, h, mi);
-      }
-    }
-  }
-  final merchant = d.merchant?.trim();
-  return OcrDraft(
-    merchant: (merchant != null && merchant.isNotEmpty)
-        ? merchant
-        : tr('ocr_merchant_default'),
-    amount: d.amount ?? 0,
-    date: date,
-    rawText: rawText,
-  );
 }

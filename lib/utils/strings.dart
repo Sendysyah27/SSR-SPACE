@@ -2982,6 +2982,15 @@ const _t = <String, Map<String, String>>{
   'ai_review_t': {'id': 'Review draft AI', 'en': 'Review AI draft'},
   'ai_use': {'id': 'Pakai draft', 'en': 'Use draft'},
   'ai_discard': {'id': 'Buang', 'en': 'Discard'},
+  'ai_time': {'id': 'Jam (HH:mm)', 'en': 'Time (HH:mm)'},
+  'scan_drafts': {'id': 'Draft scan', 'en': 'Scan drafts'},
+  'scan_draft_save': {'id': 'Simpan draft', 'en': 'Save draft'},
+  'scan_draft_saved': {'id': 'Draft scan tersimpan', 'en': 'Scan draft saved'},
+  'scan_draft_empty': {
+    'id': 'Belum ada draft scan tersimpan.',
+    'en': 'No saved scan drafts yet.'
+  },
+  'scan_draft_delete': {'id': 'Hapus draft', 'en': 'Delete draft'},
   'ai_merchant': {'id': 'Gerai', 'en': 'Merchant'},
   'ai_date': {'id': 'Tanggal (TTTT-BB-HH)', 'en': 'Date (YYYY-MM-DD)'},
   'ai_items': {'id': 'Belanjaan', 'en': 'Items'},
