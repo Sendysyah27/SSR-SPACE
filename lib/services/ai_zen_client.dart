@@ -360,6 +360,8 @@ Future<({String text, String provider})> aiChat(
   String? mimeType,
   List<({bool mine, String text})>? history,
   String? dataContext,
+  // System prompt kustom (Mode Asisten 281C). null = default aiSoul.
+  String? system,
 }) {
   return aiChatViaCli(
     prompt,
@@ -367,5 +369,6 @@ Future<({String text, String provider})> aiChat(
     mimeType: mimeType,
     history: history,
     dataContext: dataContext,
+    system: system,
   );
 }

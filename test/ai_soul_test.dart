@@ -53,4 +53,19 @@ void main() {
     expect(b.contains('ringkasan ${aiSummaryCap + 4}'), isFalse);
     expect(b.contains('ringkasan 0'), isTrue);
   });
+
+  test('aiAssistantSoul hanya izinkan navigate', () {
+    expect(aiAssistantSoul.contains('navigate'), isTrue);
+    expect(aiAssistantSoul.contains('add_wallet'), isFalse);
+    expect(aiAssistantSoul.contains('Mode Catat'), isTrue);
+  });
+
+  test('aiAssistantContextBlock tanpa kontrak catat', () {
+    final b = aiAssistantContextBlock(['nama Sendy'], ['nabung 500rb']);
+    expect(b.contains('Mode Asisten'), isTrue);
+    expect(b.contains('Fakta tentang user'), isTrue);
+    expect(b.contains('nama Sendy'), isTrue);
+    expect(b.contains('Ringkasan percakapan penting'), isTrue);
+    expect(b.contains('Untuk mencatat transaksi, balas HANYA'), isFalse);
+  });
 }

@@ -84,6 +84,58 @@ String aiContextBlock(List<String> memory,
   return buf.toString();
 }
 
+/// System prompt Mode Asisten (batch 281C): analis keuangan, BUKAN
+/// pencatat. Kontrak JSON sama {"reply","action"}, tetapi action yang
+/// sah HANYA navigate; pencatatan diarahkan ke Mode Catat. Berbeda
+/// total dari aiSoul (Mode Catat) — jangan digabung.
+const aiAssistantSoul = 'Kamu Mang AI, asisten analis keuangan '
+    'SSR SPACE dalam Mode Asisten: ramah, ringkas, Bahasa Indonesia '
+    'santai. Tugasmu menganalisis keuangan user dari DATA ASISTEN '
+    'yang diberikan aplikasi (saldo dompet, arus bulan berjalan, '
+    'kategori teratas, tagihan, target nabung) dan menjawab '
+    'pertanyaan keuangan. Teliti soal uang: jangan pernah mengarang '
+    'angka di luar data yang diberikan. Balas HANYA satu objek JSON: '
+    '{"reply":"<teks untuk user>","action":null} tanpa markdown '
+    'fence, tanpa teks di luar JSON. Satu-satunya action yang boleh '
+    'kamu keluarkan adalah membuka halaman: {"type":"navigate",'
+    '"target":"<salah satu: nfc, laporan, billing, dompet, kategori, '
+    'anggaran, tagihan, profil>"} — pakai bila user memintamu membuka '
+    'halaman, atau bila jawaban jauh lebih berguna di halaman itu. '
+    'DILARANG mengeluarkan action transaksi dalam bentuk apa pun '
+    '(mencatat pemasukan/pengeluaran/transfer, menambah dompet atau '
+    'kategori, mengubah atau menghapus transaksi) dan blok tagihan/'
+    'budget: pencatatan hanya dilakukan di Mode Catat. Bila user '
+    'meminta mencatat transaksi di mode ini, isi "action":null dan '
+    'sarankan beralih ke Mode Catat lewat saklar di atas layar chat. '
+    'Untuk mengingat fakta user, tulis blok ```ingat fakta singkat``` '
+    'di baris terpisah SETELAH objek JSON. Untuk menyimpan ringkasan '
+    'percakapan PENTING (keputusan finansial, rencana, masalah yang '
+    'dibahas sampai tuntas — bukan obrolan ringan), tulis blok '
+    '```ringkas 1-2 kalimat ringkasan``` di baris terpisah SETELAH '
+    'objek JSON.';
+
+/// Blok konteks Mode Asisten: penanda mode + fakta user + ringkasan
+/// percakapan penting, TANPA kontrak Mode Catat (aiSoul). Format
+/// seksi sama seperti aiContextBlock.
+String aiAssistantContextBlock(List<String> memory,
+    [List<String> summaries = const []]) {
+  final buf = StringBuffer(
+      'Kamu sedang dalam Mode Asisten (analis), bukan Mode Catat.');
+  if (memory.isNotEmpty) {
+    buf.write('\nFakta tentang user:');
+    for (final m in memory.take(aiMemoryCap)) {
+      buf.write('\n- $m');
+    }
+  }
+  if (summaries.isNotEmpty) {
+    buf.write('\nRingkasan percakapan penting:');
+    for (final s in summaries.take(aiSummaryCap)) {
+      buf.write('\n- $s');
+    }
+  }
+  return buf.toString();
+}
+
 /// Ambil semua isi blok ```ingat ...``` dari balasan AI.
 List<String> parseIngatBlocks(String text) {
   final out = <String>[];

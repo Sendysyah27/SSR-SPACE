@@ -64,6 +64,10 @@ class _ChatMsg {
 
   /// Perintah non-transaksi tervalidasi (navigate dst., batch 281).
   final Map<String, dynamic>? command;
+
+  /// Mode asal pesan: 'catat' | 'asisten' (batch 281C). Riwayat dan
+  /// konteks yang dikirim ke model dipisah per mode.
+  final String mode;
   const _ChatMsg({
     required this.mine,
     required this.text,
@@ -75,6 +79,7 @@ class _ChatMsg {
     this.budgetAction,
     this.pendingAction,
     this.command,
+    this.mode = 'catat',
   });
 
   bool get hasAction =>
@@ -90,6 +95,36 @@ class _AiChatScreenState extends State<AiChatScreen> {
   String? _pendingMime;
   String _dataCtx = '';
   String _providerId = 'server';
+
+  /// Mode chat aktif: 'catat' (parser transaksi, perilaku asli) atau
+  /// 'asisten' (analis ala Ollo, batch 281C).
+  String _mode = 'catat';
+  static const _kMode = 'ai_chat_mode';
+
+  /// Pesan yang tampil & jadi konteks: hanya mode aktif.
+  List<_ChatMsg> get _visibleItems =>
+      [for (final m in _items) if (m.mode == _mode) m];
+
+  Future<void> _loadMode() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      if (p.getString(_kMode) == 'asisten' && mounted) {
+        setState(() => _mode = 'asisten');
+      }
+    } catch (_) {}
+  }
+
+  void _setMode(String m) {
+    if (m == _mode || _sending) return;
+    setState(() => _mode = m);
+    unawaited(() async {
+      try {
+        final p = await SharedPreferences.getInstance();
+        await p.setString(_kMode, m);
+      } catch (_) {}
+    }());
+    _toBottom();
+  }
 
   /// Transaksi terakhir yang berhasil dicatat lewat chat pada sesi ini
   /// (referensi untuk action edit_last/delete_last, batch 281).
@@ -113,6 +148,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
             'text': m.text,
             'provider': m.provider,
             'err': m.isError,
+            'mode': m.mode,
           }).toList();
       await p.setString(_kSession, jsonEncode(list));
     } catch (_) {}
@@ -136,6 +172,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           text: t,
           provider: e['provider'] as String?,
           isError: e['err'] == true,
+          mode: (e['mode'] as String?) ?? 'catat',
         ));
       }
       if (restored.isNotEmpty && mounted) {
@@ -162,6 +199,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     });
     // Pulihkan riwayat chat terakhir (tidak dihapus saat keluar room).
     _loadSession();
+    _loadMode();
   }
 
   /// Izin akses data sekali (awal penggunaan): ya = AI baca snapshot
@@ -298,13 +336,20 @@ class _AiChatScreenState extends State<AiChatScreen> {
     if (!mounted) return;
     final summaries = await loadAiSummaries();
     if (!mounted) return;
+    final asisten = _mode == 'asisten';
+    final ctxBlock = asisten
+        ? aiAssistantContextBlock(memory, summaries)
+        : aiContextBlock(memory, summaries);
     final prompt = text.isEmpty
-        ? '${aiContextBlock(memory, summaries)}\nJelaskan gambar terlampir.'
-        : '${aiContextBlock(memory, summaries)}\nUser: $text';
+        ? '$ctxBlock\nJelaskan gambar terlampir.'
+        : '$ctxBlock\nUser: $text';
     setState(() {
-      _animFrom = _items.length;
-      _items.add(_ChatMsg(mine: true, text: text.isEmpty ? '(gambar)' : text,
-          image: img));
+      _animFrom = _visibleItems.length;
+      _items.add(_ChatMsg(
+          mine: true,
+          text: text.isEmpty ? '(gambar)' : text,
+          image: img,
+          mode: _mode));
       _c.clear();
       _pendingImage = null;
       _pendingMime = null;
@@ -315,14 +360,16 @@ class _AiChatScreenState extends State<AiChatScreen> {
     // Riwayat sesi sebagai konteks (maks 10 turn terakhir).
     final history = [
       for (final m in _items)
-        (mine: m.mine, text: m.image != null ? '${m.text} [gambar]' : m.text),
+        if (m.mode == _mode)
+          (mine: m.mine, text: m.image != null ? '${m.text} [gambar]' : m.text),
     ];
     try {
       final r = await aiChat(prompt,
           imageBytes: img,
           mimeType: mime,
           history: history,
-          dataContext: _dataCtx.isEmpty ? null : _dataCtx);
+          dataContext: _dataCtx.isEmpty ? null : _dataCtx,
+          system: asisten ? aiAssistantSoul : null);
       // Sukses -> catat pemakaian kuota AI (fail-silent, tanpa blokir UI).
       if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'chat'));
       if (!mounted) return;
@@ -355,7 +402,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
       final rawType = parsed.actionRaw?['type'];
       final isCommandRaw =
           rawType is String && kChatCommandTypes.contains(rawType);
-      if (!isCommandRaw && shouldShowActionFallback(
+      if (!asisten && !isCommandRaw && shouldShowActionFallback(
         action: parsed.action,
         reason: parsed.reason,
         reply: parsed.reply,
@@ -371,7 +418,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
       // Uang tetap int dari parser; TxDraft pakai double (konversi aman).
       TxDraft? tx;
       final aMap = parsed.action;
-      if (aMap != null) {
+      if (aMap != null && !asisten) {
         tx = TxDraft(
           type: aMap['type'] as String,
           amount: (aMap['amount'] as int).toDouble(),
@@ -380,8 +427,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
           wallet: aMap['wallet'] as String?,
         );
       }
-      final bill = parseBillDraft(parseNamedBlock(r.text, 'tagihan'));
-      final budget = parseBudgetDraft(parseNamedBlock(r.text, 'budget'));
+      final bill =
+          asisten ? null : parseBillDraft(parseNamedBlock(r.text, 'tagihan'));
+      final budget = asisten
+          ? null
+          : parseBudgetDraft(parseNamedBlock(r.text, 'budget'));
       setState(() {
         _items.add(_ChatMsg(
           mine: false,
@@ -391,21 +441,26 @@ class _AiChatScreenState extends State<AiChatScreen> {
           billAction: bill,
           budgetAction: budget,
           pendingAction: pending,
-          command: parsed.command,
+          command: asisten
+              ? (parsed.command?['type'] == 'navigate'
+                  ? parsed.command
+                  : null)
+              : parsed.command,
+          mode: _mode,
         ));
         _sending = false;
       });
     } on AiFailure catch (e) {
       if (!mounted) return;
       setState(() {
-        _items.add(_ChatMsg(mine: false, text: _friendly(e), isError: true));
+        _items.add(_ChatMsg(mine: false, text: _friendly(e), isError: true, mode: _mode));
         _sending = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _items.add(
-            _ChatMsg(mine: false, text: tr('ai_fail'), isError: true));
+            _ChatMsg(mine: false, text: tr('ai_fail'), isError: true, mode: _mode));
         _sending = false;
       });
     }
@@ -673,6 +728,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         mine: false,
         text: m.text,
         provider: m.provider,
+        mode: m.mode,
       );
     });
   }
@@ -1099,6 +1155,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         text: text,
         isError: isError,
         provider: 'Mang AI',
+        mode: _mode,
       ));
     });
     _toBottom();
@@ -1242,6 +1299,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final visible = _visibleItems;
     return Scaffold(
       appBar: AppBar(
         title: Text(tr('chat_title')),
@@ -1302,8 +1360,31 @@ class _AiChatScreenState extends State<AiChatScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  SsrSpace.md, SsrSpace.sm, SsrSpace.md, 0),
+              child: SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment<String>(
+                      value: 'catat',
+                      label: Text(tr('ai_mode_catat')),
+                      icon: const Icon(Icons.edit_note_outlined),
+                    ),
+                    ButtonSegment<String>(
+                      value: 'asisten',
+                      label: Text(tr('ai_mode_asisten')),
+                      icon: const Icon(Icons.insights_outlined),
+                    ),
+                  ],
+                  selected: {_mode},
+                  onSelectionChanged: (s) => _setMode(s.first),
+                ),
+              ),
+            ),
             Expanded(
-              child: _items.isEmpty
+              child: visible.isEmpty
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(SsrSpace.lg),
@@ -1322,9 +1403,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   : ListView.builder(
                       controller: _scroll,
                       padding: const EdgeInsets.all(SsrSpace.md),
-                      itemCount: _items.length + (_sending ? 1 : 0),
+                      itemCount: visible.length + (_sending ? 1 : 0),
                       itemBuilder: (_, i) {
-                        if (i >= _items.length) {
+                        if (i >= visible.length) {
                           return const Align(
                             alignment: Alignment.centerLeft,
                             child: Padding(
@@ -1333,7 +1414,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                             ),
                           );
                         }
-                        final m = _items[i];
+                        final m = visible[i];
                         return _Enter(
                           animate: i >= _animFrom,
                           mine: m.mine,

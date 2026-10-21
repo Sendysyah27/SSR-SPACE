@@ -2711,6 +2711,8 @@ const _t = <String, Map<String, String>>{
     'en': 'Speak your transaction.',
   },
   'chat_title': {'id': 'Mang AI', 'en': 'Mang AI'},
+  'ai_mode_catat': {'id': 'Catat', 'en': 'Record'},
+  'ai_mode_asisten': {'id': 'Asisten', 'en': 'Assistant'},
   'chat_mang': {'id': 'Mang AI', 'en': 'Mang AI'},
   'ai_data_t': {'id': 'Izinkan akses data?', 'en': 'Allow data access?'},
   'ai_data_s': {
