@@ -158,6 +158,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   void _setMode(String m) {
     if (m == _mode || _sending) return;
     setState(() => _mode = m);
+    if (m == 'asisten') unawaited(_refreshQuotaChip());
     unawaited(() async {
       try {
         final p = await SharedPreferences.getInstance();
@@ -548,18 +549,32 @@ class _AiChatScreenState extends State<AiChatScreen> {
       });
     } on AiFailure catch (e) {
       if (!mounted) return;
+      final asistenErr = _mode == 'asisten';
       setState(() {
-        _items.add(_ChatMsg(mine: false, text: _friendly(e), isError: true, mode: _mode));
+        _items.add(_ChatMsg(
+          mine: false,
+          text: asistenErr ? '' : _friendly(e),
+          isError: true,
+          mode: _mode,
+          stateKind: asistenErr ? assistantErrorState(e) : null,
+        ));
         _sending = false;
       });
     } catch (_) {
       if (!mounted) return;
+      final asistenErr = _mode == 'asisten';
       setState(() {
-        _items.add(
-            _ChatMsg(mine: false, text: tr('ai_fail'), isError: true, mode: _mode));
+        _items.add(_ChatMsg(
+          mine: false,
+          text: asistenErr ? '' : tr('ai_fail'),
+          isError: true,
+          mode: _mode,
+          stateKind: asistenErr ? 'server_tidak_tersedia' : null,
+        ));
         _sending = false;
       });
     }
+    if (asisten && mounted) unawaited(_refreshQuotaChip());
     unawaited(_saveSession());
     _toBottom();
   }
@@ -577,6 +592,41 @@ class _AiChatScreenState extends State<AiChatScreen> {
       await saveAssistantFeedback(rating: v, replyText: m.text);
       await syncAssistantFeedback();
     }());
+  }
+
+  /// Muat label chip sisa kuota AI untuk header Mode Asisten (batch
+  /// 285 tahap D): angka dari check_quota server; gagal/tak terbaca ->
+  /// chip hilang (fail-open). Plan Pro tampil sebagai chip 'PRO'.
+  Future<void> _refreshQuotaChip() async {
+    String? label;
+    try {
+      final orgId = await activeOrgId();
+      if (orgId.isNotEmpty && mounted) {
+        final badge = aiQuotaBadgeLabel(await quotaCheck(orgId, 'ai'));
+        if (badge != null) {
+          label = badge == 'PRO' ? badge : '${tr('ai_quota_left')}: $badge';
+        }
+      }
+    } catch (_) {}
+    if (mounted && _mode == 'asisten') {
+      setState(() => _quotaChip = label);
+    }
+  }
+
+  /// Buka layar Pengaturan Asisten (batch 285 tahap D); sepulangnya,
+  /// konteks data + chip kuota disegarkan bila izin berubah.
+  Future<void> _openAssistantSettings() async {
+    if (_sending) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+          builder: (_) => const AiAssistantSettingsScreen()),
+    );
+    if (!mounted) return;
+    try {
+      final choice = await aiDataChoice();
+      _dataCtx = choice == true ? await buildAiDataContext() : '';
+    } catch (_) {}
+    if (mounted && _mode == 'asisten') unawaited(_refreshQuotaChip());
   }
 
   Future<void> _openMemory() async {
@@ -601,12 +651,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.tune_outlined),
-                  title: Text(tr('ai_set_title')),
+                  title: Text(tr('ai_aset_title')),
                   subtitle: Text(tr('ai_set_sub')),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _openPersonaSettings();
+                    _openAssistantSettings();
                   },
                 ),
                 const SizedBox(height: SsrSpace.sm),
@@ -666,102 +716,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   ],
                 ),
               ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Pengaturan personalisasi Mang AI (281C tahap 3): persona, nama
-  /// panggilan, instruksi kustom. Tersimpan di prefs (ai_persona.dart)
-  /// dan berlaku untuk kedua mode mulai pesan berikutnya.
-  Future<void> _openPersonaSettings() async {
-    var prefs = await loadAiPersona();
-    if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(SsrSpace.md),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(tr('ai_set_title'),
-                      style: Theme.of(ctx).textTheme.titleMedium),
-                  const SizedBox(height: SsrSpace.sm),
-                  Text(tr('ai_set_persona'),
-                      style: Theme.of(ctx).textTheme.titleSmall),
-                  const SizedBox(height: SsrSpace.xs),
-                  Wrap(
-                    spacing: SsrSpace.xs,
-                    children: [
-                      for (final e in kAiPersonaStyles.entries)
-                        ChoiceChip(
-                          label: Text(tr('ai_persona_${e.key}')),
-                          selected: prefs.persona == e.key,
-                          onSelected: (_) async {
-                            prefs = prefs.copyWith(persona: e.key);
-                            await saveAiPersona(prefs);
-                            setSheet(() {});
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: SsrSpace.sm),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(tr('ai_set_nickname')),
-                    subtitle: Text(prefs.nickname.isEmpty
-                        ? tr('ai_set_empty')
-                        : prefs.nickname),
-                    trailing: const Icon(Icons.edit_outlined),
-                    onTap: () async {
-                      await _editMemoryItem(
-                        ctx,
-                        initial: prefs.nickname,
-                        titleKey: 'ai_set_nickname',
-                        onSave: (v) async {
-                          prefs = prefs.copyWith(nickname: v.trim());
-                          await saveAiPersona(prefs);
-                        },
-                      );
-                      setSheet(() {});
-                    },
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(tr('ai_set_custom')),
-                    subtitle: Text(prefs.customInstruction.isEmpty
-                        ? tr('ai_set_empty')
-                        : prefs.customInstruction),
-                    trailing: const Icon(Icons.edit_outlined),
-                    onTap: () async {
-                      await _editMemoryItem(
-                        ctx,
-                        initial: prefs.customInstruction,
-                        titleKey: 'ai_set_custom',
-                        onSave: (v) async {
-                          prefs =
-                              prefs.copyWith(customInstruction: v.trim());
-                          await saveAiPersona(prefs);
-                        },
-                      );
-                      setSheet(() {});
-                    },
-                  ),
-                  const SizedBox(height: SsrSpace.sm),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text(tr('rcp_raw_close')),
-                  ),
-                ],
-              ),
             ),
           ),
         ),
@@ -1621,6 +1575,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
               } catch (_) {}
             },
           ),
+          if (_mode == 'asisten')
+            IconButton(
+              icon: const Icon(Icons.tune_outlined),
+              tooltip: tr('ai_aset_title'),
+              onPressed: _openAssistantSettings,
+            ),
           IconButton(
             icon: const Icon(Icons.psychology_outlined),
             tooltip: tr('chat_mem_t'),
@@ -1691,6 +1651,19 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 ),
               ),
             ),
+            if (_mode == 'asisten' && _quotaChip != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    SsrSpace.md, SsrSpace.xs, SsrSpace.md, 0),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Chip(
+                    label: Text(_quotaChip!),
+                    visualDensity: VisualDensity.compact,
+                    labelStyle: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ),
+              ),
             Expanded(
               child: visible.isEmpty
                   ? Center(
@@ -1738,15 +1711,26 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                 : CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                            _Bubble(
-                              msg: m,
-                              typewriter: identical(m, _freshReply),
-                              onTypewriterDone: () {
-                                if (mounted && identical(_freshReply, m)) {
-                                  setState(() => _freshReply = null);
-                                }
-                              },
-                            ),
+                            if (m.stateKind != null && !m.mine)
+                              _AssistantStateCard(
+                                stateKind: m.stateKind!,
+                                onRetry: () => _send(_lastUserText),
+                                onPlan: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const BillingScreen()),
+                                ),
+                              )
+                            else
+                              _Bubble(
+                                msg: m,
+                                typewriter: identical(m, _freshReply),
+                                onTypewriterDone: () {
+                                  if (mounted && identical(_freshReply, m)) {
+                                    setState(() => _freshReply = null);
+                                  }
+                                },
+                              ),
                             if (!m.mine &&
                                 !m.isError &&
                                 m.mode == 'asisten')
@@ -1986,6 +1970,101 @@ class _TypingDotsState extends State<_TypingDots>
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Kartu state bernama Mode Asisten (batch 285 tahap D): menggantikan
+/// pesan error generik dengan kartu ramah + aksi (coba lagi / lihat
+/// plan), dipetakan dari error EF via assistantErrorState.
+class _AssistantStateCard extends StatelessWidget {
+  final String stateKind;
+  final VoidCallback onRetry;
+  final VoidCallback onPlan;
+  const _AssistantStateCard({
+    required this.stateKind,
+    required this.onRetry,
+    required this.onPlan,
+  });
+
+  (IconData, String, String, bool) _spec() {
+    switch (stateKind) {
+      case 'kuota_habis':
+        return (
+          Icons.workspace_premium_outlined,
+          tr('ai_state_quota_t'),
+          tr('ai_state_quota_s'),
+          true
+        );
+      case 'rate_limited':
+        return (
+          Icons.hourglass_top_outlined,
+          tr('ai_state_rate_t'),
+          tr('ai_state_rate_s'),
+          false
+        );
+      case 'jaringan':
+        return (
+          Icons.wifi_off_outlined,
+          tr('ai_state_net_t'),
+          tr('ai_state_net_s'),
+          false
+        );
+      default:
+        return (
+          Icons.cloud_off_outlined,
+          tr('ai_state_server_t'),
+          tr('ai_state_server_s'),
+          false
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (icon, title, sub, isQuota) = _spec();
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.all(SsrSpace.md),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.82,
+        ),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 18, color: scheme.primary),
+                const SizedBox(width: SsrSpace.xs),
+                Flexible(
+                  child: Text(title,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(sub, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: SsrSpace.sm),
+            isQuota
+                ? FilledButton(
+                    onPressed: onPlan, child: Text(tr('ai_state_plan')))
+                : OutlinedButton(
+                    onPressed: onRetry, child: Text(tr('ai_state_retry'))),
+          ],
+        ),
       ),
     );
   }
