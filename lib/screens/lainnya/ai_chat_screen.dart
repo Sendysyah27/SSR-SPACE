@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import 'package:ssr_space/services/ai_context.dart';
 import 'package:ssr_space/services/ai_assistant_context.dart';
 import 'package:ssr_space/services/ai_correction.dart';
+import 'package:ssr_space/services/ai_assistant_feedback.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_memory.dart';
 import 'package:ssr_space/services/ai_merchant_alias.dart';
@@ -81,6 +82,10 @@ class _ChatMsg {
 
   /// Snapshot lokal saat pesan dibuat: sumber angka kartu viz.
   final AssistantSnapshot? vizData;
+
+  /// Rating umpan balik user (batch 285 tahap B): 0 = belum dinilai,
+  /// 1 = membantu (thumbs up), -1 = kurang membantu (thumbs down).
+  final int rating;
   const _ChatMsg({
     required this.mine,
     required this.text,
@@ -95,10 +100,29 @@ class _ChatMsg {
     this.mode = 'catat',
     this.viz,
     this.vizData,
+    this.rating = 0,
   });
 
   bool get hasAction =>
       action != null || billAction != null || budgetAction != null;
+
+  /// Salinan dengan rating umpan balik baru (field lain tetap).
+  _ChatMsg withRating(int r) => _ChatMsg(
+        mine: mine,
+        text: text,
+        provider: provider,
+        isError: isError,
+        image: image,
+        action: action,
+        billAction: billAction,
+        budgetAction: budgetAction,
+        pendingAction: pendingAction,
+        command: command,
+        mode: mode,
+        viz: viz,
+        vizData: vizData,
+        rating: r,
+      );
 }
 
 class _AiChatScreenState extends State<AiChatScreen> {
@@ -169,6 +193,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
             'provider': m.provider,
             'err': m.isError,
             'mode': m.mode,
+            'rating': m.rating,
           }).toList();
       await p.setString(_kSession, jsonEncode(list));
     } catch (_) {}
@@ -193,6 +218,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           provider: e['provider'] as String?,
           isError: e['err'] == true,
           mode: (e['mode'] as String?) ?? 'catat',
+          rating: (e['rating'] as num?)?.toInt() ?? 0,
         ));
       }
       if (restored.isNotEmpty && mounted) {
@@ -217,6 +243,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
     aiProviderId().then((v) {
       if (mounted) setState(() => _providerId = v);
     });
+    // Flush antrean feedback yang tertunda (best-effort, senyap).
+    unawaited(syncAssistantFeedback());
     // Pulihkan riwayat chat terakhir (tidak dihapus saat keluar room).
     _loadSession();
     _loadMode();
@@ -533,6 +561,21 @@ class _AiChatScreenState extends State<AiChatScreen> {
     }
     unawaited(_saveSession());
     _toBottom();
+  }
+
+  /// Simpan rating umpan balik untuk balasan Asisten (batch 285
+  /// tahap B): pesan diganti di tempat, arsip sesi diperbarui, lalu
+  /// antrean sinkron lokal ditambah + flush best-effort (fail-open
+  /// senyap selama migration_30 belum di-apply).
+  void _setRating(_ChatMsg m, int v) {
+    final i = _items.indexWhere((e) => identical(e, m));
+    if (i < 0) return;
+    setState(() => _items[i] = m.withRating(v));
+    unawaited(_saveSession());
+    unawaited(() async {
+      await saveAssistantFeedback(rating: v, replyText: m.text);
+      await syncAssistantFeedback();
+    }());
   }
 
   Future<void> _openMemory() async {
@@ -1703,6 +1746,13 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                 }
                               },
                             ),
+                            if (!m.mine &&
+                                !m.isError &&
+                                m.mode == 'asisten')
+                              _FeedbackRow(
+                                rating: m.rating,
+                                onRate: (v) => _setRating(m, v),
+                              ),
                             if (m.viz != null && m.vizData != null)
                               _VizCard(viz: m.viz!, data: m.vizData!),
                             if (m.action != null)
@@ -1936,6 +1986,37 @@ class _TypingDotsState extends State<_TypingDots>
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Baris umpan balik 👍/👎 di bawah balasan Asisten (batch 285
+/// tahap B). Pilihan tersimpan per pesan dan bisa diubah; keadaan
+/// terbaca ulang dari arsip sesi.
+class _FeedbackRow extends StatelessWidget {
+  final int rating;
+  final void Function(int) onRate;
+  const _FeedbackRow({required this.rating, required this.onRate});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    Widget btn(IconData on, IconData off, int v, String tip) => IconButton(
+          icon: Icon(rating == v ? on : off, size: 16),
+          tooltip: tip,
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 28),
+          padding: EdgeInsets.zero,
+          color: rating == v ? scheme.primary : scheme.onSurfaceVariant,
+          onPressed: () => onRate(v),
+        );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        btn(Icons.thumb_up, Icons.thumb_up_outlined, 1, tr('ai_fb_up')),
+        btn(Icons.thumb_down, Icons.thumb_down_outlined, -1,
+            tr('ai_fb_down')),
+      ],
     );
   }
 }
