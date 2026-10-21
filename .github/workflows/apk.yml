@@ -162,6 +162,10 @@ jobs:
             sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>' "$M"
           fi
           grep -q "android.permission.INTERNET" "$M"
+          # Batch 286 tahap B: label launcher "SSR SPACE" (bukan nama
+          # project "ssr_space"). Package tetap com.ssr.space.ssr_space.
+          sed -i 's/android:label="ssr_space"/android:label="SSR SPACE"/' "$M"
+          grep -q 'android:label="SSR SPACE"' "$M"
       - name: Integrasi AI native (Kotlin)
         run: |
           python3 << 'PYEOF'
