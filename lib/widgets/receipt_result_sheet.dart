@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/currency.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
+import 'package:ssr_space/services/receipt_scan_validate.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -21,11 +22,16 @@ class ReceiptResultSheet extends StatelessWidget {
   final List<MirrorLine> mirror;
   final VoidCallback onShowRaw;
 
+  /// Peringatan validator struk (batch 284 tahap A): banner di sheet +
+  /// tanda pada baris item terkait. Kosong = tidak ada peringatan.
+  final List<ReceiptWarning> warnings;
+
   const ReceiptResultSheet({
     super.key,
     required this.data,
     required this.mirror,
     required this.onShowRaw,
+    this.warnings = const [],
   });
 
   String _idr(double v) =>
@@ -36,9 +42,30 @@ class ReceiptResultSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final warn = !data.confident;
-    final firstItem = mirror.indexWhere((e) => e.amount != null && !e.bold);
-    final firstTotal = mirror.indexWhere((e) => e.bold && e.amount != null);
-    final items = mirror
+    // Batch 284 tahap A: tandai baris item yang kena peringatan
+    // validator (cocok nama item, tak sensitif huruf).
+    final flagged = <String>{
+      for (final w in warnings)
+        if (w.itemName != null) w.itemName!.trim().toLowerCase(),
+    };
+    bool isFlagged(MirrorLine e) {
+      if (e.bold || e.amount == null || flagged.isEmpty) return false;
+      final t = e.text.trim().toLowerCase();
+      return flagged.any((f) => t.contains(f) || f.contains(t));
+    }
+
+    final viewMirror = flagged.isEmpty
+        ? mirror
+        : [
+            for (final e in mirror)
+              isFlagged(e)
+                  ? MirrorLine('${e.text} \u26a0',
+                      amount: e.amount, bold: e.bold, centered: e.centered)
+                  : e,
+          ];
+    final firstItem = viewMirror.indexWhere((e) => e.amount != null && !e.bold);
+    final firstTotal = viewMirror.indexWhere((e) => e.bold && e.amount != null);
+    final items = viewMirror
         .where((e) =>
             e.amount != null && !e.bold && !_tenderTxt.hasMatch(e.text))
         .toList();
@@ -60,11 +87,11 @@ class ReceiptResultSheet extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (var i = 0; i < mirror.length; i++) ...[
+                  for (var i = 0; i < viewMirror.length; i++) ...[
                     if (i == firstItem || i == firstTotal)
                       const _DashedLine(),
                     _MirrorRow(
-                      line: mirror[i],
+                      line: viewMirror[i],
                       money: _idr,
                     ),
                   ],
@@ -76,6 +103,47 @@ class ReceiptResultSheet extends StatelessWidget {
                         color: scheme.error,
                       ),
                       textAlign: TextAlign.center,
+                    ),
+                  ],
+                  if (warnings.isNotEmpty) ...[
+                    const SizedBox(height: SsrSpace.sm),
+                    Container(
+                      padding: const EdgeInsets.all(SsrSpace.sm),
+                      decoration: BoxDecoration(
+                        color: scheme.errorContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.warning_amber_outlined,
+                                  size: 16, color: scheme.onErrorContainer),
+                              const SizedBox(width: 6),
+                              Text(
+                                tr('rcp_warn_title'),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: scheme.onErrorContainer,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          for (final w in warnings)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                w.itemName == null
+                                    ? '\u2022 ${w.message}'
+                                    : '\u2022 ${w.itemName}: ${w.message}',
+                                style: theme.textTheme.bodySmall
+                                    ?.copyWith(color: scheme.onErrorContainer),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ],
                   if (showSummary) ...[
