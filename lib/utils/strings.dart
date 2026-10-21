@@ -2713,6 +2713,10 @@ const _t = <String, Map<String, String>>{
   'chat_title': {'id': 'Mang AI', 'en': 'Mang AI'},
   'ai_mode_catat': {'id': 'Catat', 'en': 'Record'},
   'ai_mode_asisten': {'id': 'Asisten', 'en': 'Assistant'},
+  'ai_viz_saldo': {'id': 'Saldo dompet', 'en': 'Wallet balances'},
+  'ai_viz_kategori': {'id': 'Pengeluaran per kategori', 'en': 'Spending by category'},
+  'ai_viz_tren': {'id': 'Arus 7 hari terakhir', 'en': 'Last 7 days flow'},
+  'ai_viz_total': {'id': 'Total', 'en': 'Total'},
   'chat_mang': {'id': 'Mang AI', 'en': 'Mang AI'},
   'ai_data_t': {'id': 'Izinkan akses data?', 'en': 'Allow data access?'},
   'ai_data_s': {

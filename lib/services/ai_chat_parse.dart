@@ -253,6 +253,25 @@ const kChatCommandTypes = <String>{
   'delete_last',
 };
 
+/// Jenis kartu visualisasi Mode Asisten (batch 281C tahap 2).
+/// Model hanya memilih jenis (+ limit sederhana); angka dirender app
+/// dari snapshot lokal — tidak pernah dari teks/angka model.
+const kChatVizTypes = <String>{'saldo', 'rincian_kategori', 'tren_ringkas'};
+
+/// Urai blok "viz" dari kontrak balasan -> peta ternormalisasi atau
+/// null (tak ada / bukan Map / type tak dikenal). Murni; tak pernah
+/// throw. Field selain type/limit dibuang.
+Map<String, dynamic>? parseChatViz(dynamic raw) {
+  if (raw is! Map) return null;
+  final m = Map<String, dynamic>.from(raw);
+  final t = m['type'];
+  if (t is! String || !kChatVizTypes.contains(t.trim())) return null;
+  final out = <String, dynamic>{'type': t.trim()};
+  final limit = m['limit'];
+  if (limit is int && limit >= 1 && limit <= 8) out['limit'] = limit;
+  return out;
+}
+
 /// Tipe dompet yang dikenal app (form dompet manual + WalletService).
 const kChatWalletTypes = <String>{'cash', 'ewallet', 'bank', 'investment'};
 
@@ -426,6 +445,8 @@ Map<String, dynamic>? validateChatCommand(
 /// Urai balasan mentah model -> (reply, action, actionRaw, reason).
 /// Field command: action perintah non-transaksi tervalidasi (navigate
 /// dst., batch 281) - saluran terpisah dari action transaksi.
+/// Field viz: blok visualisasi Mode Asisten tervalidasi (281C tahap 2),
+/// independen dari action — viz tak valid cukup dibuang, reply utuh.
 /// - JSON valid berkontrak: kembalikan field `reply` SAJA sebagai teks
 ///   bubble; JSON mentah tidak pernah tampil ke user.
 /// - Parse gagal (bukan JSON / bukan Map / tanpa `reply` string):
@@ -434,7 +455,7 @@ Map<String, dynamic>? validateChatCommand(
 /// - action ditolak validasi: reason = kode dari [validateChatActionReason],
 ///   actionRaw = salinan lenient untuk prefill fallback.
 /// Tak pernah throw. Tak pernah log isi pesan.
-({String reply, Map<String, dynamic>? action, Map<String, dynamic>? actionRaw, String? reason, Map<String, dynamic>? command}) parseChatReply(
+({String reply, Map<String, dynamic>? action, Map<String, dynamic>? actionRaw, String? reason, Map<String, dynamic>? command, Map<String, dynamic>? viz}) parseChatReply(
   String raw, {
   List<String> wallets = const [],
   List<String> categories = const [],
@@ -458,6 +479,7 @@ Map<String, dynamic>? validateChatCommand(
       actionRaw: null,
       reason: 'parse_gagal',
       command: null,
+      viz: null,
     );
   }
   final m = Map<String, dynamic>.from(decoded);
@@ -469,8 +491,10 @@ Map<String, dynamic>? validateChatCommand(
       actionRaw: null,
       reason: 'parse_gagal',
       command: null,
+      viz: null,
     );
   }
+  final viz = parseChatViz(m['viz']);
   // Saluran perintah non-transaksi (batch 281): type yang dikenal
   // sebagai command divalidasi di jalurnya sendiri; type asing lain
   // tetap jatuh ke jalur tx dan ditolak 'type_invalid' seperti biasa.
@@ -490,6 +514,7 @@ Map<String, dynamic>? validateChatCommand(
           actionRaw: lenientActionMap(rawAction),
           reason: cReason,
           command: null,
+          viz: viz,
         );
       }
       return (
@@ -502,6 +527,7 @@ Map<String, dynamic>? validateChatCommand(
           wallets: wallets,
           categories: categories,
         ),
+        viz: viz,
       );
     }
   }
@@ -517,6 +543,7 @@ Map<String, dynamic>? validateChatCommand(
       actionRaw: lenientActionMap(m['action']),
       reason: reason,
       command: null,
+      viz: viz,
     );
   }
   final action = validateChatAction(
@@ -524,7 +551,7 @@ Map<String, dynamic>? validateChatCommand(
     wallets: wallets,
     categories: categories,
   );
-  return (reply: reply, action: action, actionRaw: null, reason: null, command: null);
+  return (reply: reply, action: action, actionRaw: null, reason: null, command: null, viz: viz);
 }
 
 /// Data untuk kartu fallback: aksi ditolak validasi padahal reply

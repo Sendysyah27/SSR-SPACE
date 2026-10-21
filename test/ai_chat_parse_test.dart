@@ -691,5 +691,40 @@ void main() {
       expect(r.action, isNull);
       expect(r.reason, isNull);
     });
+
+    test('viz valid ikut terbawa dari kontrak', () {
+      final r = parseChatReply(
+        '{"reply":"Ini rincianmu.","action":null,'
+        '"viz":{"type":"rincian_kategori","limit":3}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.viz, isNotNull);
+      expect(r.viz!['type'], 'rincian_kategori');
+      expect(r.viz!['limit'], 3);
+      expect(r.reply, 'Ini rincianmu.');
+    });
+
+    test('viz tipe asing dibuang aman, reply utuh', () {
+      final r = parseChatReply(
+        '{"reply":"Halo.","action":null,"viz":{"type":"grafik_batang"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.viz, isNull);
+      expect(r.reply, 'Halo.');
+      expect(r.reason, 'action_null');
+    });
+
+    test('parseChatViz normalisasi + limit di luar rentang dibuang', () {
+      expect(parseChatViz({'type': ' saldo ', 'extra': 1}),
+          {'type': 'saldo'});
+      expect(parseChatViz({'type': 'tren_ringkas', 'limit': 99}),
+          {'type': 'tren_ringkas'});
+      expect(parseChatViz({'type': 'tren_ringkas', 'limit': 8}),
+          {'type': 'tren_ringkas', 'limit': 8});
+      expect(parseChatViz('saldo'), isNull);
+      expect(parseChatViz(null), isNull);
+    });
   });
 }

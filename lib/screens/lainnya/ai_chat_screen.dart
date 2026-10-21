@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:ssr_space/services/ai_context.dart';
+import 'package:ssr_space/services/ai_assistant_context.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_memory.dart';
 import 'package:ssr_space/services/ai_chat_parse.dart';
@@ -68,6 +69,12 @@ class _ChatMsg {
   /// Mode asal pesan: 'catat' | 'asisten' (batch 281C). Riwayat dan
   /// konteks yang dikirim ke model dipisah per mode.
   final String mode;
+
+  /// Blok viz tervalidasi dari model (Mode Asisten, tahap 281C-2).
+  final Map<String, dynamic>? viz;
+
+  /// Snapshot lokal saat pesan dibuat: sumber angka kartu viz.
+  final AssistantSnapshot? vizData;
   const _ChatMsg({
     required this.mine,
     required this.text,
@@ -80,6 +87,8 @@ class _ChatMsg {
     this.pendingAction,
     this.command,
     this.mode = 'catat',
+    this.viz,
+    this.vizData,
   });
 
   bool get hasAction =>
@@ -336,6 +345,17 @@ class _AiChatScreenState extends State<AiChatScreen> {
     if (!mounted) return;
     final summaries = await loadAiSummaries();
     if (!mounted) return;
+    // Mode Asisten: rakit snapshot terstruktur (konteks model + sumber
+    // angka viz). Hanya bila user mengizinkan akses data (_dataCtx
+    // terisi); tanpa izin, asisten menjawab tanpa konteks/viz.
+    AssistantSnapshot? snap;
+    String? asistenCtx;
+    if (_mode == 'asisten' && _dataCtx.isNotEmpty) {
+      snap = await buildAssistantSnapshot();
+      if (!mounted) return;
+      final t = assistantContextText(snap);
+      if (t.isNotEmpty) asistenCtx = t;
+    }
     final asisten = _mode == 'asisten';
     final ctxBlock = asisten
         ? aiAssistantContextBlock(memory, summaries)
@@ -368,8 +388,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
           imageBytes: img,
           mimeType: mime,
           history: history,
-          dataContext: _dataCtx.isEmpty ? null : _dataCtx,
-          system: asisten ? aiAssistantSoul : null);
+          dataContext:
+              asisten ? asistenCtx : (_dataCtx.isEmpty ? null : _dataCtx),
+          system: asisten ? '$aiAssistantSoul $aiAssistantVizHint' : null);
       // Sukses -> catat pemakaian kuota AI (fail-silent, tanpa blokir UI).
       if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'chat'));
       if (!mounted) return;
@@ -446,6 +467,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   ? parsed.command
                   : null)
               : parsed.command,
+          viz: asisten ? parsed.viz : null,
+          vizData: asisten ? snap : null,
           mode: _mode,
         ));
         _sending = false;
@@ -1425,6 +1448,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                             _Bubble(msg: m),
+                            if (m.viz != null && m.vizData != null)
+                              _VizCard(viz: m.viz!, data: m.vizData!),
                             if (m.action != null)
                               _ActionCard(
                                 title: _actionTitle(m.action!),
@@ -1981,3 +2006,136 @@ class _PendingActionCardState extends State<_PendingActionCard> {
     );
   }
 }
+
+/// Kartu visualisasi Mode Asisten (281C tahap 2): angka SELALU dari
+/// snapshot lokal app; model hanya memilih jenis kartu. Viz tanpa
+/// data pendukung dirender sebagai widget kosong (aman).
+class _VizCard extends StatelessWidget {
+  final Map<String, dynamic> viz;
+  final AssistantSnapshot data;
+  const _VizCard({required this.viz, required this.data});
+
+  String _amt(double v) => v.toStringAsFixed(0);
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final type = viz['type'] as String? ?? '';
+    var title = '';
+    final rows = <Widget>[];
+    if (type == 'saldo') {
+      title = tr('ai_viz_saldo');
+      for (final w in data.wallets) {
+        rows.add(_VizRow(label: w.name, value: _amt(w.balance)));
+      }
+      if (rows.isNotEmpty) {
+        rows.add(const Divider(height: 12));
+        rows.add(_VizRow(
+            label: tr('ai_viz_total'),
+            value: _amt(data.totalBalance),
+            bold: true));
+      }
+    } else if (type == 'rincian_kategori') {
+      title = tr('ai_viz_kategori');
+      final limit = (viz['limit'] as int?) ?? 5;
+      final cats = data.topCategories.take(limit).toList();
+      final max = cats.isEmpty ? 0.0 : cats.first.total;
+      for (final c in cats) {
+        rows.add(_VizRow(label: c.name, value: _amt(c.total)));
+        rows.add(_VizBar(
+            frac: max > 0 ? c.total / max : 0, color: scheme.primary));
+      }
+    } else if (type == 'tren_ringkas') {
+      title = tr('ai_viz_tren');
+      var max = 0.0;
+      for (final d in data.last7) {
+        if (d.outAmt > max) max = d.outAmt;
+      }
+      for (final d in data.last7) {
+        final lbl = d.day.length >= 10 ? d.day.substring(5) : d.day;
+        rows.add(_VizRow(
+            label: lbl, value: '-${_amt(d.outAmt)} / +${_amt(d.inAmt)}'));
+        rows.add(_VizBar(
+            frac: max > 0 ? d.outAmt / max : 0, color: scheme.primary));
+      }
+    }
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(top: 2, bottom: 4),
+        padding: const EdgeInsets.all(SsrSpace.md),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.82,
+        ),
+        decoration: BoxDecoration(
+          color: scheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: scheme.onSecondaryContainer,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: SsrSpace.sm),
+            ...rows,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VizRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool bold;
+  const _VizRow({required this.label, required this.value, this.bold = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: scheme.onSecondaryContainer,
+          fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+        );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: style)),
+          Text(value, style: style),
+        ],
+      ),
+    );
+  }
+}
+
+class _VizBar extends StatelessWidget {
+  final double frac;
+  final Color color;
+  const _VizBar({required this.frac, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(3),
+        child: LinearProgressIndicator(
+          value: frac.clamp(0.0, 1.0),
+          minHeight: 6,
+          backgroundColor: color.withValues(alpha: 0.15),
+          valueColor: AlwaysStoppedAnimation<Color>(color),
+        ),
+      ),
+    );
+  }
+}
+
