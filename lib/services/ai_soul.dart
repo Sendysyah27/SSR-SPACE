@@ -42,17 +42,53 @@ const aiMemoryCap = 20;
 
 /// Kapasitas ringkasan percakapan penting (Memori.md dalam app).
 const aiSummaryCap = 30;
-const aiHistoryTurns = 10;
-const aiHistoryChars = 300;
+const aiHistoryTurns = 16;
+const aiHistoryChars = 400;
 
-/// Blok riwayat chat sesi ini untuk konteks tiap request (maks 10
-/// turn terakhir, teks dipadatkan). Murni agar testable.
+/// Ringkasan bergulir lokal untuk pesan lama (tahap 281C-3):
+/// cuplikan ekstraktif deterministik (tanpa panggilan model) agar
+/// konteks awal sesi tidak hilang saat jendela riwayat bergeser.
+/// Sampel: 3 pesan pertama + 3 terakhir dari daftar lama, tiap pesan
+/// maks 90 char, total maks ~700 char. Murni agar testable.
+String rollingHistoryDigest(List<({bool mine, String text})> older) {
+  if (older.isEmpty) return '';
+  final picks = <({bool mine, String text})>[];
+  if (older.length <= 6) {
+    picks.addAll(older);
+  } else {
+    picks.addAll(older.take(3));
+    picks.addAll(older.skip(older.length - 3));
+  }
+  final buf = StringBuffer();
+  for (final t in picks) {
+    var txt = t.text.replaceAll('\n', ' ').trim();
+    if (txt.length > 90) txt = txt.substring(0, 90);
+    buf.write(t.mine ? 'User: ' : 'AI: ');
+    buf.write(txt);
+    buf.write(' | ');
+  }
+  var out = buf.toString().trim();
+  if (out.length > 700) out = out.substring(0, 700);
+  return out;
+}
+
+/// Blok riwayat chat sesi ini untuk konteks tiap request: maks
+/// [aiHistoryTurns] turn terakhir (teks dipadatkan) + digest pesan
+/// yang lebih lama di depannya. Murni agar testable.
 String chatHistoryBlock(List<({bool mine, String text})> history) {
   if (history.isEmpty) return '';
   final turns = history.length <= aiHistoryTurns
       ? history
       : history.sublist(history.length - aiHistoryTurns);
-  final buf = StringBuffer('Riwayat chat sesi ini:\n');
+  final buf = StringBuffer();
+  if (history.length > aiHistoryTurns) {
+    final digest = rollingHistoryDigest(
+        history.sublist(0, history.length - aiHistoryTurns));
+    if (digest.isNotEmpty) {
+      buf.writeln('Ringkasan pesan lama sesi ini: $digest');
+    }
+  }
+  buf.write('Riwayat chat sesi ini:\n');
   for (final t in turns) {
     var txt = t.text.replaceAll('\n', ' ').trim();
     if (txt.length > aiHistoryChars) {
@@ -67,7 +103,7 @@ String chatHistoryBlock(List<({bool mine, String text})> history) {
 /// Blok konteks disuntik ke tiap prompt: soul + fakta user +
 /// ringkasan percakapan penting (Memori.md dalam app).
 String aiContextBlock(List<String> memory,
-    [List<String> summaries = const []]) {
+    [List<String> summaries = const [], String personaBlock = '']) {
   final buf = StringBuffer(aiSoul);
   if (memory.isNotEmpty) {
     buf.write('\nFakta tentang user:');
@@ -80,6 +116,9 @@ String aiContextBlock(List<String> memory,
     for (final s in summaries.take(aiSummaryCap)) {
       buf.write('\n- $s');
     }
+  }
+  if (personaBlock.isNotEmpty) {
+    buf.write(personaBlock);
   }
   return buf.toString();
 }
@@ -118,7 +157,7 @@ const aiAssistantSoul = 'Kamu Mang AI, asisten analis keuangan '
 /// percakapan penting, TANPA kontrak Mode Catat (aiSoul). Format
 /// seksi sama seperti aiContextBlock.
 String aiAssistantContextBlock(List<String> memory,
-    [List<String> summaries = const []]) {
+    [List<String> summaries = const [], String personaBlock = '']) {
   final buf = StringBuffer(
       'Kamu sedang dalam Mode Asisten (analis), bukan Mode Catat.');
   if (memory.isNotEmpty) {
@@ -132,6 +171,9 @@ String aiAssistantContextBlock(List<String> memory,
     for (final s in summaries.take(aiSummaryCap)) {
       buf.write('\n- $s');
     }
+  }
+  if (personaBlock.isNotEmpty) {
+    buf.write(personaBlock);
   }
   return buf.toString();
 }

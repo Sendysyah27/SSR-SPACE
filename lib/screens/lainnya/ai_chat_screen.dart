@@ -12,6 +12,7 @@ import 'package:ssr_space/services/ai_context.dart';
 import 'package:ssr_space/services/ai_assistant_context.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_memory.dart';
+import 'package:ssr_space/services/ai_persona.dart';
 import 'package:ssr_space/services/ai_chat_parse.dart';
 import 'package:ssr_space/services/ai_soul.dart';
 import 'package:ssr_space/services/app_categories.dart';
@@ -345,6 +346,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
     if (!mounted) return;
     final summaries = await loadAiSummaries();
     if (!mounted) return;
+    final persona = await loadAiPersona();
+    if (!mounted) return;
     // Mode Asisten: rakit snapshot terstruktur (konteks model + sumber
     // angka viz). Hanya bila user mengizinkan akses data (_dataCtx
     // terisi); tanpa izin, asisten menjawab tanpa konteks/viz.
@@ -357,9 +360,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
       if (t.isNotEmpty) asistenCtx = t;
     }
     final asisten = _mode == 'asisten';
+    final pBlock = aiPersonaBlock(persona);
     final ctxBlock = asisten
-        ? aiAssistantContextBlock(memory, summaries)
-        : aiContextBlock(memory, summaries);
+        ? aiAssistantContextBlock(memory, summaries, pBlock)
+        : aiContextBlock(memory, summaries, pBlock);
     final prompt = text.isEmpty
         ? '$ctxBlock\nJelaskan gambar terlampir.'
         : '$ctxBlock\nUser: $text';
@@ -377,7 +381,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     });
     unawaited(_saveSession());
     _toBottom();
-    // Riwayat sesi sebagai konteks (maks 10 turn terakhir).
+    // Riwayat sesi sebagai konteks (16 turn terakhir + digest lama).
     final history = [
       for (final m in _items)
         if (m.mode == _mode)
@@ -510,6 +514,18 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 Text(tr('chat_mem_t'),
                     style: Theme.of(ctx).textTheme.titleMedium),
                 const SizedBox(height: SsrSpace.sm),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.tune_outlined),
+                  title: Text(tr('ai_set_title')),
+                  subtitle: Text(tr('ai_set_sub')),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openPersonaSettings();
+                  },
+                ),
+                const SizedBox(height: SsrSpace.sm),
                 Text(tr('chat_mem_facts_t'),
                     style: Theme.of(ctx).textTheme.titleSmall),
                 if (facts.isEmpty)
@@ -573,6 +589,102 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
   }
 
+  /// Pengaturan personalisasi Mang AI (281C tahap 3): persona, nama
+  /// panggilan, instruksi kustom. Tersimpan di prefs (ai_persona.dart)
+  /// dan berlaku untuk kedua mode mulai pesan berikutnya.
+  Future<void> _openPersonaSettings() async {
+    var prefs = await loadAiPersona();
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(SsrSpace.md),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(tr('ai_set_title'),
+                      style: Theme.of(ctx).textTheme.titleMedium),
+                  const SizedBox(height: SsrSpace.sm),
+                  Text(tr('ai_set_persona'),
+                      style: Theme.of(ctx).textTheme.titleSmall),
+                  const SizedBox(height: SsrSpace.xs),
+                  Wrap(
+                    spacing: SsrSpace.xs,
+                    children: [
+                      for (final e in kAiPersonaStyles.entries)
+                        ChoiceChip(
+                          label: Text(tr('ai_persona_${e.key}')),
+                          selected: prefs.persona == e.key,
+                          onSelected: (_) async {
+                            prefs = prefs.copyWith(persona: e.key);
+                            await saveAiPersona(prefs);
+                            setSheet(() {});
+                          },
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: SsrSpace.sm),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(tr('ai_set_nickname')),
+                    subtitle: Text(prefs.nickname.isEmpty
+                        ? tr('ai_set_empty')
+                        : prefs.nickname),
+                    trailing: const Icon(Icons.edit_outlined),
+                    onTap: () async {
+                      await _editMemoryItem(
+                        ctx,
+                        initial: prefs.nickname,
+                        titleKey: 'ai_set_nickname',
+                        onSave: (v) async {
+                          prefs = prefs.copyWith(nickname: v.trim());
+                          await saveAiPersona(prefs);
+                        },
+                      );
+                      setSheet(() {});
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(tr('ai_set_custom')),
+                    subtitle: Text(prefs.customInstruction.isEmpty
+                        ? tr('ai_set_empty')
+                        : prefs.customInstruction),
+                    trailing: const Icon(Icons.edit_outlined),
+                    onTap: () async {
+                      await _editMemoryItem(
+                        ctx,
+                        initial: prefs.customInstruction,
+                        titleKey: 'ai_set_custom',
+                        onSave: (v) async {
+                          prefs =
+                              prefs.copyWith(customInstruction: v.trim());
+                          await saveAiPersona(prefs);
+                        },
+                      );
+                      setSheet(() {});
+                    },
+                  ),
+                  const SizedBox(height: SsrSpace.sm),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(tr('rcp_raw_close')),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Satu baris ingatan: teks + tombol ubah + hapus.
   Widget _memoryTile(
     BuildContext ctx, {
@@ -614,12 +726,13 @@ class _AiChatScreenState extends State<AiChatScreen> {
     BuildContext ctx, {
     required String initial,
     required Future<void> Function(String) onSave,
+    String titleKey = 'chat_mem_edit',
   }) async {
     final c = TextEditingController(text: initial);
     final ok = await showDialog<bool>(
       context: ctx,
       builder: (dctx) => AlertDialog(
-        title: Text(tr('chat_mem_edit')),
+        title: Text(tr(titleKey)),
         content: TextField(
           controller: c,
           maxLines: 4,

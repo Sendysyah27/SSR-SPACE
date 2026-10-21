@@ -68,4 +68,31 @@ void main() {
     expect(b.contains('Ringkasan percakapan penting'), isTrue);
     expect(b.contains('Untuk mencatat transaksi, balas HANYA'), isFalse);
   });
+
+  test('aiContextBlock sisipkan blok persona di akhir', () {
+    final b = aiContextBlock(
+        ['fakta'], const [], '\nGaya jawab pilihan user: X');
+    expect(b.contains('Gaya jawab pilihan user: X'), isTrue);
+    expect(b.contains('fakta'), isTrue);
+  });
+
+  test('chatHistoryBlock jendela 16 + digest pesan lama', () {
+    final h = [
+      for (var i = 1; i <= 20; i++) (mine: i.isOdd, text: 'pesan nomor $i')
+    ];
+    final b = chatHistoryBlock(h);
+    expect(b.contains('Ringkasan pesan lama sesi ini'), isTrue);
+    expect(b.contains('pesan nomor 1'), isTrue);
+    expect(b.contains('pesan nomor 20'), isTrue);
+  });
+
+  test('chatHistoryBlock pendek tanpa digest', () {
+    final b = chatHistoryBlock([(mine: true, text: 'halo')]);
+    expect(b.contains('Ringkasan pesan lama'), isFalse);
+    expect(b.contains('User: halo'), isTrue);
+  });
+
+  test('rollingHistoryDigest kosong untuk daftar kosong', () {
+    expect(rollingHistoryDigest(const []), '');
+  });
 }
