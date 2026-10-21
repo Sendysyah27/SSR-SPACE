@@ -43,6 +43,7 @@ import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
+import 'package:ssr_space/widgets/typewriter_text.dart';
 
 /// Room chat AI: tanya apa saja (+ lampiran gambar), jawab via provider
 /// aktif. Riwayat chat tersimpan di HP sampai user menghapusnya via
@@ -145,6 +146,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
   /// (referensi untuk action edit_last/delete_last, batch 281).
   SaasTransaction? _lastChatTx;
   int _animFrom = 0;
+
+  /// Balasan Asisten terbaru sesi ini yang dirender progresif ala
+  /// mesin tik (batch 285 tahap A). Null = tidak ada animasi berjalan.
+  _ChatMsg? _freshReply;
 
   /// Kunci prefs arsip riwayat chat (teks saja, maks 50 pesan terakhir).
   /// Session TIDAK dihapus saat keluar room; hanya dihapus lewat menu
@@ -509,6 +514,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           vizData: asisten ? snap : null,
           mode: _mode,
         ));
+        if (asisten) _freshReply = _items.last;
         _sending = false;
       });
     } on AiFailure catch (e) {
@@ -1664,6 +1670,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
                       itemCount: visible.length + (_sending ? 1 : 0),
                       itemBuilder: (_, i) {
                         if (i >= visible.length) {
+                          if (_mode == 'asisten') {
+                            return const Align(
+                              alignment: Alignment.centerLeft,
+                              child: _TypingBubble(),
+                            );
+                          }
                           return const Align(
                             alignment: Alignment.centerLeft,
                             child: Padding(
@@ -1682,7 +1694,15 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                 : CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                            _Bubble(msg: m),
+                            _Bubble(
+                              msg: m,
+                              typewriter: identical(m, _freshReply),
+                              onTypewriterDone: () {
+                                if (mounted && identical(_freshReply, m)) {
+                                  setState(() => _freshReply = null);
+                                }
+                              },
+                            ),
                             if (m.viz != null && m.vizData != null)
                               _VizCard(viz: m.viz!, data: m.vizData!),
                             if (m.action != null)
@@ -1920,8 +1940,42 @@ class _TypingDotsState extends State<_TypingDots>
   }
 }
 
-class _Bubble extends StatelessWidget {  final _ChatMsg msg;
-  const _Bubble({required this.msg});
+/// Bubble pengetikan Mode Asisten (batch 285 tahap A): indikator
+/// mengetik di dalam balon chat (pola _TypingBubble Ollo) selama
+/// menunggu jawaban Asisten. Mode Catat tidak berubah.
+class _TypingBubble extends StatelessWidget {
+  const _TypingBubble();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: SsrSpace.md,
+        vertical: SsrSpace.sm + 2,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const _TypingDots(),
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {
+  final _ChatMsg msg;
+
+  /// Render teks progresif ala mesin tik (balasan Asisten segar,
+  /// batch 285 tahap A).
+  final bool typewriter;
+  final VoidCallback? onTypewriterDone;
+  const _Bubble({
+    required this.msg,
+    this.typewriter = false,
+    this.onTypewriterDone,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1980,11 +2034,21 @@ class _Bubble extends StatelessWidget {  final _ChatMsg msg;
                       ),
                 ),
               ),
-            SelectableText(
-              msg.text,
-              style:
-                  Theme.of(context).textTheme.bodyMedium?.copyWith(color: fg),
-            ),
+            if (typewriter)
+              TypewriterText(
+                text: msg.text,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: fg),
+                onDone: onTypewriterDone,
+              )
+            else
+              SelectableText(
+                msg.text,
+                style:
+                    Theme.of(context).textTheme.bodyMedium?.copyWith(color: fg),
+              ),
           ],
         ),
       ),
