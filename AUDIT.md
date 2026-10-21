@@ -833,6 +833,37 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.82.14+281 (2026-10-21)
+Mang AI paket aksi (batch 281, adaptasi alur Ollo Assistant): chat
+bisa bernavigasi dan mengelola data lewat kartu konfirmasi - tidak
+ada eksekusi senyap. Tanpa migration/dep baru.
+- [AI] Parser ai_chat_parse dibuat lenient: kontrak
+  {"reply","action"} diekstrak dari prosa/fence (pola sama seperti
+  normalisasi server EF v3) sebagai lapis pengaman kedua; fix
+  6b9802a escape backslash di extractContractJson.
+- [AI] Tahap 1 (7d6c7b3): action navigate - model memilih target,
+  app memetakan ke route resmi (kChatNavTargets); target asing
+  ditolak aman (target_invalid, command null), teks tetap tampil.
+- [AI] Tahap 2 (a162c64): action add_wallet (nama unik
+  case-insensitive, wallet_type cash|ewallet|bank, opening_balance
+  bilangan bulat >= 0) + add_category (nama unik, kind in/out hanya
+  keterangan), dieksekusi via kartu konfirmasi.
+- [AI] Tahap 3 (dfbe424): action edit_last + delete_last atas
+  transaksi terakhir yang dicatat via chat pada sesi itu -
+  referensi _lastChatTx ditangkap dari id hasil add() (jalur
+  _saveAction) + pencocokan ketat hasil form (jalur _runAction;
+  ketidakcocokan = tanpa referensi, aman). Edit membuka form
+  editing berisi usulan model (user meninjau + simpan sendiri);
+  hapus WAJIB dialog konfirmasi eksplisit terpisah sebelum
+  delete(). Kontrak ai_soul diperluas + 6 kunci strings baru
+  (ai_cmd_edit_last dkk) + grup tes parser baru (8 tes).
+- [Server] 281A (fe34c3c): EF mang-ai-chat v4 - glm-5.3-flash-free
+  jadi lapis ke-6 VISION_FALLBACKS, file EF repo tersinkron md5
+  identik dengan versi dashboard, AUDIT 280 difinalisasi.
+- [Docs] assets/changelog_id.md diperbarui (penanda versi
+  terpasang + catatan 2.82.14+281).
+- Rilis: CI run pending - diisi setelah hijau.
+
 ## 2.82.13+280 (2026-10-21)
 Mang AI pindah ke server (adaptasi opencode-free-bridge): chat AI +
 scan struk tidak lagi bergantung OpenCode lokal di Termux — siap

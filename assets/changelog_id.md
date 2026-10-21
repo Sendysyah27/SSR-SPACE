@@ -1,6 +1,18 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.13+280.
+Versi terpasang: 2.82.14+281.
+
+## Yang baru di 2.82.14+281
+
+1. Mang AI bisa membuka halaman fitur langsung dari chat — misalnya E-Money NFC, laporan, dompet, dan billing — cukup bilang saja, lalu ketuk tombol di kartu perintahnya.
+2. Mang AI bisa menambah dompet dan kategori baru dari chat, selalu lewat kartu konfirmasi sebelum tersimpan.
+3. Salah catat? Minta Mang AI mengubah atau menghapus transaksi terakhir yang baru dicatat lewat chat — penghapusan selalu minta konfirmasi dulu.
+
+## What's new in 2.82.14+281
+
+1. Mang AI can open app feature pages straight from chat — e.g. E-Money NFC, reports, wallets, and billing — just ask, then tap the button on its command card.
+2. Mang AI can add new wallets and categories from chat, always via a confirmation card before anything is saved.
+3. Recorded something wrong? Ask Mang AI to edit or delete the last transaction recorded via chat — deletion always asks for confirmation first.
 
 ## Yang baru di 2.82.13+280
 
