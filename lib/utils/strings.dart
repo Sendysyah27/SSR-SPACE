@@ -2807,7 +2807,6 @@ const _t = <String, Map<String, String>>{
   },
   'ai_state_retry': {'id': 'Coba lagi', 'en': 'Retry'},
   'ai_state_plan': {'id': 'Lihat Plan', 'en': 'View plans'},
-  'ai_quota_left': {'id': 'Sisa kuota AI', 'en': 'AI quota left'},
   'ai_aset_title': {'id': 'Pengaturan Asisten', 'en': 'Assistant settings'},
   'ai_aset_data': {
     'id': 'Izinkan Asisten membaca data keuangan',
