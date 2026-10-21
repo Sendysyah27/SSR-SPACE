@@ -1,6 +1,18 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.15+282.
+Versi terpasang: 2.82.16+283.
+
+## Yang baru di 2.82.16+283
+
+1. Mang AI sekarang belajar dari koreksimu: kalau kamu mengubah kategori/dompet/jumlah di kartu konfirmasi, Mang AI mengingatnya — merchant yang sama berikutnya langsung disarankan kategori & dompet hasil kebiasaanmu.
+2. Aturan paham catatannya kini bisa diperbarui dari server tanpa update aplikasi, jadi Mang AI bisa makin pintar diam-diam.
+3. Lebih privat: nomor kartu/rekening/telepon yang kamu ketik di chat disamarkan dulu sebelum dikirim ke server AI.
+
+## What's new in 2.82.16+283
+
+1. Mang AI now learns from your corrections: when you change the category/wallet/amount on a confirmation card, Mang AI remembers — the same merchant next time gets your usual category & wallet suggested right away.
+2. Its parsing rules can now be updated from the server without an app update, so Mang AI can quietly get smarter.
+3. More private: card/account/phone numbers you type in chat are masked before being sent to the AI server.
 
 ## Yang baru di 2.82.15+282
 

@@ -833,6 +833,47 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.82.16+283 (2026-10-21)
+Mang AI Lingkar Belajar ala Quick Record Ollo (batch 281D): Mang AI
+belajar dari koreksi user — event koreksi tersimpan & tersinkron,
+alias merchant jadi hint prompt, aturan parse dari server, masking
+PII sisi klien. Migration 28 (manual via dashboard) — app fail-open
+penuh bila belum dijalankan. Kontrak server EF tidak berubah;
+review-first tetap (semua eksekusi lewat kartu konfirmasi).
+- [AI] Tahap 1 (88f8e3c): event koreksi ai_correction.dart —
+  buildCorrectionEvent murni (bandingkan nilai AI vs nilai final
+  di form konfirmasi: tipe/jumlah/dompet/kategori/catatan) ->
+  store prefs ai_correction_events (cap 200) -> syncCorrectionEvents
+  best-effort ke tabel ai_correction_events (migration_28, RLS
+  own, append-only). Jalur _PendingActionCard meneruskan nilai AI
+  asal sebagai pembanding. Tes ai_correction 6 kasus.
+- [AI] Tahap 2 (2692d43): memori alias merchant
+  ai_merchant_alias.dart — normalizeMerchantKey +
+  trigramSimilarity (Jaccard ala pg_trgm, ambang 0.35) +
+  findAliasFor (count tertinggi menang); upsert dari pencatatan
+  terkonfirmasi (form & simpan langsung, selalu nilai final) ke
+  prefs (cap 100) + upsert Supabase user_merchant_aliases; alias
+  yang cocok disuntikkan sebagai PETUNJUK KEBIASAAN USER ke prompt
+  Mode Catat. Tes ai_merchant_alias 11 kasus.
+- [AI] Tahap 3 (7aa08c8): aturan parse dari server
+  ai_parse_rules.dart — config JSON di app_config kunci
+  quick_record_rules (seed migration_28) dibaca via
+  AppConfigService (cache memori 1 jam + cache prefs, fail-open
+  berlapis ke bawaan app); blok ATURAN PARSE DARI SERVER
+  disuntikkan ke prompt Mode Catat. Ubah nilai via SQL Editor =
+  perilaku parse berubah tanpa rilis app. Tes ai_parse_rules
+  5 kasus termasuk fixture override.
+- [AI] Tahap 4 (aebeffe): masking PII ai_pii.dart — pola kartu
+  13-19 digit (polos/berpemisah), konteks rek/kartu 10-12 digit,
+  telepon 08/+62 dimasking di titik kirim _send (prompt, riwayat,
+  konteks data) + teks OCR jalur scan struk. Nominal (termasuk
+  format titik ribuan & miliaran tanpa konteks) TIDAK ikut
+  termasking — diuji eksplisit, total 11 kasus. Bubble lokal tetap
+  menampilkan teks asli user.
+- [Docs] assets/changelog_id.md diperbarui (penanda versi
+  terpasang + catatan 2.82.16+283).
+- Rilis: CI run pending - diisi setelah hijau.
+
 ## 2.82.15+282 (2026-10-21)
 Mang AI Mode Asisten ala Ollo (batch 281C): satu layar chat, dua mode
 terpisah (saklar Catat/Asisten) dengan system prompt, konteks, dan
