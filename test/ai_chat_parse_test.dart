@@ -592,4 +592,104 @@ void main() {
       expect(ok.command?['kind'], 'out');
     });
   });
+
+  group('batch 281: action edit_last + delete_last', () {
+    test('edit_last valid (amount saja) -> command terisi', () {
+      final r = parseChatReply(
+        '{"reply":"Siap, diubah ya.","action":'
+        '{"type":"edit_last","amount":20000}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.command, isNotNull);
+      expect(r.command!['type'], 'edit_last');
+      expect(r.command!['amount'], 20000);
+      expect(r.action, isNull);
+      expect(r.reason, isNull);
+    });
+
+    test('edit_last kanonik: kategori + dompet dari daftar, note di-trim', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"edit_last",'
+        '"category":"makanan","wallet":"dana","note":"  kopi susu  "}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.command!['category'], 'Makanan');
+      expect(r.command!['wallet'], 'DANA');
+      expect(r.command!['note'], 'kopi susu');
+    });
+
+    test('edit_last tanpa field -> edit_kosong', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"edit_last"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.command, isNull);
+      expect(r.reason, 'edit_kosong');
+    });
+
+    test('edit_last amount tak valid -> amount_invalid', () {
+      for (final v in ['0', '-5', '12.5']) {
+        final r = parseChatReply(
+          '{"reply":"Siap.","action":{"type":"edit_last","amount":$v}}',
+          wallets: _wallets,
+          categories: _cats,
+        );
+        expect(r.command, isNull, reason: v);
+        expect(r.reason, 'amount_invalid', reason: v);
+      }
+    });
+
+    test('edit_last kategori/dompet asing -> tidak_cocok', () {
+      final badCat = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"edit_last","category":"Hiburan"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(badCat.command, isNull);
+      expect(badCat.reason, 'kategori_tidak_cocok');
+      final badWal = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"edit_last","wallet":"BRI"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(badWal.command, isNull);
+      expect(badWal.reason, 'wallet_tidak_cocok');
+    });
+
+    test('edit_last note kosong diterima (hapus catatan)', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"edit_last","note":""}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.command, isNotNull);
+      expect(r.command!['note'], '');
+    });
+
+    test('edit_last note bukan string -> note_invalid', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"edit_last","note":5}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.command, isNull);
+      expect(r.reason, 'note_invalid');
+    });
+
+    test('delete_last valid -> command hanya berisi type', () {
+      final r = parseChatReply(
+        '{"reply":"Siap, dihapus ya.","action":{"type":"delete_last"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.command, isNotNull);
+      expect(r.command!['type'], 'delete_last');
+      expect(r.command!.length, 1);
+      expect(r.action, isNull);
+      expect(r.reason, isNull);
+    });
+  });
 }

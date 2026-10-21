@@ -245,7 +245,13 @@ const kChatNavTargets = <String>{
 };
 
 /// Tipe action perintah non-transaksi yang dikenal (batch 281).
-const kChatCommandTypes = <String>{'navigate', 'add_wallet', 'add_category'};
+const kChatCommandTypes = <String>{
+  'navigate',
+  'add_wallet',
+  'add_category',
+  'edit_last',
+  'delete_last',
+};
 
 /// Tipe dompet yang dikenal app (form dompet manual + WalletService).
 const kChatWalletTypes = <String>{'cash', 'ewallet', 'bank', 'investment'};
@@ -261,6 +267,11 @@ const kChatWalletTypes = <String>{'cash', 'ewallet', 'bank', 'investment'};
 ///   kategori ('kategori_sudah_ada'), kind in/out bila diisi
 ///   ('kind_invalid'; skema kategori app tak membedakan arah - kind
 ///   hanya keterangan, tidak disimpan).
+/// - edit_last: minimal satu field berubah ('edit_kosong'); field yang
+///   diisi divalidasi seperti action tx (amount int > 0, kategori dari
+///   daftar, dompet fuzzy-match, note string - boleh '' = hapus catatan).
+/// - delete_last: tanpa field; selalu valid di parser (ketersediaan
+///   transaksi terakhir dicek eksekutor di layar).
 /// Murni; tak pernah throw.
 String? validateChatCommandReason(
   dynamic raw, {
@@ -304,6 +315,45 @@ String? validateChatCommandReason(
     if (kind != null && kind != 'in' && kind != 'out') return 'kind_invalid';
     return null;
   }
+  if (type == 'edit_last') {
+    final hasAmount = m['amount'] != null;
+    final hasCategory = m['category'] != null;
+    final hasWallet = m['wallet'] != null;
+    final hasNote = m['note'] != null;
+    if (!hasAmount && !hasCategory && !hasWallet && !hasNote) {
+      return 'edit_kosong';
+    }
+    if (hasAmount) {
+      final a = m['amount'];
+      if (a is! int || a <= 0) return 'amount_invalid';
+    }
+    if (hasCategory) {
+      final c = m['category'];
+      if (c is! String || c.trim().isEmpty) return 'kategori_kosong';
+      if (categories.isNotEmpty) {
+        var hit = false;
+        for (final k in categories) {
+          if (k.toLowerCase() == c.trim().toLowerCase()) {
+            hit = true;
+            break;
+          }
+        }
+        if (!hit) return 'kategori_tidak_cocok';
+      }
+    }
+    if (hasWallet) {
+      final w = m['wallet'];
+      if (w is! String || w.trim().isEmpty) return 'wallet_kosong';
+      if (wallets.isNotEmpty && matchWalletName(w.trim(), wallets) == null) {
+        return 'wallet_tidak_cocok';
+      }
+    }
+    if (hasNote && m['note'] is! String) return 'note_invalid';
+    return null;
+  }
+  if (type == 'delete_last') {
+    return null;
+  }
   return 'type_invalid';
 }
 
@@ -339,6 +389,36 @@ Map<String, dynamic>? validateChatCommand(
       'name': (m['name'] as String).trim(),
       if (kind is String) 'kind': kind,
     };
+  }
+  if (type == 'edit_last') {
+    final out = <String, dynamic>{'type': 'edit_last'};
+    final a = m['amount'];
+    if (a is int) out['amount'] = a;
+    final c = m['category'];
+    if (c is String) {
+      var cat = c.trim();
+      for (final k in categories) {
+        if (k.toLowerCase() == cat.toLowerCase()) {
+          cat = k;
+          break;
+        }
+      }
+      out['category'] = cat;
+    }
+    final w = m['wallet'];
+    if (w is String) {
+      var wal = w.trim();
+      if (wallets.isNotEmpty) {
+        wal = matchWalletName(wal, wallets) ?? wal;
+      }
+      out['wallet'] = wal;
+    }
+    final n = m['note'];
+    if (n is String) out['note'] = n.trim();
+    return out;
+  }
+  if (type == 'delete_last') {
+    return {'type': 'delete_last'};
   }
   return null;
 }

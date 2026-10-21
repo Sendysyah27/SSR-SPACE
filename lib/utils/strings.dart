@@ -2812,6 +2812,27 @@ const _t = <String, Map<String, String>>{
     'id': 'Kategori itu sudah ada.',
     'en': 'That category already exists.',
   },
+  'ai_cmd_edit_last': {
+    'id': 'Ubah transaksi terakhir',
+    'en': 'Edit last transaction',
+  },
+  'ai_cmd_delete_last': {
+    'id': 'Hapus transaksi terakhir',
+    'en': 'Delete last transaction',
+  },
+  'ai_cmd_no_last': {
+    'id': 'Belum ada transaksi yang dicatat lewat chat pada sesi ini.',
+    'en': 'No transaction has been recorded via chat in this session yet.',
+  },
+  'ai_del_last_t': {
+    'id': 'Hapus transaksi terakhir?',
+    'en': 'Delete last transaction?',
+  },
+  'ai_del_last_m': {
+    'id': 'Transaksi terakhir yang dicatat lewat chat akan dihapus permanen.',
+    'en': 'The last transaction recorded via chat will be permanently deleted.',
+  },
+  'ai_del_ok': {'id': 'Hapus', 'en': 'Delete'},
   'ai_tx_save': {'id': 'Simpan', 'en': 'Save'},
   'ai_save_fail': {'id': 'Gagal menyimpan.', 'en': 'Failed to save.'},
   'ai_save_no_org': {

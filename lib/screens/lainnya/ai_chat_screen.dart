@@ -21,6 +21,7 @@ import 'package:ssr_space/services/recurring_bills.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
+import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/ai_quota.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
@@ -89,6 +90,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
   String? _pendingMime;
   String _dataCtx = '';
   String _providerId = 'server';
+
+  /// Transaksi terakhir yang berhasil dicatat lewat chat pada sesi ini
+  /// (referensi untuk action edit_last/delete_last, batch 281).
+  SaasTransaction? _lastChatTx;
   int _animFrom = 0;
 
   /// Kunci prefs arsip riwayat chat (teks saja, maks 50 pesan terakhir).
@@ -701,6 +706,26 @@ class _AiChatScreenState extends State<AiChatScreen> {
       initialNote: d.note,
     );
     if (!mounted || !ok) return;
+    // Tangkap referensi transaksi hasil form untuk edit_last /
+    // delete_last: baris terbaru HARI INI yang cocok persis (tipe,
+    // nominal, kategori, catatan) dan bukan hasil auto-track. User
+    // bisa mengubah isi form -> tak cocok = tak ada referensi (aman).
+    try {
+      final orgId2 = await activeOrgId();
+      if (orgId2.isNotEmpty) {
+        final rows = await TransactionService().list(orgId2);
+        final today = txWhen(DateTime.now()).date;
+        for (final t in rows) {
+          if (t.sourcePackage != null) continue;
+          if (t.date != today) continue;
+          if (t.type != d.type || t.amount != d.amount) continue;
+          if ((t.category ?? '') != (d.category ?? '')) continue;
+          if ((t.note ?? '') != (d.note ?? '')) continue;
+          _lastChatTx = t;
+          break;
+        }
+      }
+    } catch (_) {}
     final sign = d.type == 'in' ? '+' : '-';
     setState(() {
       _items.add(_ChatMsg(
@@ -748,7 +773,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     }
     try {
       final when = txWhen(DateTime.now());
-      await TransactionService().add(
+      final newId = await TransactionService().add(
         orgId: orgId,
         type: d.type,
         amount: d.amount,
@@ -758,6 +783,28 @@ class _AiChatScreenState extends State<AiChatScreen> {
         date: when.date,
         createdAt: when.createdAt,
       );
+      // Referensi untuk edit_last/delete_last (batch 281): snapshot
+      // lokal langsung; segarkan best-effort dari daftar (kode TX dll).
+      _lastChatTx = SaasTransaction(
+        id: newId,
+        orgId: orgId,
+        type: d.type,
+        amount: d.amount,
+        walletId: walletId,
+        category: d.category,
+        note: d.note,
+        date: when.date,
+        createdAt: when.createdAt,
+      );
+      try {
+        final rows = await TransactionService().list(orgId);
+        for (final t in rows) {
+          if (t.id == newId) {
+            _lastChatTx = t;
+            break;
+          }
+        }
+      } catch (_) {}
     } catch (e) {
       // Gagal simpan aksi AI: user diberi tahu via bubble error (bukan silent).
       debugPrint('[ai_chat] simpan aksi gagal: $e');
@@ -796,6 +843,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
         return '${tr('ai_cmd_add_wallet')}: ${cmd['name'] as String? ?? ''}';
       case 'add_category':
         return '${tr('ai_cmd_add_category')}: ${cmd['name'] as String? ?? ''}';
+      case 'edit_last':
+        return tr('ai_cmd_edit_last');
+      case 'delete_last':
+        return tr('ai_cmd_delete_last');
       default:
         return tr('ai_run');
     }
@@ -818,9 +869,33 @@ class _AiChatScreenState extends State<AiChatScreen> {
         if (kind == 'in') return tr('tx_in');
         if (kind == 'out') return tr('tx_out');
         return null;
+      case 'edit_last':
+        final last = _lastChatTx;
+        if (last == null) return tr('ai_cmd_no_last');
+        final parts = <String>[_lastTxLabel(last)];
+        final changes = <String>[];
+        if (cmd['amount'] is int) changes.add('${cmd['amount']}');
+        if (cmd['category'] is String) {
+          changes.add(cmd['category'] as String);
+        }
+        if (cmd['wallet'] is String) changes.add(cmd['wallet'] as String);
+        if (cmd['note'] is String) changes.add(cmd['note'] as String);
+        if (changes.isNotEmpty) parts.add(changes.join(' \u00b7 '));
+        return parts.join(' \u2192 ');
+      case 'delete_last':
+        final last = _lastChatTx;
+        if (last == null) return tr('ai_cmd_no_last');
+        return _lastTxLabel(last);
       default:
         return null;
     }
+  }
+
+  /// Ringkasan satu baris transaksi terakhir dari chat.
+  String _lastTxLabel(SaasTransaction t) {
+    final sign = t.type == 'in' ? '+' : '-';
+    final cat = t.category == null ? '' : ' \u00b7 ${t.category}';
+    return '$sign${t.amount.toStringAsFixed(0)}$cat';
   }
 
   String _walletTypeLabel(String t) {
@@ -837,8 +912,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
   }
 
   /// Label tombol utama kartu perintah (null = label bawaan).
-  String? _commandRunLabel(Map<String, dynamic> cmd) =>
-      cmd['type'] == 'navigate' ? tr('ai_open') : null;
+  String? _commandRunLabel(Map<String, dynamic> cmd) {
+    if (cmd['type'] == 'navigate') return tr('ai_open');
+    if (cmd['type'] == 'delete_last') return tr('ai_del_ok');
+    return null;
+  }
 
   String _navLabel(String target) {
     switch (target) {
@@ -903,7 +981,113 @@ class _AiChatScreenState extends State<AiChatScreen> {
       case 'add_category':
         await _runAddCategory(cmd);
         break;
+      case 'edit_last':
+        await _runEditLast(cmd);
+        break;
+      case 'delete_last':
+        await _runDeleteLast();
+        break;
     }
+  }
+
+  /// Ubah transaksi terakhir dari chat: buka form edit (mode editing)
+  /// dengan usulan perubahan model diterapkan ke salinan transaksi;
+  /// user meninjau + menyimpan sendiri di form (update by id di sheet).
+  Future<void> _runEditLast(Map<String, dynamic> cmd) async {
+    final last = _lastChatTx;
+    if (last == null) {
+      _commandBubble(tr('ai_cmd_no_last'), isError: true);
+      return;
+    }
+    var walletId = last.walletId;
+    final walletName = cmd['wallet'] as String?;
+    if (walletName != null) {
+      try {
+        final ws = await WalletService().list(last.orgId);
+        final hit = matchWalletName(
+          walletName,
+          [for (final w in ws) w.name],
+        );
+        if (hit != null) {
+          for (final w in ws) {
+            if (w.name == hit) walletId = w.id;
+          }
+        }
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    final edited = SaasTransaction(
+      id: last.id,
+      orgId: last.orgId,
+      type: last.type,
+      amount: (cmd['amount'] as int?)?.toDouble() ?? last.amount,
+      walletId: walletId,
+      toWalletId: last.toWalletId,
+      category: (cmd['category'] as String?) ?? last.category,
+      note: cmd.containsKey('note') ? (cmd['note'] as String?) : last.note,
+      date: last.date,
+      code: last.code,
+      createdAt: last.createdAt,
+      sourcePackage: last.sourcePackage,
+      sourceHash: last.sourceHash,
+      createdBy: last.createdBy,
+    );
+    final ok = await openTxInputSheet(context, editing: edited);
+    if (!mounted || !ok) return;
+    try {
+      final rows = await TransactionService().list(last.orgId);
+      var refreshed = false;
+      for (final t in rows) {
+        if (t.id == last.id) {
+          _lastChatTx = t;
+          refreshed = true;
+          break;
+        }
+      }
+      if (!refreshed) _lastChatTx = edited;
+    } catch (_) {
+      _lastChatTx = edited;
+    }
+    _commandBubble('Transaksi terakhir diubah \u2713');
+  }
+
+  /// Hapus transaksi terakhir dari chat: WAJIB dialog konfirmasi
+  /// eksplisit terpisah sebelum delete() dipanggil (bukan sekali tap).
+  Future<void> _runDeleteLast() async {
+    final last = _lastChatTx;
+    if (last == null) {
+      _commandBubble(tr('ai_cmd_no_last'), isError: true);
+      return;
+    }
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('ai_del_last_t')),
+        content: Text(
+          '${tr('ai_del_last_m')}\n\n${_lastTxLabel(last)}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(tr('ai_cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(tr('ai_del_ok')),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirm != true) return;
+    try {
+      await TransactionService().delete(last.id, last.orgId);
+    } catch (e) {
+      debugPrint('[ai_chat] hapus transaksi terakhir gagal: $e');
+      _commandBubble(tr('ai_save_fail'), isError: true);
+      return;
+    }
+    _lastChatTx = null;
+    _commandBubble('Transaksi terakhir dihapus \u2713');
   }
 
   /// Bubble hasil perintah (sukses/gagal) sebagai pesan Mang AI.
@@ -1099,7 +1283,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 ),
               );
               if (ok == true && mounted) {
-                setState(() => _items.clear());
+                setState(() {
+                  _items.clear();
+                  _lastChatTx = null;
+                });
                 unawaited(_clearSession());
               }
             },
