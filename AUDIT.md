@@ -864,7 +864,7 @@ Tanpa migration/dep baru; kontrak server EF tidak berubah.
   ~700 char, tanpa panggilan model). Tes ai_soul +4, persona +3.
 - [Docs] assets/changelog_id.md diperbarui (penanda versi
   terpasang + catatan 2.82.15+282).
-- Rilis: CI run pending - diisi setelah hijau.
+- Rilis: CI run 39565292453 (build-apk) SUCCESS — hijau.
 
 ## 2.82.14+281 (2026-10-21)
 Mang AI paket aksi (batch 281, adaptasi alur Ollo Assistant): chat
