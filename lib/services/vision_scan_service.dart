@@ -126,7 +126,7 @@ Future<({ReceiptData data, String provider, String? category})>
       final r = await aiChatViaCli(
         'Uraikan struk pada gambar terlampir.',
         imageBytes: bytes,
-        mimeType: mime,
+        mimeType: mimeType,
         system: system,
         forceLocal: true,
         kind: 'receipt',
