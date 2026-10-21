@@ -92,16 +92,16 @@ Future<List<AssistantFeedback>> loadAssistantFeedback() async {
   try {
     final p = await SharedPreferences.getInstance();
     final raw = p.getString(_kFeedback);
-    if (raw == null || raw.isEmpty) return const [];
+    if (raw == null || raw.isEmpty) return <AssistantFeedback>[];
     final d = jsonDecode(raw);
-    if (d is! List) return const [];
+    if (d is! List) return <AssistantFeedback>[];
     return [
       for (final e in d)
         if (AssistantFeedback.fromJson(e) != null)
           AssistantFeedback.fromJson(e)!,
     ];
   } catch (_) {
-    return const [];
+    return <AssistantFeedback>[];
   }
 }
 

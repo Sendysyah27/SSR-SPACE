@@ -6,6 +6,8 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/ai_viz_card.dart';
 
 const _snap = AssistantSnapshot(
+  wallets: [(name: 'Tunai', balance: 75000)],
+  totalBalance: 75000,
   monthIn: 100000,
   monthOut: 60000,
   prevMonthIn: 80000,
