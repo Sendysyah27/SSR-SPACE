@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/scan_draft_store.dart';
-import 'package:ssr_space/theme/dribbble_tokens.dart';
+import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/entry/receipt_draft_review.dart';
 
