@@ -1,11 +1,15 @@
-// Parser + prompt scan struk via OpenCode lokal.
+// Parser + prompt scan struk via Mang AI server.
 //
 // File SENGAJA hanya import dart:convert supaya murni dan mudah dites
 // (`flutter test`). Uang = int (rupiah). Tidak ada log data di sini.
 //
-// Format model: TEKS BARIS (bukan JSON) untuk daftar item — JSON rapuh
-// untuk LLM (1 karakter salah = semua gagal). Header tetap validasi ketat,
-// item toleran: baris rusak -> dilewati saja.
+// Batch 284 tahap E: jalur receipt kini SATU parser JSON. EF
+// mang-ai-chat menormalisasi keluaran model (JSON berantakan /
+// format baris lama) jadi JSON ketat {merchant, date, total,
+// category, items[]} sebelum diteruskan ke klien; parser format
+// baris dipensiunkan. Prompt lengkap + daftar kategori dirakit EF
+// dari DB; klien hanya mengirim prompt JSON ringkas tanpa kategori
+// (scanReceiptJsonPrompt).
 
 import 'dart:convert';
 
@@ -57,175 +61,63 @@ class ReceiptScanResult {
 /// Batas item yang disimpan terstruktur (di atasnya disingkat).
 const scanItemCap = 100;
 
-/// System prompt untuk scan struk: model HARUS membalas teks baris
-/// dengan format persis, tanpa markdown, tanpa penjelasan. Dibuat di Dart
-/// (bukan DEFAULT_SYSTEM Kotlin yang untuk chat).
-///
-/// Format baris (bukan JSON): satu karakter salah di satu baris tidak
-/// menggugurkan seluruh hasil — baris rusak dilewati saja.
-String scanReceiptSystemPrompt(List<String> categories) {
-  final cats = categories.map((c) => c.trim()).where((c) => c.isNotEmpty).join(', ');
-  return 'Kamu pengurai struk belanja Indonesia. Baca gambar struk dengan teliti '
-      'dari atas sampai bawah. Balas HANYA teks dengan format persis seperti contoh '
-      'ini, tanpa markdown, tanpa penjelasan, tanpa teks lain:\n'
-      'MERCHANT: Nama Gerai\n'
-      'DATE: 2026-09-08\n'
-      'TOTAL: 16000\n'
-      'CATEGORY: Makanan\n'
-      'ITEMS:\n'
-      'Racik Bumbu Sayur Asem 33gr | 1 | 1700\n'
-      'Sasa Santan Kelapa Cair 65ml | 1 | 4500\n'
-      'Aturan:\n'
-      '- MERCHANT: nama gerai, atau kosong bila tak ada.\n'
-      '- DATE: tanggal transaksi format YYYY-MM-DD.\n'
-      '- TOTAL: GRAND TOTAL yang dibayar (SETELAH diskon), integer murni dalam '
-      'rupiah (contoh 16000).\n'
-      '- CATEGORY: harus persis salah satu dari: $cats.\n'
-      '- ITEMS: SEMUA baris produk dari atas sampai bawah struk, lengkap jangan '
-      'diringkas. Tiap baris format persis: nama produk | jumlah pcs | harga TOTAL '
-      'baris itu (qty x harga satuan) dalam rupiah integer.\n'
-      '- Abaikan baris subtotal/pajak/diskon/pembulatan/tunai/kembalian/metode '
-      'bayar (bukan produk).\n'
-      '- Jangan karang angka bila ragu; baris yang ragu boleh dilewati.\n'
-      '- Jangan pakai tool.';
+/// System prompt ringkas scan struk sisi klien (batch 284 tahap E):
+/// TANPA daftar kategori — kategori dibaca & prompt lengkap dirakit
+/// EF dari DB (prompt server memakai format baris + normalisasi
+/// JSON di EF). Prompt klien ini jaring pengaman kompatibilitas:
+/// EF lama meneruskannya apa adanya (model tetap diminta JSON
+/// ketat), EF baru menggantinya dengan prompt server.
+String scanReceiptJsonPrompt() {
+  return 'Kamu pengurai struk belanja Indonesia. Baca struk dengan teliti '
+      'dari atas sampai bawah. Balas HANYA JSON valid tanpa markdown, '
+      'tanpa penjelasan, dengan format persis: '
+      '{"merchant":"Nama Gerai","date":"YYYY-MM-DD","total":16000,'
+      '"category":"Makanan","items":[{"name":"Produk","qty":1,"price":1700}]}. '
+      'Aturan: total = GRAND TOTAL yang dibayar (SETELAH diskon), integer '
+      'murni rupiah; category = nama kategori pengeluaran yang paling '
+      'sesuai; items = SEMUA baris produk dari atas sampai bawah, lengkap '
+      'jangan diringkas, price = harga TOTAL baris itu (qty x harga '
+      'satuan) dalam rupiah integer; abaikan baris subtotal/pajak/diskon/'
+      'pembulatan/tunai/kembalian/metode bayar (bukan produk); jangan '
+      'karang angka bila ragu; jangan pakai tool.';
 }
 
-/// Prompt varian teks-OCR (fallback bila model buta gambar).
-String scanReceiptOcrPrompt(String ocrText, List<String> categories) {
-  final capped = ocrText.length <= 4000 ? ocrText : ocrText.substring(0, 4000);
-  return '${scanReceiptSystemPrompt(categories)}\nTEKS OCR STRUK:\n$capped';
-}
-
-/// Format baris model -> [ReceiptScanResult] atau null bila header tak valid.
-///
-/// Validasi ketat (header):
-/// - TOTAL HARUS int > 0 (toleran format "115.500"/"Rp 115500" -> 115500)
-/// - DATE HARUS YYYY-MM-DD dan tanggal kalender valid
-/// - CATEGORY HARUS cocok (tak sensitif huruf-besar) dengan [categories]
-/// - MERCHANT opsional
-///
-/// Toleran (item): tiap baris `nama | qty | harga`; baris rusak dilewati.
-/// Maks [scanItemCap] item; selebihnya dihitung di [truncatedItems].
-ReceiptScanResult? parseReceiptScanText(String raw, List<String> categories) {
-  var s = raw.trim();
-  if (s.isEmpty) return null;
-  // Buang pagar markdown bila model membungkus jawaban.
-  s = s.replaceAll(RegExp(r'^```(\w+)?\s*'), '');
-  s = s.replaceAll(RegExp(r'\s*```$'), '');
-  final lines = s
-      .split(RegExp(r'\r?\n'))
-      .map((l) => l.trim())
-      .where((l) => l.isNotEmpty)
-      .toList();
-  if (lines.isEmpty) return null;
-
-  String? merchant;
-  String? dateStr;
-  int? total;
-  String? categoryRaw;
-
-  var i = 0;
-  for (; i < lines.length; i++) {
-    final l = lines[i];
-    if (l.toUpperCase() == 'ITEMS:') {
-      i++;
-      break;
-    }
-    final colon = l.indexOf(':');
-    if (colon <= 0) continue;
-    final key = l.substring(0, colon).trim().toUpperCase();
-    final val = l.substring(colon + 1).trim();
-    switch (key) {
-      case 'MERCHANT':
-        merchant = val.isEmpty ? null : val;
-        break;
-      case 'DATE':
-        dateStr = val;
-        break;
-      case 'TOTAL':
-        // Toleran: "115.500", "Rp 115500", "115500" -> 115500.
-        final digits = val.replaceAll(RegExp(r'[^0-9]'), '');
-        total = digits.isEmpty ? null : int.tryParse(digits);
-        break;
-      case 'CATEGORY':
-        categoryRaw = val;
-        break;
+/// Ekstrak substring objek JSON pertama yang kurungnya seimbang
+/// (sadar string) dari [s]; null bila tak ada / tak seimbang.
+String? _extractJsonObject(String s) {
+  final start = s.indexOf('{');
+  if (start < 0) return null;
+  var depth = 0;
+  var inStr = false;
+  var esc = false;
+  for (var i = start; i < s.length; i++) {
+    final c = s[i];
+    if (inStr) {
+      if (esc) {
+        esc = false;
+      } else if (c == '\\') {
+        esc = true;
+      } else if (c == '"') {
+        inStr = false;
+      }
+    } else {
+      if (c == '"') {
+        inStr = true;
+      } else if (c == '{') {
+        depth++;
+      } else if (c == '}') {
+        depth--;
+        if (depth == 0) return s.substring(start, i + 1);
+      }
     }
   }
-
-  // total: integer murni > 0.
-  if (total == null || total <= 0) return null;
-
-  // date: format + tanggal kalender valid (cek round-trip).
-  if (dateStr == null) return null;
-  final ds = dateStr.trim();
-  if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(ds)) return null;
-  final dt = DateTime.tryParse(ds);
-  if (dt == null) return null;
-  final back = '${dt.year.toString().padLeft(4, '0')}-'
-      '${dt.month.toString().padLeft(2, '0')}-'
-      '${dt.day.toString().padLeft(2, '0')}';
-  if (back != ds) return null;
-
-  // category: harus ada di daftar app (tak sensitif huruf).
-  if (categoryRaw == null) return null;
-  final ct = categoryRaw.trim().toLowerCase();
-  if (ct.isEmpty) return null;
-  String? canonical;
-  for (final c in categories) {
-    if (c.trim().toLowerCase() == ct) {
-      canonical = c.trim();
-      break;
-    }
-  }
-  if (canonical == null || canonical.isEmpty) return null;
-
-  // items: toleran, baris rusak -> dilewati.
-  final scanItems = <ReceiptScanItem>[];
-  var truncated = 0;
-  for (; i < lines.length; i++) {
-    final l = lines[i];
-    // Model kadang menulis penanda singkatan sendiri -> abaikan.
-    if (l.startsWith('...')) continue;
-    final parts = l.split('|');
-    if (parts.length < 3) continue;
-    final priceDigits =
-        parts.last.trim().replaceAll(RegExp(r'[^0-9]'), '');
-    final price = priceDigits.isEmpty ? null : int.tryParse(priceDigits);
-    if (price == null || price < 0) continue;
-    final qtyDigits = parts[parts.length - 2]
-        .trim()
-        .replaceAll(RegExp(r'[^0-9]'), '');
-    var qty = int.tryParse(qtyDigits) ?? 1;
-    if (qty <= 0 || qty > 10000) qty = 1;
-    // Nama = semua segmen sebelum qty (nama boleh mengandung '|').
-    var name = parts.sublist(0, parts.length - 2).join('|').trim();
-    if (name.isEmpty) continue;
-    if (name.length > 120) name = name.substring(0, 120);
-    if (scanItems.length >= scanItemCap) {
-      truncated++;
-      continue;
-    }
-    scanItems.add(ReceiptScanItem(name: name, qty: qty, price: price));
-  }
-
-  if (merchant != null) {
-    final mt = merchant.trim();
-    merchant = mt.isEmpty ? null : (mt.length <= 120 ? mt : mt.substring(0, 120));
-  }
-
-  return ReceiptScanResult(
-    merchant: merchant,
-    date: ds,
-    total: total,
-    category: canonical,
-    items: scanItems,
-    truncatedItems: truncated,
-  );
+  return null;
 }
 
 /// JSON mentah model -> [ReceiptScanResult] atau null bila tak valid.
-/// Dipertahankan sebagai fallback bila model membalas format JSON lama.
+/// Parser TUNGGAL jalur receipt sejak tahap E (keluaran EF sudah
+/// dinormalisasi JSON ketat; ekstraksi objek seimbang jadi jaring
+/// pengaman untuk bungkus prosa/fence sisa).
 ///
 /// Validasi ketat:
 /// - total HARUS int > 0 (tolak 0, negatif, double, string)
@@ -243,7 +135,13 @@ ReceiptScanResult? parseReceiptScanJson(String raw, List<String> categories) {
   try {
     decoded = jsonDecode(s);
   } catch (_) {
-    return null;
+    final inner = _extractJsonObject(s);
+    if (inner == null) return null;
+    try {
+      decoded = jsonDecode(inner);
+    } catch (_) {
+      return null;
+    }
   }
   if (decoded is! Map) return null;
   final m = Map<String, dynamic>.from(decoded);

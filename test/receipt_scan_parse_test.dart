@@ -129,18 +129,47 @@ void main() {
     });
   });
 
-  group('scanReceiptSystemPrompt', () {
-    test('memuat kunci baris dan daftar kategori', () {
-      final p = scanReceiptSystemPrompt(_cats);
-      expect(p.contains('MERCHANT:'), isTrue);
-      expect(p.contains('TOTAL:'), isTrue);
-      expect(p.contains('Makanan'), isTrue);
+  group('scanReceiptJsonPrompt (tahap E)', () {
+    test('meminta JSON ketat; daftar kategori TIDAK disuntikkan', () {
+      final p = scanReceiptJsonPrompt();
+      expect(p.contains('"total"'), isTrue);
+      expect(p.contains('"items"'), isTrue);
+      expect(p.contains('Transportasi'), isFalse);
+      expect(p.contains('Pulsa & Internet'), isFalse);
+    });
+  });
+
+  group('parseReceiptScanJson fixture EF (tahap E)', () {
+    test('JSON ketat keluaran EF terparse penuh', () {
+      final r = parseReceiptScanJson(
+        '{"merchant":"Indomaret","date":"2026-10-21","total":48500,'
+        '"category":"Belanja","items":[{"name":"Susu UHT 1L","qty":1,"price":21000},'
+        '{"name":"Roti Tawar","qty":1,"price":27500}]}',
+        _cats,
+      );
+      expect(r, isNotNull);
+      expect(r!.total, 48500);
+      expect(r.items.length, 2);
     });
 
-    test('meminta daftar item lengkap (bukan ringkasan)', () {
-      final p = scanReceiptSystemPrompt(_cats);
-      expect(p.contains('ITEMS:'), isTrue);
-      expect(p.contains('SEMUA baris produk'), isTrue);
+    test('keluaran berantakan: prosa + fence tetap terbaca (ekstraksi)', () {
+      final r = parseReceiptScanJson(
+        'Berikut hasilnya:\n```json\n{"merchant":"A","date":"2026-10-01",'
+        '"total":5000,"category":"Belanja","items":[]}\n```\nsemoga membantu',
+        _cats,
+      );
+      expect(r, isNotNull);
+      expect(r!.total, 5000);
+    });
+
+    test('JSON pretty multi-baris terparse', () {
+      final r = parseReceiptScanJson(
+        '{\n  "merchant": "A",\n  "date": "2026-10-01",\n  "total": 7000,\n'
+        '  "category": "Makanan",\n  "items": []\n}',
+        _cats,
+      );
+      expect(r, isNotNull);
+      expect(r!.total, 7000);
     });
   });
 
@@ -192,96 +221,20 @@ void main() {
     });
   });
 
-  group('parseReceiptScanText (format baris)', () {
-    const txt = 'MERCHANT: Toko ABC\n'
-        'DATE: 2026-09-08\n'
-        'TOTAL: 16000\n'
-        'CATEGORY: Makanan\n'
-        'ITEMS:\n'
-        'Racik Bumbu Sayur Asem 33gr | 1 | 1700\n'
-        'Sasa Santan Kelapa Cair 65ml | 2 | 9000\n';
-
-    test('format normal -> parse benar', () {
-      final r = parseReceiptScanText(txt, _cats);
-      expect(r, isNotNull);
-      expect(r!.merchant, 'Toko ABC');
-      expect(r.date, '2026-09-08');
-      expect(r.total, 16000);
-      expect(r.category, 'Makanan');
-      expect(r.items.length, 2);
-      expect(r.items[0].name, 'Racik Bumbu Sayur Asem 33gr');
-      expect(r.items[0].qty, 1);
-      expect(r.items[0].price, 1700);
-      expect(r.items[1].qty, 2);
-    });
-
-    test('baris rusak di tengah -> dilewati, lainnya lolos', () {
-      final r = parseReceiptScanText(
-        'MERCHANT: X\nDATE: 2026-10-01\nTOTAL: 5000\nCATEGORY: Belanja\n'
-        'ITEMS:\n'
-        'Barang A | 1 | 2000\n'
-        'BARIS RUSAK TANPA PIPA\n'
-        'Barang B | 1 | 3000\n'
-        'Barang C | | \n',
-        _cats,
+  group('receiptDetailText', () {
+    test('ada marker + total', () {
+      const r = ReceiptScanResult(
+        merchant: 'Toko ABC',
+        date: '2026-09-08',
+        total: 16000,
+        category: 'Makanan',
+        items: [
+          ReceiptScanItem(
+              name: 'Racik Bumbu Sayur Asem 33gr', qty: 1, price: 1700),
+          ReceiptScanItem(
+              name: 'Sasa Santan Kelapa Cair 65ml', qty: 2, price: 9000),
+        ],
       );
-      expect(r, isNotNull);
-      expect(r!.items.length, 2);
-      expect(r.items[0].name, 'Barang A');
-      expect(r.items[1].name, 'Barang B');
-    });
-
-    test('lebih dari 100 item -> cap 100 + truncated', () {
-      final buf = StringBuffer(
-          'MERCHANT: X\nDATE: 2026-10-01\nTOTAL: 999999\nCATEGORY: Belanja\nITEMS:\n');
-      for (var i = 1; i <= 105; i++) {
-        buf.writeln('Item $i | 1 | 1000');
-      }
-      final r = parseReceiptScanText(buf.toString(), _cats);
-      expect(r, isNotNull);
-      expect(r!.items.length, 100);
-      expect(r.truncatedItems, 5);
-    });
-
-    test('header tak valid -> null', () {
-      expect(
-          parseReceiptScanText(
-              'MERCHANT: X\nDATE: 2026-10-01\nTOTAL: 0\nCATEGORY: Belanja\nITEMS:\n',
-              _cats),
-          isNull);
-      expect(
-          parseReceiptScanText(
-              'MERCHANT: X\nDATE: 2026-13-99\nTOTAL: 5000\nCATEGORY: Belanja\nITEMS:\n',
-              _cats),
-          isNull);
-      expect(
-          parseReceiptScanText(
-              'MERCHANT: X\nDATE: 2026-10-01\nTOTAL: 5000\nCATEGORY: Ngawur\nITEMS:\n',
-              _cats),
-          isNull);
-      expect(parseReceiptScanText('', _cats), isNull);
-    });
-
-    test('TOTAL toleran format Indonesia', () {
-      final r = parseReceiptScanText(
-        'MERCHANT: X\nDATE: 2026-10-01\nTOTAL: 115.500\nCATEGORY: Belanja\nITEMS:\n',
-        _cats,
-      );
-      expect(r, isNotNull);
-      expect(r!.total, 115500);
-    });
-
-    test('tanpa section ITEMS -> header saja tetap valid', () {
-      final r = parseReceiptScanText(
-        'MERCHANT: X\nDATE: 2026-10-01\nTOTAL: 5000\nCATEGORY: Belanja\n',
-        _cats,
-      );
-      expect(r, isNotNull);
-      expect(r!.items, isEmpty);
-    });
-
-    test('receiptDetailText ada marker + total', () {
-      final r = parseReceiptScanText(txt, _cats)!;
       final d = receiptDetailText(r);
       expect(d.startsWith('[STRUK]'), isTrue);
       expect(d.contains('TOTAL Rp 16.000'), isTrue);

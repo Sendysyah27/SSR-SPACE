@@ -99,7 +99,10 @@ Future<({ReceiptData data, String provider, String? category})>
   }
   try {
     final categories = appCategories.value;
-    final system = scanReceiptSystemPrompt(categories);
+    // Batch 284 tahap E: prompt receipt lengkap + daftar kategori
+    // dirakit EF dari DB; klien mengirim prompt JSON ringkas TANPA
+    // daftar kategori (scanReceiptJsonPrompt).
+    final system = scanReceiptJsonPrompt();
 
     // Gate kuota AI (entitlement Fase 1) HANYA untuk jalur AI
     // (vision langsung + OCR->AI di bawah). OCR on-device
@@ -132,9 +135,9 @@ Future<({ReceiptData data, String provider, String? category})>
       );
       usedProvider = r.provider;
       lastRaw = r.text;
-      // Format baris teks dulu (robust utk banyak item); fallback JSON lama.
-      scanned = parseReceiptScanText(_stripFence(r.text), categories) ??
-          parseReceiptScanJson(_stripFence(r.text), categories);
+      // Tahap E: satu parser JSON (EF menormalisasi keluaran
+      // model jadi JSON ketat; parser format baris dipensiunkan).
+      scanned = parseReceiptScanJson(_stripFence(r.text), categories);
       if (scanned == null) {
         lastDetail = 'AI tidak mengembalikan data struk yang valid.';
       }
@@ -154,15 +157,18 @@ Future<({ReceiptData data, String provider, String? category})>
           final r = await aiChatViaCli(
             // Batch 281D tahap 4: teks OCR dimasking dulu
             // (nomor kartu di struk); nominal struk tak tersentuh pola.
-            scanReceiptOcrPrompt(maskPii(ocr), categories),
+            // Batch 284 tahap E: hanya teks OCR yang dikirim —
+            // prompt receipt dirakit EF (kategori dari DB), bukan
+            // disuntikkan klien per scan.
+            'TEKS OCR STRUK:\n${maskPii(ocr.length <= 4000 ? ocr : ocr.substring(0, 4000))}',
             system: system,
             forceLocal: true,
             kind: 'receipt',
           );
           usedProvider = r.provider;
           lastRaw = '$ocr\n${r.text}';
-          scanned = parseReceiptScanText(_stripFence(r.text), categories) ??
-              parseReceiptScanJson(_stripFence(r.text), categories);
+          // Tahap E: satu parser JSON (sama seperti jalur vision).
+          scanned = parseReceiptScanJson(_stripFence(r.text), categories);
           if (scanned == null) {
             lastDetail = 'AI tidak mengembalikan data struk yang valid.';
           }

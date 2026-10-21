@@ -34,6 +34,244 @@ const VISION_FALLBACKS = [
   "minimax-m3.1-flash-free",
   "glm-5.3-flash-free",
 ];
+// ===== Batch 284 tahap E: pipeline receipt server-side =====
+// Prompt receipt dirakit di sini (kategori org dibaca dari DB),
+// keluaran model dinormalisasi jadi JSON ketat untuk parser
+// tunggal klien. Request gaya lama (prompt/model dari klien)
+// tetap diterima: model klien yang allowlist tetap dihormati,
+// prompt klien diganti prompt server khusus kind receipt.
+const DEFAULT_RECEIPT_CATEGORIES = [
+  "Makanan",
+  "Transportasi",
+  "Belanja",
+  "Tagihan",
+  "Kesehatan",
+  "Pendidikan",
+  "Hiburan",
+  "Pulsa & Internet",
+  "Tabungan",
+  "Lainnya",
+];
+
+// Cermin scanReceiptSystemPrompt Dart (format baris — terbukti
+// robust untuk LLM) dengan daftar kategori dari server.
+function receiptSystemPrompt(categories: string[]): string {
+  const cats = categories
+    .map((c) => c.trim())
+    .filter((c) => c.length > 0)
+    .join(", ");
+  return "Kamu pengurai struk belanja Indonesia. Baca gambar struk dengan teliti " +
+    "dari atas sampai bawah. Balas HANYA teks dengan format persis seperti contoh " +
+    "ini, tanpa markdown, tanpa penjelasan, tanpa teks lain:\n" +
+    "MERCHANT: Nama Gerai\n" +
+    "DATE: 2026-09-08\n" +
+    "TOTAL: 16000\n" +
+    "CATEGORY: Makanan\n" +
+    "ITEMS:\n" +
+    "Racik Bumbu Sayur Asem 33gr | 1 | 1700\n" +
+    "Sasa Santan Kelapa Cair 65ml | 1 | 4500\n" +
+    "Aturan:\n" +
+    "- MERCHANT: nama gerai, atau kosong bila tak ada.\n" +
+    "- DATE: tanggal transaksi format YYYY-MM-DD.\n" +
+    "- TOTAL: GRAND TOTAL yang dibayar (SETELAH diskon), integer murni dalam " +
+    "rupiah (contoh 16000).\n" +
+    "- CATEGORY: harus persis salah satu dari: " + cats + ".\n" +
+    "- ITEMS: SEMUA baris produk dari atas sampai bawah struk, lengkap jangan " +
+    "diringkas. Tiap baris format persis: nama produk | jumlah pcs | harga TOTAL " +
+    "baris itu (qty x harga satuan) dalam rupiah integer.\n" +
+    "- Abaikan baris subtotal/pajak/diskon/pembulatan/tunai/kembalian/metode " +
+    "bayar (bukan produk).\n" +
+    "- Jangan karang angka bila ragu; baris yang ragu boleh dilewati.\n" +
+    "- Jangan pakai tool.";
+}
+
+// Kategori org dari DB: daftar bawaan app + kategori (lapis atas)
+// yang pernah dipakai transaksi org ini. Fail-open: error -> bawaan.
+async function receiptCategories(
+  db: ReturnType<typeof createClient>,
+  orgId: string,
+): Promise<string[]> {
+  const out = [...DEFAULT_RECEIPT_CATEGORIES];
+  try {
+    const { data } = await db
+      .from("transactions")
+      .select("category")
+      .eq("org_id", orgId)
+      .order("date", { ascending: false })
+      .limit(300);
+    for (const row of (data ?? []) as Record<string, unknown>[]) {
+      const top = (row?.category ?? "").toString().split(">")[0].trim();
+      if (top && !out.some((x) => x.toLowerCase() === top.toLowerCase())) {
+        out.push(top);
+        if (out.length >= 20) break;
+      }
+    }
+  } catch { /* fail-open: daftar bawaan saja */ }
+  return out;
+}
+
+// Ekstrak objek JSON pertama yang valid dari teks (utuh / fence /
+// kurung seimbang sadar-string). Null bila tak ada.
+function extractReceiptJson(t: string): Record<string, unknown> | null {
+  const s = (t ?? "").trim();
+  if (!s) return null;
+  const ok = (txt: string): Record<string, unknown> | null => {
+    try {
+      const j = JSON.parse(txt);
+      if (j && typeof j === "object" && !Array.isArray(j)) {
+        return j as Record<string, unknown>;
+      }
+    } catch { /* lanjut */ }
+    return null;
+  };
+  let j = ok(s);
+  if (j) return j;
+  const fence = s.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+  if (fence) {
+    j = ok(fence[1].trim());
+    if (j) return j;
+  }
+  const start = s.indexOf("{");
+  if (start >= 0) {
+    let depth = 0, inStr = false, esc = false, end = -1;
+    for (let i = start; i < s.length; i++) {
+      const c = s[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (c === "\\") esc = true;
+        else if (c === '"') inStr = false;
+      } else {
+        if (c === '"') inStr = true;
+        else if (c === "{") depth++;
+        else if (c === "}") {
+          depth--;
+          if (depth === 0) { end = i; break; }
+        }
+      }
+    }
+    if (end > start) {
+      j = ok(s.slice(start, end + 1));
+      if (j) return j;
+    }
+  }
+  return null;
+}
+
+// Parser format baris (cermin parseReceiptScanText Dart yang
+// dipensiunkan di klien): MERCHANT/DATE/TOTAL/CATEGORY + ITEMS.
+function parseReceiptLines(t: string): Record<string, unknown> | null {
+  let s = (t ?? "").trim();
+  if (!s) return null;
+  s = s.replace(/^```(\w+)?\s*/, "").replace(/\s*```$/, "");
+  const lines = s.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+  if (!lines.length) return null;
+  let merchant: string | null = null;
+  let dateStr: string | null = null;
+  let total: number | null = null;
+  let categoryRaw: string | null = null;
+  let i = 0;
+  for (; i < lines.length; i++) {
+    const l = lines[i];
+    if (l.toUpperCase() === "ITEMS:") { i++; break; }
+    const colon = l.indexOf(":");
+    if (colon <= 0) continue;
+    const key = l.substring(0, colon).trim().toUpperCase();
+    const val = l.substring(colon + 1).trim();
+    if (key === "MERCHANT") merchant = val || null;
+    else if (key === "DATE") dateStr = val;
+    else if (key === "TOTAL") {
+      const digits = val.replace(/[^0-9]/g, "");
+      total = digits ? parseInt(digits, 10) : null;
+    } else if (key === "CATEGORY") categoryRaw = val;
+  }
+  if (total === null || !Number.isFinite(total) || total <= 0) return null;
+  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim())) return null;
+  const ds = dateStr.trim();
+  const dt = new Date(ds + "T00:00:00Z");
+  if (isNaN(dt.getTime()) || dt.toISOString().slice(0, 10) !== ds) return null;
+  if (!categoryRaw || !categoryRaw.trim()) return null;
+  const items: { name: string; qty: number; price: number }[] = [];
+  for (; i < lines.length; i++) {
+    const l = lines[i];
+    if (l.startsWith("...")) continue;
+    const parts = l.split("|");
+    if (parts.length < 3) continue;
+    const priceDigits = parts[parts.length - 1].trim().replace(/[^0-9]/g, "");
+    const price = priceDigits ? parseInt(priceDigits, 10) : null;
+    if (price === null || price < 0) continue;
+    const qtyDigits = parts[parts.length - 2].trim().replace(/[^0-9]/g, "");
+    let qty = qtyDigits ? parseInt(qtyDigits, 10) : 1;
+    if (!qty || qty <= 0 || qty > 10000) qty = 1;
+    let name = parts.slice(0, parts.length - 2).join("|").trim();
+    if (!name) continue;
+    if (name.length > 120) name = name.substring(0, 120);
+    if (items.length >= 100) continue;
+    items.push({ name, qty, price });
+  }
+  if (merchant && merchant.length > 120) {
+    merchant = merchant.substring(0, 120);
+  }
+  return { merchant, date: ds, total, category: categoryRaw.trim(), items };
+}
+
+// Normalisasi keluaran receipt jadi JSON ketat
+// {merchant, date, total, category, items[]}. Sumber bisa JSON
+// (diekstrak) atau format baris. Kategori dipetakan ke daftar
+// server (tak sensitif huruf); di luar daftar -> 'Lainnya'/pertama
+// bila daftar ada. Tak terparse / tak valid -> teks apa adanya.
+function normalizeReceiptContract(t: string, categories: string[]): string {
+  const src = extractReceiptJson(t) ?? parseReceiptLines(t);
+  if (!src) return t;
+  const total = src.total;
+  if (
+    typeof total !== "number" || !Number.isFinite(total) || total <= 0 ||
+    Math.floor(total) !== total
+  ) return t;
+  const date = typeof src.date === "string" ? src.date.trim() : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return t;
+  const dt = new Date(date + "T00:00:00Z");
+  if (isNaN(dt.getTime()) || dt.toISOString().slice(0, 10) !== date) return t;
+  let category = typeof src.category === "string" ? src.category.trim() : "";
+  if (!category) return t;
+  const match = categories.find(
+    (c) => c.toLowerCase() === category.toLowerCase(),
+  );
+  if (match) category = match;
+  else if (categories.length) {
+    category = categories.includes("Lainnya") ? "Lainnya" : categories[0];
+  }
+  const items: { name: string; qty: number; price: number }[] = [];
+  if (Array.isArray(src.items)) {
+    for (const e of src.items) {
+      if (!e || typeof e !== "object") continue;
+      const im = e as Record<string, unknown>;
+      const nm = typeof im.name === "string" ? im.name.trim() : "";
+      const pr = im.price;
+      if (!nm) continue;
+      if (
+        typeof pr !== "number" || !Number.isFinite(pr) || pr < 0 ||
+        Math.floor(pr) !== pr
+      ) continue;
+      let q = 1;
+      if (
+        typeof im.qty === "number" && im.qty > 0 && im.qty <= 10000 &&
+        Math.floor(im.qty) === im.qty
+      ) q = im.qty;
+      items.push({
+        name: nm.length > 120 ? nm.substring(0, 120) : nm,
+        qty: q,
+        price: pr,
+      });
+      if (items.length >= 100) break;
+    }
+  }
+  const merchant =
+    typeof src.merchant === "string" && src.merchant.trim()
+      ? src.merchant.trim().substring(0, 120)
+      : null;
+  return JSON.stringify({ merchant, date, total, category, items });
+}
+
 const MAX_BODY_CHARS = 6_500_000;
 
 function json(body: unknown, status = 200): Response {
@@ -181,6 +419,25 @@ serve(async (req) => {
     );
   }
 
+  // Batch 284 tahap E: prompt receipt dirakit server — kategori org
+  // dibaca dari DB, system prompt klien untuk kind receipt DIGANTI
+  // prompt server. Request gaya lama (prompt + model pin dari
+  // klien) tetap diterima; model klien yang allowlist dihormati.
+  let receiptCats: string[] = [];
+  let outMessages: unknown = body.messages;
+  if (kind === "receipt") {
+    receiptCats = await receiptCategories(db, orgId);
+    const msgs = (body.messages as Record<string, unknown>[]).slice();
+    const sysMsg = {
+      role: "system",
+      content: receiptSystemPrompt(receiptCats),
+    };
+    const sysIdx = msgs.findIndex((m) => m && m.role === "system");
+    if (sysIdx >= 0) msgs[sysIdx] = sysMsg;
+    else msgs.unshift(sysMsg);
+    outMessages = msgs;
+  }
+
   // Model: receipt -> vision; model dari klien hanya bila ada di allowlist.
   let model: string | undefined;
   if (body.model && ALLOWED_MODELS.has(body.model)) model = body.model;
@@ -207,7 +464,7 @@ serve(async (req) => {
         headers: { "Content-Type": "application/json", "x-gw-key": gwKey },
         body: JSON.stringify({
           model: cand,
-          messages: body.messages,
+          messages: outMessages,
           max_tokens: body.max_tokens,
         }),
       });
@@ -231,8 +488,14 @@ serve(async (req) => {
     await authClient.rpc("record_ai_usage", { p_org_id: orgId, p_kind: kind });
   } catch { /* diam */ }
 
-  const outText = (kind === "chat" || kind === "quick") && gw.text
-    ? normalizeChatContract(gw.text)
-    : gw.text;
+  let outText = gw.text;
+  if ((kind === "chat" || kind === "quick") && gw.text) {
+    outText = normalizeChatContract(gw.text);
+  } else if (kind === "receipt" && gw.text) {
+    // Tahap E: keluaran receipt dinormalisasi jadi JSON ketat
+    // {merchant, date, total, category, items[]} untuk parser
+    // tunggal klien; tak terparse -> teks apa adanya (fail-open).
+    outText = normalizeReceiptContract(gw.text, receiptCats);
+  }
   return json({ text: outText, model: gw.model ?? model ?? null });
 });

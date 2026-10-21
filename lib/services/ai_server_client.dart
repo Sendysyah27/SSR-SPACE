@@ -60,7 +60,9 @@ String _fnDetail(Object? details) {
 /// Chat AI lewat Edge Function `mang-ai-chat`.
 /// [kind]: 'chat' | 'receipt' | 'quick' (dicatat server sebagai
 /// pemakaian kuota). Gambar selalu dikirim sebagai part image_url
-/// data-URI dan dipasangkan model vision di body.
+/// data-URI. Model vision di-pin di body HANYA untuk chat
+/// bergambar; kind 'receipt' tanpa pin — routing model (utama +
+/// fallback) ditentukan EF (batch 284 tahap E).
 /// Throw [AiFailure] jujur (kode: empty | timeout | denied | server).
 Future<({String text, String provider})> aiChatViaServer(
   String prompt, {
@@ -115,7 +117,8 @@ Future<({String text, String provider})> aiChatViaServer(
           'org_id': orgId,
           'kind': kind,
           'messages': messages,
-          if (hasImage) 'model': 'nemotron-3.5-super-vl-free',
+          if (hasImage && kind != 'receipt')
+            'model': 'nemotron-3.5-super-vl-free',
         })
         .timeout(effectiveTimeout);
     final d = res.data;

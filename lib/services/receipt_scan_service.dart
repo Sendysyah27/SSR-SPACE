@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:ssr_space/services/app_config_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
 import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_kind.dart';
@@ -126,7 +127,12 @@ Future<ReceiptData> scanReceiptBytes(List<int> bytes) async {
           }
         }
       } catch (_) {}
-      final seen = boxes.isEmpty
+      // Batch 284 tahap E: kill switch pipeline bbox via app_config
+      // 'scan_ocr_bbox' (pola uses_bbox_pipeline Ollo): config '0'
+      // mematikan rekonstruksi bbox -> fallback teks datar, tanpa
+      // rilis app. Default MENYALA; gagal baca config = menyala.
+      final useBbox = await _scanBboxEnabled();
+      final seen = (boxes.isEmpty || !useBbox)
           ? out.text
           : spatialLines(
               boxes,
@@ -155,5 +161,21 @@ Future<ReceiptData> scanReceiptBytes(List<int> bytes) async {
     try {
       await tmp.delete();
     } catch (_) {}
+  }
+}
+
+/// Instance AppConfigService khusus jalur scan (cache TTL 1 jam
+/// milik service dipakai ulang antar-scan).
+AppConfigService? _scanCfg;
+
+/// Kill switch pipeline bbox OCR (app_config 'scan_ocr_bbox').
+/// True = pipeline bbox jalan (bawaan). Fail-open ke true.
+Future<bool> _scanBboxEnabled() async {
+  try {
+    final cfg = _scanCfg ??= AppConfigService();
+    await cfg.refresh();
+    return cfg.isEnabled('scan_ocr_bbox', defaultValue: true);
+  } catch (_) {
+    return true;
   }
 }
