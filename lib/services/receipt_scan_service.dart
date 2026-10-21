@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
@@ -21,6 +22,11 @@ class ReceiptScanException implements Exception {
 /// Teks OCR mentah dari scan terakhir (diagnosis di device saja).
 /// Null bila scan gagal sebelum OCR. Hanya di memori, tak diupload.
 String? lastRawOcrText;
+
+/// Byte foto struk terakhir jalur OCR (batch 284 tahap D): untuk
+/// retry foto yang sama dari sheet error. Dikosongkan pemanggil
+/// saat user keluar dari alur scan.
+Uint8List? lastOcrPhotoBytes;
 
 /// OCR lokal dari bytes gambar (untuk chat AI saat provider vision
 /// tak tersedia tapi Zen/OpenRouter aktif). Tulis temp file, baca
@@ -56,7 +62,6 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
   if (!Platform.isAndroid && !Platform.isIOS) {
     throw const ReceiptScanException('rcp_fail');
   }
-  lastRawOcrText = null;
   final picker = ImagePicker();
   final shot = await picker.pickImage(
     source: source,
@@ -66,9 +71,36 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
   if (shot == null) return null;
   final path = shot.path;
   try {
-    // Jalur resmi untuk file statis; konversi byte manual hanya untuk
-    // live-CameraImage, jangan dipakai lagi di sini.
-    final input = InputImage.fromFilePath(path);
+    final bytes = await File(path).readAsBytes();
+    // Batch 284 tahap D: simpan byte foto untuk retry foto yang sama.
+    lastOcrPhotoBytes = bytes;
+    return await scanReceiptBytes(bytes);
+  } catch (e) {
+    if (e is ReceiptScanException) rethrow;
+    throw ReceiptScanException('rcp_fail', e.toString());
+  } finally {
+    try {
+      await File(path).delete();
+    } catch (_) {}
+  }
+}
+
+/// Inti scan OCR dari byte foto: tulis temp file -> ML Kit ->
+/// parseReceipt. Dipisah dari picking agar retry tahap D bisa
+/// memproses foto yang sama tanpa kamera/galeri ulang.
+/// Throw [ReceiptScanException].
+Future<ReceiptData> scanReceiptBytes(List<int> bytes) async {
+  if (!Platform.isAndroid && !Platform.isIOS) {
+    throw const ReceiptScanException('rcp_fail');
+  }
+  if (bytes.isEmpty) throw const ReceiptScanException('rcp_empty');
+  lastRawOcrText = null;
+  final dir = await getTemporaryDirectory();
+  final tmp = File(
+      '${dir.path}/ai_scan_${DateTime.now().millisecondsSinceEpoch}.jpg');
+  try {
+    await tmp.writeAsBytes(bytes);
+    final input = InputImage.fromFilePath(tmp.path);
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
     try {
       final out = await recognizer.processImage(input);
@@ -121,7 +153,7 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
     throw ReceiptScanException('rcp_fail', detail);
   } finally {
     try {
-      await File(path).delete();
+      await tmp.delete();
     } catch (_) {}
   }
 }

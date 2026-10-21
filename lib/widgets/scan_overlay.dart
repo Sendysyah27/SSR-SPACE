@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -21,9 +23,8 @@ class ScanOverlay extends StatelessWidget {
             children: [
               const _LaserBox(),
               const SizedBox(height: SsrSpace.md),
-              Text(
-                tr('rcp_scanning'),
-                style: const TextStyle(color: Colors.white),
+              const ScanStatusText(
+                style: TextStyle(color: Colors.white),
               ),
             ],
           ),
@@ -108,4 +109,44 @@ class _LaserPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_LaserPainter old) => old.progress != progress;
+}
+
+/// Teks status scan berjalan (batch 284 tahap D, pola teks status
+/// Ollo): "Memindai struk…" lalu "Menganalisis…" bergantian selama
+/// proses scan berjalan — tanpa animasi berat / library baru.
+class ScanStatusText extends StatefulWidget {
+  final TextStyle? style;
+  final TextAlign? textAlign;
+  const ScanStatusText({super.key, this.style, this.textAlign});
+
+  @override
+  State<ScanStatusText> createState() => _ScanStatusTextState();
+}
+
+class _ScanStatusTextState extends State<ScanStatusText> {
+  int _phase = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 2600), (_) {
+      if (mounted) setState(() => _phase = (_phase + 1) % 2);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      tr(_phase == 0 ? 'scan_status_reading' : 'scan_status_analyzing'),
+      style: widget.style,
+      textAlign: widget.textAlign,
+    );
+  }
 }

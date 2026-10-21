@@ -316,6 +316,22 @@ const _t = <String, Map<String, String>>{
     'id': 'Ditulis ke catatan bila nama ini muncul di struk (mis. struk transfer atas nama kamu).',
     'en': 'Written to the note when this name appears on the receipt (e.g. transfer receipts in your name).'
   },
+  'scan_err_title': {'id': 'Scan gagal', 'en': 'Scan failed'},
+  'scan_err_retry': {
+    'id': 'Coba Lagi (foto yang sama)',
+    'en': 'Try again (same photo)'
+  },
+  'scan_err_replace': {'id': 'Ganti Foto', 'en': 'Use another photo'},
+  'scan_err_manual': {'id': 'Isi Manual', 'en': 'Enter manually'},
+  'scan_status_reading': {
+    'id': 'Memindai struk\u2026',
+    'en': 'Scanning receipt\u2026'
+  },
+  'scan_status_analyzing': {
+    'id': 'Menganalisis\u2026',
+    'en': 'Analyzing\u2026'
+  },
+  'ai_quota_left': {'id': 'Sisa kuota AI', 'en': 'AI quota left'},
   'rcp_fx_rate': {'id': 'Kurs dipakai', 'en': 'Rate used'},
   'rcp_fx_na': {
     'id': 'Kurs tidak tersedia — nominal masih {c}, sesuaikan manual bila perlu',

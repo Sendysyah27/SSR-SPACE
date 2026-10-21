@@ -21,6 +21,7 @@ import 'package:ssr_space/services/ai_scan_note_builder.dart';
 import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_scan_validate.dart';
 import 'package:ssr_space/services/vision_scan_service.dart';
+import 'package:ssr_space/widgets/scan_error_sheet.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
@@ -694,12 +695,21 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
       ],
     );
     if (src == null || !mounted) return;
+    await _runScan(() => scanReceiptVision(src));
+  }
+
+  /// Jalankan operasi scan vision + tangani hasil/error-nya (dipakai
+  /// _scan dan retry foto yang sama tahap D).
+  Future<void> _runScan(
+    Future<({ReceiptData data, String provider, String? category})?>
+        Function() op,
+  ) async {
     setState(() {
       _scanning = true;
       _formErr = null;
     });
     try {
-      final out = await scanReceiptVision(src);
+      final out = await op();
       if (!mounted) return;
       setState(() => _scanning = false);
       if (out == null) return;
@@ -724,12 +734,28 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
         await requirePro(context, tr('q_ai_exceeded'));
         return;
       }
-      setState(() {
-        _scanning = false;
-        _formErr = e.detail == null
-            ? tr(e.trKey)
-            : '${tr(e.trKey)}\n${e.detail}';
-      });
+      setState(() => _scanning = false);
+      final msg = e.detail == null
+          ? tr(e.trKey)
+          : '${tr(e.trKey)}\n${e.detail}';
+      // Batch 284 tahap D: sheet error 3 aksi (Coba Lagi foto sama /
+      // Ganti Foto / Isi Manual).
+      final act = await showScanErrorSheet(context, message: msg);
+      if (!mounted) return;
+      if (act == ScanErrorAction.retry && lastVisionPhotoBytes != null) {
+        await _runScan(
+          () => scanReceiptVisionBytes(
+            lastVisionPhotoBytes!,
+            mimeType: lastVisionPhotoMime ?? 'image/jpeg',
+          ),
+        );
+      } else if (act == ScanErrorAction.replace) {
+        await _scan();
+      } else {
+        lastVisionPhotoBytes = null;
+        lastVisionPhotoMime = null;
+        setState(() => _formErr = msg);
+      }
     }
   }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/services/ai_quota.dart';
@@ -23,6 +24,15 @@ class VisionScanException implements Exception {
   final String? detail;
   const VisionScanException(this.trKey, [this.detail]);
 }
+
+/// Byte foto struk terakhir jalur vision (batch 284 tahap D):
+/// disimpan di memori selama alur scan hidup agar error bisa
+/// "Coba Lagi" foto yang sama tanpa kamera/galeri ulang.
+/// Dikosongkan pemanggil saat user keluar dari alur scan.
+Uint8List? lastVisionPhotoBytes;
+
+/// MIME foto di [lastVisionPhotoBytes].
+String? lastVisionPhotoMime;
 
 /// Foto struk (kamera/galeri) -> Mang AI SERVER vision langsung
 /// (model VL via Edge Function mang-ai-chat), TANPA OCR.
@@ -56,7 +66,38 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
     final mime = path.toLowerCase().endsWith('.png')
         ? 'image/png'
         : 'image/jpeg';
+    // Batch 284 tahap D: simpan byte foto untuk retry foto yang sama.
+    lastVisionPhotoBytes = bytes;
+    lastVisionPhotoMime = mime;
+    return await scanReceiptVisionBytes(
+      bytes,
+      mimeType: mime,
+      strictVision: strictVision,
+    );
+  } catch (e) {
+    if (e is VisionScanException || e is AiFailure) rethrow;
+    throw VisionScanException('rcp_fail', _snip(e.toString()));
+  } finally {
+    try {
+      await File(path).delete();
+    } catch (_) {}
+  }
+}
 
+/// Inti scan vision dari byte foto (dipisah dari picking agar retry
+/// tahap D bisa memproses foto yang sama). [strictVision]: tanpa
+/// fallback OCR diam-diam. Throw [VisionScanException] / [AiFailure]
+/// seperti [scanReceiptVision].
+Future<({ReceiptData data, String provider, String? category})>
+    scanReceiptVisionBytes(
+  List<int> bytes, {
+  String mimeType = 'image/jpeg',
+  bool strictVision = false,
+}) async {
+  if (!Platform.isAndroid && !Platform.isIOS) {
+    throw const VisionScanException('rcp_fail');
+  }
+  try {
     final categories = appCategories.value;
     final system = scanReceiptSystemPrompt(categories);
 
@@ -179,10 +220,6 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
     var detail = e.toString();
     if (detail.length > 220) detail = detail.substring(0, 220);
     throw VisionScanException('rcp_fail', detail);
-  } finally {
-    try {
-      await File(path).delete();
-    } catch (_) {}
   }
 }
 

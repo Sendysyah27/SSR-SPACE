@@ -21,6 +21,7 @@ import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
+import 'package:ssr_space/services/ai_entry_badges.dart';
 import 'package:ssr_space/services/ai_scan_note_builder.dart';
 import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_scan_validate.dart';
@@ -45,7 +46,9 @@ import 'package:ssr_space/widgets/category_chips.dart';
 import 'package:ssr_space/widgets/premium/glass_sheet.dart';
 import 'package:ssr_space/widgets/premium/premium_button.dart';
 import 'package:ssr_space/widgets/receipt_result_sheet.dart';
+import 'package:ssr_space/widgets/scan_error_sheet.dart';
 import 'package:ssr_space/widgets/scan_overlay.dart';
+import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/success_lottie.dart';
 import 'package:ssr_space/widgets/restyle/swipe_to_confirm.dart';
 import 'package:ssr_space/widgets/tx_numpad.dart';
@@ -219,6 +222,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
   int _step = 0;
   String? _selCat;
   bool _scanning = false;
+  // Batch 284 tahap D: badge kuota AI + promo di kartu scan.
+  String? _aiQuotaBadge;
+  String? _aiPromoBadge;
   String? _scanErr;
 
   /// Sebab jujur kegagalan AI terakhir (kode + pesan asli), tampil di
@@ -260,6 +266,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
     noteC.text = e?.note ?? widget.initialNote ?? '';
     _selCat = catC.text.trim().isEmpty ? null : catC.text.trim();
     _step = _isEdit ? 1 : 0;
+    // Batch 284 tahap D: muat badge kuota + promo (fail-open).
+    unawaited(_loadAiBadges());
     // Mode chooser: picu aksi sekali setelah frame pertama.
     final mode = widget.initialMode;
     if (mode != null && !_isEdit) {
@@ -460,6 +468,15 @@ class _TxInputSheetState extends State<TxInputSheet> {
     }
   }
 
+  Future<void> _loadAiBadges() async {
+    final b = await loadAiEntryBadges();
+    if (!mounted) return;
+    setState(() {
+      _aiQuotaBadge = b.quota;
+      _aiPromoBadge = b.promo;
+    });
+  }
+
   /// Langkah 1 -> 2: kunci kategori pilihan ke field form.
   void _goStep2() {
     final c = _selCat?.trim();
@@ -468,6 +485,28 @@ class _TxInputSheetState extends State<TxInputSheet> {
       catC.text = c;
       _step = 1;
     });
+  }
+
+  /// Sheet error scan 3 aksi (batch 284 tahap D). Retry hanya bila
+  /// foto tersimpan ada; Isi Manual / tutup sheet -> [onManual] lalu
+  /// pesan tampil inline seperti perilaku lama.
+  Future<void> _showScanRetry({
+    required String message,
+    required bool canRetry,
+    required Future<void> Function() onRetry,
+    required Future<void> Function() onReplace,
+    VoidCallback? onManual,
+  }) async {
+    final act = await showScanErrorSheet(context, message: message);
+    if (!mounted) return;
+    if (act == ScanErrorAction.retry && canRetry) {
+      await onRetry();
+    } else if (act == ScanErrorAction.replace) {
+      await onReplace();
+    } else {
+      onManual?.call();
+      setState(() => _scanErr = message);
+    }
   }
 
   /// Dialog sumber foto lalu OCR; hasil prefill form (preview, tanpa simpan).
@@ -488,12 +527,20 @@ class _TxInputSheetState extends State<TxInputSheet> {
       ],
     );
     if (src == null || !mounted) return;
+    await _runOcrScan(source: src);
+  }
+
+  /// Jalankan scan OCR: dari [source] (foto baru) atau [bytes]
+  /// (retry foto yang sama, tahap D). Error -> sheet 3 aksi.
+  Future<void> _runOcrScan({ImageSource? source, List<int>? bytes}) async {
     setState(() {
       _scanning = true;
       _scanErr = null;
     });
     try {
-      final r = await scanReceipt(src);
+      final r = bytes != null
+          ? await scanReceiptBytes(bytes)
+          : await scanReceipt(source!);
       if (!mounted) return;
       final raw = lastRawOcrText;
       setState(() => _scanning = false);
@@ -546,13 +593,22 @@ class _TxInputSheetState extends State<TxInputSheet> {
     } on ReceiptScanException catch (e) {
       if (!mounted) return;
       final raw = lastRawOcrText;
-      setState(() {
-        _scanning = false;
-        _scanErr = e.detail == null
-            ? tr(e.trKey)
-            : '${tr(e.trKey)}\n${e.detail}';
-      });
-      if (raw != null) await _showRawOcrDialog(raw);
+      setState(() => _scanning = false);
+      final msg = e.detail == null
+          ? tr(e.trKey)
+          : '${tr(e.trKey)}\n${e.detail}';
+      // Batch 284 tahap D: sheet error 3 aksi; Isi Manual kembali ke
+      // perilaku lama (error inline + dialog teks OCR mentah).
+      await _showScanRetry(
+        message: msg,
+        canRetry: lastOcrPhotoBytes != null,
+        onRetry: () => _runOcrScan(bytes: lastOcrPhotoBytes),
+        onReplace: _pickScanSource,
+        onManual: () {
+          lastOcrPhotoBytes = null;
+          if (raw != null) unawaited(_showRawOcrDialog(raw));
+        },
+      );
     }
   }
 
@@ -575,12 +631,29 @@ class _TxInputSheetState extends State<TxInputSheet> {
       ],
     );
     if (src == null || !mounted) return;
+    await _runVisionScan(source: src, strict: strict);
+  }
+
+  /// Jalankan scan vision: dari [source] (foto baru) atau [bytes]
+  /// (retry foto yang sama, tahap D). Error vision -> sheet 3 aksi;
+  /// kuota mentok -> paywall seperti sebelumnya.
+  Future<void> _runVisionScan({
+    ImageSource? source,
+    List<int>? bytes,
+    bool strict = false,
+  }) async {
     setState(() {
       _scanning = true;
       _scanErr = null;
     });
     try {
-      final out = await scanReceiptVision(src, strictVision: strict);
+      final out = bytes != null
+          ? await scanReceiptVisionBytes(
+              bytes,
+              mimeType: lastVisionPhotoMime ?? 'image/jpeg',
+              strictVision: strict,
+            )
+          : await scanReceiptVision(source!, strictVision: strict);
       if (!mounted) return;
       setState(() => _scanning = false);
       if (out == null) return;
@@ -616,12 +689,25 @@ class _TxInputSheetState extends State<TxInputSheet> {
         await requirePro(context, tr('q_ai_exceeded'));
         return;
       }
-      setState(() {
-        _scanning = false;
-        _scanErr = e.detail == null
-            ? tr(e.trKey)
-            : '${tr(e.trKey)}\n${e.detail}';
-      });
+      setState(() => _scanning = false);
+      final msg = e.detail == null
+          ? tr(e.trKey)
+          : '${tr(e.trKey)}\n${e.detail}';
+      // Batch 284 tahap D: sheet error 3 aksi (Coba Lagi foto sama /
+      // Ganti Foto / Isi Manual).
+      await _showScanRetry(
+        message: msg,
+        canRetry: lastVisionPhotoBytes != null,
+        onRetry: () => _runVisionScan(
+          bytes: lastVisionPhotoBytes,
+          strict: strict,
+        ),
+        onReplace: () => _pickVisionSource(strict: strict),
+        onManual: () {
+          lastVisionPhotoBytes = null;
+          lastVisionPhotoMime = null;
+        },
+      );
     } on AiFailure catch (e) {
       if (!mounted) return;
       setState(() {
@@ -951,6 +1037,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
               _ScanRow(
                 scanning: _scanning,
                 error: _scanErr,
+                quotaBadge: _aiQuotaBadge,
+                promoBadge: _aiPromoBadge,
                 onScan: _scanning ? null : _pickScanSource,
                 onScanVision:
                     _scanning ? null : () => _pickVisionSource(strict: true),
@@ -1250,6 +1338,8 @@ class _CatCell extends StatelessWidget {
 class _ScanRow extends StatelessWidget {
   final bool scanning;
   final String? error;
+  final String? quotaBadge;
+  final String? promoBadge;
   final VoidCallback? onScan;
   final VoidCallback? onScanVision;
 
@@ -1257,6 +1347,8 @@ class _ScanRow extends StatelessWidget {
     required this.scanning,
     required this.error,
     required this.onScan,
+    this.quotaBadge,
+    this.promoBadge,
     this.onScanVision,
   });
 
@@ -1294,6 +1386,30 @@ class _ScanRow extends StatelessWidget {
               color: scheme.onSurfaceVariant,
             ),
           ),
+          if (quotaBadge != null || promoBadge != null) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (promoBadge != null)
+                  StatusChip(
+                    label: promoBadge!,
+                    tone: StatusTone.accent,
+                    isSmall: true,
+                  ),
+                if (promoBadge != null && quotaBadge != null)
+                  const SizedBox(width: SsrSpace.xs),
+                if (quotaBadge != null)
+                  StatusChip(
+                    label: quotaBadge == 'PRO'
+                        ? 'PRO'
+                        : '${tr('ai_quota_left')}: $quotaBadge',
+                    tone: StatusTone.neutral,
+                    isSmall: true,
+                  ),
+              ],
+            ),
+            const SizedBox(height: SsrSpace.sm),
+          ],
           const SizedBox(height: SsrSpace.md),
           Row(
             children: [
@@ -1346,8 +1462,7 @@ class _ScanRow extends StatelessWidget {
             const SizedBox(height: SsrSpace.md),
             const LinearProgressIndicator(),
             const SizedBox(height: SsrSpace.sm),
-            Text(
-              tr('rcp_scanning'),
+            ScanStatusText(
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
