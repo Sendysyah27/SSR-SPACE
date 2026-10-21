@@ -281,6 +281,41 @@ const _t = <String, Map<String, String>>{
   'rcp_total': {'id': 'Total', 'en': 'Total'},
   'rcp_warn_title': {'id': 'Perlu dicek', 'en': 'Double-check'},
   'rcp_fx_orig': {'id': 'Total asli', 'en': 'Original total'},
+  'ai_scan_settings_title': {
+    'id': 'Pengaturan AI Scan',
+    'en': 'AI Scan Settings'
+  },
+  'ai_scan_settings_sub': {
+    'id': 'Catatan hasil scan & nama pemilik',
+    'en': 'Scan notes & owner name'
+  },
+  'ai_scan_settings_intro': {
+    'id': 'Atur catatan yang dibuat otomatis dari hasil scan struk (Vision maupun OCR).',
+    'en': 'Configure the note created automatically from receipt scans (Vision or OCR).'
+  },
+  'ai_scan_note_enabled': {
+    'id': 'Catatan otomatis dari hasil scan',
+    'en': 'Automatic note from scans'
+  },
+  'ai_scan_note_enabled_sub': {
+    'id': 'Mati = catatan hasil scan dikosongkan (bisa kamu isi sendiri).',
+    'en': 'Off = the scan note is left empty (fill it in yourself).'
+  },
+  'ai_scan_note_order_title': {
+    'id': 'Urutan potongan catatan',
+    'en': 'Note piece order'
+  },
+  'ai_scan_note_order_sub': {
+    'id': 'Geser urutan tampil potongan di catatan transaksi.',
+    'en': 'Reorder how pieces appear in the transaction note.'
+  },
+  'ai_scan_move_up': {'id': 'Naikkan', 'en': 'Move up'},
+  'ai_scan_move_down': {'id': 'Turunkan', 'en': 'Move down'},
+  'ai_scan_owner_label': {'id': 'Nama pemilik', 'en': 'Owner name'},
+  'ai_scan_owner_helper': {
+    'id': 'Ditulis ke catatan bila nama ini muncul di struk (mis. struk transfer atas nama kamu).',
+    'en': 'Written to the note when this name appears on the receipt (e.g. transfer receipts in your name).'
+  },
   'rcp_fx_rate': {'id': 'Kurs dipakai', 'en': 'Rate used'},
   'rcp_fx_na': {
     'id': 'Kurs tidak tersedia — nominal masih {c}, sesuaikan manual bila perlu',

@@ -17,6 +17,7 @@ import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/tx_validation.dart';
+import 'package:ssr_space/services/ai_scan_note_builder.dart';
 import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_scan_validate.dart';
 import 'package:ssr_space/services/vision_scan_service.dart';
@@ -704,7 +705,9 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
       if (out == null) return;
       final data = await applyFxConversion(out.data);
       if (!mounted) return;
-      _applyScan(data, out.category);
+      final scanNote = await buildScanNoteFor(data);
+      if (!mounted) return;
+      _applyScan(data, out.category, scanNote: scanNote);
       // Batch 284 tahap A: validator struk — permukaan ini tanpa sheet
       // hasil, jadi peringatan tampil sebagai SnackBar (tak memblokir).
       final warns = await validateReceiptData(data);
@@ -732,7 +735,8 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
 
   /// Prefill form dari hasil struk — cermin _applyReceiptPrefill di
   /// tx_input_sheet (nominal, tanggal, kategori, catatan). Tanpa simpan.
-  void _applyScan(ReceiptData r, String? aiCategory) {
+  void _applyScan(ReceiptData r, String? aiCategory,
+      {String? scanNote}) {
     setState(() {
       if (r.amount != null && r.amount! > 0) {
         _type = 'out';
@@ -742,8 +746,10 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
       }
       if (r.date != null) _day = r.date!;
       final dt = r.detailText;
-      _noteC.text =
-          (dt != null && dt.trim().isNotEmpty) ? dt : receiptNote(r);
+      // Batch 284 tahap C: sama seperti tx_input_sheet — NoteBuilder
+      // menang bila tersedia; '' = saklar mati -> catatan kosong.
+      _noteC.text = scanNote ??
+          ((dt != null && dt.trim().isNotEmpty) ? dt : receiptNote(r));
       final cats = _cats;
       var sel = cats.contains('Belanja')
           ? 'Belanja'

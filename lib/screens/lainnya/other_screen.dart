@@ -28,6 +28,7 @@ import 'package:ssr_space/screens/lainnya/categories_screen.dart';
 import 'package:ssr_space/screens/lainnya/help_screen.dart';
 import 'package:ssr_space/screens/lainnya/arcade_screen.dart';
 import 'package:ssr_space/screens/lainnya/ai_chat_screen.dart';
+import 'package:ssr_space/screens/lainnya/ai_scan_settings_screen.dart';
 import 'package:ssr_space/screens/lainnya/goals_screen.dart';
 import 'package:ssr_space/screens/lainnya/save30_screen.dart';
 import 'package:ssr_space/screens/lainnya/recurring_bills_screen.dart';
@@ -487,6 +488,7 @@ class _OtherScreenState extends State<OtherScreen> {
             onSave30: () => _push(const Save30Screen()),
             onArcade: () => _push(const ArcadeScreen()),
             onChat: () => _push(const AiChatScreen()),
+          onAiScanSettings: () => _push(const AiScanSettingsScreen()),
             onNfc: () => _push(const NfcCardsScreen()),
             onTracking: () => _push(const NotifSettingsScreen()),
             onBackup: _backup,
@@ -533,6 +535,7 @@ class _HubList extends StatelessWidget {
   final VoidCallback onSave30;
   final VoidCallback onArcade;
   final VoidCallback onChat;
+  final VoidCallback onAiScanSettings;
   final VoidCallback onNfc;
   final VoidCallback onTracking;
   final VoidCallback onBackup;
@@ -572,6 +575,7 @@ class _HubList extends StatelessWidget {
     required this.onSave30,
     required this.onArcade,
     required this.onChat,
+    required this.onAiScanSettings,
     required this.onNfc,
     required this.onTracking,
     required this.onBackup,
@@ -608,6 +612,7 @@ class _HubList extends StatelessWidget {
         onSave30: onSave30,
         onArcade: onArcade,
         onChat: onChat,
+        onAiScanSettings: onAiScanSettings,
         onNfc: onNfc,
         budgetNonce: budgetNonce,
       ),
@@ -788,6 +793,7 @@ class _DataSection extends StatefulWidget {
   final VoidCallback onSave30;
   final VoidCallback onArcade;
   final VoidCallback onChat;
+  final VoidCallback onAiScanSettings;
   final VoidCallback onNfc;
   final int budgetNonce;
 
@@ -804,6 +810,7 @@ class _DataSection extends StatefulWidget {
     required this.onSave30,
     required this.onArcade,
     required this.onChat,
+    required this.onAiScanSettings,
     required this.onNfc,
     required this.budgetNonce,
   });
@@ -938,6 +945,13 @@ class _DataSectionState extends State<_DataSection> {
           icon: AppIcons.autoBadge,
           title: tr('chat_title'),
           onTap: widget.onChat,
+        ),
+        const Divider(height: 1),
+        NavTile(
+          icon: AppIcons.scan,
+          title: tr('ai_scan_settings_title'),
+          subtitle: tr('ai_scan_settings_sub'),
+          onTap: widget.onAiScanSettings,
         ),
         const Divider(height: 1),
         NavTile(

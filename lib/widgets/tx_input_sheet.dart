@@ -21,6 +21,7 @@ import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
+import 'package:ssr_space/services/ai_scan_note_builder.dart';
 import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_scan_validate.dart';
 import 'package:ssr_space/services/vision_scan_service.dart';
@@ -520,7 +521,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
       final warns = await validateReceiptData(data);
       unawaited(recordScanAmount(data));
       if (!mounted) return;
-      _applyReceiptPrefill(data);
+      final scanNote = await buildScanNoteFor(data,
+          sourceText: lastRawOcrText);
+      if (!mounted) return;
+      _applyReceiptPrefill(data, scanNote: scanNote);
       if (mounted) {
         await showModalBottomSheet<void>(
           context: context,
@@ -585,7 +589,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
       final warns = await validateReceiptData(data);
       unawaited(recordScanAmount(data));
       if (!mounted) return;
-      _applyReceiptPrefill(data, aiCategory: out.category);
+      final scanNote = await buildScanNoteFor(data);
+      if (!mounted) return;
+      _applyReceiptPrefill(data, aiCategory: out.category, scanNote: scanNote);
       setState(() {
         _scanOrigin = '${out.provider} · ${_scanOrigin ?? ''}';
       });
@@ -646,7 +652,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
   /// Prefill form dari hasil struk (rule maupun draft AI yang diedit).
   /// [aiCategory]: kategori dari AI scan struk (sudah divalidasi ketat);
   /// bila ada, dipakai langsung tanpa saran heuristik.
-  void _applyReceiptPrefill(ReceiptData r, {String? aiCategory}) {
+  void _applyReceiptPrefill(ReceiptData r,
+      {String? aiCategory, String? scanNote}) {
     setState(() {
       if (r.amount != null && r.amount! > 0) {
         type = 'out';
@@ -659,7 +666,11 @@ class _TxInputSheetState extends State<TxInputSheet> {
       // Vision: simpan detail struk lengkap sebagai catatan (terlihat utuh
       // di detail transaksi). OCR/rule: ringkasan seperti sebelumnya.
       final dt = r.detailText;
-      noteC.text = (dt != null && dt.trim().isNotEmpty) ? dt : receiptNote(r);
+      // Batch 284 tahap C: catatan terstruktur NoteBuilder menang bila
+      // tersedia ('' = saklar catatan mati -> catatan dikosongkan);
+      // null = gagal muat preferensi -> perilaku lama (detail/ringkas).
+      noteC.text = scanNote ??
+          ((dt != null && dt.trim().isNotEmpty) ? dt : receiptNote(r));
       if (_selCat == null || _selCat!.trim().isEmpty) {
         final cats = appCategories.value;
         _selCat = cats.contains('Belanja')
