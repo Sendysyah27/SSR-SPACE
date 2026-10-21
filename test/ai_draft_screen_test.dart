@@ -20,6 +20,24 @@ const _draft = AiDraft(
   payment: 'QRIS',
 );
 
+/// Aksi review ("Pakai draft" / "Simpan draft") berada di BAWAH form
+/// panjang. [ListView] membangun anak secara lazy, jadi di permukaan
+/// test 800x600 tombol itu BELUM pernah dibangun -> finder dapat
+/// 0 widget (bukan tombol hilang; DIAG-TEXTS di CI cuma berisi hint
+/// form, ElevatedButton/OutlinedButton = 0). Gulung ke ujung list
+/// dulu supaya tombol terbangun + bisa diketuk.
+Future<void> _scrollToActions(WidgetTester t) async {
+  // Scrollable milik ListView form (Scrollable internal TextField ada
+  // lebih dalam, jadi ambil yang pertama di bawah ListView).
+  final listScrollable = find.descendant(
+    of: find.byType(ListView),
+    matching: find.byType(Scrollable),
+  ).first;
+  final state = t.state<ScrollableState>(listScrollable);
+  state.position.jumpTo(state.position.maxScrollExtent);
+  await t.pumpAndSettle();
+}
+
 void main() {
   testWidgets('field jam & diskon tampil dari draft awal', (t) async {
     await t.pumpWidget(
@@ -34,15 +52,36 @@ void main() {
 
   testWidgets('Simpan draft meneruskan isi form ke callback', (t) async {
     AiDraft? saved;
+    // Layar ini di produksi selalu DIBUKA sebagai route (reviewScanDraft),
+    // bukan jadi home:. Tombol Simpan draft mem-pop route itu; kalau jadi
+    // home:, history Navigator jadi kosong -> assert(_history.isNotEmpty)
+    // di NavigatorState.build. Test mengikuti alur produksi.
     await t.pumpWidget(
       MaterialApp(
-        home: AiDraftScreen(
-          initial: _draft,
-          onSaveDraft: (d) async => saved = d,
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () async {
+                  await Navigator.of(ctx).push(
+                    MaterialPageRoute(
+                      builder: (_) => AiDraftScreen(
+                        initial: _draft,
+                        onSaveDraft: (d) async => saved = d,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
         ),
       ),
     );
+    await t.tap(find.text('open'));
     await t.pumpAndSettle();
+    await _scrollToActions(t);
     await t.tap(find.text('Simpan draft'));
     await t.pumpAndSettle();
     expect(saved, isNotNull);
@@ -59,6 +98,10 @@ void main() {
       const MaterialApp(home: AiDraftScreen(initial: _draft)),
     );
     await t.pumpAndSettle();
+    await _scrollToActions(t);
+    // Area aksi sudah terlihat (tombol Pakai draft ada) -> tombol simpan
+    // benar-benar tidak dirender, bukan sekadar belum dibangun.
+    expect(find.text('Pakai draft'), findsOneWidget);
     expect(find.text('Simpan draft'), findsNothing);
   });
 
@@ -86,6 +129,7 @@ void main() {
     );
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
+    await _scrollToActions(t);
     await t.tap(find.text('Pakai draft'));
     await t.pumpAndSettle();
     expect(result, isNotNull);
