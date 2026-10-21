@@ -3,6 +3,7 @@ import 'package:ssr_space/utils/org_prefs.dart';
 import 'goal_store.dart';
 import 'month.dart';
 import 'recurring_bills.dart';
+import '../models/transaction.dart';
 import 'transaction_service.dart';
 import 'wallet_service.dart';
 
@@ -143,7 +144,7 @@ Future<AssistantSnapshot> buildAssistantSnapshot() async {
     final d30Start = today.subtract(const Duration(days: 29));
     final perDay30 = <String, ({double inAmt, double outAmt})>{};
     final merchTotals = <String, double>{};
-    void accumulate30(Transaction t) {
+    void accumulate30(SaasTransaction t) {
       final d = (t.date ?? '').length >= 10 ? t.date!.substring(0, 10) : '';
       if (d.isNotEmpty) {
         final dt = DateTime.tryParse(d);
