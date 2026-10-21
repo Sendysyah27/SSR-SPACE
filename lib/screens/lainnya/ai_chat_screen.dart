@@ -792,13 +792,49 @@ class _AiChatScreenState extends State<AiChatScreen> {
     switch (cmd['type']) {
       case 'navigate':
         return '${tr('ai_open')}: ${_navLabel(cmd['target'] as String? ?? '')}';
+      case 'add_wallet':
+        return '${tr('ai_cmd_add_wallet')}: ${cmd['name'] as String? ?? ''}';
+      case 'add_category':
+        return '${tr('ai_cmd_add_category')}: ${cmd['name'] as String? ?? ''}';
       default:
         return tr('ai_run');
     }
   }
 
   /// Keterangan kartu perintah (null = tanpa keterangan).
-  String? _commandNote(Map<String, dynamic> cmd) => null;
+  String? _commandNote(Map<String, dynamic> cmd) {
+    switch (cmd['type']) {
+      case 'add_wallet':
+        final parts = <String>[
+          _walletTypeLabel(cmd['wallet_type'] as String? ?? 'cash'),
+        ];
+        final opening = cmd['opening_balance'] as int? ?? 0;
+        if (opening > 0) {
+          parts.add('${tr('ai_opening_balance')} $opening');
+        }
+        return parts.join(' \u00b7 ');
+      case 'add_category':
+        final kind = cmd['kind'] as String?;
+        if (kind == 'in') return tr('tx_in');
+        if (kind == 'out') return tr('tx_out');
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  String _walletTypeLabel(String t) {
+    switch (t) {
+      case 'ewallet':
+        return tr('w_ewallet');
+      case 'bank':
+        return tr('w_bank');
+      case 'investment':
+        return tr('w_investment');
+      default:
+        return tr('w_cash');
+    }
+  }
 
   /// Label tombol utama kartu perintah (null = label bawaan).
   String? _commandRunLabel(Map<String, dynamic> cmd) =>
@@ -861,7 +897,95 @@ class _AiChatScreenState extends State<AiChatScreen> {
           MaterialPageRoute(builder: (_) => screen),
         );
         break;
+      case 'add_wallet':
+        await _runAddWallet(cmd);
+        break;
+      case 'add_category':
+        await _runAddCategory(cmd);
+        break;
     }
+  }
+
+  /// Bubble hasil perintah (sukses/gagal) sebagai pesan Mang AI.
+  void _commandBubble(String text, {bool isError = false}) {
+    if (!mounted) return;
+    setState(() {
+      _items.add(_ChatMsg(
+        mine: false,
+        text: text,
+        isError: isError,
+        provider: 'Mang AI',
+      ));
+    });
+    _toBottom();
+    unawaited(_saveSession());
+  }
+
+  /// Buat dompet baru: jalur yang sama seperti form manual
+  /// (WalletService.create + transaksi 'Saldo awal' bila ada saldo
+  /// awal; gagal saldo awal -> dompet dibatalkan, pola wallets_screen).
+  Future<void> _runAddWallet(Map<String, dynamic> cmd) async {
+    final name = (cmd['name'] as String? ?? '').trim();
+    if (name.isEmpty) return;
+    final type = cmd['wallet_type'] as String? ?? 'cash';
+    final opening = cmd['opening_balance'] as int? ?? 0;
+    String orgId = '';
+    try {
+      orgId = await activeOrgId();
+    } catch (_) {}
+    if (!mounted) return;
+    if (orgId.isEmpty) {
+      _commandBubble(tr('ai_save_no_org'), isError: true);
+      return;
+    }
+    try {
+      final ws = await WalletService().list(orgId);
+      if (ws.any((w) => w.name.toLowerCase() == name.toLowerCase())) {
+        _commandBubble(tr('ai_wallet_exists'), isError: true);
+        return;
+      }
+      final id = await WalletService().create(orgId, name, type);
+      if (opening > 0) {
+        try {
+          final when = txWhen(DateTime.now());
+          await TransactionService().add(
+            orgId: orgId,
+            type: 'in',
+            amount: opening.toDouble(),
+            walletId: id,
+            category: 'Saldo awal',
+            note: 'Saldo awal $name',
+            date: when.date,
+            createdAt: when.createdAt,
+          );
+        } catch (_) {
+          try {
+            await WalletService().deleteWallet(id, orgId);
+          } catch (_) {}
+          rethrow;
+        }
+      }
+    } catch (e) {
+      debugPrint('[ai_chat] tambah dompet gagal: $e');
+      _commandBubble(tr('ai_save_fail'), isError: true);
+      return;
+    }
+    _commandBubble('Dompet ditambah \u2713 $name');
+  }
+
+  /// Buat kategori baru lewat jalur yang sama seperti layar kategori
+  /// (saveAppCategories atas daftar appCategories aktif).
+  Future<void> _runAddCategory(Map<String, dynamic> cmd) async {
+    final name = (cmd['name'] as String? ?? '').trim();
+    if (name.isEmpty) return;
+    final exists =
+        appCategories.value.any((c) => c.toLowerCase() == name.toLowerCase());
+    if (exists) {
+      _commandBubble(tr('ai_cat_exists'), isError: true);
+      return;
+    }
+    await saveAppCategories([...appCategories.value, name]);
+    _commandBubble('Kategori ditambah \u2713 $name');
   }
 
   Future<void> _runBill(BillDraft d) async {

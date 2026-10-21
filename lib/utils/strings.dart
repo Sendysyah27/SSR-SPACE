@@ -2801,6 +2801,17 @@ const _t = <String, Map<String, String>>{
   'ai_nav_anggaran': {'id': 'Anggaran', 'en': 'Budgets'},
   'ai_nav_tagihan': {'id': 'Tagihan Rutin', 'en': 'Recurring Bills'},
   'ai_nav_profil': {'id': 'Profil & Pengaturan', 'en': 'Profile & Settings'},
+  'ai_cmd_add_wallet': {'id': 'Tambah dompet', 'en': 'Add wallet'},
+  'ai_cmd_add_category': {'id': 'Tambah kategori', 'en': 'Add category'},
+  'ai_opening_balance': {'id': 'Saldo awal', 'en': 'Opening balance'},
+  'ai_wallet_exists': {
+    'id': 'Dompet dengan nama itu sudah ada.',
+    'en': 'A wallet with that name already exists.',
+  },
+  'ai_cat_exists': {
+    'id': 'Kategori itu sudah ada.',
+    'en': 'That category already exists.',
+  },
   'ai_tx_save': {'id': 'Simpan', 'en': 'Save'},
   'ai_save_fail': {'id': 'Gagal menyimpan.', 'en': 'Failed to save.'},
   'ai_save_no_org': {

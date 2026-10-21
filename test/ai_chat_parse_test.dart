@@ -491,4 +491,105 @@ void main() {
       }
     });
   });
+
+  group('batch 281: action add_wallet', () {
+    test('valid dengan default cash + saldo awal 0', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"add_wallet","name":"BRI"}}',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.command, isNotNull);
+      expect(r.command!['name'], 'BRI');
+      expect(r.command!['wallet_type'], 'cash');
+      expect(r.command!['opening_balance'], 0);
+      expect(r.action, isNull);
+    });
+
+    test('valid dengan tipe + saldo awal', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"add_wallet","name":"OVO",'
+        '"wallet_type":"ewallet","opening_balance":50000}}',
+        wallets: _wallets,
+      );
+      expect(r.command!['wallet_type'], 'ewallet');
+      expect(r.command!['opening_balance'], 50000);
+    });
+
+    test('nama kosong -> nama_kosong', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"add_wallet","name":"  "}}',
+        wallets: _wallets,
+      );
+      expect(r.command, isNull);
+      expect(r.reason, 'nama_kosong');
+    });
+
+    test('nama duplikat (case-insensitive) -> dompet_sudah_ada', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"add_wallet","name":"tunai"}}',
+        wallets: _wallets,
+      );
+      expect(r.command, isNull);
+      expect(r.reason, 'dompet_sudah_ada');
+    });
+
+    test('tipe asing -> tipe_dompet_invalid', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"add_wallet","name":"X",'
+        '"wallet_type":"crypto"}}',
+        wallets: _wallets,
+      );
+      expect(r.command, isNull);
+      expect(r.reason, 'tipe_dompet_invalid');
+    });
+
+    test('saldo awal negatif / double -> saldo_awal_invalid', () {
+      for (final v in ['-5', '12.5']) {
+        final r = parseChatReply(
+          '{"reply":"Siap.","action":{"type":"add_wallet","name":"X",'
+          '"opening_balance":$v}}',
+          wallets: _wallets,
+        );
+        expect(r.command, isNull, reason: v);
+        expect(r.reason, 'saldo_awal_invalid', reason: v);
+      }
+    });
+  });
+
+  group('batch 281: action add_category', () {
+    test('valid -> command terisi', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"add_category","name":"Kopi"}}',
+        categories: _cats,
+      );
+      expect(r.command, isNotNull);
+      expect(r.command!['name'], 'Kopi');
+    });
+
+    test('duplikat (case-insensitive) -> kategori_sudah_ada', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"add_category","name":"makanan"}}',
+        categories: _cats,
+      );
+      expect(r.command, isNull);
+      expect(r.reason, 'kategori_sudah_ada');
+    });
+
+    test('kind asing -> kind_invalid; kind in/out diterima', () {
+      final bad = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"add_category","name":"Kopi",'
+        '"kind":"sideways"}}',
+        categories: _cats,
+      );
+      expect(bad.command, isNull);
+      expect(bad.reason, 'kind_invalid');
+      final ok = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"add_category","name":"Kopi",'
+        '"kind":"out"}}',
+        categories: _cats,
+      );
+      expect(ok.command?['kind'], 'out');
+    });
+  });
 }

@@ -155,6 +155,16 @@ Map<String, dynamic>? lenientActionMap(dynamic raw) {
   if (target is String && target.trim().isNotEmpty) {
     out['target'] = target.trim();
   }
+  final name = m['name'];
+  if (name is String && name.trim().isNotEmpty) out['name'] = name.trim();
+  final wtype = m['wallet_type'];
+  if (wtype is String && wtype.trim().isNotEmpty) {
+    out['wallet_type'] = wtype.trim();
+  }
+  final opening = m['opening_balance'];
+  if (opening is int && opening >= 0) out['opening_balance'] = opening;
+  final kind = m['kind'];
+  if (kind is String && kind.trim().isNotEmpty) out['kind'] = kind.trim();
   return out;
 }
 
@@ -235,13 +245,28 @@ const kChatNavTargets = <String>{
 };
 
 /// Tipe action perintah non-transaksi yang dikenal (batch 281).
-const kChatCommandTypes = <String>{'navigate'};
+const kChatCommandTypes = <String>{'navigate', 'add_wallet', 'add_category'};
+
+/// Tipe dompet yang dikenal app (form dompet manual + WalletService).
+const kChatWalletTypes = <String>{'cash', 'ewallet', 'bank', 'investment'};
 
 /// Validasi action perintah non-transaksi -> kode alasan atau null.
-/// navigate: target wajib salah satu [kChatNavTargets] (selain itu
-/// 'target_invalid' -> action diabaikan aman, teks tetap tampil).
+/// - navigate: target wajib salah satu [kChatNavTargets] (selain itu
+///   'target_invalid' -> action diabaikan aman, teks tetap tampil).
+/// - add_wallet: name non-kosong ('nama_kosong'), belum ada di daftar
+///   dompet ('dompet_sudah_ada'), wallet_type dikenal bila diisi
+///   ('tipe_dompet_invalid'), opening_balance int >= 0 bila diisi
+///   ('saldo_awal_invalid').
+/// - add_category: name non-kosong ('nama_kosong'), belum ada di daftar
+///   kategori ('kategori_sudah_ada'), kind in/out bila diisi
+///   ('kind_invalid'; skema kategori app tak membedakan arah - kind
+///   hanya keterangan, tidak disimpan).
 /// Murni; tak pernah throw.
-String? validateChatCommandReason(dynamic raw) {
+String? validateChatCommandReason(
+  dynamic raw, {
+  List<String> wallets = const [],
+  List<String> categories = const [],
+}) {
   if (raw == null) return 'action_null';
   if (raw is! Map) return 'action_null';
   final m = Map<String, dynamic>.from(raw);
@@ -253,14 +278,69 @@ String? validateChatCommandReason(dynamic raw) {
     }
     return null;
   }
+  if (type == 'add_wallet') {
+    final name = m['name'];
+    if (name is! String || name.trim().isEmpty) return 'nama_kosong';
+    final n = name.trim().toLowerCase();
+    for (final w in wallets) {
+      if (w.toLowerCase() == n) return 'dompet_sudah_ada';
+    }
+    final wt = m['wallet_type'];
+    if (wt != null && (wt is! String || !kChatWalletTypes.contains(wt.trim()))) {
+      return 'tipe_dompet_invalid';
+    }
+    final ob = m['opening_balance'];
+    if (ob != null && (ob is! int || ob < 0)) return 'saldo_awal_invalid';
+    return null;
+  }
+  if (type == 'add_category') {
+    final name = m['name'];
+    if (name is! String || name.trim().isEmpty) return 'nama_kosong';
+    final n = name.trim().toLowerCase();
+    for (final c in categories) {
+      if (c.toLowerCase() == n) return 'kategori_sudah_ada';
+    }
+    final kind = m['kind'];
+    if (kind != null && kind != 'in' && kind != 'out') return 'kind_invalid';
+    return null;
+  }
   return 'type_invalid';
 }
 
 /// Normalisasi action perintah yang valid; null bila tak valid.
-Map<String, dynamic>? validateChatCommand(dynamic raw) {
-  if (validateChatCommandReason(raw) != null) return null;
+Map<String, dynamic>? validateChatCommand(
+  dynamic raw, {
+  List<String> wallets = const [],
+  List<String> categories = const [],
+}) {
+  if (validateChatCommandReason(raw, wallets: wallets, categories: categories) !=
+      null) {
+    return null;
+  }
   final m = Map<String, dynamic>.from(raw as Map);
-  return {'type': 'navigate', 'target': (m['target'] as String).trim()};
+  final type = m['type'];
+  if (type == 'navigate') {
+    return {'type': 'navigate', 'target': (m['target'] as String).trim()};
+  }
+  if (type == 'add_wallet') {
+    final wt = m['wallet_type'];
+    final ob = m['opening_balance'];
+    return {
+      'type': 'add_wallet',
+      'name': (m['name'] as String).trim(),
+      'wallet_type': wt is String ? wt.trim() : 'cash',
+      'opening_balance': ob is int ? ob : 0,
+    };
+  }
+  if (type == 'add_category') {
+    final kind = m['kind'];
+    return {
+      'type': 'add_category',
+      'name': (m['name'] as String).trim(),
+      if (kind is String) 'kind': kind,
+    };
+  }
+  return null;
 }
 
 /// Urai balasan mentah model -> (reply, action, actionRaw, reason).
@@ -318,7 +398,11 @@ Map<String, dynamic>? validateChatCommand(dynamic raw) {
   if (rawAction is Map) {
     final t = rawAction['type'];
     if (t is String && kChatCommandTypes.contains(t)) {
-      final cReason = validateChatCommandReason(rawAction);
+      final cReason = validateChatCommandReason(
+        rawAction,
+        wallets: wallets,
+        categories: categories,
+      );
       if (cReason != null) {
         return (
           reply: reply,
@@ -333,7 +417,11 @@ Map<String, dynamic>? validateChatCommand(dynamic raw) {
         action: null,
         actionRaw: null,
         reason: null,
-        command: validateChatCommand(rawAction),
+        command: validateChatCommand(
+          rawAction,
+          wallets: wallets,
+          categories: categories,
+        ),
       );
     }
   }
