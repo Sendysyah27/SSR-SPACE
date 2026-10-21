@@ -10,6 +10,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:ssr_space/services/ai_context.dart';
 import 'package:ssr_space/services/ai_assistant_context.dart';
+import 'package:ssr_space/services/ai_assistant_state.dart';
+import 'package:ssr_space/services/ai_entry_badges.dart';
+import 'package:ssr_space/screens/lainnya/ai_assistant_settings_screen.dart';
 import 'package:ssr_space/services/ai_correction.dart';
 import 'package:ssr_space/services/ai_assistant_feedback.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
@@ -87,6 +90,11 @@ class _ChatMsg {
   /// Rating umpan balik user (batch 285 tahap B): 0 = belum dinilai,
   /// 1 = membantu (thumbs up), -1 = kurang membantu (thumbs down).
   final int rating;
+
+  /// State bernama Mode Asisten untuk pesan error (batch 285 tahap D):
+  /// 'kuota_habis' | 'rate_limited' | 'jaringan' |
+  /// 'server_tidak_tersedia'. Null = bukan error ber-state.
+  final String? stateKind;
   const _ChatMsg({
     required this.mine,
     required this.text,
@@ -102,6 +110,7 @@ class _ChatMsg {
     this.viz,
     this.vizData,
     this.rating = 0,
+    this.stateKind,
   });
 
   bool get hasAction =>
@@ -123,6 +132,7 @@ class _ChatMsg {
         viz: viz,
         vizData: vizData,
         rating: r,
+        stateKind: stateKind,
       );
 }
 
@@ -177,6 +187,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
   /// mesin tik (batch 285 tahap A). Null = tidak ada animasi berjalan.
   _ChatMsg? _freshReply;
 
+  /// Label chip sisa kuota AI di header Mode Asisten (batch 285 tahap D).
+  /// Null = chip disembunyikan (fail-open).
+  String? _quotaChip;
+
   /// Kunci prefs arsip riwayat chat (teks saja, maks 50 pesan terakhir).
   /// Session TIDAK dihapus saat keluar room; hanya dihapus lewat menu
   /// "Mulai percakapan baru".
@@ -196,6 +210,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
             'err': m.isError,
             'mode': m.mode,
             'rating': m.rating,
+            'state': m.stateKind,
           }).toList();
       await p.setString(_kSession, jsonEncode(list));
     } catch (_) {}
@@ -221,6 +236,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           isError: e['err'] == true,
           mode: (e['mode'] as String?) ?? 'catat',
           rating: (e['rating'] as num?)?.toInt() ?? 0,
+          stateKind: e['state'] as String?,
         ));
       }
       if (restored.isNotEmpty && mounted) {
