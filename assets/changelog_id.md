@@ -1,6 +1,20 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.17+284.
+Versi terpasang: 2.82.18+285.
+
+## Yang baru di 2.82.18+285
+
+1. Balasan Mang AI di mode Asisten sekarang mengetik huruf demi huruf lengkap dengan gelembung "sedang mengetik" — ketuk balasannya kalau mau langsung tampil utuh. Makin terasa seperti ngobrol beneran.
+2. Nilai balasan Asisten pakai tombol jempol naik/turun, dan ada layar baru Lainnya > Pengaturan Asisten: atur persona, nama panggilan, instruksi khusus, izin data, sampai kelola memori Mang AI tentang kamu.
+3. Empat kartu visual baru di mode Asisten: perbandingan bulan ini vs bulan lalu, tren arus kas 30 hari, merchant tempat kamu paling sering belanja, dan progres target tabunganmu. Semua angka dihitung langsung dari data keuanganmu di aplikasi.
+4. Pesan error Asisten kini jelas penyebabnya — kuota habis (ada tombol Lihat Plan), terlalu banyak permintaan, jaringan, atau server — lengkap dengan tombol Coba Lagi. Sisa kuota AI juga tampil sebagai chip di header chat mode Asisten.
+
+## What's new in 2.82.18+285
+
+1. Mang AI replies in Assistant mode now type out progressively with a "typing" bubble — tap a reply to reveal it in full. It feels much more like a real conversation.
+2. Rate Assistant replies with thumbs up/down buttons, and there is a new More > Assistant Settings screen: persona, how it calls you, custom instructions, data permission, and managing what Mang AI remembers about you.
+3. Four new visual cards in Assistant mode: this month vs last month comparison, 30-day cash-flow trend, your top merchants, and savings-goal progress. Every number is computed locally from your own financial data in the app.
+4. Assistant errors now name the cause — quota exhausted (with a View Plan button), rate limited, network, or server — each with a Retry button. Your remaining AI quota also shows as a chip in the Assistant chat header.
 
 ## Yang baru di 2.82.17+284
 
