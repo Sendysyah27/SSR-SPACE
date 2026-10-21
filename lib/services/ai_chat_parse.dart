@@ -253,10 +253,18 @@ const kChatCommandTypes = <String>{
   'delete_last',
 };
 
-/// Jenis kartu visualisasi Mode Asisten (batch 281C tahap 2).
+/// Jenis kartu visualisasi Mode Asisten (281C tahap 2 + 285 tahap C).
 /// Model hanya memilih jenis (+ limit sederhana); angka dirender app
 /// dari snapshot lokal — tidak pernah dari teks/angka model.
-const kChatVizTypes = <String>{'saldo', 'rincian_kategori', 'tren_ringkas'};
+const kChatVizTypes = <String>{
+  'saldo',
+  'rincian_kategori',
+  'tren_ringkas',
+  'banding_periode',
+  'tren_30',
+  'top_merchant',
+  'progres_target',
+};
 
 /// Urai blok "viz" dari kontrak balasan -> peta ternormalisasi atau
 /// null (tak ada / bukan Map / type tak dikenal). Murni; tak pernah

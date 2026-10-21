@@ -181,13 +181,17 @@ String aiAssistantContextBlock(List<String> memory,
 /// Petunjuk viz untuk Mode Asisten (tahap 281C-2): model memilih
 /// jenis kartu; angka dirender app dari snapshot lokalnya sendiri.
 const aiAssistantVizHint = 'Bila jawabanmu membahas saldo dompet, '
-    'rincian kategori pengeluaran, atau arus/tren 7 hari terakhir, '
-    'sertakan field "viz" di objek JSON yang sama: '
+    'rincian kategori pengeluaran, arus 7/30 hari terakhir, perbandingan '
+    'bulan ini vs bulan lalu, merchant teratas, atau progres target '
+    'nabung, sertakan field "viz" di objek JSON yang sama: '
     '{"viz":{"type":"saldo"}} atau {"viz":{"type":"rincian_kategori"}} '
-    'atau {"viz":{"type":"tren_ringkas"}} (rincian_kategori boleh '
-    'tambah "limit":<bilangan 1-8>). Aplikasi merender kartu dari '
-    'datanya sendiri — jangan tulis angka apa pun di dalam viz. '
-    'Bila tidak relevan, jangan sertakan "viz".';
+    'atau {"viz":{"type":"tren_ringkas"}} atau {"viz":{"type":'
+    '"banding_periode"}} atau {"viz":{"type":"tren_30"}} atau {"viz":'
+    '{"type":"top_merchant"}} atau {"viz":{"type":"progres_target"}}. '
+    'rincian_kategori dan top_merchant boleh tambah "limit":<bilangan '
+    '1-8>. Aplikasi merender kartu dari datanya sendiri — jangan tulis '
+    'angka apa pun di dalam viz. Bila tidak relevan, jangan sertakan '
+    '"viz".';
 
 /// Ambil semua isi blok ```ingat ...``` dari balasan AI.
 List<String> parseIngatBlocks(String text) {
