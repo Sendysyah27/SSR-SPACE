@@ -411,4 +411,84 @@ void main() {
       expect(p!.fixable, isFalse);
     });
   });
+
+  group('batch 281: ekstraksi lenient', () {
+    test('prosa + JSON kontrak di tengah -> reply bersih + action', () {
+      final r = parseChatReply(
+        'Baik, saya catatkan ya. {"reply":"Siap, tekan Jalankan.",'
+        '"action":{"type":"out","amount":16000,"category":"Makanan",'
+        '"wallet":"TUNAI"}} sudah saya siapkan.',
+        wallets: _wallets,
+        categories: _cats,
+      );
+      expect(r.reply, 'Siap, tekan Jalankan.');
+      expect(r.action, isNotNull);
+      expect(r.action!['amount'], 16000);
+      expect(r.command, isNull);
+    });
+
+    test('fence json di tengah prosa -> terekstrak', () {
+      final r = parseChatReply(
+        'Berikut hasilnya:\n```json\n{"reply":"Halo!",'
+        '"action":null}\n```\nSemoga membantu.',
+      );
+      expect(r.reply, 'Halo!');
+      expect(r.action, isNull);
+      expect(r.reason, 'action_null');
+    });
+
+    test('prosa murni tanpa kontrak -> teks asli apa adanya', () {
+      final r = parseChatReply('Halo, ada yang bisa saya bantu?');
+      expect(r.reply, 'Halo, ada yang bisa saya bantu?');
+      expect(r.reason, 'parse_gagal');
+      expect(r.command, isNull);
+    });
+
+    test('kurung liar di prosa tidak mengganggu ekstraksi', () {
+      final r = parseChatReply(
+        'Saldo (estimasi) {belum final. {"reply":"Oke.","action":null}',
+      );
+      expect(r.reply, 'Oke.');
+    });
+  });
+
+  group('batch 281: action navigate', () {
+    test('navigate valid -> command terisi, action tx null', () {
+      final r = parseChatReply(
+        '{"reply":"Siap, buka E-Money NFC ya.","action":'
+        '{"type":"navigate","target":"nfc"}}',
+      );
+      expect(r.command, isNotNull);
+      expect(r.command!['type'], 'navigate');
+      expect(r.command!['target'], 'nfc');
+      expect(r.action, isNull);
+      expect(r.reason, isNull);
+    });
+
+    test('target tak dikenal -> command null + target_invalid', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"navigate","target":"mars"}}',
+      );
+      expect(r.command, isNull);
+      expect(r.reason, 'target_invalid');
+      expect(r.actionRaw?['target'], 'mars');
+    });
+
+    test('target bukan string -> target_invalid', () {
+      final r = parseChatReply(
+        '{"reply":"Siap.","action":{"type":"navigate","target":7}}',
+      );
+      expect(r.command, isNull);
+      expect(r.reason, 'target_invalid');
+    });
+
+    test('semua target resmi diterima', () {
+      for (final t in kChatNavTargets) {
+        final r = parseChatReply(
+          '{"reply":"x","action":{"type":"navigate","target":"$t"}}',
+        );
+        expect(r.command?['target'], t, reason: t);
+      }
+    });
+  });
 }

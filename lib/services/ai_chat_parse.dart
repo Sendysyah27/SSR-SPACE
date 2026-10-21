@@ -4,6 +4,8 @@
 //   {"reply":"<teks untuk user>","action":null}
 //   {"reply":"...","action":{"type":"in|out|transfer","amount":<int>,
 //     "category":"...","wallet":"...","note":"..."}}
+//   {"reply":"...","action":{"type":"navigate","target":"<id>"}}
+//     (perintah non-transaksi batch 281 - lihat validateChatCommand).
 // Tanpa markdown fence, tanpa teks di luar JSON.
 //
 // Murni Dart (dart:convert + quick_input_parse, tanpa package Flutter)
@@ -149,6 +151,10 @@ Map<String, dynamic>? lenientActionMap(dynamic raw) {
   }
   final note = m['note'];
   if (note is String && note.trim().isNotEmpty) out['note'] = note.trim();
+  final target = m['target'];
+  if (target is String && target.trim().isNotEmpty) {
+    out['target'] = target.trim();
+  }
   return out;
 }
 
@@ -160,7 +166,106 @@ bool replyPromisesConfirmation(String reply) {
   return t.contains('konfirmasi') || t.contains('jalankan');
 }
 
+/// Ekstrak objek kontrak {"reply":...} dari teks yang dibungkus prosa /
+/// fence di tengah kalimat (model free kadang melanggar format). Pindai
+/// kurung seimbang (sadar string + escape) dari kemunculan TERAKHIR
+/// '{"reply"'. Null bila tak ada objek kontrak yang bisa di-decode.
+/// Murni; tak pernah throw. Pola sama seperti normalisasi server v3.
+Map<String, dynamic>? extractContractJson(String s) {
+  var idx = s.lastIndexOf('{"reply"');
+  while (idx >= 0) {
+    var depth = 0;
+    var inStr = false;
+    var esc = false;
+    var end = -1;
+    for (var i = idx; i < s.length; i++) {
+      final c = s[i];
+      if (inStr) {
+        if (esc) {
+          esc = false;
+        } else if (c == '\') {
+          esc = true;
+        } else if (c == '"') {
+          inStr = false;
+        }
+      } else {
+        if (c == '"') {
+          inStr = true;
+        } else if (c == '{') {
+          depth++;
+        } else if (c == '}') {
+          depth--;
+          if (depth == 0) {
+            end = i;
+            break;
+          }
+        }
+      }
+    }
+    if (end > idx) {
+      try {
+        final j = jsonDecode(s.substring(idx, end + 1));
+        if (j is Map) {
+          final m = Map<String, dynamic>.from(j);
+          final r = m['reply'];
+          if (r is String && r.trim().isNotEmpty) return m;
+        }
+      } catch (_) {}
+    }
+    idx = idx > 0 ? s.lastIndexOf('{"reply"', idx - 1) : -1;
+  }
+  return null;
+}
+
+/// Target navigasi yang didukung action {"type":"navigate"} (281).
+/// Id -> layar yang benar-benar ada di app (audit route 2026-10-21):
+/// nfc=NfcCardsScreen, laporan=ReportsScreen, billing=BillingScreen,
+/// dompet=WalletsScreen, kategori=CategoriesScreen,
+/// anggaran=BudgetsScreen, tagihan=RecurringBillsScreen,
+/// profil=SettingsScreen (hub Profil).
+const kChatNavTargets = <String>{
+  'nfc',
+  'laporan',
+  'billing',
+  'dompet',
+  'kategori',
+  'anggaran',
+  'tagihan',
+  'profil',
+};
+
+/// Tipe action perintah non-transaksi yang dikenal (batch 281).
+const kChatCommandTypes = <String>{'navigate'};
+
+/// Validasi action perintah non-transaksi -> kode alasan atau null.
+/// navigate: target wajib salah satu [kChatNavTargets] (selain itu
+/// 'target_invalid' -> action diabaikan aman, teks tetap tampil).
+/// Murni; tak pernah throw.
+String? validateChatCommandReason(dynamic raw) {
+  if (raw == null) return 'action_null';
+  if (raw is! Map) return 'action_null';
+  final m = Map<String, dynamic>.from(raw);
+  final type = m['type'];
+  if (type == 'navigate') {
+    final t = m['target'];
+    if (t is! String || !kChatNavTargets.contains(t.trim())) {
+      return 'target_invalid';
+    }
+    return null;
+  }
+  return 'type_invalid';
+}
+
+/// Normalisasi action perintah yang valid; null bila tak valid.
+Map<String, dynamic>? validateChatCommand(dynamic raw) {
+  if (validateChatCommandReason(raw) != null) return null;
+  final m = Map<String, dynamic>.from(raw as Map);
+  return {'type': 'navigate', 'target': (m['target'] as String).trim()};
+}
+
 /// Urai balasan mentah model -> (reply, action, actionRaw, reason).
+/// Field command: action perintah non-transaksi tervalidasi (navigate
+/// dst., batch 281) - saluran terpisah dari action transaksi.
 /// - JSON valid berkontrak: kembalikan field `reply` SAJA sebagai teks
 ///   bubble; JSON mentah tidak pernah tampil ke user.
 /// - Parse gagal (bukan JSON / bukan Map / tanpa `reply` string):
@@ -169,7 +274,7 @@ bool replyPromisesConfirmation(String reply) {
 /// - action ditolak validasi: reason = kode dari [validateChatActionReason],
 ///   actionRaw = salinan lenient untuk prefill fallback.
 /// Tak pernah throw. Tak pernah log isi pesan.
-({String reply, Map<String, dynamic>? action, Map<String, dynamic>? actionRaw, String? reason}) parseChatReply(
+({String reply, Map<String, dynamic>? action, Map<String, dynamic>? actionRaw, String? reason, Map<String, dynamic>? command}) parseChatReply(
   String raw, {
   List<String> wallets = const [],
   List<String> categories = const [],
@@ -179,15 +284,58 @@ bool replyPromisesConfirmation(String reply) {
   try {
     decoded = jsonDecode(clean);
   } catch (_) {
-    return (reply: raw, action: null, actionRaw: null, reason: 'parse_gagal');
+    decoded = null;
   }
   if (decoded is! Map) {
-    return (reply: raw, action: null, actionRaw: null, reason: 'parse_gagal');
+    // Lenient (281): kontrak mungkin terbungkus prosa / fence di tengah
+    // teks - ekstrak objeknya; gagal juga -> teks asli apa adanya.
+    decoded = extractContractJson(clean);
+  }
+  if (decoded is! Map) {
+    return (
+      reply: raw,
+      action: null,
+      actionRaw: null,
+      reason: 'parse_gagal',
+      command: null,
+    );
   }
   final m = Map<String, dynamic>.from(decoded);
   final reply = m['reply'];
   if (reply is! String || reply.trim().isEmpty) {
-    return (reply: raw, action: null, actionRaw: null, reason: 'parse_gagal');
+    return (
+      reply: raw,
+      action: null,
+      actionRaw: null,
+      reason: 'parse_gagal',
+      command: null,
+    );
+  }
+  // Saluran perintah non-transaksi (batch 281): type yang dikenal
+  // sebagai command divalidasi di jalurnya sendiri; type asing lain
+  // tetap jatuh ke jalur tx dan ditolak 'type_invalid' seperti biasa.
+  final rawAction = m['action'];
+  if (rawAction is Map) {
+    final t = rawAction['type'];
+    if (t is String && kChatCommandTypes.contains(t)) {
+      final cReason = validateChatCommandReason(rawAction);
+      if (cReason != null) {
+        return (
+          reply: reply,
+          action: null,
+          actionRaw: lenientActionMap(rawAction),
+          reason: cReason,
+          command: null,
+        );
+      }
+      return (
+        reply: reply,
+        action: null,
+        actionRaw: null,
+        reason: null,
+        command: validateChatCommand(rawAction),
+      );
+    }
   }
   final reason = validateChatActionReason(
     m['action'],
@@ -200,6 +348,7 @@ bool replyPromisesConfirmation(String reply) {
       action: null,
       actionRaw: lenientActionMap(m['action']),
       reason: reason,
+      command: null,
     );
   }
   final action = validateChatAction(
@@ -207,7 +356,7 @@ bool replyPromisesConfirmation(String reply) {
     wallets: wallets,
     categories: categories,
   );
-  return (reply: reply, action: action, actionRaw: null, reason: null);
+  return (reply: reply, action: action, actionRaw: null, reason: null, command: null);
 }
 
 /// Data untuk kartu fallback: aksi ditolak validasi padahal reply

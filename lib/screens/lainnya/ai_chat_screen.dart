@@ -24,6 +24,14 @@ import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/ai_zen_client.dart';
 import 'package:ssr_space/services/ai_quota.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
+import 'package:ssr_space/screens/budget/budgets_screen.dart';
+import 'package:ssr_space/screens/dompet/wallets_screen.dart';
+import 'package:ssr_space/screens/lainnya/billing_screen.dart';
+import 'package:ssr_space/screens/lainnya/categories_screen.dart';
+import 'package:ssr_space/screens/lainnya/nfc_cards_screen.dart';
+import 'package:ssr_space/screens/lainnya/recurring_bills_screen.dart';
+import 'package:ssr_space/screens/lainnya/settings_screen.dart';
+import 'package:ssr_space/screens/laporan/reports_screen.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -52,6 +60,9 @@ class _ChatMsg {
   final BudgetDraft? budgetAction;
   /// Aksi ditolak validasi tapi reply janji konfirmasi -> kartu perbaikan.
   final PendingChatAction? pendingAction;
+
+  /// Perintah non-transaksi tervalidasi (navigate dst., batch 281).
+  final Map<String, dynamic>? command;
   const _ChatMsg({
     required this.mine,
     required this.text,
@@ -62,6 +73,7 @@ class _ChatMsg {
     this.billAction,
     this.budgetAction,
     this.pendingAction,
+    this.command,
   });
 
   bool get hasAction =>
@@ -335,7 +347,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
       // Fallback: aksi ditolak tapi reply janji konfirmasi -> kartu
       // perbaikan (jangan buang diam-diam). Tanpa simpan otomatis.
       PendingChatAction? pending;
-      if (shouldShowActionFallback(
+      final rawType = parsed.actionRaw?['type'];
+      final isCommandRaw =
+          rawType is String && kChatCommandTypes.contains(rawType);
+      if (!isCommandRaw && shouldShowActionFallback(
         action: parsed.action,
         reason: parsed.reason,
         reply: parsed.reply,
@@ -371,6 +386,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           billAction: bill,
           budgetAction: budget,
           pendingAction: pending,
+          command: parsed.command,
         ));
         _sending = false;
       });
@@ -771,6 +787,83 @@ class _AiChatScreenState extends State<AiChatScreen> {
     _toBottom();
   }
 
+  /// Judul kartu perintah non-transaksi (batch 281).
+  String _commandTitle(Map<String, dynamic> cmd) {
+    switch (cmd['type']) {
+      case 'navigate':
+        return '${tr('ai_open')}: ${_navLabel(cmd['target'] as String? ?? '')}';
+      default:
+        return tr('ai_run');
+    }
+  }
+
+  /// Keterangan kartu perintah (null = tanpa keterangan).
+  String? _commandNote(Map<String, dynamic> cmd) => null;
+
+  /// Label tombol utama kartu perintah (null = label bawaan).
+  String? _commandRunLabel(Map<String, dynamic> cmd) =>
+      cmd['type'] == 'navigate' ? tr('ai_open') : null;
+
+  String _navLabel(String target) {
+    switch (target) {
+      case 'nfc':
+        return tr('ai_nav_nfc');
+      case 'laporan':
+        return tr('ai_nav_laporan');
+      case 'billing':
+        return tr('ai_nav_billing');
+      case 'dompet':
+        return tr('ai_nav_dompet');
+      case 'kategori':
+        return tr('ai_nav_kategori');
+      case 'anggaran':
+        return tr('ai_nav_anggaran');
+      case 'tagihan':
+        return tr('ai_nav_tagihan');
+      case 'profil':
+        return tr('ai_nav_profil');
+      default:
+        return target;
+    }
+  }
+
+  /// Layar untuk target navigasi; null = target tak dikenal (abaikan aman).
+  Widget? _navScreen(String target) {
+    switch (target) {
+      case 'nfc':
+        return const NfcCardsScreen();
+      case 'laporan':
+        return const ReportsScreen();
+      case 'billing':
+        return const BillingScreen();
+      case 'dompet':
+        return const WalletsScreen();
+      case 'kategori':
+        return const CategoriesScreen();
+      case 'anggaran':
+        return const BudgetsScreen();
+      case 'tagihan':
+        return const RecurringBillsScreen();
+      case 'profil':
+        return const SettingsScreen();
+    }
+    return null;
+  }
+
+  /// Eksekutor perintah non-transaksi; jalan HANYA dari kartu konfirmasi.
+  Future<void> _runCommand(Map<String, dynamic> cmd) async {
+    switch (cmd['type']) {
+      case 'navigate':
+        final screen = _navScreen(cmd['target'] as String? ?? '');
+        if (screen == null || !mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => screen),
+        );
+        break;
+    }
+  }
+
   Future<void> _runBill(BillDraft d) async {
     try {
       final bills = await loadBills();
@@ -968,6 +1061,14 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                     '${m.budgetAction!.category} · ${m.budgetAction!.limit.toStringAsFixed(0)}',
                                 note: tr('mode_budget_s'),
                                 onRun: () => _runBudget(m.budgetAction!),
+                                onCancel: () => _cancelActionCard(m),
+                              ),
+                            if (m.command != null)
+                              _ActionCard(
+                                title: _commandTitle(m.command!),
+                                note: _commandNote(m.command!),
+                                runLabel: _commandRunLabel(m.command!),
+                                onRun: () => _runCommand(m.command!),
                                 onCancel: () => _cancelActionCard(m),
                               ),
                             ],
@@ -1238,12 +1339,16 @@ class _ActionCard extends StatelessWidget {
   final VoidCallback onRun;
   final VoidCallback? onSave;
   final VoidCallback? onCancel;
+
+  /// Label tombol utama; null = tr('ai_run') bawaan.
+  final String? runLabel;
   const _ActionCard({
     required this.title,
     this.note,
     required this.onRun,
     this.onSave,
     this.onCancel,
+    this.runLabel,
   });
 
   @override
@@ -1306,7 +1411,7 @@ class _ActionCard extends StatelessWidget {
                 Expanded(
                   child: FilledButton(
                     onPressed: onRun,
-                    child: Text(tr('ai_run')),
+                    child: Text(runLabel ?? tr('ai_run')),
                   ),
                 ),
               ],
