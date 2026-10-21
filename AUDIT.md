@@ -862,7 +862,7 @@ ada eksekusi senyap. Tanpa migration/dep baru.
   identik dengan versi dashboard, AUDIT 280 difinalisasi.
 - [Docs] assets/changelog_id.md diperbarui (penanda versi
   terpasang + catatan 2.82.14+281).
-- Rilis: CI run pending - diisi setelah hijau.
+- Rilis: CI run 39558219518 (build-apk) SUCCESS — hijau.
 
 ## 2.82.13+280 (2026-10-21)
 Mang AI pindah ke server (adaptasi opencode-free-bridge): chat AI +
