@@ -1,6 +1,18 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.16+283.
+Versi terpasang: 2.82.17+284.
+
+## Yang baru di 2.82.17+284
+
+1. Hasil scan struk kini dicek kewajarannya (total vs rincian item, tanggal, item ganda) dan struk mata uang asing otomatis dikonversi ke Rupiah — ada peringatan "Periksa lagi" sebelum menyimpan bila ditemukan yang janggal.
+2. Catatan hasil scan bisa diatur di Lainnya > Pengaturan AI Scan (nyala/mati, urutan isi, nama pemilik struk). Scan gagal? Sekarang bisa Coba Lagi dengan foto yang sama, Ganti Foto, atau Isi Manual — plus badge sisa kuota AI & promo di kartu scan.
+3. Mesin scan lebih efisien: prompt & daftar kategori kini dirakit server dan hasil scan dibakukan formatnya, jadi scan lebih konsisten tanpa perlu update aplikasi.
+
+## What's new in 2.82.17+284
+
+1. Receipt scan results are now sanity-checked (total vs item breakdown, date, duplicates) and foreign-currency receipts are converted to IDR automatically — with a "double-check" warning before saving when something looks off.
+2. Scan notes are customizable under More > AI Scan Settings (on/off, section order, receipt owner name). Scan failed? You can now Retry the same photo, Replace Photo, or Fill Manually — plus AI quota & promo badges on the scan card.
+3. A more efficient scan engine: prompts & category lists are now assembled on the server and scan output is normalized into a strict format, making scans more consistent without app updates.
 
 ## Yang baru di 2.82.16+283
 
