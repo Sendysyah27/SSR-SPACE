@@ -193,7 +193,7 @@ Map<String, dynamic>? extractContractJson(String s) {
       if (inStr) {
         if (esc) {
           esc = false;
-        } else if (c == '\') {
+        } else if (c == '\\') {
           esc = true;
         } else if (c == '"') {
           inStr = false;
