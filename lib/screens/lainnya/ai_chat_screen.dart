@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:ssr_space/services/ai_context.dart';
 import 'package:ssr_space/services/ai_assistant_context.dart';
+import 'package:ssr_space/services/ai_correction.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_memory.dart';
 import 'package:ssr_space/services/ai_persona.dart';
@@ -103,6 +104,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   bool _sending = false;
   List<int>? _pendingImage;
   String? _pendingMime;
+  String _lastUserText = '';
   String _dataCtx = '';
   String _providerId = 'server';
 
@@ -333,6 +335,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     final img = retryText != null ? null : _pendingImage;
     final mime = retryText != null ? null : _pendingMime;
     if ((text.isEmpty && img == null) || _sending) return;
+    _lastUserText = text;
     // Gate kuota AI (entitlement Fase 1): tiap kirim dicek. Mentok ->
     // paywall + batal (tanpa panggil model, tanpa bubble user baru).
     // Fail-open: server diam -> lolos (aiAllowed true).
@@ -869,7 +872,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     });
   }
 
-  Future<void> _runAction(TxDraft d) async {
+  Future<void> _runAction(TxDraft d, {Map<String, dynamic>? aiValues}) async {
     String? walletId;
     if (d.wallet != null) {
       try {
@@ -915,6 +918,74 @@ class _AiChatScreenState extends State<AiChatScreen> {
           if ((t.note ?? '') != (d.note ?? '')) continue;
           _lastChatTx = t;
           break;
+        }
+      }
+    } catch (_) {}
+    // Batch 281D tahap 1: event koreksi — bandingkan nilai AI vs
+    // nilai final yang tersimpan dari form ini. Fail-open total:
+    // kegagalan di sini tak pernah menghalangi bubble sukses.
+    try {
+      final orgId3 = await activeOrgId();
+      if (orgId3.isNotEmpty) {
+        final rows3 = await TransactionService().list(orgId3);
+        final today3 = txWhen(DateTime.now()).date;
+        SaasTransaction? finalTx;
+        for (final t in rows3) {
+          if (t.sourcePackage != null) continue;
+          if (t.date != today3) continue;
+          if (t.type != d.type || t.amount != d.amount) continue;
+          if ((t.category ?? '') != (d.category ?? '')) continue;
+          if ((t.note ?? '') != (d.note ?? '')) continue;
+          finalTx = t;
+          break;
+        }
+        if (finalTx == null) {
+          final nowTs = DateTime.now();
+          for (final t in rows3) {
+            if (t.sourcePackage != null) continue;
+            if (t.date != today3) continue;
+            final ct = t.createdAt == null
+                ? null
+                : DateTime.tryParse(t.createdAt!);
+            if (ct == null) continue;
+            if (nowTs.difference(ct).inSeconds.abs() > 300) continue;
+            if (finalTx == null ||
+                (finalTx.createdAt ?? '').compareTo(t.createdAt ?? '') < 0) {
+              finalTx = t;
+            }
+          }
+        }
+        final ft = finalTx;
+        if (ft != null) {
+          String? finalWallet;
+          try {
+            final ws3 = await WalletService().list(orgId3);
+            for (final w in ws3) {
+              if (w.id == ft.walletId) finalWallet = w.name;
+            }
+          } catch (_) {}
+          final ev = buildCorrectionEvent(
+            ai: aiValues ??
+                <String, dynamic>{
+                  'type': d.type,
+                  'amount': d.amount,
+                  'wallet': d.wallet,
+                  'category': d.category,
+                  'note': d.note,
+                },
+            fin: <String, dynamic>{
+              'type': ft.type,
+              'amount': ft.amount,
+              'wallet': finalWallet,
+              'category': ft.category,
+              'note': ft.note,
+            },
+            sourceText: _lastUserText,
+          );
+          if (ev != null) {
+            await recordCorrectionEvent(ev);
+            unawaited(syncCorrectionEvents());
+          }
         }
       }
     } catch (_) {}
@@ -1574,7 +1645,16 @@ class _AiChatScreenState extends State<AiChatScreen> {
                             if (m.pendingAction != null)
                               _PendingActionCard(
                                 pending: m.pendingAction!,
-                                onRun: (d) => _runAction(d),
+                                onRun: (d) => _runAction(d, aiValues: {
+                                  'type': m.pendingAction!.type,
+                                  'amount':
+                                      m.pendingAction!.amount.toDouble(),
+                                  'wallet': m.pendingAction!.walletOk ??
+                                      m.pendingAction!.walletBad,
+                                  'category': m.pendingAction!.categoryOk ??
+                                      m.pendingAction!.categoryBad,
+                                  'note': m.pendingAction!.note,
+                                }),
                                 onCancel: () => _cancelActionCard(m),
                               ),
                             if (m.billAction != null)
