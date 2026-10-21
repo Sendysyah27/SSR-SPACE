@@ -21,6 +21,7 @@ import 'package:ssr_space/services/quick_input_parse.dart';
 import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
+import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_scan_validate.dart';
 import 'package:ssr_space/services/vision_scan_service.dart';
 import 'package:ssr_space/widgets/input_mode_sheet.dart';
@@ -514,6 +515,8 @@ class _TxInputSheetState extends State<TxInputSheet> {
           if (edited != null) data = edited;
         }
       }
+      data = await applyFxConversion(data);
+      if (!mounted) return;
       final warns = await validateReceiptData(data);
       unawaited(recordScanAmount(data));
       if (!mounted) return;
@@ -577,10 +580,12 @@ class _TxInputSheetState extends State<TxInputSheet> {
       if (!mounted) return;
       setState(() => _scanning = false);
       if (out == null) return;
-      final warns = await validateReceiptData(out.data);
-      unawaited(recordScanAmount(out.data));
+      final data = await applyFxConversion(out.data);
       if (!mounted) return;
-      _applyReceiptPrefill(out.data, aiCategory: out.category);
+      final warns = await validateReceiptData(data);
+      unawaited(recordScanAmount(data));
+      if (!mounted) return;
+      _applyReceiptPrefill(data, aiCategory: out.category);
       setState(() {
         _scanOrigin = '${out.provider} · ${_scanOrigin ?? ''}';
       });
@@ -589,10 +594,10 @@ class _TxInputSheetState extends State<TxInputSheet> {
           context: context,
           isScrollControlled: true,
           builder: (_) => ReceiptResultSheet(
-            data: out.data,
+            data: data,
             warnings: warns,
-            mirror: _visionMirror(out.data),
-            onShowRaw: () => _showRawOcrDialog(out.data.merchant ?? ''),
+            mirror: _visionMirror(data),
+            onShowRaw: () => _showRawOcrDialog(data.merchant ?? ''),
           ),
         );
       }

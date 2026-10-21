@@ -41,6 +41,17 @@ class ReceiptData {
   /// Teks detail struk (format struk) dari vision scan, untuk disimpan
   /// sebagai catatan transaksi. Null bila tidak ada.
   final String? detailText;
+
+  /// Mata uang asing terdeteksi di struk (batch 284 tahap B), mis.
+  /// 'JPY'. Null = IDR / tak terdeteksi.
+  final String? fxCurrency;
+
+  /// Total asli dalam mata uang asing (sebelum konversi ke IDR).
+  final double? fxOriginal;
+
+  /// Kurs IDR per 1 unit asing yang dipakai mengonversi. Null = belum /
+  /// gagal konversi (fail-open: [amount] masih nominal asing).
+  final double? fxRate;
   const ReceiptData({
     this.amount,
     this.date,
@@ -59,7 +70,59 @@ class ReceiptData {
     this.dateFromReceipt = true,
     this.inconsistent = false,
     this.detailText,
+    this.fxCurrency,
+    this.fxOriginal,
+    this.fxRate,
   });
+
+  /// Salin dengan sebagian field diganti (dipakai konversi mata uang
+  /// tahap B + penanda hasil scan). Field nullable tak bisa dikosongkan
+  /// lewat copyWith ini (cukup untuk kebutuhan scan).
+  ReceiptData copyWith({
+    double? amount,
+    DateTime? date,
+    String? merchant,
+    List<String>? items,
+    List<ReceiptItem>? lineItems,
+    double? voucher,
+    bool? confident,
+    String? address,
+    String? cashier,
+    String? phone,
+    String? receiptNo,
+    String? time,
+    String? payType,
+    double? tax,
+    bool? dateFromReceipt,
+    bool? inconsistent,
+    String? detailText,
+    String? fxCurrency,
+    double? fxOriginal,
+    double? fxRate,
+  }) {
+    return ReceiptData(
+      amount: amount ?? this.amount,
+      date: date ?? this.date,
+      merchant: merchant ?? this.merchant,
+      items: items ?? this.items,
+      lineItems: lineItems ?? this.lineItems,
+      voucher: voucher ?? this.voucher,
+      confident: confident ?? this.confident,
+      address: address ?? this.address,
+      cashier: cashier ?? this.cashier,
+      phone: phone ?? this.phone,
+      receiptNo: receiptNo ?? this.receiptNo,
+      time: time ?? this.time,
+      payType: payType ?? this.payType,
+      tax: tax ?? this.tax,
+      dateFromReceipt: dateFromReceipt ?? this.dateFromReceipt,
+      inconsistent: inconsistent ?? this.inconsistent,
+      detailText: detailText ?? this.detailText,
+      fxCurrency: fxCurrency ?? this.fxCurrency,
+      fxOriginal: fxOriginal ?? this.fxOriginal,
+      fxRate: fxRate ?? this.fxRate,
+    );
+  }
 }
 
 final _totalKey = RegExp(

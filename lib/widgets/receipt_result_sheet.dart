@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/currency.dart';
+import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/receipt_scan_validate.dart';
 import 'package:ssr_space/theme/app_theme.dart';
@@ -103,6 +104,65 @@ class ReceiptResultSheet extends StatelessWidget {
                         color: scheme.error,
                       ),
                       textAlign: TextAlign.center,
+                    ),
+                  ],
+                  if (data.fxCurrency != null) ...[
+                    const SizedBox(height: SsrSpace.sm),
+                    Container(
+                      padding: const EdgeInsets.all(SsrSpace.sm),
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(tr('rcp_fx_orig'),
+                                    style: theme.textTheme.bodySmall),
+                              ),
+                              Text(
+                                formatForeignAmount(
+                                    data.fxOriginal ?? data.amount ?? 0,
+                                    data.fxCurrency!),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures()
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          if (data.fxRate != null)
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(tr('rcp_fx_rate'),
+                                      style: theme.textTheme.bodySmall),
+                                ),
+                                Text(
+                                  '1 ${data.fxCurrency} = ${_idr(data.fxRate!)}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures()
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            Text(
+                              tr('rcp_fx_na')
+                                  .replaceFirst('{c}', data.fxCurrency!),
+                              style: theme.textTheme.bodySmall
+                                  ?.copyWith(color: scheme.error),
+                            ),
+                        ],
+                      ),
                     ),
                   ],
                   if (warnings.isNotEmpty) ...[

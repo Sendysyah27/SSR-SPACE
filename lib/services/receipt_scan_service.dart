@@ -5,6 +5,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_kind.dart';
 import 'package:ssr_space/services/receipt_layout.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
@@ -103,7 +104,12 @@ Future<ReceiptData?> scanReceipt(ImageSource source) async {
       if (seen.trim().isEmpty) {
         throw const ReceiptScanException('rcp_empty');
       }
-      return parseReceipt(seen);
+      final parsed = parseReceipt(seen);
+      // Batch 284 tahap B: tandai mata uang asing dari teks OCR;
+      // konversi dikerjakan pemanggil (applyFxConversion).
+      final fxCode = detectReceiptCurrency(seen);
+      if (fxCode == null) return parsed;
+      return parsed.copyWith(fxCurrency: fxCode, fxOriginal: parsed.amount);
     } finally {
       await recognizer.close();
     }

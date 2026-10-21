@@ -280,6 +280,12 @@ const _t = <String, Map<String, String>>{
   'rcp_raw_close': {'id': 'Tutup', 'en': 'Close'},
   'rcp_total': {'id': 'Total', 'en': 'Total'},
   'rcp_warn_title': {'id': 'Perlu dicek', 'en': 'Double-check'},
+  'rcp_fx_orig': {'id': 'Total asli', 'en': 'Original total'},
+  'rcp_fx_rate': {'id': 'Kurs dipakai', 'en': 'Rate used'},
+  'rcp_fx_na': {
+    'id': 'Kurs tidak tersedia — nominal masih {c}, sesuaikan manual bila perlu',
+    'en': 'Rate unavailable — amount still in {c}, adjust manually if needed'
+  },
   'rcp_no': {'id': 'No', 'en': 'No'},
   'rcp_cashier': {'id': 'Kasir', 'en': 'Cashier'},
   'rcp_pay': {'id': 'Bayar', 'en': 'Payment'},

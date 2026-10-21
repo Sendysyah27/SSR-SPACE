@@ -17,6 +17,7 @@ import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/tx_input_logic.dart';
 import 'package:ssr_space/services/tx_validation.dart';
+import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_scan_validate.dart';
 import 'package:ssr_space/services/vision_scan_service.dart';
 import 'package:ssr_space/services/wallet_service.dart';
@@ -701,11 +702,13 @@ class _OlloEntrySheetState extends State<_OlloEntrySheet> {
       if (!mounted) return;
       setState(() => _scanning = false);
       if (out == null) return;
-      _applyScan(out.data, out.category);
+      final data = await applyFxConversion(out.data);
+      if (!mounted) return;
+      _applyScan(data, out.category);
       // Batch 284 tahap A: validator struk — permukaan ini tanpa sheet
       // hasil, jadi peringatan tampil sebagai SnackBar (tak memblokir).
-      final warns = await validateReceiptData(out.data);
-      unawaited(recordScanAmount(out.data));
+      final warns = await validateReceiptData(data);
+      unawaited(recordScanAmount(data));
       if (warns.isNotEmpty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(warns.map((w) => w.message).join('\n'))),

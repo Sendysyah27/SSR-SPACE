@@ -9,6 +9,7 @@ import 'package:ssr_space/services/ai_server_client.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/receipt_scan_service.dart';
 import 'package:ssr_space/services/error_reporter.dart';
+import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/receipt_scan_parse.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
@@ -71,6 +72,9 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
 
     ReceiptScanResult? scanned;
     String? lastDetail;
+    // Teks mentah terakhir (balasan model / OCR) — bahan deteksi mata
+    // uang asing tahap B.
+    var lastRaw = '';
     var usedProvider = serverProviderName;
 
     // 1) Vision langsung via Mang AI server (model VL).
@@ -86,6 +90,7 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
         timeout: visionScanTimeout,
       );
       usedProvider = r.provider;
+      lastRaw = r.text;
       // Format baris teks dulu (robust utk banyak item); fallback JSON lama.
       scanned = parseReceiptScanText(_stripFence(r.text), categories) ??
           parseReceiptScanJson(_stripFence(r.text), categories);
@@ -114,6 +119,7 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
             kind: 'receipt',
           );
           usedProvider = r.provider;
+          lastRaw = '$ocr\n${r.text}';
           scanned = parseReceiptScanText(_stripFence(r.text), categories) ??
               parseReceiptScanJson(_stripFence(r.text), categories);
           if (scanned == null) {
@@ -134,6 +140,10 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
     // Sukses AI -> catat satu pemakaian kuota (fail-silent).
     if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'receipt'));
     final s = scanned;
+    // Batch 284 tahap B: deteksi mata uang asing dari teks mentah;
+    // konversi ke IDR dikerjakan pemanggil (applyFxConversion) agar
+    // kurs + hasil konversi tampil di sheet review.
+    final fxCode = detectReceiptCurrency(lastRaw);
     // Teks detail gaya struk -> disimpan sebagai catatan transaksi
     // (terlihat lengkap di detail transaksi).
     final detailText = receiptDetailText(s);
@@ -157,6 +167,8 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
         lineItems: lineItems,
         confident: true,
         detailText: detailText,
+        fxCurrency: fxCode,
+        fxOriginal: fxCode == null ? null : s.total.toDouble(),
       ),
       provider: usedProvider,
       category: s.category,
