@@ -24,7 +24,14 @@ class ScanOverlay extends StatelessWidget {
               const _LaserBox(),
               const SizedBox(height: SsrSpace.md),
               ScanStatusText(
-                style: const TextStyle(color: Colors.white),
+                // Style dari Theme (runtime) — SENGAJA non-const:
+                // const di rantai overlay ini memicu konflik
+                // prefer_const_* vs const_with_non_const di
+                // analyzer CI (Container tak bisa const di sana).
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.white),
               ),
             ],
           ),
@@ -117,10 +124,7 @@ class _LaserPainter extends CustomPainter {
 class ScanStatusText extends StatefulWidget {
   final TextStyle? style;
   final TextAlign? textAlign;
-  // Konstruktor SENGAJA non-const: widget digerakkan Timer
-  // (stateful); const di sini memicu rantai prefer_const_*
-  // yang tak bisa dipenuhi analyzer (const_with_non_const).
-  ScanStatusText({super.key, this.style, this.textAlign});
+  const ScanStatusText({super.key, this.style, this.textAlign});
 
   @override
   State<ScanStatusText> createState() => _ScanStatusTextState();
