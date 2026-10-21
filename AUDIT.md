@@ -833,6 +833,39 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.82.15+282 (2026-10-21)
+Mang AI Mode Asisten ala Ollo (batch 281C): satu layar chat, dua mode
+terpisah (saklar Catat/Asisten) dengan system prompt, konteks, dan
+action sah yang berbeda per mode. Mode Catat = perilaku 281 persis.
+Tanpa migration/dep baru; kontrak server EF tidak berubah.
+- [AI] Tahap 1 (716cfe9): saklar mode SegmentedButton di
+  ai_chat_screen; _ChatMsg.mode memisahkan riwayat + konteks per mode
+  (arsip sesi ai_chat_session kini menyimpan mode per pesan,
+  kompatibel arsip lama); aiAssistantSoul (analis: action sah HANYA
+  navigate; minta catat -> sarankan pindah Mode Catat);
+  aiAssistantContextBlock tanpa kontrak Catat; aiChat() meneruskan
+  system kustom ke aiChatViaCli. Tes ai_soul +2.
+- [AI] Tahap 2 (f93f96b): context builder terstruktur
+  ai_assistant_context.dart — AssistantSnapshot (saldo per dompet,
+  masuk/keluar bulan berjalan, 5 kategori pengeluaran teratas,
+  agregat per hari 7 hari terakhir, tagihan terdekat, target nabung;
+  semua dari service existing, fail-open per seksi) + kontrak viz:
+  parseChatViz (saldo|rincian_kategori|tren_ringkas, limit 1-8)
+  sebagai field baru parseChatReply; kartu _VizCard merender angka
+  dari snapshot lokal — model hanya memilih jenis kartu. Tes
+  parse +3, konteks +3.
+- [AI] Tahap 3 (7235763): personalisasi ai_persona.dart (persona
+  santai/formal/ringkas/detail, instruksi kustom, nama panggilan;
+  prefs ai_persona/ai_custom_instruction/ai_user_nickname)
+  disuntikkan ke blok konteks kedua mode; UI lewat sheet Memori AI
+  -> Personalisasi Mang AI. Memori riwayat diperpanjang:
+  aiHistoryTurns 10 -> 16, aiHistoryChars 300 -> 400, +
+  rollingHistoryDigest (digest ekstraktif lokal pesan lama, maks
+  ~700 char, tanpa panggilan model). Tes ai_soul +4, persona +3.
+- [Docs] assets/changelog_id.md diperbarui (penanda versi
+  terpasang + catatan 2.82.15+282).
+- Rilis: CI run pending - diisi setelah hijau.
+
 ## 2.82.14+281 (2026-10-21)
 Mang AI paket aksi (batch 281, adaptasi alur Ollo Assistant): chat
 bisa bernavigasi dan mengelola data lewat kartu konfirmasi - tidak

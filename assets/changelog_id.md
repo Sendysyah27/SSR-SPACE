@@ -1,6 +1,18 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.14+281.
+Versi terpasang: 2.82.15+282.
+
+## Yang baru di 2.82.15+282
+
+1. Mode Asisten baru di chat Mang AI (saklar Catat/Asisten di atas layar chat): mode Catat tetap untuk mencatat transaksi; mode Asisten jadi analis pribadimu — menjawab dari data keuanganmu dan bisa menampilkan kartu visual: saldo dompet, pengeluaran per kategori, dan arus 7 hari terakhir.
+2. Personalisasi Mang AI: atur persona (Santai/Formal/Ringkas/Detail), nama panggilan, dan instruksi kustom lewat menu Memori AI — berlaku di kedua mode.
+3. Ingatan percakapan lebih panjang: Mang AI kini mengingat konteks lebih jauh ke belakang, termasuk ringkasan otomatis pesan-pesan lama.
+
+## What's new in 2.82.15+282
+
+1. New Assistant mode in Mang AI chat (a Catat/Assistant switch above the chat): Record mode stays for logging transactions; Assistant mode becomes your personal analyst — answers from your financial data and can show visual cards: wallet balances, spending by category, and the last 7 days flow.
+2. Mang AI personalization: set a persona (Casual/Formal/Brief/Detailed), a nickname, and custom instructions from the AI Memory menu — applies to both modes.
+3. Longer conversation memory: Mang AI now remembers context further back, including an automatic digest of older messages.
 
 ## Yang baru di 2.82.14+281
 
