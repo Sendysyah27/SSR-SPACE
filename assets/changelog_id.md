@@ -1,6 +1,18 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.18+285.
+Versi terpasang: 2.82.19+286.
+
+## Yang baru di 2.82.19+286
+
+1. Hasil scan struk kini lebih akurat: merchant terdeteksi dengan benar, Grand Total diambil setelah potongan diskon (bukan Rp 0), jam transaksi terbaca (bukan 00:00), dan tambahan tanpa harga seperti es batu atau gula tidak lagi dianggap barang belanjaan.
+2. Nama aplikasi di launcher kini "SSR SPACE".
+3. Hasil scan (OCR maupun AI) kini masuk layar review terstruktur ala kartu konfirmasi, lengkap dengan Simpan Draft — draft yang belum selesai tersimpan di daftar draft menu Scan Struk dan bisa dilanjutkan kapan saja.
+
+## What's new in 2.82.19+286
+
+1. Receipt scans are now more accurate: merchants detected correctly, Grand Total read after discount (no more Rp 0), transaction time parsed (no more 00:00), and zero-price modifiers like ice or sugar no longer show up as line items.
+2. The launcher app name is now "SSR SPACE".
+3. Scan results (OCR and AI) now open a structured review screen with Save Draft — unfinished drafts live in the Scan menu's draft list and can be resumed anytime.
 
 ## Yang baru di 2.82.18+285
 
