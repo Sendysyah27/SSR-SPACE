@@ -53,7 +53,9 @@ String? detectReceiptCurrency(String text) {
   // RM ringgit: 'RM' di batas kata, boleh diikuti angka langsung
   // (RM45.90). 'Rp' tidak cocok — pola ini menuntut M setelah R.
   if (RegExp(r'\bRM(\s?\d|\s)').hasMatch(text)) return 'MYR';
-  if (text.contains('S\$') || text.contains('SGD')) return 'SGD';
+  // S$ Singapura: wajib batas kata di depan S — 'US$' TIDAK boleh ikut
+  // (jebakan substring: 'US$' mengandung 'S$').
+  if (RegExp(r'\bS\$').hasMatch(text)) return 'SGD';
   if (text.contains('\$')) return 'USD';
   return null;
 }
