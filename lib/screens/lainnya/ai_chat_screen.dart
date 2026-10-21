@@ -15,6 +15,7 @@ import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_memory.dart';
 import 'package:ssr_space/services/ai_merchant_alias.dart';
 import 'package:ssr_space/services/ai_parse_rules.dart';
+import 'package:ssr_space/services/ai_pii.dart';
 import 'package:ssr_space/services/ai_persona.dart';
 import 'package:ssr_space/services/ai_chat_parse.dart';
 import 'package:ssr_space/services/ai_soul.dart';
@@ -413,13 +414,20 @@ class _AiChatScreenState extends State<AiChatScreen> {
         if (m.mode == _mode)
           (mine: m.mine, text: m.image != null ? '${m.text} [gambar]' : m.text),
     ];
+    // Batch 281D tahap 4: masking PII sisi klien — teks yang
+    // DIKIRIM ke EF (prompt + riwayat + konteks data) dimasking;
+    // bubble lokal tetap menampilkan teks asli user.
+    final sendHistory = [
+      for (final h in history) (mine: h.mine, text: maskPii(h.text)),
+    ];
     try {
-      final r = await aiChat(prompt,
+      final r = await aiChat(maskPii(prompt),
           imageBytes: img,
           mimeType: mime,
-          history: history,
-          dataContext:
-              asisten ? asistenCtx : (_dataCtx.isEmpty ? null : _dataCtx),
+          history: sendHistory,
+          dataContext: asisten
+              ? (asistenCtx == null ? null : maskPii(asistenCtx))
+              : (_dataCtx.isEmpty ? null : maskPii(_dataCtx)),
           system: asisten ? '$aiAssistantSoul $aiAssistantVizHint' : null);
       // Sukses -> catat pemakaian kuota AI (fail-silent, tanpa blokir UI).
       if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'chat'));

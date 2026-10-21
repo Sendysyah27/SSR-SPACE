@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:ssr_space/services/ai_quota.dart';
+import 'package:ssr_space/services/ai_pii.dart';
 import 'package:ssr_space/services/ai_cli_client.dart';
 import 'package:ssr_space/services/ai_server_client.dart';
 import 'package:ssr_space/services/app_categories.dart';
@@ -105,7 +106,9 @@ Future<({ReceiptData data, String provider, String? category})?> scanReceiptVisi
         final ocr = await ocrBytesToText(bytes);
         if (ocr.trim().isNotEmpty) {
           final r = await aiChatViaCli(
-            scanReceiptOcrPrompt(ocr, categories),
+            // Batch 281D tahap 4: teks OCR dimasking dulu
+            // (nomor kartu di struk); nominal struk tak tersentuh pola.
+            scanReceiptOcrPrompt(maskPii(ocr), categories),
             system: system,
             forceLocal: true,
             kind: 'receipt',
