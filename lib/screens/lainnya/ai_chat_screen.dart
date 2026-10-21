@@ -13,6 +13,7 @@ import 'package:ssr_space/services/ai_assistant_context.dart';
 import 'package:ssr_space/services/ai_correction.dart';
 import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/ai_memory.dart';
+import 'package:ssr_space/services/ai_merchant_alias.dart';
 import 'package:ssr_space/services/ai_persona.dart';
 import 'package:ssr_space/services/ai_chat_parse.dart';
 import 'package:ssr_space/services/ai_soul.dart';
@@ -367,9 +368,21 @@ class _AiChatScreenState extends State<AiChatScreen> {
     final ctxBlock = asisten
         ? aiAssistantContextBlock(memory, summaries, pBlock)
         : aiContextBlock(memory, summaries, pBlock);
+    // Batch 281D tahap 2: hint alias merchant (Mode Catat saja) —
+    // kebiasaan user (merchant -> kategori/dompet) disuntikkan
+    // sebagai petunjuk kuat ke prompt. Fail-open; Mode Asisten
+    // tidak berubah.
+    var aliasHint = '';
+    if (!asisten && text.isNotEmpty) {
+      try {
+        final aliases = await loadMerchantAliases();
+        final aliasHit = findAliasFor(text, aliases);
+        if (aliasHit != null) aliasHint = '\n${aliasHintBlock(aliasHit)}';
+      } catch (_) {}
+    }
     final prompt = text.isEmpty
         ? '$ctxBlock\nJelaskan gambar terlampir.'
-        : '$ctxBlock\nUser: $text';
+        : '$ctxBlock$aliasHint\nUser: $text';
     setState(() {
       _animFrom = _visibleItems.length;
       _items.add(_ChatMsg(
@@ -986,6 +999,16 @@ class _AiChatScreenState extends State<AiChatScreen> {
             await recordCorrectionEvent(ev);
             unawaited(syncCorrectionEvents());
           }
+          // Batch 281D tahap 2: alias merchant belajar dari
+          // nilai final user (termasuk hasil koreksi di form).
+          try {
+            await upsertMerchantAlias(
+              sourceText: ft.note ?? _lastUserText,
+              category: ft.category,
+              wallet: finalWallet,
+            );
+            unawaited(syncMerchantAliases());
+          } catch (_) {}
         }
       }
     } catch (_) {}
@@ -1067,6 +1090,16 @@ class _AiChatScreenState extends State<AiChatScreen> {
             break;
           }
         }
+      } catch (_) {}
+      // Batch 281D tahap 2: alias merchant belajar dari
+      // pencatatan terkonfirmasi (simpan langsung). Fail-open.
+      try {
+        await upsertMerchantAlias(
+          sourceText: d.note ?? _lastUserText,
+          category: d.category,
+          wallet: d.wallet,
+        );
+        unawaited(syncMerchantAliases());
       } catch (_) {}
     } catch (e) {
       // Gagal simpan aksi AI: user diberi tahu via bubble error (bukan silent).
