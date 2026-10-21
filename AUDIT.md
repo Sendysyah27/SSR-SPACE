@@ -871,7 +871,7 @@ dibagikan ke user lain. Tanpa migration/dep baru.
 - [Docs] AUDIT 279 difinalisasi (CI run 39429657792 SUCCESS);
   assets/changelog_id.md diperbarui (penanda versi terpasang +
   catatan 2.82.13+280).
-- Rilis: CI run pending — diisi setelah hijau.
+- Rilis: CI run 39490038933 (build-apk) SUCCESS — hijau.
 
 ## 2.82.12+279 (2026-10-20)
 Perbaikan logika Billing dari tes user di 2.82.11+278: pengguna Pro

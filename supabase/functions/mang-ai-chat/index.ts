@@ -23,6 +23,17 @@ const ALLOWED_MODELS = new Set([
   "minimax-m3.1-flash-free",
 ]);
 const VISION_MODEL = "nemotron-3.5-super-vl-free";
+// Cadangan vision (terverifikasi 2026-10-21 bisa menerima gambar via
+// gateway + menjawab benar): dipakai berantai bila model utama kena
+// rate limit kuota free (429 bergelombang per model). Urutan =
+// kebersihan output (minimax terakhir: suka membocorkan teks reasoning).
+const VISION_FALLBACKS = [
+  "big-pickle",
+  "deepseek-v4.1-flash-free",
+  "longcat-2.5-preview-free",
+  "minimax-m3.1-flash-free",
+  "glm-5.3-flash-free",
+];
 const MAX_BODY_CHARS = 6_500_000;
 
 function json(body: unknown, status = 200): Response {
@@ -30,6 +41,65 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+// Normalisasi jawaban chat ke kontrak {"reply","action"}: sebagian
+// model free membungkus JSON dengan prosa / fence sehingga parser
+// ketat di aplikasi gagal dan JSON mentah bocor ke bubble user.
+// Ekstrak objek kontraknya (pindai kurung seimbang dari kemunculan
+// terakhir '{"reply"'), buang markdown ** di reply, serialisasi
+// ulang bersih. Teks tanpa kontrak dikembalikan apa adanya.
+function extractContractJson(t: string): Record<string, unknown> | null {
+  const s = (t ?? "").trim();
+  if (!s) return null;
+  const ok = (txt: string): Record<string, unknown> | null => {
+    try {
+      const j = JSON.parse(txt);
+      if (j && typeof j === "object" && typeof j.reply === "string" && j.reply.trim()) {
+        return j as Record<string, unknown>;
+      }
+    } catch { /* lanjut */ }
+    return null;
+  };
+  let j = ok(s);
+  if (j) return j;
+  const fence = s.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+  if (fence) {
+    j = ok(fence[1].trim());
+    if (j) return j;
+  }
+  let idx = s.lastIndexOf('{"reply"');
+  while (idx >= 0) {
+    let depth = 0, inStr = false, esc = false, end = -1;
+    for (let i = idx; i < s.length; i++) {
+      const c = s[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (c === "\\") esc = true;
+        else if (c === '"') inStr = false;
+      } else {
+        if (c === '"') inStr = true;
+        else if (c === "{") depth++;
+        else if (c === "}") {
+          depth--;
+          if (depth === 0) { end = i; break; }
+        }
+      }
+    }
+    if (end > idx) {
+      j = ok(s.slice(idx, end + 1));
+      if (j) return j;
+    }
+    idx = idx > 0 ? s.lastIndexOf('{"reply"', idx - 1) : -1;
+  }
+  return null;
+}
+
+function normalizeChatContract(t: string): string {
+  const j = extractContractJson(t);
+  if (!j) return t;
+  const reply = String(j.reply).replace(/\*\*/g, "").trim();
+  return JSON.stringify({ reply, action: j.action ?? null });
 }
 
 serve(async (req) => {
@@ -116,30 +186,44 @@ serve(async (req) => {
   if (body.model && ALLOWED_MODELS.has(body.model)) model = body.model;
   if (kind === "receipt" && !model) model = VISION_MODEL;
 
-  // Teruskan ke AI Gateway (Worker).
-  let gw: { ok?: boolean; text?: string; model?: string; error?: string };
-  try {
-    const res = await fetch(`${gwUrl}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-gw-key": gwKey },
-      body: JSON.stringify({
-        model,
-        messages: body.messages,
-        max_tokens: body.max_tokens,
-      }),
-    });
-    gw = await res.json();
-    if (!res.ok || !gw.ok) {
-      return json(
-        { error: gw.error ?? "AI sedang sibuk, coba lagi sebentar", code: "AI_UPSTREAM" },
-        502,
-      );
+  // Teruskan ke AI Gateway (Worker). Request BERGAMBAR (scan struk
+  // maupun foto di chat — klien mem-pin model vision untuk keduanya):
+  // coba berantai model utama lalu VISION_FALLBACKS. Kuota free per
+  // model kena 429 bergelombang; satu model gagal tidak boleh
+  // menggagalkan request.
+  const hasImagePart = raw.includes('"image_url"');
+  const candidates: (string | undefined)[] = [model];
+  if (kind === "receipt" || hasImagePart) {
+    for (const fb of VISION_FALLBACKS) {
+      if (fb !== model && ALLOWED_MODELS.has(fb)) candidates.push(fb);
     }
-  } catch (e) {
-    return json(
-      { error: "AI Gateway tidak terjangkau", code: "AI_UPSTREAM", detail: String(e).slice(0, 150) },
-      502,
-    );
+  }
+  let gw: { ok?: boolean; text?: string; model?: string; error?: string } | null = null;
+  let lastErr = "AI sedang sibuk, coba lagi sebentar";
+  for (const cand of candidates) {
+    try {
+      const res = await fetch(`${gwUrl}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-gw-key": gwKey },
+        body: JSON.stringify({
+          model: cand,
+          messages: body.messages,
+          max_tokens: body.max_tokens,
+        }),
+      });
+      const parsed = await res.json();
+      if (res.ok && parsed.ok) {
+        gw = parsed;
+        model = cand;
+        break;
+      }
+      lastErr = parsed.error ?? lastErr;
+    } catch (e) {
+      lastErr = "AI Gateway tidak terjangkau: " + String(e).slice(0, 120);
+    }
+  }
+  if (!gw) {
+    return json({ error: lastErr, code: "AI_UPSTREAM" }, 502);
   }
 
   // Catat pemakaian (best-effort, sama seperti klien lama).
@@ -147,5 +231,8 @@ serve(async (req) => {
     await authClient.rpc("record_ai_usage", { p_org_id: orgId, p_kind: kind });
   } catch { /* diam */ }
 
-  return json({ text: gw.text, model: gw.model ?? model ?? null });
+  const outText = (kind === "chat" || kind === "quick") && gw.text
+    ? normalizeChatContract(gw.text)
+    : gw.text;
+  return json({ text: outText, model: gw.model ?? model ?? null });
 });
