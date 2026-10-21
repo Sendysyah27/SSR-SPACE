@@ -17,10 +17,10 @@ class ScanOverlay extends StatelessWidget {
     return Positioned.fill(
       child: const Container(
         color: Colors.black54,
-        child: Center(
-          child: Column(
+        child: const Center(
+          child: const Column(
             mainAxisSize: MainAxisSize.min,
-            children: const [
+            children: [
               _LaserBox(),
               SizedBox(height: SsrSpace.md),
               ScanStatusText(
