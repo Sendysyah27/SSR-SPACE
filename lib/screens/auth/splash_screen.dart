@@ -264,7 +264,7 @@ class _SplashError extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        DuoIcon(
+        const DuoIcon(
           AppIcons.cloudOff,
           size: 40,
           color: Colors.white70,
