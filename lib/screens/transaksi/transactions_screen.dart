@@ -17,7 +17,6 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/tx_wallet_check.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
-import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
@@ -382,6 +381,7 @@ class TransactionsScreenState extends State<TransactionsScreen> {
         onSaveFav: _saveFav,
         onApplyFav: _applyFav,
         onDeleteFav: _deleteFav,
+        onTypeFilter: (types) => setState(() => _types = types),
       ),
     );
   }
@@ -545,24 +545,24 @@ class _NoWalletBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: SsrSpace.sm),
       padding: const EdgeInsets.all(SsrSpace.md),
       decoration: BoxDecoration(
-        color: scheme.error.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(SsrRadius.tile),
-        border: Border.all(
-          color: scheme.error.withValues(alpha: 0.45),
-        ),
+        color: DribTokens.accentOrangeBg,
+        borderRadius: BorderRadius.circular(DribTokens.cardRadius),
+        border: Border.all(color: DribTokens.accentOrange),
       ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               text,
-              style: theme.textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: DribTokens.accentOrangeTextDark,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           TextButton(
@@ -589,8 +589,17 @@ class _TxStateScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DribTokens.bgOf(context),
       appBar: AppBar(
-        title: Text(tr('nav_transaksi')),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          tr('nav_transaksi'),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
         actions: [
           IconButton(
             onPressed: onAdd,
@@ -625,6 +634,7 @@ class _TxListBody extends StatelessWidget {
   final VoidCallback onSaveFav;
   final ValueChanged<TxFav> onApplyFav;
   final ValueChanged<TxFav> onDeleteFav;
+  final ValueChanged<Set<String>> onTypeFilter;
 
   const _TxListBody({
     required this.month,
@@ -645,6 +655,7 @@ class _TxListBody extends StatelessWidget {
     required this.onSaveFav,
     required this.onApplyFav,
     required this.onDeleteFav,
+    required this.onTypeFilter,
   });
 
   @override
@@ -671,6 +682,11 @@ class _TxListBody extends StatelessWidget {
                   filterActive: filtering,
                   onOpenFilter: onOpenFilter,
                   onClearSearch: searchController.clear,
+                ),
+                const SizedBox(height: SsrSpace.sm),
+                _TxTypeChips(
+                  types: filter.types,
+                  onChanged: onTypeFilter,
                 ),
                 _TxCountCaption(
                   filtering: filtering,
@@ -793,10 +809,13 @@ class _TxSearchRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: GlassCard(
-            padding: const EdgeInsets.symmetric(horizontal: GlassSpace.sm),
-            borderRadius: GlassRadius.full,
-            blur: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: SsrSpace.md),
+            decoration: BoxDecoration(
+              color: DribTokens.cardOf(context),
+              borderRadius: BorderRadius.circular(SsrRadius.input),
+              border: Border.all(color: DribTokens.border, width: 1.5),
+            ),
             child: TextField(
               controller: controller,
               decoration: InputDecoration(
@@ -814,7 +833,7 @@ class _TxSearchRow extends StatelessWidget {
                 focusedBorder: InputBorder.none,
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
-                    vertical: GlassSpace.sm),
+                    vertical: SsrSpace.sm),
               ),
             ),
           ),
@@ -826,6 +845,14 @@ class _TxSearchRow extends StatelessWidget {
             IconButton(
               onPressed: onOpenFilter,
               tooltip: tr('txf_filter'),
+              style: IconButton.styleFrom(
+                backgroundColor: DribTokens.cardOf(context),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(SsrRadius.input),
+                  side: const BorderSide(
+                      color: DribTokens.border, width: 1.5),
+                ),
+              ),
               icon: SvgPicture.asset(
                 CoolSvg.filter,
                 width: 22,
@@ -886,6 +913,8 @@ class _TxFavRow extends StatelessWidget {
               padding: const EdgeInsets.only(right: SsrSpace.sm),
               child: InputChip(
                 label: Text(f.name),
+                backgroundColor: DribTokens.cardOf(context),
+                side: const BorderSide(color: DribTokens.border),
                 onPressed: () => onApply(f),
                 onDeleted: () => onDelete(f),
                 deleteButtonTooltipMessage: tr('tx_delete'),
@@ -1065,7 +1094,10 @@ class _FilterSheetState extends State<_FilterSheet> {
                     Expanded(
                       child: Text(
                         tr('txf_filter'),
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),
                     IconButton(
@@ -1112,6 +1144,9 @@ class _FilterSheetState extends State<_FilterSheet> {
                         FilterChip(
                           label: Text(tr(def.$2)),
                           selected: _types.contains(def.$1),
+                          selectedColor: DribTokens.blueLight,
+                          checkmarkColor: DribTokens.primaryStrong,
+                          side: const BorderSide(color: DribTokens.border),
                           onSelected: (_) => _toggle(_types, def.$1),
                         ),
                     ],
@@ -1132,6 +1167,10 @@ class _FilterSheetState extends State<_FilterSheet> {
                               FilterChip(
                                 label: Text(c),
                                 selected: _cats.contains(c),
+                                selectedColor: DribTokens.blueLight,
+                                checkmarkColor: DribTokens.primaryStrong,
+                                side: const BorderSide(
+                                    color: DribTokens.border),
                                 onSelected: (_) => _toggle(_cats, c),
                               ),
                           ],
@@ -1228,8 +1267,8 @@ class _PillRow extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: DribTokens.cardOf(context),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: scheme.outlineVariant),
+              borderRadius: BorderRadius.circular(DribTokens.cardRadius),
+              border: Border.all(color: DribTokens.border, width: 1.5),
             ),
             child: Row(
               children: [
@@ -1265,6 +1304,69 @@ class _PillRow extends StatelessWidget {
           child!,
         ],
       ],
+    );
+  }
+}
+
+/// Chip saring tipe cepat ala mockup: Semua / Pengeluaran / Pemasukan.
+/// Aktif = latar navy teks putih; nonaktif = kartu putih border mockup.
+/// Memakai state filter yang sama dengan sheet filter (tanpa logika baru).
+class _TxTypeChips extends StatelessWidget {
+  final Set<String> types;
+  final ValueChanged<Set<String>> onChanged;
+
+  const _TxTypeChips({required this.types, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final all = types.isEmpty;
+    final out = types.length == 1 && types.contains('out');
+    final inc = types.length == 1 && types.contains('in');
+    return Row(
+      children: [
+        _chip(context, tr('txf_all'), all, () => onChanged({})),
+        const SizedBox(width: SsrSpace.sm),
+        _chip(context, tr('tx_out'), out, () => onChanged({'out'})),
+        const SizedBox(width: SsrSpace.sm),
+        _chip(context, tr('tx_in'), inc, () => onChanged({'in'})),
+      ],
+    );
+  }
+
+  Widget _chip(
+    BuildContext context,
+    String label,
+    bool on,
+    VoidCallback onTap,
+  ) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(SsrRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: SsrSpace.md,
+          vertical: SsrSpace.sm,
+        ),
+        decoration: BoxDecoration(
+          color: on ? DribTokens.navy : DribTokens.cardOf(context),
+          borderRadius: BorderRadius.circular(SsrRadius.pill),
+          border: Border.all(
+            color: on ? DribTokens.navy : DribTokens.border,
+            width: 1.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: on
+                ? Colors.white
+                : (dark ? Colors.white : DribTokens.textSecondary),
+          ),
+        ),
+      ),
     );
   }
 }

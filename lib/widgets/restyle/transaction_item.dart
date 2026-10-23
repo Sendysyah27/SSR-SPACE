@@ -56,9 +56,9 @@ class TransactionItem extends StatelessWidget {
       return isDark ? Theme.of(context).colorScheme.onSurface : DribTokens.navy;
     }
     if (isIncome) {
-      return isDark ? Colors.green.shade300 : Colors.green.shade700;
+      return isDark ? DribTokens.success : DribTokens.successText;
     }
-    return isDark ? Colors.red.shade300 : Colors.red.shade700;
+    return isDark ? DribTokens.error : DribTokens.errorText;
   }
 
   @override
@@ -75,17 +75,17 @@ class TransactionItem extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: tint.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 child: Center(
                   child: SvgPicture.asset(
                     iconSvg,
-                    width: 24,
-                    height: 24,
+                    width: 20,
+                    height: 20,
                     colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
                   ),
                 ),
@@ -99,7 +99,10 @@ class TransactionItem extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -116,6 +119,7 @@ class TransactionItem extends StatelessWidget {
               Text(
                 amount,
                 style: TextStyle(
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: _amountColor(context),
                   fontFeatures: const [FontFeature.tabularFigures()],
