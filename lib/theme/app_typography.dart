@@ -14,7 +14,7 @@ class SsrType {
   static const heroMoney = TextStyle(
     fontFamily: SsrFonts.numeric,
     fontSize: 32,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w800,
     letterSpacing: -0.5,
     fontFeatures: [FontFeature.tabularFigures()],
   );
@@ -23,7 +23,7 @@ class SsrType {
   static const moneyLarge = TextStyle(
     fontFamily: SsrFonts.numeric,
     fontSize: 26,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w800,
     letterSpacing: -0.3,
     fontFeatures: [FontFeature.tabularFigures()],
   );

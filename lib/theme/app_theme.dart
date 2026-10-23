@@ -95,8 +95,8 @@ class SsrSpace {
 
 class SsrFonts {
   static const body = 'PlusJakartaSans';
-  static const display = 'Anton';
-  static const numeric = 'Fraunces';
+  static const display = 'PlusJakartaSans';
+  static const numeric = 'PlusJakartaSans';
   static const icon = 'PhosphorFill';
 }
 
