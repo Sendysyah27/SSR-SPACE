@@ -30,12 +30,12 @@ class GlassDuration {
 }
 
 class GlassElevation {
-  /// Kartu standar: bayangan halus satu level.
+  /// Kartu standar: bayangan sangat halus (samakan mockup batch 287).
   static List<BoxShadow> get card => [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.18),
-          blurRadius: 24,
-          offset: const Offset(0, 8),
+          color: Colors.black.withValues(alpha: 0.07),
+          blurRadius: 20,
+          offset: const Offset(0, 6),
         ),
       ];
 

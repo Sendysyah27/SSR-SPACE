@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 /// - [navy]/[navyDeep]/[navyBright]: teks gelap + gradient.
 /// - [accentOrange]: KHUSUS badge kecil (dilarang untuk tombol/teks besar).
 ///
-/// DILARANG: ungu/indigo di mana pun pada gaya baru.
+/// Ungu/pink HANYA untuk ikon kategori pastel (bukan tombol/teks besar).
 abstract final class DribTokens {
   /// Latar aplikasi: biru-abu muda.
   static const Color bg = Color(0xFFEAF0F8);
@@ -36,7 +36,7 @@ abstract final class DribTokens {
   static const Color primary = Color(0xFF5B9BF5);
 
   /// Navy teks/ikon gelap.
-  static const Color navy = Color(0xFF12285A);
+  static const Color navy = Color(0xFF10224E);
 
   /// Ujung gelap gradient kartu saldo & input nominal.
   static const Color navyDeep = Color(0xFF0B1B3F);
@@ -96,6 +96,37 @@ abstract final class DribTokens {
     end: Alignment.bottomRight,
     colors: [Color(0xFF3B5B8C), navyBright],
   );
+
+  /// Teks sekunder di atas kartu putih.
+  static const Color textSecondary = Color(0xFF42557C);
+
+  /// Bolder aksi utama (hover/penting), tetap satu keluarga biru.
+  static const Color primaryStrong = Color(0xFF2E6BE6);
+
+  /// Tint biru terang untuk latar elemen non-hazard (particle/alert).
+  static const Color blueLight = Color(0xFFD6E7FF);
+
+  /// Border kartu/sepertor.
+  static const Color border = Color(0xFFB9CBEF);
+
+  /// Teks aksen di surface terang (a11y).
+  static const Color accentOrangeText = Color(0xFFD97316);
+  static const Color accentOrangeTextDark = Color(0xFFB96A12);
+
+  /// Badge/tint aksen non-bahaya.
+  static const Color accentOrangeBg = Color(0xFFFDEBD3);
+
+  static const Color success = Color(0xFF2FBF8F);
+  static const Color successText = Color(0xFF12805C);
+
+  static const Color error = Color(0xFFE05252);
+  static const Color errorText = Color(0xFFB3373C);
+
+  /// Ungu/pink HANYA untuk badge kategori pastel, bukan tombol/CTA.
+  static const Color purple = Color(0xFF6D4BD8);
+  static const Color purpleBg = Color(0xFFE4DCFF);
+  static const Color pink = Color(0xFFC2437E);
+  static const Color pinkBg = Color(0xFFFFD9E8);
 
   /// Nama family font (sudah dibundel di assets/fonts).
   static const String fontFamily = 'PlusJakartaSans';
