@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/screens/auth/theme_step_screen.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/utils/strings.dart';
@@ -75,7 +76,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
     return Container(
       width: width,
       height: 0.8,
-      color: color ?? Theme.of(context).colorScheme.outline,
+      color: color ?? DribTokens.border,
     );
   }
 
@@ -90,16 +91,15 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
   }
 
   Widget _iconChip(IconData icon, {double size = 44, Color? bg}) {
-    final scheme = Theme.of(context).colorScheme;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: bg ?? scheme.outline.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(SsrRadius.tile),
-        border: Border.all(color: scheme.outline),
+        color: bg ?? DribTokens.blueLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: DribTokens.border),
       ),
-      child: Icon(icon, size: size * 0.5, color: scheme.primary),
+      child: Icon(icon, size: size * 0.5, color: DribTokens.primaryStrong),
     );
   }
 
@@ -116,12 +116,17 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                   ?.copyWith(fontSize: 48, letterSpacing: 0),
             ),
             const SizedBox(height: SsrSpace.lg),
-            Container(width: 56, height: 1, color: AppColors.gold),
+            Container(width: 56, height: 1, color: DribTokens.primary),
             const SizedBox(height: SsrSpace.xl),
             Text(
               'Simple.',
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(
+                    color: DribTokens.navy,
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: SsrSpace.md),
@@ -129,8 +134,13 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
             ),
             Text(
               'Secure.',
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(
+                    color: DribTokens.navy,
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: SsrSpace.md),
@@ -138,15 +148,20 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
             ),
             Text(
               'Reliable.',
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(
+                    color: DribTokens.navy,
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
             const SizedBox(height: SsrSpace.lg),
             Text(
               'Your Finance Space.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
+                color: DribTokens.primaryStrong,
               ),
             ),
             const SizedBox(height: SsrSpace.xl),
@@ -154,7 +169,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
               tr('in_brand_sub'),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).textTheme.bodySmall?.color,
+                color: DribTokens.textSecondary,
               ),
             ),
             const SizedBox(height: SsrSpace.xxl),
@@ -175,18 +190,24 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 22, color: t.colorScheme.primary),
+          Icon(icon, size: 22, color: DribTokens.primaryStrong),
           const SizedBox(width: SsrSpace.lg),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: t.textTheme.titleMedium),
+                Text(
+                  title,
+                  style: t.textTheme.titleMedium?.copyWith(
+                    color: DribTokens.navy,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: SsrSpace.xs),
                 Text(
                   desc,
                   style: t.textTheme.bodyMedium?.copyWith(
-                    color: t.textTheme.bodySmall?.color,
+                    color: DribTokens.textSecondary,
                   ),
                 ),
               ],
@@ -206,14 +227,15 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
           Text(
             tr('in_values_t'),
             style: t.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
+              color: DribTokens.navy,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: SsrSpace.sm),
           Text(
             tr('in_values_s'),
             style: t.textTheme.bodyMedium?.copyWith(
-              color: t.textTheme.bodySmall?.color,
+              color: DribTokens.textSecondary,
             ),
           ),
           const SizedBox(height: SsrSpace.xl),
@@ -221,9 +243,9 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(SsrSpace.lg),
             decoration: BoxDecoration(
-              color: t.colorScheme.surface,
+              color: DribTokens.cardOf(context),
               borderRadius: BorderRadius.circular(SsrRadius.card),
-              border: Border.all(color: t.colorScheme.outline),
+              border: Border.all(color: DribTokens.border),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,7 +261,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                       Text(
                         tr('in_auto_s'),
                         style: t.textTheme.bodyMedium?.copyWith(
-                          color: t.textTheme.bodySmall?.color,
+                          color: DribTokens.textSecondary,
                         ),
                       ),
                     ],
@@ -279,20 +301,21 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
             Icon(
               _iconBrain,
               size: 40,
-              color: Theme.of(context).colorScheme.primary,
+              color: DribTokens.primaryStrong,
             ),
             const SizedBox(height: SsrSpace.lg),
             Text(
               tr('in_mind_t'),
               textAlign: TextAlign.center,
               style: t.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+                color: DribTokens.navy,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: SsrSpace.lg),
             _hairline(
               width: 80,
-              color: Theme.of(context).colorScheme.primary,
+              color: DribTokens.primaryStrong,
             ),
             const SizedBox(height: SsrSpace.lg),
             Text(
@@ -307,7 +330,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
               tr('in_mind_s2'),
               textAlign: TextAlign.center,
               style: t.textTheme.bodyMedium?.copyWith(
-                color: t.textTheme.bodySmall?.color,
+                color: DribTokens.textSecondary,
               ),
             ),
             const SizedBox(height: SsrSpace.xxl),
@@ -328,7 +351,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
             child: Text(
               '${i + 1}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
+                color: DribTokens.primaryStrong,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -356,14 +379,15 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
               Icon(
                 _iconShield,
                 size: 26,
-                color: Theme.of(context).colorScheme.primary,
+                color: DribTokens.successText,
               ),
               const SizedBox(width: SsrSpace.md),
               Expanded(
                 child: Text(
                   tr('in_terms_t'),
                   style: t.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    color: DribTokens.navy,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
@@ -373,7 +397,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
           Text(
             tr('in_terms_s'),
             style: t.textTheme.bodyMedium?.copyWith(
-              color: t.textTheme.bodySmall?.color,
+              color: DribTokens.textSecondary,
             ),
           ),
           const SizedBox(height: SsrSpace.lg),
@@ -387,7 +411,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                 height: 48,
                 child: Checkbox(
                   value: _agreed,
-                  activeColor: t.colorScheme.primary,
+                  activeColor: DribTokens.primaryStrong,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -412,7 +436,6 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
   }
 
   Widget _dots() {
-    final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         for (var i = 0; i < 4; i++) ...[
@@ -420,11 +443,13 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
           AnimatedContainer(
             duration: SsrMotion.fast,
             curve: SsrMotion.curve,
-            width: i == _page ? 22 : 8,
-            height: 8,
+            width: i == _page ? 20 : 7,
+            height: 7,
             decoration: BoxDecoration(
-              color: i == _page ? scheme.primary : scheme.outline,
-              borderRadius: BorderRadius.circular(4),
+              color: i == _page
+                  ? DribTokens.primaryStrong
+                  : const Color(0xFFC9D8F2),
+              borderRadius: BorderRadius.circular(99),
             ),
           ),
         ],
@@ -436,6 +461,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
   Widget build(BuildContext context) {
     final onLast = _page == 3;
     return Scaffold(
+      backgroundColor: DribTokens.bgOf(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -458,10 +484,10 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
                 SsrSpace.xxl,
                 SsrSpace.lg,
               ),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 border: Border(
                   top: BorderSide(
-                    color: Theme.of(context).colorScheme.outline,
+                    color: DribTokens.border,
                   ),
                 ),
               ),

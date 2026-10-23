@@ -6,6 +6,7 @@ import 'package:ssr_space/services/biometric_auth.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/screens/shell/main_shell.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/pin_pad.dart';
@@ -126,8 +127,8 @@ class _LockScreenState extends State<LockScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
+      backgroundColor: DribTokens.bgOf(context),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -136,29 +137,36 @@ class _LockScreenState extends State<LockScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: scheme.primary.withValues(alpha: 0.08),
+                  width: 58,
+                  height: 58,
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [DribTokens.primary, DribTokens.primaryStrong],
+                    ),
                   ),
-                  child: DuoIcon(
+                  child: const DuoIcon(
                     AppIcons.lock,
                     size: 26,
-                    color: scheme.primary,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: SsrSpace.lg),
                 Text(
                   tr('lk_title'),
-                  style: Theme.of(context).textTheme.headlineSmall,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: DribTokens.navy,
+                        fontWeight: FontWeight.w800,
+                      ),
                 ),
                 const SizedBox(height: SsrSpace.xs),
                 Text(
                   tr('lk_sub'),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).textTheme.bodySmall?.color,
+                    color: DribTokens.textSecondary,
                   ),
                 ),
                 const SizedBox(height: SsrSpace.xxl),
@@ -174,7 +182,25 @@ class _LockScreenState extends State<LockScreen> {
                   const SizedBox(height: SsrSpace.md),
                   TextButton(
                     onPressed: _bioManual,
-                    child: Text(tr('lk_bio')),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.fingerprint,
+                          size: 19,
+                          color: DribTokens.primaryStrong,
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          tr('lk_bio'),
+                          style: const TextStyle(
+                            color: DribTokens.primaryStrong,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ],
