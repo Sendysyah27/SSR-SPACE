@@ -38,24 +38,24 @@ class AppColors {
 /// Warna makna uang (emerald/rust/gold) TIDAK diubah: tetap untuk
 /// masuk/keluar/tabungan + label kata.
 class Ind {
-  static const scaffoldL = Color(0xFFF2F2F7);
-  static const card2L = Color(0xFFF9F9FB);
-  static const ink = Color(0xFF1C1C1E);
-  static const secondaryL = Color(0xFF6E6E73);
-  static const lineL = Color(0xFFE5E5EA);
-  static const blue = Color(0xFF007AFF);
-  static const scaffoldD = Color(0xFF000000);
-  static const surfaceD = Color(0xFF1C1C1E);
+  static const scaffoldL = Color(0xFFEAF0F8);
+  static const card2L = Color(0xFFFFFFFF);
+  static const ink = Color(0xFF10224E);
+  static const secondaryL = Color(0xFF42557C);
+  static const lineL = Color(0xFFB9CBEF);
+  static const blue = Color(0xFF5B9BF5);
+  static const scaffoldD = Color(0xFF0D1526);
+  static const surfaceD = Color(0xFF16203A);
   static const inkD = Color(0xFFF5F5F7);
   static const secondaryD = Color(0xFF98989D);
   static const lineD = Color(0xFF38383A);
-  static const blueD = Color(0xFF0A84FF);
+  static const blueD = Color(0xFF5B9BF5);
   // Semantik iOS (brief §1.1): KHUSUS grafik/fill besar, BUKAN teks
   // (di putih gagal AA: green ±2.2, orange ±2.1). Teks makna tetap
   // emerald/rust/gold-dark yang lolos AA. Deviasi tercatat (R-37).
-  static const green = Color(0xFF30D158);
-  static const red = Color(0xFFFF453A);
-  static const orange = Color(0xFFFF9F0A);
+  static const green = Color(0xFF2FBF8F);
+  static const red = Color(0xFFE05252);
+  static const orange = Color(0xFFF5A55B);
 
   static List<BoxShadow> heroShadow(bool dark) => [
         BoxShadow(
@@ -79,7 +79,7 @@ class SsrRadius {
   static const tile = 14.0;
   static const button = 14.0;
   static const card = 20.0;
-  static const hero = 20.0;
+  static const hero = 24.0;
   static const pill = 999.0;
 }
 
