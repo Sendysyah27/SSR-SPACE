@@ -1108,6 +1108,10 @@ class BerandaScreenState extends State<BerandaScreen> {
           ),
           const SizedBox(height: SsrSpace.md),
         ],
+        const _PeriodPills(),
+        const SizedBox(height: SsrSpace.sm),
+        _surplusCard(totalIn, totalOut, surplus, inShare, pctOut),
+        const SizedBox(height: SsrSpace.md),
         MonthPicker(
           month: month,
           onChanged: (m) {
@@ -1116,10 +1120,6 @@ class BerandaScreenState extends State<BerandaScreen> {
           },
         ),
         const SizedBox(height: SsrSpace.sm),
-        const _PeriodPills(),
-        const SizedBox(height: SsrSpace.sm),
-        _surplusCard(totalIn, totalOut, surplus, inShare, pctOut),
-        const SizedBox(height: SsrSpace.md),
         const _HomeMenuRow(),
         const SizedBox(height: SsrSpace.md),
         ..._dashSection(),
@@ -1366,50 +1366,50 @@ class BerandaScreenState extends State<BerandaScreen> {
   Widget _heroMini(
       String label, String value, IconData icon, Color tint,
       {VoidCallback? onTap}) {
-    const labelStyle = TextStyle(
-      color: DribTokens.onNavy,
-      fontSize: 12,
-    );
     return GestureDetector(
       onTap: onTap,
       behavior: onTap == null ? null : HitTestBehavior.opaque,
       child: Container(
-      padding: const EdgeInsets.all(GlassSpace.sm),
-      decoration: BoxDecoration(
-        color: DribTokens.onNavy.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(DribTokens.cardRadius),
-      ),
-      child: Row(
-        children: [
-          DuoIcon(icon, size: 20, color: tint),
-          const SizedBox(width: GlassSpace.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: DribTokens.onNavy.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Text(
-                  label,
-                  style: labelStyle.copyWith(
-                    color: labelStyle.color!.withValues(alpha: 0.75),
+                DuoIcon(icon, size: 13, color: tint),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontFamily: SsrFonts.body,
+                      color: DribTokens.border,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontFamily: SsrFonts.numeric,
-                    color: DribTokens.onNavy,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(
+                fontFamily: SsrFonts.numeric,
+                color: DribTokens.onNavy,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
