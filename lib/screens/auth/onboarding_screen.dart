@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
 import 'package:ssr_space/widgets/pin_field.dart';
 import 'package:ssr_space/widgets/pin_pad.dart';
@@ -77,6 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DribTokens.bgOf(context),
       body: SafeArea(
         child: _OnboardingBody(
           nameC: nameC,
@@ -155,15 +157,29 @@ class _OnboardingBodyState extends State<_OnboardingBody> {
     return ListView(
       padding: const EdgeInsets.all(SsrSpace.xxl),
       children: [
-        Text(tr('ob_welcome'), style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          tr('ob_welcome'),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: DribTokens.navy,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
         const SizedBox(height: SsrSpace.xs),
         Text(
           tr('ob_sub'),
-          style: Theme.of(context).textTheme.bodyMedium
-              ?.copyWith(color: Theme.of(context).textTheme.bodySmall?.color),
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(color: DribTokens.textSecondary),
         ),
         const SizedBox(height: SsrSpace.xl),
-        Text(tr('ob_profile'), style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          tr('ob_profile'),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: DribTokens.navy,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
         const SizedBox(height: SsrSpace.md),
         TextField(
           controller: widget.nameC,
@@ -176,7 +192,13 @@ class _OnboardingBodyState extends State<_OnboardingBody> {
           ),
         ),
         const SizedBox(height: SsrSpace.xl),
-        Text(tr('ob_pin'), style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          tr('ob_pin'),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: DribTokens.navy,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
         const SizedBox(height: SsrSpace.md),
         PinField(
           controller: widget.pinC,

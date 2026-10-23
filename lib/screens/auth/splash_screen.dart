@@ -8,6 +8,7 @@ import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/session_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/screens/auth/onboarding_screen.dart';
 import 'package:ssr_space/screens/auth/feature_intro_screen.dart';
 import 'package:ssr_space/screens/auth/lock_screen.dart';
@@ -128,13 +129,49 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: SsrSpace.xxl),
-            child: !failed
-                ? _SplashLoading(visible: _visible)
-                : _SplashError(onRetry: _boot),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [DribTokens.navyDeep, DribTokens.navyBright],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: SsrSpace.xxl),
+                    child: !failed
+                        ? _SplashLoading(visible: _visible)
+                        : _SplashError(onRetry: _boot),
+                  ),
+                ),
+              ),
+              if (!failed) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var i = 0; i < 3; i++)
+                      Container(
+                        width: 7,
+                        height: 7,
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: i == 0
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.4),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 26),
+              ],
+            ],
           ),
         ),
       ),
@@ -158,23 +195,60 @@ class _SplashLoading extends StatelessWidget {
           curve: SsrMotion.curve,
           child: Column(
             children: [
+              Container(
+                width: 76,
+                height: 76,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.25),
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: const Text(
+                  'SSR',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: SsrSpace.lg),
               Text(
                 tr('au_title'),
-                style: Theme.of(context).textTheme.displaySmall,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 23,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-              const SizedBox(height: SsrSpace.md),
-              Container(width: 56, height: 1, color: AppColors.gold),
               const SizedBox(height: SsrSpace.md),
               Text(
                 tr('sp_tagline'),
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: const TextStyle(
+                  color: Color(0xFFB9CBEF),
+                  fontSize: 12,
+                  height: 1.6,
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: SsrSpace.xxl),
-        LoadingView(label: tr('sp_loading')),
+        Theme(
+          data: Theme.of(context).copyWith(
+            progressIndicatorTheme:
+                const ProgressIndicatorThemeData(color: Colors.white),
+            textTheme: Theme.of(context)
+                .textTheme
+                .apply(bodyColor: Colors.white, displayColor: Colors.white),
+          ),
+          child: LoadingView(label: tr('sp_loading')),
+        ),
       ],
     );
   }
@@ -193,13 +267,16 @@ class _SplashError extends StatelessWidget {
         DuoIcon(
           AppIcons.cloudOff,
           size: 40,
-          color: Theme.of(context).textTheme.bodySmall?.color,
+          color: Colors.white70,
         ),
         const SizedBox(height: SsrSpace.md),
         Text(
           tr('sp_err'),
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(color: Colors.white),
         ),
         const SizedBox(height: SsrSpace.lg),
         PrimaryButton(label: tr('retry'), onPressed: onRetry),

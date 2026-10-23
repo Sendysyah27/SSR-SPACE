@@ -66,7 +66,13 @@ class _FeatureIntroScreenState extends State<FeatureIntroScreen> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: _finish,
-                child: Text(tr('fi_skip')),
+                child: Text(
+                  tr('fi_skip'),
+                  style: const TextStyle(
+                    color: DribTokens.primaryStrong,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ),
             Expanded(
@@ -81,17 +87,14 @@ class _FeatureIntroScreenState extends State<FeatureIntroScreen> {
               children: [
                 for (var d = 0; d < slides.length; d++)
                   Container(
-                    width: 8,
-                    height: 8,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: d == _i ? 20 : 7,
+                    height: 7,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(99),
                       color: d == _i
-                          ? DribTokens.primary
-                          : Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant
-                              .withValues(alpha: 0.35),
+                          ? DribTokens.primaryStrong
+                          : const Color(0xFFC9D8F2),
                     ),
                   ),
               ],
@@ -105,7 +108,7 @@ class _FeatureIntroScreenState extends State<FeatureIntroScreen> {
                 height: 52,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: DribTokens.primary,
+                    backgroundColor: DribTokens.primaryStrong,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -125,7 +128,7 @@ class _FeatureIntroScreenState extends State<FeatureIntroScreen> {
                         ? tr('fi_done')
                         : tr('fi_next'),
                     style: const TextStyle(
-                      color: DribTokens.navy,
+                      color: Colors.white,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -162,13 +165,19 @@ class _SlideShell extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: DribTokens.navy,
+                  fontWeight: FontWeight.w800,
+                ),
           ),
           const SizedBox(height: 8),
           Text(
             sub,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: DribTokens.textSecondary),
           ),
         ],
       ),
