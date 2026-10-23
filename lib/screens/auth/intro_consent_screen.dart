@@ -298,7 +298,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: SsrSpace.xxl),
-            Icon(
+            const Icon(
               _iconBrain,
               size: 40,
               color: DribTokens.primaryStrong,
@@ -376,7 +376,7 @@ class _IntroConsentScreenState extends State<IntroConsentScreen> {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 _iconShield,
                 size: 26,
                 color: DribTokens.successText,

@@ -109,7 +109,7 @@ class _ThemeStepScreenState extends State<ThemeStepScreen> {
                   shape: BoxShape.circle,
                   color: DribTokens.primaryStrong,
                 ),
-                child: Icon(_iconCheck, size: 12, color: Colors.white),
+                child: const Icon(_iconCheck, size: 12, color: Colors.white),
               )
             else
               Container(
