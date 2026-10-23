@@ -337,8 +337,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
+          Column(
+            children: [
           ValueListenableBuilder<bool>(
             valueListenable: netOnline,
             builder: (context, online, _) => online
@@ -362,6 +364,62 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                   BudgetsScreen(key: budgetKey),
                   ReportsScreen(key: reportsKey),
                 ],
+              ),
+            ),
+          ),
+            ],
+          ),
+          Positioned(
+            right: 13,
+            bottom: 14,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(99),
+                onTap: _openMangAi,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(10, 9, 13, 9),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [DribTokens.navyDeep, DribTokens.navyBright],
+                    ),
+                    borderRadius: BorderRadius.circular(99),
+                    boxShadow: [
+                      BoxShadow(
+                        color: DribTokens.navyDeep.withValues(alpha: 0.4),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: const BoxDecoration(
+                          color: DribTokens.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.auto_awesome,
+                            size: 13, color: Colors.white),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Mang AI',
+                        style: TextStyle(
+                          fontFamily: DribTokens.fontFamily,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
