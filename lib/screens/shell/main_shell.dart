@@ -367,13 +367,35 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'catat',
-        onPressed: _openQuickActions,
-        backgroundColor: DribTokens.primary,
-        foregroundColor: DribTokens.navy,
-        tooltip: tr('act_catat'),
-        child: const DuoIcon(AppIcons.add),
+      floatingActionButton: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [DribTokens.primary, DribTokens.primaryStrong],
+          ),
+          borderRadius: BorderRadius.circular(19),
+          border: Border.all(color: DribTokens.bg, width: 5),
+          boxShadow: [
+            BoxShadow(
+              color: DribTokens.primaryStrong.withValues(alpha: 0.45),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(19),
+            onTap: _openQuickActions,
+            child: const Center(
+              child: DuoIcon(AppIcons.add, color: Colors.white, size: 26),
+            ),
+          ),
+        ),
       ),
       floatingActionButtonLocation:
           FloatingActionButtonLocation.centerDocked,
