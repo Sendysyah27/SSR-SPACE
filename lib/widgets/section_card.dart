@@ -40,14 +40,14 @@ BoxDecoration sectionCardDecoration(
   return BoxDecoration(
     color: color ?? scheme.surface,
     borderRadius: BorderRadius.circular(SsrRadius.card),
-    border: Border.all(color: borderColor ?? scheme.outline),
+              border: borderColor == null ? null : Border.all(color: borderColor!),
     // SATU level bayangan industrial (R-12): penanda kartu terangkat.
     boxShadow: [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.06),
-        blurRadius: 24,
-        offset: const Offset(0, 8),
-      ),
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.07),
+      blurRadius: 20,
+      offset: const Offset(0, 6),
+    ),
     ],
   );
 }
