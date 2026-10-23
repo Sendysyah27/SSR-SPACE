@@ -296,13 +296,21 @@ class _AuthHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: SsrSpace.xxl),
-        Text(tr('au_title'), style: Theme.of(context).textTheme.displaySmall),
+        Text(
+          tr('au_title'),
+          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                color: DribTokens.navy,
+                fontWeight: FontWeight.w800,
+                fontSize: 22,
+              ),
+        ),
         const SizedBox(height: SsrSpace.sm),
         Text(
           tr('au_sub'),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).textTheme.bodySmall?.color,
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(color: DribTokens.textSecondary),
         ),
         const SizedBox(height: SsrSpace.xxl),
       ],
@@ -324,43 +332,44 @@ class _AuthFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labelStyle = TextStyle(color: Colors.white70, fontSize: 13);
-    const inputStyle = TextStyle(color: Colors.white);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: DribTokens.balanceGradient,
-        borderRadius:
-            BorderRadius.circular(DribTokens.cardRadius),
-        boxShadow: DribTokens.cardShadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            controller: emailC,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            autofillHints: const [AutofillHints.email],
-            style: inputStyle,
-            decoration: InputDecoration(
-              labelText: tr('au_email'),
-              labelStyle: labelStyle,
+    const labelStyle = TextStyle(color: DribTokens.textSecondary, fontSize: 13);
+    const inputStyle = TextStyle(color: DribTokens.navy);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: emailC,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.email],
+          style: inputStyle,
+          decoration: InputDecoration(
+            labelText: tr('au_email'),
+            labelStyle: labelStyle,
+            prefixIcon: const Icon(
+              AppIcons.mail,
+              size: 18,
+              color: DribTokens.textSecondary,
             ),
           ),
-          const SizedBox(height: SsrSpace.md),
-          TextField(
-            controller: passC,
-            obscureText: true,
-            onSubmitted: (_) => onSubmit(),
-            style: inputStyle,
-            decoration: InputDecoration(
-              labelText: tr('au_pass'),
-              labelStyle: labelStyle,
+        ),
+        const SizedBox(height: SsrSpace.md),
+        TextField(
+          controller: passC,
+          obscureText: true,
+          onSubmitted: (_) => onSubmit(),
+          style: inputStyle,
+          decoration: InputDecoration(
+            labelText: tr('au_pass'),
+            labelStyle: labelStyle,
+            prefixIcon: const Icon(
+              AppIcons.lock,
+              size: 18,
+              color: DribTokens.textSecondary,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -474,24 +483,51 @@ class _AuthActions extends StatelessWidget {
           loading: loading,
           onPressed: onSubmit,
           gradient: const LinearGradient(
-            colors: [DribTokens.primary, DribTokens.primary],
+            colors: [DribTokens.primary, DribTokens.primaryStrong],
           ),
-              foreground: DribTokens.navy,
+              foreground: Colors.white,
         ),
         const SizedBox(height: SsrSpace.sm),
         OutlinedButton(
           onPressed: loading ? null : onGoogle,
-          child: Text(tr('au_google')),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'G',
+                style: TextStyle(
+                  color: DribTokens.error,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: SsrSpace.sm),
+              Text(tr('au_google')),
+            ],
+          ),
         ),
         if (isLogin)
-          TextButton(
-            onPressed: onForgot,
-            child: Text(tr('au_forgot')),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: onForgot,
+              child: Text(
+                tr('au_forgot'),
+                style: const TextStyle(
+                  color: DribTokens.primaryStrong,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                ),
+              ),
+            ),
           ),
         TextButton(
           onPressed: onToggleMode,
           child: Text(
             isLogin ? tr('au_to_register') : tr('au_to_login'),
+            style: const TextStyle(
+              color: DribTokens.textSecondary,
+              fontSize: 12,
+            ),
           ),
         ),
       ],
