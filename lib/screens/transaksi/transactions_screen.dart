@@ -17,7 +17,6 @@ import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/tx_wallet_check.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
-import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
