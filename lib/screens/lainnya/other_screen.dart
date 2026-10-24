@@ -389,7 +389,15 @@ class _OtherScreenState extends State<OtherScreen> {
   /// AppBar hub: judul + aksi cari pengaturan.
   AppBar _appBar() {
     return AppBar(
-      title: Text(tr('nav_profil')),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      title: Text(
+        tr('nav_profil'),
+        style: Theme.of(context)
+            .textTheme
+            .titleLarge
+            ?.copyWith(fontWeight: FontWeight.w800),
+      ),
       actions: [
         IconButton(
           icon: const DuoIcon(AppIcons.search),
@@ -677,9 +685,16 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        DuoIcon(icon, size: 14, color: DribTokens.primary),
+        DuoIcon(icon, size: 14, color: DribTokens.primaryStrong),
         const SizedBox(width: SsrSpace.xs),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: DribTokens.navy,
+          ),
+        ),
       ],
     );
   }
@@ -700,34 +715,31 @@ class _HeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const onHero = DribTokens.onNavy;
     final initial = orgName.trim().isEmpty
         ? '?'
         : String.fromCharCode(orgName.trim().runes.first).toUpperCase();
+    final isPro = planLabel == tr('o_pro');
     return Container(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      padding: const EdgeInsets.all(SsrSpace.lg),
-      decoration: BoxDecoration(
-        gradient: DribTokens.balanceGradient,
-        borderRadius:
-            BorderRadius.circular(DribTokens.sheetRadius),
-        boxShadow: DribTokens.cardShadow,
-      ),
       child: Row(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 48,
+            height: 48,
             decoration: const BoxDecoration(
-              color: DribTokens.accentOrange,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF5B9BF5), Color(0xFF2E6BE6)],
+              ),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 initial,
                 style: const TextStyle(
-                  color: DribTokens.navy,
-                  fontSize: 24,
+                  color: Colors.white,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -740,37 +752,43 @@ class _HeaderCard extends StatelessWidget {
               children: [
                 Text(
                   orgName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: onHero,
+                  style: const TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w800,
+                    color: DribTokens.navy,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: SsrSpace.xs),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: onHero.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    planLabel,
-                    style: const TextStyle(
-                      color: onHero,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: SsrSpace.xs),
+                const SizedBox(height: 2),
                 Text(
                   '${tr('o_tracking')} • ${tr(tracking ? 'nt_on' : 'nt_off')}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: onHero.withValues(alpha: 0.7),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: DribTokens.textSecondary,
                   ),
                 ),
               ],
+            ),
+          ),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              gradient: isPro ? DribTokens.balanceGradient : null,
+              color: isPro ? null : const Color(0xFFE3EEFD),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              planLabel,
+              style: TextStyle(
+                color: isPro
+                    ? const Color(0xFFFFD9AE)
+                    : DribTokens.primaryStrong,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -866,14 +884,14 @@ class _DataSectionState extends State<_DataSection> {
           title: tr('o_wallets'),
           onTap: widget.onWallets,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.categoryFallback,
           title: tr('o_cats'),
           subtitle: tr('o_cats_s'),
           onTap: widget.onCategories,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         FutureBuilder<int>(
           future: _budgetCount,
           builder: (context, snap) {
@@ -886,74 +904,74 @@ class _DataSectionState extends State<_DataSection> {
             );
           },
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.transactions,
           title: tr('nav_transaksi'),
           onTap: widget.onHistory,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.bills,
           title: tr('rb_title'),
           onTap: widget.onBills,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.billing,
           title: tr('db_title'),
           subtitle: tr('db_sub'),
           onTap: widget.onDebts,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.transfer,
           title: tr('bs_title'),
           subtitle: tr('bs_sub'),
           onTap: widget.onSplits,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.calendar,
           title: tr('sub_title'),
           subtitle: tr('sub_sub'),
           onTap: widget.onSubs,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.topup,
           title: tr('goal_title'),
           subtitle: tr('goal_sub'),
           onTap: widget.onGoals,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.success,
           title: tr('sv30_title'),
           subtitle: tr('sv30_sub'),
           onTap: widget.onSave30,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.health,
           title: tr('game_title'),
           subtitle: tr('game_sub'),
           onTap: widget.onArcade,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.autoBadge,
           title: tr('chat_title'),
           onTap: widget.onChat,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.scan,
           title: tr('ai_scan_settings_title'),
           subtitle: tr('ai_scan_settings_sub'),
           onTap: widget.onAiScanSettings,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.scan,
           title: tr('nfc_title'),
@@ -1034,28 +1052,28 @@ class _BackupSection extends StatelessWidget {
           subtitle: tr('o_backup_s'),
           onTap: backupBusy ? null : onBackup,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.backup,
           title: tr('bx_title'),
           subtitle: tr('bx_sub'),
           onTap: onBackupJson,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.reports,
           title: tr('nav_laporan'),
           subtitle: tr('r_dl').replaceFirst('{l}', 'CSV / PDF'),
           onTap: onExport,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.arrowDown,
           title: tr('imp_title'),
           subtitle: tr('imp_title'),
           onTap: onImportP2,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.revoke,
           title: tr('o_clearcache_t'),
@@ -1118,27 +1136,27 @@ class _WorkspaceSection extends StatelessWidget {
           subtitle: tr('o_invite_s'),
           onTap: onInvite,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.members,
           title: tr('fam_title'),
           subtitle: tr('fam_sub'),
           onTap: onFamily,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.workspaceSwitch,
           title: tr('o_switch'),
           onTap: onSwitch,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.workspace,
           title: tr('wsm_detail'),
           subtitle: orgName,
           onTap: onDetail,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         FutureBuilder<int>(
           future: _newCount(),
           builder: (context, snap) {
@@ -1151,7 +1169,7 @@ class _WorkspaceSection extends StatelessWidget {
             );
           },
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.billing,
           title: tr('o_billing'),
@@ -1189,7 +1207,7 @@ class _AppearanceSection extends StatelessWidget {
             onChanged: setMaskAmounts,
           ),
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.menu,
           title: tr('st_font'),
@@ -1274,7 +1292,7 @@ class _SecuritySection extends StatelessWidget {
           title: tr('st_pin'),
           onTap: () => onSettings('pin'),
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(icon: AppIcons.logout, title: tr('o_logout'), onTap: onLogout),
       ],
       ),
@@ -1344,13 +1362,13 @@ class _AboutSection extends StatelessWidget {
               : null,
           onTap: onAnnouncements,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.history,
           title: tr('rm_title'),
           onTap: onRoadmap,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.menu,
           title: tr('ab_about'),
@@ -1361,31 +1379,31 @@ class _AboutSection extends StatelessWidget {
             '${tr('sp_tagline')}\n${AppInfo.version}\n${tr('ab_credits')}',
           ),
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.reports,
           title: tr('ab_changelog'),
           onTap: onChangelog,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.error,
           title: tr('ab_help'),
           onTap: onHelp,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.invite,
           title: tr('ab_feedback'),
           onTap: _feedback,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.addUser,
           title: tr('ab_share'),
           onTap: _shareApp,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: DribTokens.border),
         NavTile(
           icon: AppIcons.lock,
           title: tr('ab_privacy'),

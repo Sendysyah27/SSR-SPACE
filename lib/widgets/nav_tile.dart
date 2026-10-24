@@ -29,8 +29,24 @@ class NavTile extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: _NavIconTile(icon),
-      title: Text(title),
-      subtitle: s != null ? Text(s) : null,
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: DribTokens.navy,
+        ),
+      ),
+      subtitle: s != null
+          ? Text(
+              s,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: DribTokens.textSecondary,
+              ),
+            )
+          : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -46,8 +62,8 @@ class NavTile extends StatelessWidget {
   }
 }
 
-/// Ikon 44x44 di atas latar pastel biru khas tile (ukuran ikon 20).
-/// TAHAP 8: dipakai hub Profil + sheet mode input.
+/// Ikon 38x38 kotak pastel plek frame .cat (radius 13, ikon 19).
+/// Dipakai hub Profil + sheet mode input.
 class _NavIconTile extends StatelessWidget {
   final IconData icon;
   const _NavIconTile(this.icon);
@@ -55,13 +71,13 @@ class _NavIconTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 44,
-      height: 44,
+      width: 38,
+      height: 38,
       decoration: BoxDecoration(
-        color: DribTokens.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFFE3EEFD),
+        borderRadius: BorderRadius.circular(13),
       ),
-      child: DuoIcon(icon, color: DribTokens.primary, size: 20),
+      child: DuoIcon(icon, color: DribTokens.primaryStrong, size: 19),
     );
   }
 }

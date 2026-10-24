@@ -112,7 +112,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DribTokens.bgOf(context),
-      appBar: AppBar(title: Text(tr('st_title'))),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          tr('st_title'),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
@@ -748,7 +758,7 @@ class _CardThemeCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: Colors.white70,
+              color: DribTokens.textSecondary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1618,7 +1628,7 @@ class _PinCardState extends State<_PinCard> {
         if (step == 'checkOld') ...[
           Text(tr('st_pin_old'), style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: SsrSpace.sm),
-          PinField(controller: oldC, length: 6, digitColor: Colors.white),
+          PinField(controller: oldC, length: 6, digitColor: DribTokens.navy),
           const SizedBox(height: SsrSpace.md),
           PinPad(controller: oldC, length: 6),
           const SizedBox(height: SsrSpace.md),
@@ -1763,7 +1773,7 @@ class _NewPinFormState extends State<_NewPinForm> {
           length: 6,
           selected: _activePin == 0,
           onTap: () => _select(0),
-          digitColor: Colors.white,
+          digitColor: DribTokens.navy,
         ),
         const SizedBox(height: SsrSpace.md),
         PinField(
@@ -1771,7 +1781,7 @@ class _NewPinFormState extends State<_NewPinForm> {
           length: 6,
           selected: _activePin == 1,
           onTap: () => _select(1),
-          digitColor: Colors.white,
+          digitColor: DribTokens.navy,
         ),
         const SizedBox(height: SsrSpace.lg),
         PinPad(

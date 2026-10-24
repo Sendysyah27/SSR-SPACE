@@ -59,9 +59,10 @@ class LabeledSectionCard extends StatelessWidget {
   }
 }
 
-/// Varian kaca dari [LabeledSectionCard] (Batch 5 — Pengaturan 2.61.0+168).
+/// Varian kartu dari [LabeledSectionCard] (Batch 5 — Pengaturan).
 /// API sama persis (label/icon/children/margin) agar pemakaian bisa
-/// diganti 1:1; body dirender di atas [GlassCard] dengan radius kaca.
+/// diganti 1:1; body dirender di atas kartu putih flat gaya frame
+/// mockup (batch 287 tahap 5b; dulu navy TAHAP 10).
 class GlassLabeledCard extends StatelessWidget {
   final String label;
   final IconData? icon;
@@ -81,14 +82,14 @@ class GlassLabeledCard extends StatelessWidget {
     final ic = icon;
     final m = margin;
     final base = Theme.of(context);
-    const labelColor = Colors.white70;
-    // TAHAP 10: kartu navy; teks default putih (kontras 14.22:1).
+    const labelColor = DribTokens.textSecondary;
+    // Batch 287 tahap 5b: kartu putih flat plek frame; teks default navy.
     // Kontrol dengan warna eksplisit (error, emas, dsb.) tak ikut berubah.
     return Container(
       margin: m == EdgeInsets.zero ? null : m,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: DribTokens.navy,
+        color: DribTokens.cardOf(context),
         borderRadius:
             BorderRadius.circular(DribTokens.cardRadius),
         boxShadow: DribTokens.cardShadow,
@@ -96,12 +97,12 @@ class GlassLabeledCard extends StatelessWidget {
       child: Theme(
         data: base.copyWith(
           textTheme: base.textTheme.apply(
-            bodyColor: Colors.white,
-            displayColor: Colors.white,
+            bodyColor: DribTokens.navy,
+            displayColor: DribTokens.navy,
           ),
-          iconTheme: base.iconTheme.copyWith(color: Colors.white),
+          iconTheme: base.iconTheme.copyWith(color: DribTokens.navy),
           dividerTheme:
-              const DividerThemeData(color: Colors.white24),
+              const DividerThemeData(color: DribTokens.border),
           inputDecorationTheme:
               base.inputDecorationTheme.copyWith(
             labelStyle:
@@ -110,30 +111,35 @@ class GlassLabeledCard extends StatelessWidget {
                 const TextStyle(color: labelColor, fontSize: 13),
             floatingLabelStyle:
                 const TextStyle(color: labelColor, fontSize: 13),
-            prefixIconColor: Colors.white70,
-            suffixIconColor: Colors.white70,
+            prefixIconColor: DribTokens.textSecondary,
+            suffixIconColor: DribTokens.textSecondary,
           ),
         ),
         child: DefaultTextStyle(
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: DribTokens.navy),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (ic == null)
                 Text(label,
-                    style: const TextStyle(color: labelColor))
+                    style: const TextStyle(
+                        color: DribTokens.navy,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800))
               else
                 Row(
                   children: [
                     DuoIcon(
                       ic,
                       size: 14,
-                      color: DribTokens.primary,
+                      color: DribTokens.primaryStrong,
                     ),
                     const SizedBox(width: SsrSpace.xs),
                     Text(label,
-                        style:
-                            const TextStyle(color: labelColor)),
+                        style: const TextStyle(
+                            color: DribTokens.navy,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800)),
                   ],
                 ),
               const SizedBox(height: SsrSpace.xs),
