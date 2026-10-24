@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:ssr_space/services/ai_assistant_context.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/strings.dart';
 
 // Kartu visualisasi Mode Asisten (batch 281C tahap 2, diekstraksi dari
@@ -29,7 +30,6 @@ class AiVizCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final type = viz['type'] as String? ?? '';
     var title = '';
     final rows = <Widget>[];
@@ -53,7 +53,7 @@ class AiVizCard extends StatelessWidget {
       for (final c in cats) {
         rows.add(_VizRow(label: c.name, value: _amt(c.total)));
         rows.add(_VizBar(
-            frac: max > 0 ? c.total / max : 0, color: scheme.primary));
+            frac: max > 0 ? c.total / max : 0, color: DribTokens.primary));
       }
     } else if (type == 'tren_ringkas') {
       title = tr('ai_viz_tren');
@@ -66,7 +66,7 @@ class AiVizCard extends StatelessWidget {
         rows.add(_VizRow(
             label: lbl, value: '-${_amt(d.outAmt)} / +${_amt(d.inAmt)}'));
         rows.add(_VizBar(
-            frac: max > 0 ? d.outAmt / max : 0, color: scheme.primary));
+            frac: max > 0 ? d.outAmt / max : 0, color: DribTokens.primary));
       }
     } else if (type == 'banding_periode') {
       // Dua kolom: bulan ini vs bulan lalu (masuk/keluar + selisih %).
@@ -115,8 +115,9 @@ class AiVizCard extends StatelessWidget {
                         4 + 40 * (max > 0 ? d.outAmt / max : 0),
                     margin: const EdgeInsets.symmetric(horizontal: 1),
                     decoration: BoxDecoration(
-                      color: scheme.primary.withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(2),
+                      color: DribTokens.primary.withValues(alpha: 0.85),
+                      borderRadius:
+                          const BorderRadius.all(Radius.circular(3)),
                     ),
                   ),
                 ),
@@ -133,7 +134,7 @@ class AiVizCard extends StatelessWidget {
       for (final m in merchants) {
         rows.add(_VizRow(label: m.name, value: _amt(m.total)));
         rows.add(_VizBar(
-            frac: max > 0 ? m.total / max : 0, color: scheme.primary));
+            frac: max > 0 ? m.total / max : 0, color: DribTokens.primary));
       }
     } else if (type == 'progres_target') {
       title = tr('ai_viz_target');
@@ -148,7 +149,7 @@ class AiVizCard extends StatelessWidget {
             frac: g.target > 0
                 ? (g.saved / g.target).clamp(0.0, 1.0)
                 : 0,
-            color: scheme.primary));
+            color: DribTokens.primary));
         rows.add(_VizRow(label: '', value: '$pct%'));
       }
     }
@@ -159,11 +160,12 @@ class AiVizCard extends StatelessWidget {
         margin: const EdgeInsets.only(top: 2, bottom: 4),
         padding: const EdgeInsets.all(SsrSpace.md),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.82,
+          maxWidth: MediaQuery.of(context).size.width * 0.84,
         ),
         decoration: BoxDecoration(
-          color: scheme.secondaryContainer,
-          borderRadius: BorderRadius.circular(20),
+          color: DribTokens.cardOf(context),
+          borderRadius: const BorderRadius.all(Radius.circular(20)),
+          boxShadow: DribTokens.cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,8 +174,9 @@ class AiVizCard extends StatelessWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: scheme.onSecondaryContainer,
-                    fontWeight: FontWeight.w700,
+                    color: DribTokens.navy,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
                   ),
             ),
             const SizedBox(height: SsrSpace.sm),
@@ -199,13 +202,13 @@ class _VizTwoCol extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final head = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: scheme.onSecondaryContainer,
+          color: DribTokens.navy,
           fontWeight: FontWeight.w700,
         );
     final body = Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: scheme.onSecondaryContainer,
+          color: DribTokens.textSecondary,
+          fontSize: 12.5,
         );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -244,17 +247,23 @@ class _VizRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: scheme.onSecondaryContainer,
-          fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+    final labelStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: bold ? DribTokens.navy : DribTokens.textSecondary,
+          fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+          fontSize: 12.5,
+        );
+    final valueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: DribTokens.navy,
+          fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+          fontSize: 12.5,
+          fontFeatures: const [FontFeature.tabularFigures()],
         );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: style)),
-          Text(value, style: style),
+          Expanded(child: Text(label, style: labelStyle)),
+          Text(value, style: valueStyle),
         ],
       ),
     );
@@ -271,10 +280,10 @@ class _VizBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: const BorderRadius.all(Radius.circular(4)),
         child: LinearProgressIndicator(
           value: frac.clamp(0.0, 1.0),
-          minHeight: 6,
+          minHeight: 8,
           backgroundColor: color.withValues(alpha: 0.15),
           valueColor: AlwaysStoppedAnimation<Color>(color),
         ),

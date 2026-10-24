@@ -1739,10 +1739,29 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     SsrSpace.md, SsrSpace.xs, SsrSpace.md, 0),
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: Chip(
-                    label: Text(_quotaChip!),
-                    visualDensity: VisualDensity.compact,
-                    labelStyle: Theme.of(context).textTheme.labelSmall,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE3EEFD),
+                      borderRadius: BorderRadius.all(Radius.circular(99)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.bolt,
+                            size: 11, color: DribTokens.primaryStrong),
+                        const SizedBox(width: 5),
+                        Text(
+                          _quotaChip!,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: DribTokens.primaryStrong,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -2145,7 +2164,6 @@ class _AssistantStateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final (icon, title, sub, isQuota) = _spec();
     return Align(
       alignment: Alignment.centerLeft,
@@ -2156,8 +2174,9 @@ class _AssistantStateCard extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.82,
         ),
         decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(20),
+          color: DribTokens.cardOf(context),
+          borderRadius: const BorderRadius.all(Radius.circular(20)),
+          boxShadow: DribTokens.cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2166,19 +2185,24 @@ class _AssistantStateCard extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 18, color: scheme.primary),
+                Icon(icon, size: 18, color: DribTokens.primaryStrong),
                 const SizedBox(width: SsrSpace.xs),
                 Flexible(
                   child: Text(title,
                       style: Theme.of(context)
                           .textTheme
                           .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700)),
+                          ?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                              color: DribTokens.navy)),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            Text(sub, style: Theme.of(context).textTheme.bodyMedium),
+            Text(sub,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: DribTokens.textSecondary, fontSize: 12.5)),
             const SizedBox(height: SsrSpace.sm),
             isQuota
                 ? FilledButton(
@@ -2202,14 +2226,15 @@ class _FeedbackRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     Widget btn(IconData on, IconData off, int v, String tip) => IconButton(
-          icon: Icon(rating == v ? on : off, size: 16),
+          icon: Icon(rating == v ? on : off, size: 15),
           tooltip: tip,
           visualDensity: VisualDensity.compact,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 28),
           padding: EdgeInsets.zero,
-          color: rating == v ? scheme.primary : scheme.onSurfaceVariant,
+          color: rating == v
+              ? DribTokens.primaryStrong
+              : const Color(0xFF8496B8),
           onPressed: () => onRate(v),
         );
     return Row(
