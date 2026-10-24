@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
-import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 
 /// SectionCard dengan label kecil (bodySmall) + jarak xs di atas isi.
