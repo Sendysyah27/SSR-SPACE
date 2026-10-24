@@ -595,18 +595,17 @@ class _CreateOrgForm extends StatelessWidget {
             decoration: InputDecoration(
               labelText: tr('org_f_name'),
               errorText: formErr,
-              border: OutlineInputBorder(
-                borderRadius: const BorderRadius.all(Radius.circular(14)),
-                borderSide: const BorderSide(color: DribTokens.border),
+              border: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(14)),
+                borderSide: BorderSide(color: DribTokens.border),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: const BorderRadius.all(Radius.circular(14)),
-                borderSide: const BorderSide(color: DribTokens.border),
+              enabledBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(14)),
+                borderSide: BorderSide(color: DribTokens.border),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: const BorderRadius.all(Radius.circular(14)),
-                borderSide:
-                    const BorderSide(color: DribTokens.primaryStrong),
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(14)),
+                borderSide: BorderSide(color: DribTokens.primaryStrong),
               ),
             ),
           ),
@@ -654,18 +653,17 @@ class _JoinOrgForm extends StatelessWidget {
             decoration: InputDecoration(
               labelText: tr('org_f_code'),
               errorText: joinErr,
-              border: OutlineInputBorder(
-                borderRadius: const BorderRadius.all(Radius.circular(14)),
-                borderSide: const BorderSide(color: DribTokens.border),
+              border: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(14)),
+                borderSide: BorderSide(color: DribTokens.border),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: const BorderRadius.all(Radius.circular(14)),
-                borderSide: const BorderSide(color: DribTokens.border),
+              enabledBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(14)),
+                borderSide: BorderSide(color: DribTokens.border),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: const BorderRadius.all(Radius.circular(14)),
-                borderSide:
-                    const BorderSide(color: DribTokens.primaryStrong),
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(14)),
+                borderSide: BorderSide(color: DribTokens.primaryStrong),
               ),
             ),
           ),
