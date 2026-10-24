@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ssr_space/services/ai_draft.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/labeled_section_card.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
@@ -177,7 +178,18 @@ class AiDraftScreenState extends State<AiDraftScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(tr('ai_review_t'))),
+      backgroundColor: DribTokens.bgOf(context),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          tr('ai_review_t'),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.lg),
         children: [
@@ -206,6 +218,14 @@ class AiDraftScreenState extends State<AiDraftScreen> {
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: _saving ? null : _saveDraft,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: DribTokens.primaryStrong,
+                  side: const BorderSide(color: DribTokens.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
                 child: Text(tr('scan_draft_save')),
               ),
             ),
@@ -217,6 +237,9 @@ class AiDraftScreenState extends State<AiDraftScreen> {
                 widget.onDiscard?.call();
                 Navigator.of(context).pop();
               },
+              style: TextButton.styleFrom(
+                foregroundColor: DribTokens.errorText,
+              ),
               child: Text(tr('ai_discard')),
             ),
           ),
@@ -245,7 +268,23 @@ class _Field extends StatelessWidget {
         keyboardType: keyboard,
         decoration: InputDecoration(
           hintText: hint,
-          border: const OutlineInputBorder(),
+          filled: true,
+          fillColor: DribTokens.cardOf(context),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(SsrRadius.input),
+            borderSide: const BorderSide(color: DribTokens.border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(SsrRadius.input),
+            borderSide: const BorderSide(color: DribTokens.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(SsrRadius.input),
+            borderSide: const BorderSide(
+              color: DribTokens.primaryStrong,
+              width: 1.5,
+            ),
+          ),
           isDense: true,
         ),
       ),
@@ -312,8 +351,21 @@ class _ItemsCard extends StatelessWidget {
                   flex: 5,
                   child: TextField(
                     controller: rows[i].name,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: DribTokens.cardOf(context),
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(SsrRadius.input),
+                        borderSide:
+                            const BorderSide(color: DribTokens.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(SsrRadius.input),
+                        borderSide:
+                            const BorderSide(color: DribTokens.border),
+                      ),
                       isDense: true,
                     ),
                   ),
@@ -324,8 +376,21 @@ class _ItemsCard extends StatelessWidget {
                   child: TextField(
                     controller: rows[i].qty,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: DribTokens.cardOf(context),
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(SsrRadius.input),
+                        borderSide:
+                            const BorderSide(color: DribTokens.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(SsrRadius.input),
+                        borderSide:
+                            const BorderSide(color: DribTokens.border),
+                      ),
                       isDense: true,
                     ),
                   ),
@@ -344,7 +409,7 @@ class _ItemsCard extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () => onDel(i),
-                  icon: const Icon(Icons.delete_outline),
+                  icon: const Icon(Icons.delete_outline, color: DribTokens.errorText),
                   tooltip: tr('tx_delete'),
                 ),
               ],

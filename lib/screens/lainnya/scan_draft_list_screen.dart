@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/scan_draft_store.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/entry/receipt_draft_review.dart';
 
@@ -64,7 +65,18 @@ class _ScanDraftListScreenState extends State<ScanDraftListScreen> {
   Widget build(BuildContext context) {
     final entries = _entries;
     return Scaffold(
-      appBar: AppBar(title: Text(tr('scan_drafts'))),
+      backgroundColor: DribTokens.bgOf(context),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          tr('scan_drafts'),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: entries == null
           ? const Center(child: CircularProgressIndicator())
           : entries.isEmpty
@@ -87,20 +99,47 @@ class _ScanDraftListScreenState extends State<ScanDraftListScreen> {
                     final d = e.draft;
                     final title = d.merchant?.trim();
                     return Card(
+                      color: DribTokens.cardOf(context),
+                      elevation: 0,
+                      margin: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(DribTokens.cardRadius),
+                        side: const BorderSide(color: DribTokens.border),
+                      ),
                       child: ListTile(
-                        leading: const Icon(Icons.receipt_long_outlined),
+                        leading: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: DribTokens.pinkBg,
+                            borderRadius: BorderRadius.circular(13),
+                          ),
+                          child: const Icon(
+                            Icons.receipt_long_outlined,
+                            color: DribTokens.pink,
+                            size: 20,
+                          ),
+                        ),
                         title: Text(
                           (title == null || title.isEmpty) ? '-' : title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
                         ),
                         subtitle: Text(
                           [
                             if (d.date != null) d.date!,
                             if (d.time != null) d.time!,
                             if (d.total != null) _rp(d.total!),
-                          ].join(' • '),
+                          ].join(' · '),
                         ),
                         trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: DribTokens.errorText,
+                          ),
                           tooltip: tr('scan_draft_delete'),
                           onPressed: () => _delete(e),
                         ),

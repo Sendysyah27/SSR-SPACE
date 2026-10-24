@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/strings.dart';
 
 // Overlay animasi selama OCR berjalan (kamera maupun galeri — keduanya
@@ -16,7 +17,7 @@ class ScanOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Positioned.fill(
       child: Container(
-        color: Colors.black54,
+        color: const Color(0xD90B1B3F),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -64,14 +65,14 @@ class _LaserBoxState extends State<_LaserBox>
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: 240,
       height: 160,
       child: AnimatedBuilder(
         animation: _c,
         builder: (_, _) => CustomPaint(
-          painter: _LaserPainter(progress: _c.value, color: scheme.primary),
+          painter:
+              _LaserPainter(progress: _c.value, color: DribTokens.primary),
         ),
       ),
     );

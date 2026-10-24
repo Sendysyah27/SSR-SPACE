@@ -93,11 +93,14 @@ class _OcrCameraScreenState extends State<_OcrCameraScreen> {
     final scheme = Theme.of(context).colorScheme;
     final c = _controller;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF1C2742),
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFF1C2742),
         foregroundColor: Colors.white,
-        title: Text(tr('ocr_cam_title')),
+        title: Text(
+          tr('ocr_cam_title'),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+        ),
         actions: [
           IconButton(
             tooltip: tr('ocr_flash'),
@@ -133,7 +136,7 @@ class _OcrCameraScreenState extends State<_OcrCameraScreen> {
                         height: MediaQuery.of(context).size.height * 0.55,
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.6),
+                            color: Colors.white.withValues(alpha: 0.4),
                             width: 2,
                           ),
                           borderRadius: BorderRadius.circular(12),
