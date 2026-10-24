@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 
-/// Baris kotak PIN, display-only, tanpa TextField.
+/// Baris titik PIN (13px ala mockup), display-only, tanpa TextField.
 ///
 /// Sengaja TIDAK memakai TextField: keyboard sistem tak pernah dibuka
 /// (input lewat `PinPad`) dan border InputDecorationTheme tak bisa bocor
@@ -69,35 +70,26 @@ class _PinFieldState extends State<PinField> {
     super.dispose();
   }
 
+  /// Satu titik PIN 13px ala frame mockup grup Auth: lingkaran border
+  /// 2px navy; terisi = navy penuh, kosong = transparan. Kolom yang
+  /// tidak sedang dipilih (form dua kolom) cincinnya lebih redup.
+  /// Mode non-obscure tidak dipakai pemanggil mana pun — indikator
+  /// selalu titik, digit mentah tidak pernah digambar.
   Widget _box(BuildContext context, int i, bool filled) {
     final scheme = Theme.of(context).colorScheme;
-    final lit = filled || widget.selected;
+    final base = widget.digitColor ?? DribTokens.navy;
+    final ring = widget.error != null
+        ? scheme.error
+        : base.withValues(alpha: widget.selected ? 1 : 0.35);
     return Container(
-      width: 40,
-      height: 48,
+      width: 13,
+      height: 13,
       decoration: BoxDecoration(
+        shape: BoxShape.circle,
         color: filled
-            ? scheme.primary.withValues(alpha: 0.08)
+            ? (widget.error != null ? scheme.error : base)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(SsrRadius.input),
-        border: Border.all(
-          color: widget.error != null
-              ? scheme.error
-              : lit
-              ? scheme.primary
-              : scheme.outline,
-          width: lit || widget.error != null ? 1.5 : 1,
-        ),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        filled ? (widget.obscure ? '•' : widget.controller.text[i]) : '',
-        style: TextStyle(
-          fontFamily: SsrFonts.numeric,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: widget.digitColor ?? scheme.onSurface,
-        ),
+        border: Border.all(color: ring, width: 2),
       ),
     );
   }
@@ -117,7 +109,7 @@ class _PinFieldState extends State<PinField> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 for (var i = 0; i < widget.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 8),
+                  if (i > 0) const SizedBox(width: 13),
                   _box(context, i, i < text.length),
                 ],
               ],
