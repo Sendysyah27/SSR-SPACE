@@ -74,7 +74,10 @@ class _TxDetailSheet extends StatelessWidget {
               children: [
                 Text(
                   tr('td_title'),
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: SsrSpace.sm),
                 DribCard(
@@ -116,10 +119,10 @@ class _TxDetailSheet extends StatelessWidget {
                   gradient: const LinearGradient(
                     colors: [
                       DribTokens.primary,
-                      DribTokens.primary
+                      DribTokens.primaryStrong
                     ],
                   ),
-                  foreground: DribTokens.navy,
+                  foreground: Colors.white,
                 ),
                 const SizedBox(height: SsrSpace.sm),
                 TextButton(
@@ -331,7 +334,12 @@ class _OlloTxDetailSheetState extends State<_OlloTxDetailSheet> {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 13,
+                color: scheme.brightness == Brightness.dark
+                    ? scheme.onSurfaceVariant
+                    : DribTokens.textSecondary,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -342,7 +350,7 @@ class _OlloTxDetailSheetState extends State<_OlloTxDetailSheet> {
               textAlign: TextAlign.end,
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 color: scheme.onSurface,
               ),
             ),
@@ -377,22 +385,32 @@ class _OlloTxDetailSheetState extends State<_OlloTxDetailSheet> {
             height: 4,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(2),
-              color: scheme.outlineVariant,
+              color: const Color(0xFFD5E0F2),
             ),
           ),
           const SizedBox(height: 16),
-          // Lingkaran pastel panah arah
+          // Kotak pastel panah arah
           Container(
-            width: 64,
-            height: 64,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: amountColor.withValues(alpha: 0.15),
+              color: amountColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(16),
             ),
             alignment: Alignment.center,
-            child: DuoIcon(arrowIcon, size: 30, color: amountColor),
+            child: DuoIcon(arrowIcon, size: 26, color: amountColor),
           ),
           const SizedBox(height: 12),
+          Text(
+            _title(),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: scheme.onSurface,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
           // Amount besar
           Text(
             _signedAmount(),
@@ -409,6 +427,8 @@ class _OlloTxDetailSheetState extends State<_OlloTxDetailSheet> {
             style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
+          const Divider(height: 1, color: DribTokens.border),
+          const SizedBox(height: 8),
           Flexible(
             child: SingleChildScrollView(
               child: Column(
@@ -442,12 +462,39 @@ class _OlloTxDetailSheetState extends State<_OlloTxDetailSheet> {
           const SizedBox(height: 16),
           Row(
             children: [
-              // Hapus: pink soft
+              // Edit: biru soft ala mockup
+              Expanded(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFE3EEFD),
+                    foregroundColor: DribTokens.primaryStrong,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: _deleting
+                      ? null
+                      : () {
+                          widget.onEdit();
+                          Navigator.of(context).pop();
+                        },
+                  child: Text(
+                    tr('txd_edit'),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Hapus: merah muda ala mockup
               Expanded(
                 child: FilledButton.tonal(
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.pink.shade100,
-                    foregroundColor: Colors.pink.shade900,
+                    backgroundColor: const Color(0xFFFBDCDD),
+                    foregroundColor: DribTokens.errorText,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -467,33 +514,6 @@ class _OlloTxDetailSheetState extends State<_OlloTxDetailSheet> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Edit: gelap
-              Expanded(
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: scheme.inverseSurface,
-                    foregroundColor: scheme.onInverseSurface,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  onPressed: _deleting
-                      ? null
-                      : () {
-                          widget.onEdit();
-                          Navigator.of(context).pop();
-                        },
-                  child: Text(
-                    tr('txd_edit'),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
                 ),
               ),
             ],
