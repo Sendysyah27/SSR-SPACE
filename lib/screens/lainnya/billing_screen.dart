@@ -8,7 +8,8 @@ import 'package:ssr_space/widgets/qris_payment_sheet.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
-import 'package:ssr_space/widgets/section_card.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/services/plan_limits.dart';
@@ -226,13 +227,20 @@ class _BillingScreenState extends State<BillingScreen> {
           Text(
             tr('bl_active').replaceFirst(
                 '{p}', plan.isEmpty ? '-' : _planLabel()),
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800),
           ),
           if (stale) ...[
             const SizedBox(height: SsrSpace.xs),
             Text(
               tr('conn_error'),
-              style: Theme.of(context).textTheme.bodySmall,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: DribTokens.textSecondary,
+              ),
             ),
           ],
           const SizedBox(height: SsrSpace.lg),
@@ -241,7 +249,11 @@ class _BillingScreenState extends State<BillingScreen> {
             const SizedBox(height: SsrSpace.lg),
             Text(
               tr('bl_pro_permanent_note'),
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: DribTokens.textSecondary,
+              ),
             ),
           ] else
             _QrisPlansSection(
@@ -266,7 +278,18 @@ class _BillingScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(tr('o_billing'))),
+      backgroundColor: DribTokens.bgOf(context),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          tr('o_billing'),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: body,
     );
   }
@@ -286,7 +309,14 @@ class _FreePlanCard extends StatelessWidget {
       statusChip: !isPro
           ? StatusChip(label: tr('bl_active_chip'), tone: StatusTone.accent)
           : null,
-      price: Text('Rp0', style: AppTheme.money.copyWith(fontSize: 18)),
+      price: Text(
+        'Rp0',
+        style: AppTheme.money.copyWith(
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          color: DribTokens.navy,
+        ),
+      ),
       features: [
         tr('bl_f_free1'),
         tr('bl_f_free2').replaceFirst('{n}', '${PlanLimits.freeWorkspaces}'),
@@ -309,17 +339,26 @@ class _VipCodeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
+    return DribCard(
       margin: const EdgeInsets.only(top: SsrSpace.md),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         title: Text(
           tr('bl_vip_title'),
-          style: Theme.of(context).textTheme.titleMedium,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: DribTokens.navy,
+          ),
         ),
         subtitle: Text(
           tr('bl_vip_hint'),
-          style: Theme.of(context).textTheme.bodySmall,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: DribTokens.textSecondary,
+          ),
         ),
         trailing: StatusChip(
           label: tr('bl_vip_redeem'),
@@ -340,6 +379,7 @@ class _PlanCard extends StatelessWidget {
   final Widget price;
   final List<String> features;
   final List<Widget> extra;
+  final bool highlight;
 
   const _PlanCard({
     this.margin = EdgeInsets.zero,
@@ -348,6 +388,7 @@ class _PlanCard extends StatelessWidget {
     required this.price,
     required this.features,
     this.extra = const [],
+    this.highlight = false,
   });
 
   Widget _checkItem(BuildContext context, String label) {
@@ -355,14 +396,29 @@ class _PlanCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: SsrSpace.sm),
       child: Row(
         children: [
-          DuoIcon(
-            AppIcons.check,
-            size: 18,
-            color: Theme.of(context).colorScheme.primary,
+          const Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: DribTokens.success,
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: DuoIcon(
+              AppIcons.check,
+              size: 12,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(width: SsrSpace.sm),
           Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: DribTokens.navy,
+              ),
+            ),
           ),
         ],
       ),
@@ -372,8 +428,17 @@ class _PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chip = statusChip;
-    return SectionCard(
+    return Container(
       margin: margin,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: DribTokens.cardOf(context),
+        borderRadius: BorderRadius.circular(DribTokens.cardRadius),
+        boxShadow: DribTokens.cardShadow,
+        border: highlight
+            ? Border.all(color: DribTokens.primary, width: 2)
+            : null,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -382,7 +447,11 @@ class _PlanCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: const TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w800,
+                    color: DribTokens.navy,
+                  ),
                 ),
               ),
               if (chip != null) chip,
@@ -422,14 +491,29 @@ class _QrisPlansSection extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: SsrSpace.sm),
       child: Row(
         children: [
-          DuoIcon(
-            AppIcons.check,
-            size: 18,
-            color: Theme.of(context).colorScheme.primary,
+          const Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: DribTokens.success,
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: DuoIcon(
+              AppIcons.check,
+              size: 12,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(width: SsrSpace.sm),
           Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: DribTokens.navy,
+              ),
+            ),
           ),
         ],
       ),
@@ -444,17 +528,29 @@ class _QrisPlansSection extends StatelessWidget {
         const SizedBox(height: SsrSpace.lg),
         Text(
           tr('bl_qris_title'),
-          style: Theme.of(context).textTheme.titleMedium,
+          style: const TextStyle(
+            fontSize: 15.5,
+            fontWeight: FontWeight.w800,
+            color: DribTokens.navy,
+          ),
         ),
         const SizedBox(height: SsrSpace.xs),
         Text(
           tr('bl_qris_sub'),
-          style: Theme.of(context).textTheme.bodySmall,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: DribTokens.textSecondary,
+          ),
         ),
         const SizedBox(height: SsrSpace.md),
         Text(
           tr('bl_benefit_title'),
-          style: Theme.of(context).textTheme.titleSmall,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: DribTokens.navy,
+          ),
         ),
         const SizedBox(height: SsrSpace.sm),
         for (final k in const [
@@ -478,7 +574,9 @@ class _QrisPlansSection extends StatelessWidget {
             ),
           )
         else if (error)
-          SectionCard(
+          DribCard(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
               children: [
                 Expanded(child: Text(tr('bl_qris_load_err'))),
@@ -522,6 +620,7 @@ class _QrisPlanCard extends StatelessWidget {
     return _PlanCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
       title: name,
+      highlight: durationDays == null,
       statusChip: durationDays == null
           ? StatusChip(label: tr('bl_qris_perm'), tone: StatusTone.accent)
           : null,
@@ -529,17 +628,52 @@ class _QrisPlanCard extends StatelessWidget {
         rp(price),
         style: AppTheme.money.copyWith(
           fontSize: 18,
-          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.w800,
+          color: DribTokens.navy,
         ),
       ),
       features: benefits,
       extra: [
         const SizedBox(height: SsrSpace.sm),
-        FilledButton(
-          onPressed: onPay,
-          child: Text(tr('bl_qris_pay')),
-        ),
+        _QrisPayButton(label: tr('bl_qris_pay'), onTap: onPay),
       ],
+    );
+  }
+}
+
+
+/// Tombol bayar gradient navy plek frame (.btn.navyb) untuk kartu paket QRIS.
+class _QrisPayButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _QrisPayButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: const BoxDecoration(
+            gradient: DribTokens.balanceGradient,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

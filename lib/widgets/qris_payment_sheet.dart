@@ -24,7 +24,7 @@ Future<void> showQrisPaymentSheet(
     isScrollControlled: true,
     backgroundColor: DribTokens.cardOf(context),
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (_) => QrisPaymentSheet(orgId: orgId, plan: plan, onPaid: onPaid),
   );
@@ -229,12 +229,26 @@ class _QrisPaymentSheetState extends State<QrisPaymentSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Color(0xFFD5E0F2),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+            const SizedBox(height: SsrSpace.md),
             Row(
               children: [
                 Expanded(
                   child: Text(
                     _planName,
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w800),
                   ),
                 ),
                 IconButton(
@@ -279,14 +293,18 @@ class _QrisPaymentSheetState extends State<QrisPaymentSheet> {
         Icon(
           Icons.check_circle,
           size: 64,
-          color: Theme.of(context).colorScheme.primary,
+          color: DribTokens.success,
         ),
         const SizedBox(height: SsrSpace.md),
         Center(
           child: Text(
             tr('bl_qris_success'),
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: const TextStyle(
+              fontSize: 15.5,
+              fontWeight: FontWeight.w800,
+              color: DribTokens.navy,
+            ),
           ),
         ),
         const SizedBox(height: SsrSpace.lg),
@@ -309,41 +327,62 @@ class _QrisPaymentSheetState extends State<QrisPaymentSheet> {
         child: Text(
           tr('bl_qris_exact'),
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: DribTokens.textSecondary,
+          ),
         ),
       ),
       const SizedBox(height: SsrSpace.lg),
       Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Opacity(
-              opacity: expired || rejected ? 0.25 : 1,
-              child: QrImageView(
-                data: payload,
-                version: QrVersions.auto,
-                size: 240,
-                backgroundColor: Colors.white,
-                padding: const EdgeInsets.all(SsrSpace.md),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: DribTokens.border, width: 1.5),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Opacity(
+                opacity: expired || rejected ? 0.25 : 1,
+                child: QrImageView(
+                  data: payload,
+                  version: QrVersions.auto,
+                  size: 240,
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.all(SsrSpace.md),
+                ),
               ),
-            ),
             if (expired)
               Text(
                 tr('bl_qris_expired'),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-            if (rejected)
-              Text(
-                tr('bl_qris_rejected'),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-          ],
+              if (rejected)
+                Text(
+                  tr('bl_qris_rejected'),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+            ],
+          ),
         ),
       ),
       const SizedBox(height: SsrSpace.md),
-      Center(child: Text(tr('bl_qris_scan_hint'))),
+      Center(
+        child: Text(
+          tr('bl_qris_scan_hint'),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: DribTokens.textSecondary,
+          ),
+        ),
+      ),
     ];
 
     if (!expired && !rejected) {
@@ -363,7 +402,11 @@ class _QrisPaymentSheetState extends State<QrisPaymentSheet> {
             child: Text(
               tr('bl_qris_expires_in')
                   .replaceFirst('{t}', _countdownLabel()),
-              style: Theme.of(context).textTheme.bodySmall,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: DribTokens.errorText,
+              ),
             ),
           ),
         ],
