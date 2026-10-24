@@ -834,6 +834,15 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.82.21+288 (2026-10-24)
+
+Patch rilis grup 9 - sisa terakhir restyle Batch 287: dua layar Workspace terakhir di-restyle plek frame mockup. RESTYLE SAJA: logika bisnis, API, state, routing, dan kontrak data TIDAK berubah.
+
+- Grup 9a - Daftar Workspace (org_switcher_screen.dart + strings.dart): kartu per-workspace ala frame - avatar inisial lingkaran (aktif = gradient #5B9BF5 ke #2E6BE6, lain = palet success/pink/accentOrangeText/purple), nama w800 navy 15, subjudul role (+ "· Pro" bila plan pro), chip "Aktif" pill #E3EEFD / chevron, tombol gear kelola dipertahankan, border 2px primary bila aktif; subtitle org_pick sekunder 13 w600; kartu info privasi baru _OrgPrivacyCard (bg #EAF3FE, ikon shield, kunci baru org_privacy ID/EN); judul form w800 navy; TextField border token r14; org_title menjadi "Workspace"; import workspace_switcher yang tak terpakai dihapus. Commit 675d391 (+fix ddbd725: 6 OutlineInputBorder jadi const, inner const redundan dicabut, TIDAK ada disable rule); CI 40067493548 FAILED (6x prefer_const_constructors) lalu CI 40067660154 SUCCESS.
+- Grup 9b - Undang Anggota (invite_screen.dart + strings.dart): kunci baru iv_to ("Ke {n}"/"To {n}") sebagai subjudul di bawah header bila orgName tak kosong; dialog kode direstyle (rounded 20, tengah, kode 20px w800 letterSpacing 2.0 navy - ukuran disesuaikan karena token app 29 karakter, bukan KR-8F42); dropdown peran diganti _RoleSeg ala seg 6a (bg #D9E6FA/dark #1B2A4A, r14, pill aktif putih r11 + shadow, teks 11.5 w800) - opsi tetap member/admin, onRoleChanged tak berubah; judul kartu w800 navy; baris daftar undangan judul w800 navy, subjudul textSecondary. Commit a07b0bb; CI 40068507256 SUCCESS sekali jalan, tanpa fix.
+- Flag yang dilewati (sesuai aturan, jangan mengarang): opsi "Penonton" di seg frame tidak ditambah - alur buat undangan app hanya mengenal member/admin, tambah peran = ubah kontrak backend; tombol bawah frame "Bagikan Tautan Undangan" tidak ditambah - share sudah ada di dialog pasca-buat, tombol baru = dead button; kunci o_invite tidak diubah nilainya - dipakai 5 file lain; jumlah anggota/dompet per kartu frame tidak dimunculkan - data app yang tersedia tanpa query baru hanya nama, role, plan.
+- Rilis: bump 2.82.21+288 (pubspec + app_info) + AUDIT + changelog ID/EN di commit finalisasi ini; unduh APK + last_version + notif via jalur rilis Jhon (bukan bagian commit ini).
+
 ## 2.82.20+287 (2026-10-24)
 
 Implementasi mockup desain baru plek ketiplek (brief 287, board 51 frame / 11 grup): seluruh tampilan aplikasi di-restyle ke bahasa desain baru — latar #EAF0F8, kartu putih flat radius 20–24, hero gradient #0B1B3F→#1F3C88, teks #10224E, biru #5B9BF5/#2E6BE6, font Plus Jakarta Sans, format Rupiah "Rp 1.250.000". RESTYLE SAJA: logika bisnis, API, state, routing, kontrak data, harga paket Pro, dan alur bayar QRIS TIDAK berubah.

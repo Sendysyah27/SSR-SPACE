@@ -1,6 +1,16 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.20+287.
+Versi terpasang: 2.82.21+288.
+
+## Yang baru di 2.82.21+288
+
+1. Daftar Workspace tampil baru: kartu per workspace dengan avatar inisial, chip "Aktif" untuk workspace yang sedang dipakai, dan kartu info privasi.
+2. Undang Anggota tampil baru: pilihan peran sebagai segmen dan dialog kode undangan yang lebih rapi.
+
+## What's new in 2.82.21+288
+
+1. The Workspace list gets a fresh look: per-workspace cards with initial avatars, an "Active" chip for the workspace in use, and a privacy info card.
+2. Invite Member gets a fresh look: role choice as a segmented control and a tidier invite-code dialog.
 
 ## Yang baru di 2.82.20+287
 
