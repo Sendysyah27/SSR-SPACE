@@ -16,7 +16,6 @@ import 'package:ssr_space/screens/workspace/workspace_detail_screen.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
-import 'package:ssr_space/widgets/restyle/workspace_switcher.dart';
 
 class OrgSwitcherScreen extends StatefulWidget {
   final SessionService session;
@@ -283,8 +282,10 @@ class _OrgPickerBody extends StatelessWidget {
       children: [
         Text(
           tr('org_pick'),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).textTheme.bodySmall?.color,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: DribTokens.textSecondary,
           ),
         ),
         const SizedBox(height: SsrSpace.lg),
@@ -304,6 +305,8 @@ class _OrgPickerBody extends StatelessWidget {
             onSelect: onSelect,
             onManage: onManage,
           ),
+        const SizedBox(height: SsrSpace.lg),
+        const _OrgPrivacyCard(),
         const SizedBox(height: SsrSpace.lg),
         _CreateOrgForm(
           nameC: nameC,
@@ -326,8 +329,10 @@ class _OrgPickerBody extends StatelessWidget {
   }
 }
 
-/// Daftar workspace TAHAP 4d: komponen WorkspaceSwitcher kartu putih.
-/// Adapter Map -> WorkspaceOption; centang = workspace aktif saat ini.
+/// Daftar workspace ala frame mockup grup 9: satu kartu putih per workspace,
+/// avatar inisial (aktif = gradient biru, lain = palet), chip "Aktif" untuk
+/// yang aktif, chevron untuk yang lain, gear untuk kelola (detail).
+/// Data yang tampil hanya yang sudah ada (nama, role, plan); tanpa query baru.
 class _OrgListCard extends StatelessWidget {
   final List<Map<String, dynamic>> items;
   final String activeId;
@@ -346,30 +351,207 @@ class _OrgListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final byId = <String, Map<String, dynamic>>{
-      for (final m in items) _orgId(m): m,
-    };
-    return WorkspaceSwitcher(
-      options: [
-        for (final m in items)
-          WorkspaceOption(
-            id: _orgId(m),
-            name: (m['organizations']?['name'] ?? '-').toString(),
-            role: m['role'] == 'owner'
+    const palette = <Color>[
+      DribTokens.success,
+      DribTokens.pink,
+      DribTokens.accentOrangeText,
+      DribTokens.purple,
+    ];
+    return Column(
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) const SizedBox(height: SsrSpace.md),
+          _OrgRowCard(
+            name: (items[i]['organizations']?['name'] ?? '-').toString(),
+            role: items[i]['role'] == 'owner'
                 ? tr('org_owner')
                 : tr('org_member'),
-            selected: _orgId(m).isNotEmpty && _orgId(m) == activeId,
+            plan: (items[i]['organizations']?['plan'] ?? '').toString(),
+            selected:
+                _orgId(items[i]).isNotEmpty && _orgId(items[i]) == activeId,
+            avatarColor: palette[i % palette.length],
+            onTap: () => onSelect(items[i]),
+            onManage: () => onManage(items[i]),
           ),
+        ],
       ],
-      onSelect: (o) {
-        final m = byId[o.id];
-        if (m != null) onSelect(m);
-      },
-      onManage: (o) {
-        final m = byId[o.id];
-        if (m != null) onManage(m);
-      },
-      manageTooltip: tr('wsm_detail'),
+    );
+  }
+}
+
+String _orgInitials(String name) {
+  final words =
+      name.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+  if (words.isEmpty) return '?';
+  if (words.length == 1) return words.first[0].toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+/// Satu kartu workspace frame: border 2px biru bila aktif, avatar lingkaran,
+/// nama w800 navy, subjudul role (+ Pro), chip Aktif / chevron, gear kelola.
+class _OrgRowCard extends StatelessWidget {
+  final String name;
+  final String role;
+  final String plan;
+  final bool selected;
+  final Color avatarColor;
+  final VoidCallback onTap;
+  final VoidCallback onManage;
+
+  const _OrgRowCard({
+    required this.name,
+    required this.role,
+    required this.plan,
+    required this.selected,
+    required this.avatarColor,
+    required this.onTap,
+    required this.onManage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = plan.toLowerCase() == 'pro' ? '$role · Pro' : role;
+    return Container(
+      decoration: BoxDecoration(
+        color: DribTokens.cardOf(context),
+        borderRadius: BorderRadius.circular(DribTokens.cardRadius),
+        border: selected
+            ? Border.all(color: DribTokens.primary, width: 2)
+            : null,
+        boxShadow: DribTokens.cardShadow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(DribTokens.cardRadius),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: selected
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              DribTokens.primary,
+                              DribTokens.primaryStrong,
+                            ],
+                          )
+                        : null,
+                    color: selected ? null : avatarColor,
+                  ),
+                  child: Text(
+                    _orgInitials(name),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: SsrSpace.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: DribTokens.navy,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: DribTokens.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (selected)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3EEFD),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(
+                      tr('iv_st_active'),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: DribTokens.primaryStrong,
+                      ),
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 16,
+                    color: DribTokens.textSecondary,
+                  ),
+                IconButton(
+                  tooltip: tr('wsm_detail'),
+                  onPressed: onManage,
+                  icon: const Icon(Icons.settings_outlined, size: 20),
+                  color: DribTokens.navy.withValues(alpha: 0.6),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Kartu info privasi frame: latar #EAF3FE tanpa bayangan, ikon shield.
+class _OrgPrivacyCard extends StatelessWidget {
+  const _OrgPrivacyCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF3FE),
+        borderRadius: BorderRadius.circular(DribTokens.cardRadius),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.shield_outlined,
+            size: 17,
+            color: DribTokens.primaryStrong,
+          ),
+          const SizedBox(width: SsrSpace.sm),
+          Expanded(
+            child: Text(
+              tr('org_privacy'),
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: DribTokens.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -400,7 +582,10 @@ class _CreateOrgForm extends StatelessWidget {
         children: [
           Text(
             tr('org_new'),
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: DribTokens.navy,
+                ),
           ),
           const SizedBox(height: SsrSpace.md),
           TextField(
@@ -410,6 +595,19 @@ class _CreateOrgForm extends StatelessWidget {
             decoration: InputDecoration(
               labelText: tr('org_f_name'),
               errorText: formErr,
+              border: OutlineInputBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(14)),
+                borderSide: const BorderSide(color: DribTokens.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(14)),
+                borderSide: const BorderSide(color: DribTokens.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(14)),
+                borderSide:
+                    const BorderSide(color: DribTokens.primaryStrong),
+              ),
             ),
           ),
           const SizedBox(height: SsrSpace.lg),
@@ -444,7 +642,10 @@ class _JoinOrgForm extends StatelessWidget {
         children: [
           Text(
             'Punya kode undangan?',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: DribTokens.navy,
+                ),
           ),
           const SizedBox(height: SsrSpace.md),
           TextField(
@@ -453,6 +654,19 @@ class _JoinOrgForm extends StatelessWidget {
             decoration: InputDecoration(
               labelText: tr('org_f_code'),
               errorText: joinErr,
+              border: OutlineInputBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(14)),
+                borderSide: const BorderSide(color: DribTokens.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(14)),
+                borderSide: const BorderSide(color: DribTokens.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(14)),
+                borderSide:
+                    const BorderSide(color: DribTokens.primaryStrong),
+              ),
             ),
           ),
           const SizedBox(height: SsrSpace.lg),

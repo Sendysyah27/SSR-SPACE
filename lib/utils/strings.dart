@@ -1574,10 +1574,10 @@ const _t = <String, Map<String, String>>{
     'en': 'Failed to join. Check your connection.',
   },
   'org_loading': {'id': 'Memuat workspace...', 'en': 'Loading workspaces...'},
-  'org_title': {'id': 'Pilih workspace', 'en': 'Choose workspace'},
+  'org_title': {'id': 'Workspace', 'en': 'Workspace'},
   'org_pick': {
-    'id': 'Pilih ruang catat atau buat baru.',
-    'en': 'Pick a ledger or create a new one.',
+    'id': 'Ruang keuanganmu',
+    'en': 'Your financial spaces',
   },
   'org_empty_t': {'id': 'Belum ada workspace.', 'en': 'No workspaces yet.'},
   'org_empty_s': {
@@ -1593,6 +1593,12 @@ const _t = <String, Map<String, String>>{
   'org_create': {'id': 'Buat', 'en': 'Create'},
   'org_f_code': {'id': 'Kode undangan', 'en': 'Invite code'},
   'org_join': {'id': 'Gabung', 'en': 'Join'},
+  'org_privacy': {
+    'id':
+        'Data antar-workspace terpisah penuh — anggota satu ruang tidak bisa melihat ruang lain.',
+    'en':
+        'Data is fully separated between workspaces — members of one space cannot see another space.',
+  },
   // Detail workspace
   'wsm_members': {'id': 'Anggota', 'en': 'Members'},
   'wsm_you': {'id': 'Kamu', 'en': 'You'},
