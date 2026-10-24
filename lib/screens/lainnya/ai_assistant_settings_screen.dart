@@ -4,7 +4,9 @@ import 'package:ssr_space/services/ai_context.dart';
 import 'package:ssr_space/services/ai_memory.dart';
 import 'package:ssr_space/services/ai_persona.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
 
 // Layar Pengaturan Asisten khusus (batch 285 tahap D, pola route
 // /ai-assistant/settings Ollo): mengumpulkan personalisasi + izin
@@ -87,9 +89,24 @@ class _AiAssistantSettingsScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(title, style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: SsrSpace.xs),
-        ...children,
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : DribTokens.navy,
+          ),
+        ),
+        const SizedBox(height: SsrSpace.sm),
+        DribCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
+          ),
+        ),
         const SizedBox(height: SsrSpace.md),
       ],
     );
@@ -98,7 +115,21 @@ class _AiAssistantSettingsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(tr('ai_aset_title'))),
+      backgroundColor: DribTokens.bgOf(context),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          tr('ai_aset_title'),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : DribTokens.navy,
+          ),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(SsrSpace.md),
         children: [
@@ -110,6 +141,16 @@ class _AiAssistantSettingsScreenState
                   ChoiceChip(
                     label: Text(tr('ai_persona_${e.key}')),
                     selected: _persona.persona == e.key,
+                    selectedColor: const Color(0xFFD9E6FA),
+                    checkmarkColor: DribTokens.navy,
+                    side: const BorderSide(color: DribTokens.border),
+                    labelStyle: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                      color: _persona.persona == e.key
+                          ? DribTokens.navy
+                          : DribTokens.textSecondary,
+                    ),
                     onSelected: (_) async {
                       await saveAiPersona(
                           _persona.copyWith(persona: e.key));
@@ -120,10 +161,33 @@ class _AiAssistantSettingsScreenState
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(tr('ai_set_nickname')),
-              subtitle: Text(_persona.nickname.isEmpty
-                  ? tr('ai_set_empty')
-                  : _persona.nickname),
+              leading: Container(
+                width: 46,
+                height: 46,
+                decoration: const BoxDecoration(
+                  gradient: DribTokens.balanceGradient,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.auto_awesome,
+                    size: 19, color: Colors.white),
+              ),
+              title: Text(
+                tr('ai_set_nickname'),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: DribTokens.navy,
+                ),
+              ),
+              subtitle: Text(
+                _persona.nickname.isEmpty
+                    ? tr('ai_set_empty')
+                    : _persona.nickname,
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  color: DribTokens.textSecondary,
+                ),
+              ),
               trailing: const Icon(Icons.edit_outlined),
               onTap: () => _askText(
                 tr('ai_set_nickname'),
@@ -134,10 +198,23 @@ class _AiAssistantSettingsScreenState
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(tr('ai_set_custom')),
-              subtitle: Text(_persona.customInstruction.isEmpty
-                  ? tr('ai_set_empty')
-                  : _persona.customInstruction),
+              title: Text(
+                tr('ai_set_custom'),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: DribTokens.navy,
+                ),
+              ),
+              subtitle: Text(
+                _persona.customInstruction.isEmpty
+                    ? tr('ai_set_empty')
+                    : _persona.customInstruction,
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  color: DribTokens.textSecondary,
+                ),
+              ),
               trailing: const Icon(Icons.edit_outlined),
               onTap: () => _askText(
                 tr('ai_set_custom'),
@@ -150,8 +227,22 @@ class _AiAssistantSettingsScreenState
           _section(tr('ai_aset_data'), [
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(tr('ai_aset_data')),
-              subtitle: Text(tr('ai_aset_data_s')),
+              title: Text(
+                tr('ai_aset_data'),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: DribTokens.navy,
+                ),
+              ),
+              subtitle: Text(
+                tr('ai_aset_data_s'),
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  color: DribTokens.textSecondary,
+                ),
+              ),
+              activeTrackColor: DribTokens.primaryStrong,
               value: _dataChoice,
               onChanged: (v) async {
                 try {
@@ -164,11 +255,22 @@ class _AiAssistantSettingsScreenState
           _section(tr('chat_mem_facts_t'), [
             if (_facts.isEmpty)
               Text(tr('chat_mem_empty'),
-                  style: Theme.of(context).textTheme.bodyMedium),
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: DribTokens.textSecondary,
+                  )),
             for (final f in _facts)
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(f, maxLines: 2, overflow: TextOverflow.ellipsis),
+                title: Text(
+                  f,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: DribTokens.navy,
+                  ),
+                ),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline, size: 20),
                   onPressed: () async {
@@ -181,11 +283,22 @@ class _AiAssistantSettingsScreenState
           _section(tr('chat_mem_sum_t'), [
             if (_summaries.isEmpty)
               Text(tr('chat_mem_empty'),
-                  style: Theme.of(context).textTheme.bodyMedium),
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: DribTokens.textSecondary,
+                  )),
             for (final s in _summaries)
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(s, maxLines: 2, overflow: TextOverflow.ellipsis),
+                title: Text(
+                  s,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: DribTokens.navy,
+                  ),
+                ),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline, size: 20),
                   onPressed: () async {
@@ -195,6 +308,10 @@ class _AiAssistantSettingsScreenState
                 ),
               ),
             OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: DribTokens.errorText,
+                side: const BorderSide(color: DribTokens.errorText),
+              ),
               onPressed: () async {
                 await clearAiMemory();
                 await clearAiSummaries();

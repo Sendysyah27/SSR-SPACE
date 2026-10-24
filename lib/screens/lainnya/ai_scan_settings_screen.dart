@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/services/ai_scan_note_builder.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/strings.dart';
 
 // Pengaturan AI Scan (batch 284 tahap C): saklar catatan otomatis,
@@ -60,7 +61,21 @@ class _AiScanSettingsScreenState extends State<AiScanSettingsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(tr('ai_scan_settings_title'))),
+      backgroundColor: DribTokens.bgOf(context),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          tr('ai_scan_settings_title'),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : DribTokens.navy,
+          ),
+        ),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -68,37 +83,79 @@ class _AiScanSettingsScreenState extends State<AiScanSettingsScreen> {
               children: [
                 Text(
                   tr('ai_scan_settings_intro'),
-                  style: theme.textTheme.bodyMedium,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                      color: DribTokens.textSecondary, fontSize: 12.5),
                 ),
                 const SizedBox(height: SsrSpace.md),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(tr('ai_scan_note_enabled')),
-                  subtitle: Text(tr('ai_scan_note_enabled_sub')),
-                  value: _settings.enabled,
-                  onChanged: (v) =>
-                      _save(_settings.copyWith(enabled: v)),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: DribTokens.cardOf(context),
+                    borderRadius:
+                        const BorderRadius.all(Radius.circular(20)),
+                    boxShadow: DribTokens.cardShadow,
+                  ),
+                  child: SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      tr('ai_scan_note_enabled'),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: DribTokens.navy,
+                      ),
+                    ),
+                    subtitle: Text(
+                      tr('ai_scan_note_enabled_sub'),
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: DribTokens.textSecondary,
+                      ),
+                    ),
+                    activeTrackColor: DribTokens.primaryStrong,
+                    value: _settings.enabled,
+                    onChanged: (v) =>
+                        _save(_settings.copyWith(enabled: v)),
+                  ),
                 ),
-                const Divider(height: 24),
+                const Divider(height: 24, color: DribTokens.border),
                 Text(
                   tr('ai_scan_note_order_title'),
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.white
+                        : DribTokens.navy,
+                  ),
                 ),
                 const SizedBox(height: SsrSpace.xs),
                 Text(
                   tr('ai_scan_note_order_sub'),
-                  style: theme.textTheme.bodySmall,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: DribTokens.textSecondary),
                 ),
                 const SizedBox(height: SsrSpace.sm),
                 for (var i = 0; i < _settings.order.length; i++)
-                  Card(
+                  Container(
                     margin: const EdgeInsets.only(bottom: SsrSpace.xs),
+                    decoration: BoxDecoration(
+                      color: DribTokens.cardOf(context),
+                      borderRadius:
+                          const BorderRadius.all(Radius.circular(16)),
+                      boxShadow: DribTokens.cardShadow,
+                    ),
                     child: ListTile(
                       dense: true,
                       title: Text(
                         aiScanNotePieceLabels[_settings.order[i]] ??
                             _settings.order[i],
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: DribTokens.navy,
+                        ),
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -119,13 +176,27 @@ class _AiScanSettingsScreenState extends State<AiScanSettingsScreen> {
                       ),
                     ),
                   ),
-                const Divider(height: 24),
+                const Divider(height: 24, color: DribTokens.border),
                 TextField(
                   controller: _ownerC,
                   decoration: InputDecoration(
                     labelText: tr('ai_scan_owner_label'),
                     helperText: tr('ai_scan_owner_helper'),
-                    border: const OutlineInputBorder(),
+                    filled: true,
+                    fillColor: DribTokens.cardOf(context),
+                    border: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(14)),
+                      borderSide: BorderSide(color: DribTokens.border),
+                    ),
+                    enabledBorder: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(14)),
+                      borderSide: BorderSide(color: DribTokens.border),
+                    ),
+                    focusedBorder: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(14)),
+                      borderSide: BorderSide(
+                          color: DribTokens.primaryStrong, width: 1.5),
+                    ),
                   ),
                   onChanged: (v) => _save(_settings.copyWith(ownerName: v)),
                 ),
