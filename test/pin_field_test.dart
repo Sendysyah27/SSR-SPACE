@@ -7,19 +7,27 @@ import 'package:ssr_space/widgets/pin_pad.dart';
 void main() {
   // Desain batch 287 tahap 2d: indikator = titik lingkaran 13px
   // (terisi = navy penuh, kosong = transparan) — tidak ada lagi teks.
+  // Ukuran dibaca lewat tester.getSize (Container tak punya getter width).
   Finder pinDots() => find.byWidgetPredicate(
         (w) =>
             w is Container &&
-            w.width == 13 &&
             (w.decoration as BoxDecoration?)?.shape == BoxShape.circle,
       );
   Finder pinDotsFilled() => find.byWidgetPredicate(
         (w) =>
             w is Container &&
-            w.width == 13 &&
             (w.decoration as BoxDecoration?)?.shape == BoxShape.circle &&
             (w.decoration as BoxDecoration?)?.color == DribTokens.navy,
       );
+  void expectDotSize(WidgetTester t) {
+    for (var i = 0; i < 6; i++) {
+      expect(
+        t.getSize(pinDots().at(i)),
+        const Size(13, 13),
+        reason: 'titik PIN 13px plek frame mockup',
+      );
+    }
+  }
 
   testWidgets('PinField gambar titik dari controller, onCompleted sekali', (
     tester,
@@ -35,6 +43,7 @@ void main() {
     );
 
     expect(pinDots(), findsNWidgets(6), reason: 'PIN 6 digit = 6 titik');
+    expectDotSize(tester);
     expect(pinDotsFilled(), findsNothing);
 
     c.text = '123';
