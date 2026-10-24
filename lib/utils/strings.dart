@@ -1809,6 +1809,7 @@ const _t = <String, Map<String, String>>{
     'id': 'Bagikan kode agar anggota lain bisa masuk ke buku kas ini.',
     'en': 'Share the code so other members can join this ledger.',
   },
+  'iv_to': {'id': 'Ke {n}', 'en': 'To {n}'},
   'iv_list_empty': {
     'id':
         'Belum ada undangan aktif. Buat kode di atas untuk mengundang anggota.',

@@ -8,6 +8,7 @@ import 'package:ssr_space/services/invite_token.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
@@ -112,17 +113,35 @@ class _InviteScreenState extends State<InviteScreen> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(tr('iv_code')),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(
+          tr('iv_code'),
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(tr('iv_share_once'), style: Theme.of(ctx).textTheme.bodySmall),
+            Text(
+              tr('iv_share_once'),
+              textAlign: TextAlign.center,
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: DribTokens.textSecondary,
+                  ),
+            ),
             const SizedBox(height: SsrSpace.md),
             SelectableText(
               token,
-              style: Theme.of(ctx).textTheme.titleMedium
-                  ?.copyWith(fontFamily: 'monospace', letterSpacing: 1.2),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 2.0,
+                color: DribTokens.navy,
+              ),
             ),
           ],
         ),
@@ -210,6 +229,17 @@ class _InviteScreenState extends State<InviteScreen> {
           : ListView(
               padding: const EdgeInsets.all(SsrSpace.lg),
               children: [
+                if (orgName.isNotEmpty) ...[
+                  Text(
+                    tr('iv_to').replaceFirst('{n}', orgName),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: DribTokens.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: SsrSpace.lg),
+                ],
                 _InviteCreateCard(
                   orgName: orgName,
                   role: role,
@@ -252,24 +282,31 @@ class _InviteCreateCard extends StatelessWidget {
         children: [
           Text(
             orgName.isEmpty ? tr('iv_noorg_t') : orgName,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: DribTokens.navy,
+                ),
           ),
           const SizedBox(height: SsrSpace.sm),
           Text(
             tr('iv_share_hint'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).textTheme.bodySmall?.color,
+              color: DribTokens.textSecondary,
             ),
           ),
           const SizedBox(height: SsrSpace.md),
-          DropdownButtonFormField<String>(
-            initialValue: role,
-            decoration: InputDecoration(labelText: tr('iv_role')),
-            items: [
-              DropdownMenuItem(value: 'member', child: Text(tr('iv_member'))),
-              DropdownMenuItem(value: 'admin', child: Text(tr('iv_admin'))),
-            ],
-            onChanged: onRoleChanged,
+          Text(
+            tr('iv_role'),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: DribTokens.navy,
+            ),
+          ),
+          const SizedBox(height: SsrSpace.sm),
+          _RoleSeg(
+            role: role,
+            onRoleChanged: onRoleChanged,
           ),
           const SizedBox(height: SsrSpace.lg),
           PrimaryButton(
@@ -277,6 +314,69 @@ class _InviteCreateCard extends StatelessWidget {
             loading: creating,
             onPressed: canCreate ? onCreate : null,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Saklar peran ala seg frame mockup (bg #D9E6FA, pill aktif putih).
+/// Opsi tetap member/admin sesuai alur app; Penonton frame tidak ditambah
+/// (alur buat undangan app hanya mengenal dua peran itu).
+class _RoleSeg extends StatelessWidget {
+  final String? role;
+  final ValueChanged<String?> onRoleChanged;
+
+  const _RoleSeg({required this.role, required this.onRoleChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF1B2A4A) : const Color(0xFFD9E6FA),
+        borderRadius: const BorderRadius.all(Radius.circular(14)),
+      ),
+      child: Row(
+        children: [
+          for (final opt in const ['member', 'admin'])
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onRoleChanged(opt),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  decoration: BoxDecoration(
+                    color: role == opt
+                        ? DribTokens.cardOf(context)
+                        : Colors.transparent,
+                    borderRadius:
+                        const BorderRadius.all(Radius.circular(11)),
+                    boxShadow: role == opt
+                        ? const [
+                            BoxShadow(
+                              color: Color(0x1F0B1B3F),
+                              blurRadius: 8,
+                              offset: Offset(0, 3),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    opt == 'member' ? tr('iv_member') : tr('iv_admin'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                      color: role == opt
+                          ? DribTokens.navy
+                          : DribTokens.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -332,12 +432,17 @@ class _InviteListCard extends StatelessWidget {
               children: [
                 Text(
                   'Undangan $createdLabel',
-                  style: Theme.of(context).textTheme.titleSmall,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: DribTokens.navy,
+                      ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '$roleName · ${tr('iv_remaining').replaceFirst('{n}', '$remaining')}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: DribTokens.textSecondary,
+                      ),
                 ),
               ],
             ),
