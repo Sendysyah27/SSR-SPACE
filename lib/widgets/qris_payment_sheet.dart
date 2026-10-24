@@ -235,7 +235,7 @@ class _QrisPaymentSheetState extends State<QrisPaymentSheet> {
                 height: 4,
                 decoration: BoxDecoration(
                   color: Color(0xFFD5E0F2),
-                  borderRadius: BorderRadius.circular(99),
+                  borderRadius: BorderRadius.all(Radius.circular(99)),
                 ),
               ),
             ),
@@ -290,7 +290,7 @@ class _QrisPaymentSheetState extends State<QrisPaymentSheet> {
     if (_status == 'paid') {
       return [
         const SizedBox(height: SsrSpace.lg),
-        Icon(
+        const Icon(
           Icons.check_circle,
           size: 64,
           color: DribTokens.success,

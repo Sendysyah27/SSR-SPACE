@@ -401,7 +401,7 @@ class _PlanCard extends StatelessWidget {
             height: 20,
             decoration: BoxDecoration(
               color: DribTokens.success,
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.all(Radius.circular(7)),
             ),
             child: DuoIcon(
               AppIcons.check,
@@ -496,7 +496,7 @@ class _QrisPlansSection extends StatelessWidget {
             height: 20,
             decoration: BoxDecoration(
               color: DribTokens.success,
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.all(Radius.circular(7)),
             ),
             child: DuoIcon(
               AppIcons.check,
@@ -661,7 +661,7 @@ class _QrisPayButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: const BoxDecoration(
             gradient: DribTokens.balanceGradient,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.all(Radius.circular(16)),
           ),
           child: Text(
             label,
