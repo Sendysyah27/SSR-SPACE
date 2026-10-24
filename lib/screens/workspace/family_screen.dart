@@ -170,15 +170,35 @@ class FamilyScreenState extends State<FamilyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DribTokens.bgOf(context),
-      appBar: AppBar(title: Text(tr('fam_title'))),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          tr('fam_title'),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ),
       floatingActionButton: (loading || loadFailed || noOrg)
           ? null
-          : FloatingActionButton(
+          : FloatingActionButton.extended(
+              backgroundColor: const Color(0xFFE3EEFD),
+              foregroundColor: DribTokens.primaryStrong,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const InviteScreen()),
               ),
-              child: const DuoIcon(AppIcons.invite),
+              icon: const DuoIcon(AppIcons.invite),
+              label: Text(
+                tr('o_invite'),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
             ),
       body: _body(),
     );
@@ -216,6 +236,7 @@ class FamilyScreenState extends State<FamilyScreen> {
       padding: const EdgeInsets.all(SsrSpace.lg),
       children: [
         DribCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: MemberAvatarRow(names: [
             for (final m in members) _memberName(m),
           ]),
@@ -240,15 +261,10 @@ class FamilyScreenState extends State<FamilyScreen> {
     final canKick = _canManage && !isMe && kicking == null;
     return DribCard(
       margin: const EdgeInsets.only(bottom: SsrSpace.md),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          CircleAvatar(
-            backgroundColor:
-                DribTokens.primary.withValues(alpha: 0.14),
-            foregroundColor:
-                Theme.of(context).colorScheme.onSurface,
-            child: Text(name.isEmpty ? '?' : name[0].toUpperCase()),
-          ),
+          _MemberAvatar(name: name, seed: m.userId),
           const SizedBox(width: SsrSpace.md),
           Expanded(
             child: Column(
@@ -261,10 +277,14 @@ class FamilyScreenState extends State<FamilyScreen> {
                         name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: DribTokens.navy,
+                        ),
                       ),
                     ),
-                    RoleBadge(role: _roleLabel(m.role)),
+                    RoleBadge(role: _roleLabel(m.role), roleKey: m.role),
                   ],
                 ),
                 const SizedBox(height: 2),
@@ -274,7 +294,12 @@ class FamilyScreenState extends State<FamilyScreen> {
                       : '${tr('tx_out')} ${amt(t.outTotal)} · '
                           '${tr('tx_in')} ${amt(t.inTotal)} · '
                           '${t.count}x',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: DribTokens.textSecondary,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
                 ),
               ],
             ),
@@ -307,18 +332,85 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DribCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(tr('fam_sub'), style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            tr('fam_sub'),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: DribTokens.textSecondary,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             '${tr('tx_in')} ${amt(monthIn)} · ${tr('tx_out')} ${amt(monthOut)}',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: DribTokens.navy,
+              fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+/// Palet avatar anggota plek frame (warna solid bergiliran deterministik).
+const _avatarPalette = [
+  Color(0xFF2E6BE6),
+  Color(0xFFC2437E),
+  Color(0xFFD97316),
+  Color(0xFF12805C),
+  Color(0xFF6D4BD8),
+  Color(0xFF2A7F9E),
+];
+
+Color _avatarColorFor(String seed) {
+  var h = 0;
+  for (final c in seed.codeUnits) {
+    h = (h * 31 + c) & 0x7fffffff;
+  }
+  return _avatarPalette[h % _avatarPalette.length];
+}
+
+String _initialsOf(String name) {
+  final parts =
+      name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) return parts.first[0].toUpperCase();
+  return (parts.first[0] + parts[1][0]).toUpperCase();
+}
+
+/// Avatar lingkaran warna solid + inisial putih plek frame "Anggota".
+class _MemberAvatar extends StatelessWidget {
+  final String name;
+  final String seed;
+
+  const _MemberAvatar({required this.name, required this.seed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 38,
+      height: 38,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: _avatarColorFor(seed),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        _initialsOf(name),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

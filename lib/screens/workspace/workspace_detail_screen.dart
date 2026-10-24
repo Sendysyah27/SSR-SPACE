@@ -10,14 +10,14 @@ import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/services/workspace_service.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
+import 'package:ssr_space/widgets/drib_card.dart';
 import 'package:ssr_space/widgets/pin_dialog.dart';
-import 'package:ssr_space/widgets/section_card.dart';
-import 'package:ssr_space/widgets/labeled_section_card.dart';
+import 'package:ssr_space/widgets/restyle/role_badge.dart';
 import 'package:ssr_space/widgets/tx_type_selector.dart';
 import 'package:ssr_space/widgets/state_views.dart';
-import 'package:ssr_space/widgets/status_chip.dart';
 
 /// Potong ID user untuk tampil (tanpa email/nama, sesuai RPC list).
 String shortUid(String id) => id.length <= 8 ? id : id.substring(0, 8);
@@ -28,10 +28,6 @@ String roleLabel(String role) {
   if (role == 'admin') return tr('org_admin');
   return tr('org_member');
 }
-
-/// Pemilik/admin menonjol, anggota netral.
-StatusTone roleTone(String role) =>
-    role == 'member' ? StatusTone.neutral : StatusTone.accent;
 
 /// Detail workspace: hero, daftar anggota, zona danger.
 /// Org berbentuk map baris switcher (m['organizations'], m['role']).
@@ -234,7 +230,19 @@ class _WorkspaceDetailState extends State<WorkspaceDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_name), actions: _actions()),
+      backgroundColor: DribTokens.bgOf(context),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          _name,
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        actions: _actions(),
+      ),
       body: _body(),
     );
   }
@@ -367,28 +375,54 @@ class _ModeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return LabeledSectionCard(
-      label: tr('sp_mode'),
-      children: [
-        SegmentedButton<String>(
-          style: ssrSegmentedStyle(context),
-          segments: [
-            ButtonSegment(value: 'bebas', label: Text(tr('sp_bebas'))),
-            ButtonSegment(value: 'bendahara', label: Text(tr('sp_bendahara'))),
+    return DribCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('sp_mode'),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: DribTokens.navy,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SegmentedButton<String>(
+            style: ssrSegmentedStyle(context),
+            segments: [
+              ButtonSegment(value: 'bebas', label: Text(tr('sp_bebas'))),
+              ButtonSegment(
+                  value: 'bendahara', label: Text(tr('sp_bendahara'))),
+            ],
+            selected: {mode},
+            showSelectedIcon: false,
+            onSelectionChanged:
+                canManage && !switching ? (s) => onMode(s.first) : null,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            tr('sp_mode_desc'),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: DribTokens.textSecondary,
+            ),
+          ),
+          if (mode == 'bendahara' && canManage) ...[
+            const SizedBox(height: 4),
+            Text(
+              tr('sp_bendahara_hint'),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: DribTokens.textSecondary,
+              ),
+            ),
           ],
-          selected: {mode},
-          showSelectedIcon: false,
-          onSelectionChanged:
-              canManage && !switching ? (s) => onMode(s.first) : null,
-        ),
-        const SizedBox(height: 8),
-        Text(tr('sp_mode_desc'), style: theme.textTheme.bodySmall),
-        if (mode == 'bendahara' && canManage) ...[
-          const SizedBox(height: 4),
-          Text(tr('sp_bendahara_hint'), style: theme.textTheme.bodySmall),
         ],
-      ],
+      ),
     );
   }
 }
@@ -407,29 +441,34 @@ class _DetailHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(SsrSpace.xl),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: const BorderRadius.all(Radius.circular(SsrRadius.hero)),
-        border: Border.all(color: scheme.outline),
-      ),
+    return DribCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _WorkspaceAvatar(name: name),
+          const SizedBox(height: 10),
           Text(
             name,
-            style: Theme.of(context).textTheme.titleLarge,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15.5,
+              fontWeight: FontWeight.w800,
+              color: DribTokens.navy,
+            ),
           ),
-          const SizedBox(height: SsrSpace.md),
+          const SizedBox(height: 8),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              StatusChip(label: roleLabel(myRole), tone: roleTone(myRole)),
-              const SizedBox(width: SsrSpace.sm),
+              RoleBadge(role: roleLabel(myRole), roleKey: myRole),
+              const SizedBox(width: 8),
               Text(
                 '$count ${tr('wsm_members')}',
-                style: Theme.of(context).textTheme.bodySmall,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: DribTokens.textSecondary,
+                ),
               ),
             ],
           ),
@@ -470,23 +509,21 @@ class _MembersCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: SsrSpace.md,
-        vertical: SsrSpace.xs,
-      ),
+    return DribCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: SsrSpace.sm),
-            child: Text(
-              tr('wsm_members'),
-              style: Theme.of(context).textTheme.titleMedium,
+          Text(
+            tr('wsm_members'),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: DribTokens.navy,
             ),
           ),
           for (var i = 0; i < members.length; i++) ...[
-            const Divider(height: 1),
+            const Divider(height: 1, color: DribTokens.border),
             _MemberRow(
               m: members[i],
               isSelf: members[i].userId == myId,
@@ -528,9 +565,16 @@ class _MemberRow extends StatelessWidget {
           _MemberAvatar(short: short),
           const SizedBox(width: SsrSpace.md),
           Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.titleSmall),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: DribTokens.navy,
+              ),
+            ),
           ),
-          StatusChip(label: roleLabel(m.role), tone: roleTone(m.role)),
+          RoleBadge(role: roleLabel(m.role), roleKey: m.role),
           if (canKick) ...[
             const SizedBox(width: SsrSpace.xs),
             _KickAction(kicking: kicking, onKick: onKick),
@@ -548,23 +592,21 @@ class _MemberAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final initial = short.isEmpty ? '?' : short[0].toUpperCase();
     return Container(
-      width: 36,
-      height: 36,
+      width: 38,
+      height: 38,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: scheme.outline.withValues(alpha: 0.35),
+        color: _memberColorFor(short),
         shape: BoxShape.circle,
-        border: Border.all(color: scheme.outline),
       ),
       child: Text(
         initial,
-        style: TextStyle(
-          color: scheme.primary,
-          fontWeight: FontWeight.w700,
-          fontSize: 14,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
         ),
       ),
     );
@@ -619,25 +661,33 @@ class _DangerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final muted = Theme.of(context).textTheme.bodySmall?.color;
     final ready = delC.text == name;
-    return SectionCard(
-      borderColor: scheme.error,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: DribTokens.cardOf(context),
+        borderRadius: BorderRadius.circular(DribTokens.cardRadius),
+        boxShadow: DribTokens.cardShadow,
+        border: Border.all(color: DribTokens.error.withValues(alpha: 0.45)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             tr('wsm_danger'),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: scheme.error,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: DribTokens.errorText,
             ),
           ),
           const SizedBox(height: SsrSpace.sm),
           Text(
             tr('wsm_delete_body'),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: muted,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: DribTokens.textSecondary,
             ),
           ),
           const SizedBox(height: SsrSpace.md),
@@ -668,26 +718,88 @@ class _DeleteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: scheme.error,
-          foregroundColor: scheme.onError,
+          backgroundColor: const Color(0xFFFBDCDD),
+          foregroundColor: DribTokens.errorText,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         onPressed: ready && !deleting ? onDelete : null,
         child: deleting
-            ? SizedBox(
+            ? const SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.4,
-                  color: scheme.onError,
+                  color: DribTokens.errorText,
                 ),
               )
             : Text(tr('wsm_delete')),
+      ),
+    );
+  }
+}
+
+
+/// Palet avatar anggota plek frame (warna solid bergiliran deterministik).
+const _memberPalette = [
+  Color(0xFF2E6BE6),
+  Color(0xFFC2437E),
+  Color(0xFFD97316),
+  Color(0xFF12805C),
+  Color(0xFF6D4BD8),
+  Color(0xFF2A7F9E),
+];
+
+Color _memberColorFor(String seed) {
+  var h = 0;
+  for (final c in seed.codeUnits) {
+    h = (h * 31 + c) & 0x7fffffff;
+  }
+  return _memberPalette[h % _memberPalette.length];
+}
+
+String _initialsOf(String name) {
+  final parts =
+      name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) return parts.first[0].toUpperCase();
+  return (parts.first[0] + parts[1][0]).toUpperCase();
+}
+
+/// Avatar besar gradient navy + inisial nama workspace plek frame detail.
+class _WorkspaceAvatar extends StatelessWidget {
+  final String name;
+
+  const _WorkspaceAvatar({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 62,
+      height: 62,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        gradient: DribTokens.balanceGradient,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        _initialsOf(name),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

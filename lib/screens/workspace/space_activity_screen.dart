@@ -4,6 +4,7 @@ import 'package:ssr_space/services/space_service.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/datetime.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
@@ -43,22 +44,6 @@ String _actorText(String? actorId, String myId) {
 String _atLabel(DateTime at) {
   final iso = at.toIso8601String();
   return txWhenLabel(iso.length >= 10 ? iso.substring(0, 10) : null, iso);
-}
-
-IconData _iconOf(String event) {
-  switch (event) {
-    case 'tx_manual_insert':
-    case 'tx_auto_insert':
-      return AppIcons.history;
-    case 'org_join':
-      return AppIcons.invite;
-    case 'space_mode_change':
-      return AppIcons.workspace;
-    case 'member_kick':
-      return AppIcons.error;
-    default:
-      return AppIcons.menu;
-  }
 }
 
 /// Aktivitas Space: siapa–apa–kapan dari audit_logs. Dibuka → markSeen
@@ -105,7 +90,18 @@ class _SpaceActivityState extends State<SpaceActivityScreen> {
   Widget build(BuildContext context) {
     final myId = SupabaseConfig.client.auth.currentUser?.id ?? '';
     return Scaffold(
-      appBar: AppBar(title: Text(tr('sp_activity'))),
+      backgroundColor: DribTokens.bgOf(context),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          tr('sp_activity'),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: _body(myId),
     );
   }
@@ -126,7 +122,7 @@ class _SpaceActivityState extends State<SpaceActivityScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(SsrSpace.lg),
       itemCount: _rows.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
       itemBuilder: (_, i) => _ActivityTile(row: _rows[i], myId: myId),
     );
   }
@@ -140,14 +136,93 @@ class _ActivityTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(vertical: 6),
-      leading: DuoIcon(_iconOf(row.event), size: 20),
-      title: Text(_titleOf(row), style: theme.textTheme.titleSmall),
-      subtitle: Text(
-        '${_actorText(row.actorId, myId)} · ${_atLabel(row.at)}',
-        style: theme.textTheme.bodySmall,
+    final r = actorLabel(row.actorId, myId);
+    final actorName = r.$2 ? tr('sp_by_you') : r.$1;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ActorAvatar(name: actorName, seed: row.actorId ?? ''),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _titleOf(row),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: DribTokens.navy,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                '${_actorText(row.actorId, myId)} · ${_atLabel(row.at)}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: DribTokens.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+
+/// Palet avatar aktor plek frame (warna solid bergiliran deterministik).
+const _avatarPalette = [
+  Color(0xFF2E6BE6),
+  Color(0xFFC2437E),
+  Color(0xFFD97316),
+  Color(0xFF12805C),
+  Color(0xFF6D4BD8),
+  Color(0xFF2A7F9E),
+];
+
+Color _avatarColorFor(String seed) {
+  var h = 0;
+  for (final c in seed.codeUnits) {
+    h = (h * 31 + c) & 0x7fffffff;
+  }
+  return _avatarPalette[h % _avatarPalette.length];
+}
+
+String _initialsOf(String name) {
+  final parts =
+      name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) return parts.first[0].toUpperCase();
+  return (parts.first[0] + parts[1][0]).toUpperCase();
+}
+
+/// Avatar lingkaran 34px warna solid + inisial putih plek frame aktivitas.
+class _ActorAvatar extends StatelessWidget {
+  final String name;
+  final String seed;
+
+  const _ActorAvatar({required this.name, required this.seed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 34,
+      height: 34,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: _avatarColorFor(seed),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        _initialsOf(name),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

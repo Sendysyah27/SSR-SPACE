@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
 
-/// Badge peran kecil TAHAP 3 (baru, belum dipakai layar).
+/// Badge peran kecil gaya chip frame mockup: pill penuh, teks 10.5 w800.
 ///
-/// Oranye [DribTokens.accentOrange] KHUSUS pending/undangan; peran lain
-/// navy lembut. Tanpa teks peran tak dikenal = tampil apa adanya.
+/// Pemilik = chip ok hijau; penonton = chip abu; peran lain = chip biru
+/// muda; pending/undangan = oranye aksen (teks navy demi kontras AA).
 class RoleBadge extends StatelessWidget {
   final String role;
+  final String? roleKey;
 
-  const RoleBadge({super.key, required this.role});
+  const RoleBadge({super.key, required this.role, this.roleKey});
 
   bool get _isPending {
     final r = role.trim().toLowerCase();
@@ -20,24 +21,35 @@ class RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Kontras AA: putih di atas oranye hanya 2.02 -> teks selalu navy
-    // (navy/oranye 7.05, navy/navy-8% ~10).
-    const fg = DribTokens.navy;
-    final bg = _isPending
-        ? DribTokens.accentOrange
-        : DribTokens.navy.withValues(alpha: 0.08);
+    final key = (roleKey ?? '').trim().toLowerCase();
+    final Color bg;
+    final Color fg;
+    if (_isPending) {
+      // Kontras AA: putih di atas oranye hanya 2.02 -> teks navy (7.05).
+      bg = DribTokens.accentOrange;
+      fg = DribTokens.navy;
+    } else if (key == 'owner') {
+      bg = const Color(0xFFD9F5E9);
+      fg = DribTokens.successText;
+    } else if (key == 'viewer' || key == 'penonton') {
+      bg = const Color(0xFFEDF1F8);
+      fg = DribTokens.textSecondary;
+    } else {
+      bg = const Color(0xFFE3EEFD);
+      fg = DribTokens.primaryStrong;
+    }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         role,
-        style: const TextStyle(
+        style: TextStyle(
           color: fg,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
