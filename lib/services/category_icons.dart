@@ -147,3 +147,50 @@ Color metaSlotColor(BuildContext context, int index) {
       return const Color(0xFF64748B);
   }
 }
+
+/// Pasangan pastel (latar + ikon) per kategori ala mockup Batch 287:
+/// kotak kategori pastel dengan ikon berwarna di tengah. Cabang kata
+/// kunci mengikuti [iconForCategory]/[svgForCategory].
+({Color bg, Color fg}) catPastelFor(String? category) {
+  final c = (category ?? '').toLowerCase();
+  if (c.contains('kopi')) {
+    return (bg: const Color(0xFFFFE8D6), fg: const Color(0xFFB45F2D));
+  }
+  if (c.contains('makan') ||
+      c.contains('minum') ||
+      c.contains('jajan') ||
+      c.contains('kuliner')) {
+    return (bg: const Color(0xFFFFE3C2), fg: const Color(0xFFD97316));
+  }
+  if (c.contains('transport') ||
+      c.contains('bensin') ||
+      c.contains('parkir') ||
+      c.contains('ojek') ||
+      c.contains('tol')) {
+    return (bg: const Color(0xFFD6E7FF), fg: const Color(0xFF2E6BE6));
+  }
+  if (c.contains('belanja')) {
+    return (bg: const Color(0xFFFFD9E8), fg: const Color(0xFFC2437E));
+  }
+  if (c.contains('tagihan') ||
+      c.contains('listrik') ||
+      c.contains('air') ||
+      c.contains('internet') ||
+      c.contains('pulsa') ||
+      c.contains('kuota')) {
+    return (bg: const Color(0xFFE4DCFF), fg: const Color(0xFF6D4BD8));
+  }
+  if (c.contains('sehat') || c.contains('obat') || c.contains('dokter')) {
+    return (bg: const Color(0xFFD9F5E9), fg: const Color(0xFF12805C));
+  }
+  if (c.contains('hiburan') ||
+      c.contains('film') ||
+      c.contains('game') ||
+      c.contains('musik')) {
+    return (bg: const Color(0xFFFFF0C2), fg: const Color(0xFFA87B0A));
+  }
+  if (c.contains('tabungan') || c.contains('saving')) {
+    return (bg: const Color(0xFFCFF5DA), fg: const Color(0xFF1F7A4D));
+  }
+  return (bg: const Color(0xFFD6E7FF), fg: const Color(0xFF2E6BE6));
+}

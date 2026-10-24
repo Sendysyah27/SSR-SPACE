@@ -13,6 +13,7 @@ import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/today_widget.dart';
 import 'package:ssr_space/services/category_meta.dart';
+import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/app_categories.dart';
 import 'package:ssr_space/services/saving.dart';
 import 'package:ssr_space/services/month.dart';
@@ -34,7 +35,6 @@ import 'package:ssr_space/widgets/pin_pad.dart';
 import 'package:ssr_space/widgets/primary_button.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
-import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/success_lottie.dart';
 
 class BudgetsScreen extends StatefulWidget {
@@ -331,14 +331,34 @@ class BudgetsScreenState extends State<BudgetsScreen> {
     if (loading) {
       return Scaffold(
         backgroundColor: DribTokens.bgOf(context),
-        appBar: AppBar(title: Text(_title)),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            _title,
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ),
         body: const BudgetListSkeleton(),
       );
     }
     if (err != null) {
       return Scaffold(
         backgroundColor: DribTokens.bgOf(context),
-        appBar: AppBar(title: Text(_title)),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            _title,
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ),
         body: ErrorView(message: err!, onRetry: _load),
       );
     }
@@ -346,11 +366,39 @@ class BudgetsScreenState extends State<BudgetsScreen> {
     return Scaffold(
       backgroundColor: DribTokens.bgOf(context),
       appBar: AppBar(
-        title: Text(_title),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          _title,
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
         actions: [
-          TextButton(
-            onPressed: () => _openAdd(null),
-            child: Text('+ ${tr('b_add')}'),
+          Padding(
+            padding: const EdgeInsets.only(right: SsrSpace.lg),
+            child: Center(
+              child: Material(
+                color: DribTokens.cardOf(context),
+                borderRadius: BorderRadius.circular(12),
+                elevation: 2,
+                shadowColor: const Color(0x140B1B3F),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => _openAdd(null),
+                  child: SizedBox(
+                    width: 34,
+                    height: 34,
+                    child: Icon(
+                      Icons.add,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -437,7 +485,7 @@ class BudgetsScreenState extends State<BudgetsScreen> {
       useSafeArea: true,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => _BudgetAddSheet(
         options: options,
@@ -494,7 +542,7 @@ class _OverAllocBanner extends StatelessWidget {
       padding: const EdgeInsets.all(SsrSpace.md),
       decoration: BoxDecoration(
         color: scheme.error.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(SsrRadius.tile),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: scheme.error.withValues(alpha: 0.45)),
       ),
       child: Column(
@@ -546,7 +594,7 @@ class _BudgetAlertBanner extends StatelessWidget {
         padding: const EdgeInsets.all(SsrSpace.md),
         decoration: BoxDecoration(
           color: scheme.error.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(SsrRadius.tile),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: scheme.error.withValues(alpha: 0.45)),
         ),
         child: Column(
@@ -609,6 +657,7 @@ class _SavingCard extends StatelessWidget {
     final done = pct >= 100;
     return DribCard(
       margin: const EdgeInsets.only(bottom: GlassSpace.md),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -623,7 +672,11 @@ class _SavingCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   b.category,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: DribTokens.navy,
+                  ),
                 ),
               ),
               _SavingChip(pct: pct, done: done),
@@ -734,6 +787,35 @@ class _SavingChip extends StatelessWidget {
   }
 }
 
+/// Pil status ala chip mockup: pill radius 99, teks 10.5 w800,
+/// latar tint + teks berwarna senada.
+class _StatusPill extends StatelessWidget {
+  final String label;
+  final Color bg;
+  final Color fg;
+
+  const _StatusPill({required this.label, required this.bg, required this.fg});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          color: fg,
+        ),
+      ),
+    );
+  }
+}
+
 /// Kartu satu kategori (brief §4): emoji + persen status + bar 8px +
 /// angka "terpakai dari batas" + insight pace. Tanpa cincin.
 class _BudgetCard extends StatelessWidget {
@@ -750,24 +832,69 @@ class _BudgetCard extends StatelessWidget {
     final color = _statusColor(over, pct, context);
     return DribCard(
       margin: const EdgeInsets.only(bottom: GlassSpace.md),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text(
-                categoryEmoji(b.category),
-                style: const TextStyle(fontSize: 22),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: catPastelFor(b.category).bg,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Center(
+                  child: SvgPicture.asset(
+                    svgForCategory(b.category),
+                    width: 18,
+                    height: 18,
+                    colorFilter: ColorFilter.mode(
+                      catPastelFor(b.category).fg,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(width: SsrSpace.sm),
               Expanded(
-                child: Text(
-                  b.category,
-                  style: Theme.of(context).textTheme.titleMedium,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      b.category,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: DribTokens.navy,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${amt(b.spent)} ${tr('sv_of')} ${amt(b.limit)}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: DribTokens.textSecondary,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               if (over)
-                StatusChip(label: tr('b_over'), tone: StatusTone.danger)
+                _StatusPill(
+                  label: tr('b_over'),
+                  bg: const Color(0xFFFBDCDD),
+                  fg: DribTokens.errorText,
+                )
+              else if (pct >= b.warnPct)
+                _StatusPill(
+                  label: tr('ba_warn'),
+                  bg: DribTokens.accentOrangeBg,
+                  fg: DribTokens.accentOrangeTextDark,
+                )
               else
                 Text(
                   '$pct%',
@@ -782,13 +909,10 @@ class _BudgetCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: SsrSpace.sm),
-          BudgetProgressBar(progress: progress, label: '$pct%'),
-          const SizedBox(height: SsrSpace.xs),
-          Text(
-            '${amt(b.spent)} ${tr('sv_of')} ${amt(b.limit)}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+          BudgetProgressBar(
+            progress: progress,
+            label: '$pct%',
+            color: color,
           ),
           _PaceLine(budget: b),
         ],
@@ -815,11 +939,11 @@ class _PaceLine extends StatelessWidget {
     final String text;
     switch (pace.state) {
       case PaceState.safe:
-        dot = scheme.primary;
+        dot = DribTokens.success;
         text = tr('pace_safe');
         break;
       case PaceState.warn:
-        dot = AppColors.gold;
+        dot = DribTokens.accentOrange;
         final dd = pace.depletedDate!;
         final ymd =
             '${dd.year.toString().padLeft(4, '0')}-'
@@ -903,8 +1027,10 @@ class _MonthCaption extends StatelessWidget {
       child: Text(
         '${monthLabel(currentMonth()).toUpperCase()} · $leftDays ${tr('b_days')}',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+              color: DribTokens.textSecondary,
             ),
       ),
     );
@@ -935,8 +1061,10 @@ class _OthersChips extends StatelessWidget {
         Text(
           tr('b_others').toUpperCase(),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.5,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+                color: DribTokens.textSecondary,
               ),
         ),
         const SizedBox(height: SsrSpace.sm),
@@ -945,9 +1073,31 @@ class _OthersChips extends StatelessWidget {
           runSpacing: SsrSpace.sm,
           children: [
             for (final c in options)
-              ActionChip(
-                label: Text('+ $c'),
-                onPressed: () => onPick(c),
+              InkWell(
+                borderRadius: BorderRadius.circular(99),
+                onTap: () => onPick(c),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: DribTokens.cardOf(context),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: const Color(0xFFDCE6F5),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Text(
+                    '+ $c',
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: DribTokens.textSecondary,
+                    ),
+                  ),
+                ),
               ),
           ],
         ),
@@ -1023,10 +1173,10 @@ class _BudgetAddSheetState extends State<_BudgetAddSheet> {
           children: [
             Center(
               child: Container(
-                width: 36,
+                width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outline,
+                  color: const Color(0xFFD5E0F2),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1034,7 +1184,10 @@ class _BudgetAddSheetState extends State<_BudgetAddSheet> {
             const SizedBox(height: SsrSpace.md),
             Text(
               tr('b_add_title'),
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
             ),
             const SizedBox(height: SsrSpace.md),
             DropdownButtonFormField<String>(

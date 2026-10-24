@@ -11,10 +11,15 @@ class BudgetProgressBar extends StatelessWidget {
   /// Label persen tampil ("75%").
   final String label;
 
+  /// Warna isi opsional (mis. warna status budget). Null = biru utama,
+  /// atau navy bila jebol.
+  final Color? color;
+
   const BudgetProgressBar({
     super.key,
     required this.progress,
     required this.label,
+    this.color,
   });
 
   @override
@@ -29,10 +34,9 @@ class BudgetProgressBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: clamped,
               minHeight: 8,
-              backgroundColor:
-                  DribTokens.navy.withValues(alpha: 0.10),
+              backgroundColor: const Color(0xFFE4EDFA),
               valueColor: AlwaysStoppedAnimation<Color>(
-                over ? DribTokens.navy : DribTokens.primary,
+                color ?? (over ? DribTokens.navy : DribTokens.primary),
               ),
             ),
           ),
