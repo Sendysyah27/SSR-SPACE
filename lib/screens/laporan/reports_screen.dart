@@ -49,7 +49,6 @@ import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/tx_day_slivers.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
 import 'package:ssr_space/widgets/tx_detail_sheet.dart';
-import 'package:ssr_space/widgets/tx_type_selector.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
