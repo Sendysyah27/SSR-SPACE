@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,7 +21,6 @@ import 'package:ssr_space/services/export_files.dart';
 import 'package:ssr_space/services/export_saved_notify.dart';
 import 'package:ssr_space/services/month.dart';
 import 'package:ssr_space/services/month_figures.dart';
-import 'package:ssr_space/theme/category_emoji.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/screens/transaksi/transactions_screen.dart';
 import 'package:ssr_space/services/report_export.dart';
@@ -28,6 +28,7 @@ import 'package:ssr_space/services/report_pdf.dart';
 import 'package:ssr_space/services/report_xlsx.dart';
 import 'package:ssr_space/services/xlsx_layout.dart';
 import 'package:ssr_space/services/reports_topn.dart';
+import 'package:ssr_space/services/category_icons.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/transfer_detect.dart';
 import 'package:ssr_space/services/tx_day_group.dart';
@@ -37,13 +38,11 @@ import 'package:ssr_space/theme/app_icons.dart';
 import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/app_typography.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
-import 'package:ssr_space/theme/glass.dart';
 import 'package:ssr_space/theme/tokens.dart';
 import 'package:ssr_space/models/transaction.dart';
 import 'package:ssr_space/widgets/day_header.dart';
 import 'package:ssr_space/widgets/drib_card.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
-import 'package:ssr_space/widgets/premium/premium_button.dart';
 import 'package:ssr_space/widgets/restyle/donut_chart.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
@@ -774,12 +773,13 @@ class _ReportHeader extends StatelessWidget {
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: SsrSpace.sm,
-          vertical: SsrSpace.xs,
+          horizontal: SsrSpace.md,
+          vertical: SsrSpace.sm,
         ),
         decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
+          color: DribTokens.cardOf(context),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: DribTokens.cardShadow,
         ),
         child: Row(
           children: [
@@ -924,17 +924,62 @@ class _FlowFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<String>(
-      style: ssrSegmentedStyle(context),
-      segments: [
-        ButtonSegment(value: 'all', label: Text(tr('r_flow_all'))),
-        ButtonSegment(value: 'in', label: Text(tr('tx_in'))),
-        ButtonSegment(value: 'out', label: Text(tr('tx_out'))),
-        ButtonSegment(value: 'transfer', label: Text(tr('tx_transfer'))),
-      ],
-      selected: {value},
-      showSelectedIcon: false,
-      onSelectionChanged: (s) => onChanged(s.first),
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final options = <(String, String)>[
+      ('all', tr('r_flow_all')),
+      ('in', tr('tx_in')),
+      ('out', tr('tx_out')),
+      ('transfer', tr('tx_transfer')),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: dark
+            ? const Color(0xFF16203A)
+            : const Color(0xFFD9E6FA),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          for (final o in options)
+            Expanded(
+              child: GestureDetector(
+                onTap: () => onChanged(o.$1),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  decoration: BoxDecoration(
+                    color: value == o.$1
+                        ? (dark
+                            ? DribTokens.navyBright
+                            : Colors.white)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(11),
+                    boxShadow: value == o.$1 && !dark
+                        ? const [
+                            BoxShadow(
+                              color: Color(0x1F0B1B3F),
+                              blurRadius: 8,
+                              offset: Offset(0, 3),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    o.$2,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                      color: value == o.$1
+                          ? (dark ? Colors.white : DribTokens.navy)
+                          : DribTokens.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -983,7 +1028,9 @@ class _TransferHints extends StatelessWidget {
         children: [
           Text(
             tr('r_hints').replaceFirst('{n}', '${pairs.length}'),
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
           ),
           const SizedBox(height: SsrSpace.xs),
           for (final p in pairs)
@@ -1052,16 +1099,37 @@ class _CategoryRecapState extends State<_CategoryRecap> {
       children: [
         Text(
           tr('r_recap'),
-          style: theme.textTheme.titleMedium,
+          style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
         ),
         const SizedBox(height: SsrSpace.xs),
         DribCard(
           padding: const EdgeInsets.symmetric(
-            horizontal: GlassSpace.lg,
-            vertical: GlassSpace.sm,
+            horizontal: 14,
+            vertical: 12,
           ),
           child: Column(
             children: [
+              DonutChart(
+                height: 150,
+                showLegend: false,
+                slices: [
+                  for (final c in result.top)
+                    DonutSlice(
+                      value: c.total,
+                      label: c.name,
+                      color: catPastelFor(c.name).fg,
+                    ),
+                  if (result.othersTotal > 0)
+                    DonutSlice(
+                      value: result.othersTotal,
+                      label: '',
+                      color: DribTokens.success,
+                    ),
+                ],
+              ),
+              const SizedBox(height: SsrSpace.sm),
               for (final c in shown)
                 _RecapRow(
                   name: c.name,
@@ -1080,8 +1148,8 @@ class _CategoryRecapState extends State<_CategoryRecap> {
                       Text(
                         expanded ? tr('r_collapse') : tr('r_see_all'),
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+                          color: DribTokens.primaryStrong,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -1114,10 +1182,10 @@ class _RecapRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final pastel = catPastelFor(name);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(SsrRadius.tile),
+      borderRadius: BorderRadius.circular(13),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
@@ -1125,41 +1193,63 @@ class _RecapRow extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(
-                  categoryEmoji(name),
-                  style: const TextStyle(fontSize: 22),
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: pastel.bg,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      svgForCategory(name),
+                      width: 18,
+                      height: 18,
+                      colorFilter: ColorFilter.mode(
+                        pastel.fg,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: SsrSpace.sm),
                 Expanded(
                   child: Text(
                     name,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 15),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: DribTokens.navy,
+                    ),
                   ),
                 ),
                 Text(
                   '${(pct * 100).round()}%',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
+                    color: DribTokens.textSecondary,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
                 const SizedBox(width: SsrSpace.sm),
                 Text(
                   amt(total),
-                  style: SsrType.moneyMedium.copyWith(color: scheme.error),
+                  style: SsrType.moneyMedium.copyWith(
+                    color: DribTokens.navy,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 6),
             ClipRRect(
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(99),
               child: LinearProgressIndicator(
                 value: pct.clamp(0.0, 1.0).toDouble(),
-                minHeight: 6,
-                backgroundColor: scheme.outline,
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(scheme.error),
+                minHeight: 8,
+                backgroundColor: const Color(0xFFE4EDFA),
+                valueColor: AlwaysStoppedAnimation<Color>(pastel.fg),
               ),
             ),
           ],
@@ -1179,7 +1269,17 @@ class _ReportsScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DribTokens.bgOf(context),
-      appBar: AppBar(title: Text(tr('nav_laporan'))),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          tr('nav_laporan'),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: body,
     );
   }
@@ -1200,13 +1300,15 @@ class _TxListCard extends StatelessWidget {
       children: [
         Text(
           tr('r_tx_title'),
-          style: Theme.of(context).textTheme.titleMedium,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
         ),
         const SizedBox(height: SsrSpace.xs),
         DribCard(
           padding: const EdgeInsets.symmetric(
-            horizontal: GlassSpace.sm,
-            vertical: GlassSpace.xs,
+            horizontal: 14,
+            vertical: 8,
           ),
           child: Column(
             children: [
@@ -1241,7 +1343,9 @@ class _TxListCard extends StatelessWidget {
           children: [
             Text(
               tr('r_tx_title'),
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
             ),
             const SizedBox(height: SsrSpace.xs),
           ],
@@ -1261,7 +1365,11 @@ class _TxListCard extends StatelessWidget {
           SsrSpace.lg,
         ),
         sliver: DecoratedSliver(
-          decoration: glassSliverDecoration(),
+          decoration: BoxDecoration(
+            color: DribTokens.cardOf(context),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: DribTokens.cardShadow,
+          ),
           sliver: SliverPadding(
             padding: const EdgeInsets.symmetric(
               horizontal: SsrSpace.sm,
@@ -1312,7 +1420,9 @@ class _YearFlowCard extends StatelessWidget {
         children: [
           Text(
             tr('r_flow12'),
-            style: theme.textTheme.titleSmall,
+            style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
           ),
           const SizedBox(height: SsrSpace.md),
           SizedBox(
@@ -1423,17 +1533,48 @@ class _InsightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return DribCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            tr('ai_insight_t'),
-            style: theme.textTheme.titleSmall,
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: DribTokens.purpleBg,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  size: 18,
+                  color: DribTokens.purple,
+                ),
+              ),
+              const SizedBox(width: SsrSpace.sm),
+              Expanded(
+                child: Text(
+                  tr('ai_insight_t'),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: DribTokens.navy,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: SsrSpace.sm),
-          Text(text, style: theme.textTheme.bodyMedium),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.45,
+              color: DribTokens.textSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -1484,6 +1625,7 @@ class _MonthlySummary extends StatelessWidget {
             amt(value),
             style: SsrType.moneyMedium.copyWith(
               fontSize: 16,
+              fontWeight: FontWeight.w800,
               color: color,
             ),
           ),
@@ -1493,16 +1635,51 @@ class _MonthlySummary extends StatelessWidget {
   }
 
   Widget _exportButton(String label, VoidCallback onTap) {
+    final enabled = hasItems && !exporting;
     return Expanded(
-      child: PremiumButton(
-        height: 48,
-        loading: exporting,
-        onPressed: hasItems && !exporting ? onTap : null,
-        gradient: const LinearGradient(
-          colors: [DribTokens.primary, DribTokens.primary],
+      child: Material(
+        color: const Color(0xFFE3EEFD),
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          child: SizedBox(
+            height: 44,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (exporting)
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: DribTokens.primaryStrong,
+                    ),
+                  )
+                else
+                  Icon(
+                    Icons.download,
+                    size: 14,
+                    color: enabled
+                        ? DribTokens.primaryStrong
+                        : DribTokens.textSecondary,
+                  ),
+                const SizedBox(width: 6),
+                Text(
+                  tr('r_dl').replaceFirst('{l}', label),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: enabled
+                        ? DribTokens.primaryStrong
+                        : DribTokens.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-              foreground: DribTokens.navy,
-        label: tr('r_dl').replaceFirst('{l}', label),
       ),
     );
   }

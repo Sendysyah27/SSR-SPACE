@@ -27,11 +27,19 @@ class DonutChart extends StatelessWidget {
   /// Mode ringkas untuk gauge kecil (tinggi 64, tanpa legenda).
   final bool compact;
 
+  /// Tinggi area grafik non-compact (bawaan 180).
+  final double? height;
+
+  /// Tampilkan legenda di bawah grafik (non-compact).
+  final bool showLegend;
+
   const DonutChart({
     super.key,
     required this.slices,
     this.centerText,
     this.compact = false,
+    this.height,
+    this.showLegend = true,
   });
 
   @override
@@ -42,7 +50,7 @@ class DonutChart extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          height: compact ? 64 : 180,
+          height: compact ? 64 : (height ?? 180),
           child: Stack(
             children: [
               PieChart(
@@ -82,7 +90,7 @@ class DonutChart extends StatelessWidget {
             ],
           ),
         ),
-        if (!compact) ...[
+        if (!compact && showLegend) ...[
           const SizedBox(height: 12),
           Wrap(
             spacing: 16,
