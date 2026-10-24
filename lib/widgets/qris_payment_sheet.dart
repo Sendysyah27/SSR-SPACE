@@ -229,11 +229,11 @@ class _QrisPaymentSheetState extends State<QrisPaymentSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Center(
+            Center(
               child: Container(
                 width: 42,
                 height: 4,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Color(0xFFD5E0F2),
                   borderRadius: BorderRadius.all(Radius.circular(99)),
                 ),

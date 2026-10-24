@@ -396,14 +396,14 @@ class _PlanCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: SsrSpace.sm),
       child: Row(
         children: [
-          const Container(
+          Container(
             width: 20,
             height: 20,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: DribTokens.success,
               borderRadius: BorderRadius.all(Radius.circular(7)),
             ),
-            child: DuoIcon(
+            child: const DuoIcon(
               AppIcons.check,
               size: 12,
               color: Colors.white,
@@ -491,14 +491,14 @@ class _QrisPlansSection extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: SsrSpace.sm),
       child: Row(
         children: [
-          const Container(
+          Container(
             width: 20,
             height: 20,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: DribTokens.success,
               borderRadius: BorderRadius.all(Radius.circular(7)),
             ),
-            child: DuoIcon(
+            child: const DuoIcon(
               AppIcons.check,
               size: 12,
               color: Colors.white,
