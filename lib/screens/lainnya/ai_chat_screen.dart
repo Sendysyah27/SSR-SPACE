@@ -44,6 +44,7 @@ import 'package:ssr_space/screens/lainnya/recurring_bills_screen.dart';
 import 'package:ssr_space/screens/lainnya/settings_screen.dart';
 import 'package:ssr_space/screens/laporan/reports_screen.dart';
 import 'package:ssr_space/theme/app_theme.dart';
+import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
@@ -1579,8 +1580,35 @@ class _AiChatScreenState extends State<AiChatScreen> {
     final scheme = Theme.of(context).colorScheme;
     final visible = _visibleItems;
     return Scaffold(
+      backgroundColor: DribTokens.bgOf(context),
       appBar: AppBar(
-        title: Text(tr('chat_title')),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                gradient: DribTokens.balanceGradient,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.auto_awesome,
+                  size: 16, color: Colors.white),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              tr('chat_title'),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : DribTokens.navy,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.vpn_key_outlined),
@@ -1647,23 +1675,61 @@ class _AiChatScreenState extends State<AiChatScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   SsrSpace.md, SsrSpace.sm, SsrSpace.md, 0),
-              child: SizedBox(
-                width: double.infinity,
-                child: SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment<String>(
-                      value: 'catat',
-                      label: Text(tr('ai_mode_catat')),
-                      icon: const Icon(Icons.edit_note_outlined),
-                    ),
-                    ButtonSegment<String>(
-                      value: 'asisten',
-                      label: Text(tr('ai_mode_asisten')),
-                      icon: const Icon(Icons.insights_outlined),
-                    ),
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF1B2A4A)
+                      : const Color(0xFFD9E6FA),
+                  borderRadius:
+                      const BorderRadius.all(Radius.circular(14)),
+                ),
+                child: Row(
+                  children: [
+                    for (final m in ['catat', 'asisten'])
+                      Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _setMode(m),
+                          child: Container(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 7),
+                            decoration: BoxDecoration(
+                              color: _mode == m
+                                  ? DribTokens.cardOf(context)
+                                  : Colors.transparent,
+                              borderRadius: const BorderRadius.all(
+                                  Radius.circular(11)),
+                              boxShadow: _mode == m
+                                  ? const [
+                                      BoxShadow(
+                                        color: Color(0x1F0B1B3F),
+                                        blurRadius: 8,
+                                        offset: Offset(0, 3),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Text(
+                              tr(m == 'catat'
+                                  ? 'ai_mode_catat'
+                                  : 'ai_mode_asisten'),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: _mode == m
+                                    ? (Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white
+                                        : DribTokens.navy)
+                                    : DribTokens.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
-                  selected: {_mode},
-                  onSelectionChanged: (s) => _setMode(s.first),
                 ),
               ),
             ),
@@ -1867,15 +1933,28 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     label: Text(_providerId == 'zen'
                         ? tr('ai_prov_zen')
                         : tr('ai_prov_server')),
-                    avatar: const Icon(Icons.smart_toy_outlined, size: 16),
+                    avatar: const Icon(Icons.smart_toy_outlined,
+                        size: 16, color: DribTokens.primaryStrong),
+                    backgroundColor: const Color(0xFFE3EEFD),
+                    side: BorderSide.none,
+                    labelStyle: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: DribTokens.primaryStrong,
+                    ),
                     onPressed: _sending ? null : _openProvider,
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                   IconButton(
-                    icon: const Icon(Icons.image_outlined),
+                    icon: const Icon(Icons.image_outlined, size: 20),
                     tooltip: tr('chat_attach'),
+                    style: IconButton.styleFrom(
+                      backgroundColor: DribTokens.primary,
+                      foregroundColor: Colors.white,
+                      fixedSize: const Size(42, 42),
+                    ),
                     onPressed: _sending ? null : _pickImage,
                   ),
                   Expanded(
@@ -1887,15 +1966,42 @@ class _AiChatScreenState extends State<AiChatScreen> {
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
                         hintText: tr('chat_hint'),
-                        border: const OutlineInputBorder(),
+                        filled: true,
+                        fillColor: DribTokens.cardOf(context),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 15, vertical: 11),
+                        border: const OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(99)),
+                          borderSide: BorderSide(color: DribTokens.border),
+                        ),
+                        enabledBorder: const OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(99)),
+                          borderSide: BorderSide(color: DribTokens.border),
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(99)),
+                          borderSide: BorderSide(
+                              color: DribTokens.primaryStrong, width: 1.5),
+                        ),
                         isDense: true,
                       ),
                     ),
                   ),
                   const SizedBox(width: SsrSpace.sm),
-                  IconButton.filled(
+                  IconButton(
                     onPressed: _sending ? null : () => _send(),
-                    icon: const Icon(Icons.send),
+                    style: IconButton.styleFrom(
+                      backgroundColor: DribTokens.navyDeep,
+                      disabledBackgroundColor:
+                          DribTokens.navyDeep.withValues(alpha: 0.4),
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor: Colors.white,
+                      fixedSize: const Size(42, 42),
+                    ),
+                    icon: const Icon(Icons.send, size: 18),
                   ),
                     ],
                   ),
@@ -2125,7 +2231,6 @@ class _TypingBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       padding: const EdgeInsets.symmetric(
@@ -2133,8 +2238,14 @@ class _TypingBubble extends StatelessWidget {
         vertical: SsrSpace.sm + 2,
       ),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
+        color: DribTokens.cardOf(context),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
+          bottomLeft: Radius.circular(5),
+          bottomRight: Radius.circular(16),
+        ),
+        boxShadow: DribTokens.cardShadow,
       ),
       child: const _TypingDots(),
     );
@@ -2160,10 +2271,10 @@ class _Bubble extends StatelessWidget {
     // Bubble iOS: user biru-putih, Mang AI abu netral, error merah.
     // Satu-satunya aksen biru di layar (R-01, R-29).
     final bg = msg.mine
-        ? scheme.primary
+        ? DribTokens.primaryStrong
         : msg.isError
             ? scheme.errorContainer
-            : scheme.surfaceContainerHighest;
+            : DribTokens.cardOf(context);
     final fg = msg.mine
         ? scheme.onPrimary
         : msg.isError
@@ -2173,16 +2284,19 @@ class _Bubble extends StatelessWidget {
       alignment: msg.mine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(
-          horizontal: SsrSpace.md,
-          vertical: SsrSpace.sm,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.82,
+          maxWidth: MediaQuery.of(context).size.width * 0.84,
         ),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(msg.mine ? 16 : 5),
+            bottomRight: Radius.circular(msg.mine ? 5 : 16),
+          ),
+          boxShadow: msg.isError ? null : DribTokens.cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2214,17 +2328,24 @@ class _Bubble extends StatelessWidget {
             if (typewriter)
               TypewriterText(
                 text: msg.text,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: fg),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: fg,
+                    fontSize: 13,
+                    height: 1.5,
+                    fontWeight: FontWeight.w500),
                 onDone: onTypewriterDone,
               )
             else
               SelectableText(
                 msg.text,
-                style:
-                    Theme.of(context).textTheme.bodyMedium?.copyWith(color: fg),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(
+                        color: fg,
+                        fontSize: 13,
+                        height: 1.5,
+                        fontWeight: FontWeight.w500),
               ),
           ],
         ),
@@ -2255,18 +2376,19 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(top: 2, bottom: 4),
         padding: const EdgeInsets.all(SsrSpace.md),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.82,
+          maxWidth: MediaQuery.of(context).size.width * 0.84,
         ),
         decoration: BoxDecoration(
-          color: scheme.tertiaryContainer,
-          borderRadius: BorderRadius.circular(20),
+          color: DribTokens.cardOf(context),
+          borderRadius: const BorderRadius.all(Radius.circular(20)),
+          boxShadow: DribTokens.cardShadow,
+          border: Border.all(color: DribTokens.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2275,8 +2397,8 @@ class _ActionCard extends StatelessWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: scheme.onTertiaryContainer,
-                    fontWeight: FontWeight.w700,
+                    color: DribTokens.navy,
+                    fontWeight: FontWeight.w800,
                   ),
             ),
             if (note != null) ...[
@@ -2284,7 +2406,7 @@ class _ActionCard extends StatelessWidget {
               Text(
                 note!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: scheme.onTertiaryContainer,
+                      color: DribTokens.textSecondary,
                     ),
               ),
             ],
@@ -2379,7 +2501,6 @@ class _PendingActionCardState extends State<_PendingActionCard> {
   @override
   Widget build(BuildContext context) {
     final p = widget.pending;
-    final scheme = Theme.of(context).colorScheme;
     final needWallet = p.fixable && p.walletOk == null;
     final needCategory = p.fixable && p.categoryOk == null;
     final canRun = p.fixable && _wallet != null && _category != null;
@@ -2399,11 +2520,13 @@ class _PendingActionCardState extends State<_PendingActionCard> {
         margin: const EdgeInsets.only(top: 2, bottom: 4),
         padding: const EdgeInsets.all(SsrSpace.md),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.82,
+          maxWidth: MediaQuery.of(context).size.width * 0.84,
         ),
         decoration: BoxDecoration(
-          color: scheme.tertiaryContainer,
-          borderRadius: BorderRadius.circular(20),
+          color: DribTokens.cardOf(context),
+          borderRadius: const BorderRadius.all(Radius.circular(20)),
+          boxShadow: DribTokens.cardShadow,
+          border: Border.all(color: DribTokens.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2412,15 +2535,15 @@ class _PendingActionCardState extends State<_PendingActionCard> {
             Text(
               'Lengkapi data \u00b7 $summary',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: scheme.onTertiaryContainer,
-                    fontWeight: FontWeight.w700,
+                    color: DribTokens.navy,
+                    fontWeight: FontWeight.w800,
                   ),
             ),
             const SizedBox(height: 4),
             Text(
               _reasonMessage(p),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onTertiaryContainer,
+                    color: DribTokens.textSecondary,
                   ),
             ),
             if (needWallet) ...[
