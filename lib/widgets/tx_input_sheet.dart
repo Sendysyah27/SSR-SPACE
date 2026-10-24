@@ -1198,9 +1198,9 @@ class _TxInputSheetState extends State<TxInputSheet> {
               onPressed: _save,
               loading: saving,
               gradient: const LinearGradient(
-                colors: [DribTokens.primary, DribTokens.primary],
+                colors: [DribTokens.primary, DribTokens.primaryStrong],
               ),
-              foreground: DribTokens.navy,
+              foreground: Colors.white,
             ),
             if (_isEdit) ...[
               const SizedBox(height: SsrSpace.sm),
@@ -1226,15 +1226,14 @@ class _DragHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Container(
-        width: 40,
-        height: 4,
+        width: 42,
+        height: 4.5,
         margin: const EdgeInsets.symmetric(vertical: SsrSpace.sm),
         decoration: BoxDecoration(
-          color: scheme.outline,
-          borderRadius: BorderRadius.circular(2),
+          color: const Color(0xFFD5E0F2),
+          borderRadius: BorderRadius.circular(3),
         ),
       ),
     );
@@ -1267,7 +1266,8 @@ class _SheetHeader extends StatelessWidget {
             children: [
               Text(
                 title ?? (isEdit ? tr('tx_form_edit') : tr('tx_form_add')),
-                style: theme.textTheme.titleMedium,
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w800),
               ),
               if (isEdit && code != null)
                 Text(
@@ -1344,7 +1344,7 @@ class _CatCell extends StatelessWidget {
         ? scheme.primary
         : theme.textTheme.bodyMedium?.color ?? scheme.onSurface;
     return InkWell(
-      borderRadius: BorderRadius.circular(SsrRadius.tile),
+      borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
         height: 48,
@@ -1353,9 +1353,10 @@ class _CatCell extends StatelessWidget {
           color: selected
               ? scheme.primary.withValues(alpha: 0.08)
               : scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(SsrRadius.tile),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? scheme.primary : scheme.outlineVariant,
+            color: selected ? DribTokens.primaryStrong : DribTokens.border,
+            width: selected ? 2 : 1.5,
           ),
         ),
         child: Row(
@@ -1365,7 +1366,7 @@ class _CatCell extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 color: DribTokens.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(13),
               ),
               child: Center(
                 child: SvgPicture.asset(
@@ -1422,7 +1423,8 @@ class _ScanRow extends StatelessWidget {
       padding: const EdgeInsets.all(SsrSpace.md),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(DribTokens.cardRadius),
+        border: Border.all(color: DribTokens.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1751,14 +1753,25 @@ class _DateTimeSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                tr('tx_f_date'),
-                style: theme.textTheme.bodyMedium,
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: SsrSpace.md,
+        vertical: SsrSpace.sm,
+      ),
+      decoration: BoxDecoration(
+        color: DribTokens.cardOf(context),
+        borderRadius: BorderRadius.circular(DribTokens.cardRadius),
+        border: Border.all(color: DribTokens.border),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  tr('tx_f_date'),
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             OutlinedButton.icon(
@@ -1768,12 +1781,14 @@ class _DateTimeSection extends StatelessWidget {
             ),
           ],
         ),
+        const Divider(height: 1, color: DribTokens.border),
         Row(
           children: [
             Expanded(
               child: Text(
                 tr('tx_add_time'),
-                style: theme.textTheme.bodyMedium,
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             Switch(value: useTime, onChanged: onToggleTime),
@@ -1796,7 +1811,8 @@ class _DateTimeSection extends StatelessWidget {
           style: theme.textTheme.bodySmall,
           textAlign: TextAlign.center,
         ),
-      ],
+        ],
+      ),
     );
   }
 }
