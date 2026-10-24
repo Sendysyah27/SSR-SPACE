@@ -1,6 +1,19 @@
 # Catatan Perubahan SSR SPACE
 
-Versi terpasang: 2.82.19+286.
+Versi terpasang: 2.82.20+287.
+
+## Yang baru di 2.82.20+287
+
+1. Tampilan baru di seluruh aplikasi mengikuti desain terbaru: latar biru muda lembut, kartu putih bersih bersudut membulat, dan aksen biru navy — Beranda, layar masuk & daftar, transaksi, Budget, Laporan, Dompet, Workspace, Profil, dan Langganan Pro tampil segar dan konsisten.
+2. Kolom PIN kini tampil sebagai titik-titik lingkaran, lebih rapi dan modern.
+3. Mang AI tampil baru: saklar mode Catat/Asisten lebih jelas, gelembung chat lebih bersih, kartu wawasan & chip kuota tampil sebagai pill, dan layar Pengaturan Asisten & AI Scan kini berkartu putih.
+
+## What's new in 2.82.20+287
+
+1. A fresh new look across the whole app following the latest design: a soft light-blue background, clean white rounded cards, and navy-blue accents — Home, sign-in & sign-up, transactions, Budget, Reports, Wallets, Workspace, Profile, and the Pro subscription all look fresh and consistent.
+2. PIN entry now shows round dots — cleaner and more modern.
+3. Mang AI gets a new look: a clearer Note/Assistant mode switch, cleaner chat bubbles, insight cards & the quota chip as pills, and the Assistant & AI Scan settings now in white cards.
+
 
 ## Yang baru di 2.82.19+286
 

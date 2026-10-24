@@ -834,6 +834,20 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.82.20+287 (2026-10-24)
+
+Implementasi mockup desain baru plek ketiplek (brief 287, board 51 frame / 11 grup): seluruh tampilan aplikasi di-restyle ke bahasa desain baru — latar #EAF0F8, kartu putih flat radius 20–24, hero gradient #0B1B3F→#1F3C88, teks #10224E, biru #5B9BF5/#2E6BE6, font Plus Jakarta Sans, format Rupiah "Rp 1.250.000". RESTYLE SAJA: logika bisnis, API, state, routing, kontrak data, harga paket Pro, dan alur bayar QRIS TIDAK berubah.
+
+- Tahap 0 — Fondasi token desain + font Plus Jakarta Sans + format Rupiah. Commit 11cc356/4464494/409dd6b (+fix e7b8693)/1a25f9d; CI hijau.
+- Tahap 1 — Shell + Beranda ala mockup. Commit 5cb7642/aa6b94f/9c50d0a; CI hijau.
+- Tahap 2 — Auth (masuk/daftar/lupa kata sandi) + sub-tugas 2d: PIN lock titik lingkaran 13px plek frame (kotak 40x48 diganti; logika PIN tidak berubah; test diselaraskan di akar). Commit 4f039d7 (+fix 4790e6f)/ddc11d4/7c11b06 (+fix 1b068a0)/3ca1007 (+fix f56efce, 7bc33c0); CI hijau. Keputusan Sendy: meter kekuatan password SKIP permanen (validasi tetap min 6 karakter); toggle mata password tidak ditambah.
+- Tahap 3 — Transaksi, scan struk, draft & riwayat ala mockup. Commit e051f17 (+fix 5ebfc90)/16e4299/1d7e842/ea2a7de; CI hijau.
+- Tahap 4 — Budget (bbc6c15), Laporan (3178526 +fix 47e23c9 cabut unused_import), Dompet (1da55d2); CI hijau.
+- Tahap 5 — Workspace (89cc1a1, file non-WIP saja), Profil+Pengaturan (fde30fd +fix 7f1607e), Langganan Pro/QRIS (216dcab +fix 27beee4, 0227af6 — pelajaran const SDK Flutter terbaru: BorderRadius.circular non-const & Container tak lagi const). Harga Pro & logika bayar QRIS TIDAK disentuh. CI hijau.
+- Tahap 6 — Mang AI: chat mode Catat (header avatar gradient navy + saklar seg ala mockup + bubble berekor + input pill), mode Asisten + kartu visualisasi + chip kuota pill, Pengaturan Asisten & Pengaturan AI Scan berkartu putih. Commit 56bb6ac/4de3826/7c1b258; CI 40059440774/40060248587/40061176758 SUCCESS. Kontrak Batch 284/285 UTUH: EF mang-ai-chat, kontrak {"reply","action"} + parser, kuota server-side, typewriter, feedback, state percakapan bernama — hanya tampilan berubah.
+- Flag terbuka: 2 frame grup 9 — Daftar Workspace (org_switcher_screen.dart) & Undang Anggota (invite_screen.dart) — BELUM di-restyle karena kedua file menempel WIP quota_gate (9 item uncommitted, dilarang disentuh); menunggu keputusan Sendy soal quota_gate. Elemen frame lain yang butuh kunci string baru di strings.dart (WIP) dilewati + dicatat per tahap.
+- Rilis: bump 2.82.20+287 (pubspec + app_info) + AUDIT + changelog ID/EN di commit finalisasi ini; unduh APK + last_version + notif via jalur rilis Jhon (bukan bagian commit ini).
+
 ## 2.82.19+286 (2026-10-22)
 
 Perbaikan scan struk + rename aplikasi + draft scan persisten ala Ollo (brief 286): parser OCR lokal kini akurat (merchant, Grand Total pasca-diskon, jam transaksi, modifier Rp0 bukan item), label launcher "SSR SPACE", hasil scan OCR & AI bermuara ke layar review terstruktur dengan Simpan Draft persisten.
