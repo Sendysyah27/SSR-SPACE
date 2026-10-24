@@ -13,9 +13,9 @@ import 'package:ssr_space/theme/app_theme.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/widgets/pin_dialog.dart';
 import 'package:ssr_space/widgets/drib_card.dart';
+import 'package:ssr_space/widgets/wallet_row.dart';
 import 'package:ssr_space/widgets/section_card.dart';
 import 'package:ssr_space/widgets/state_views.dart';
-import 'package:ssr_space/widgets/status_chip.dart';
 import 'package:ssr_space/widgets/tx_day_slivers.dart';
 import 'package:ssr_space/widgets/tx_row.dart';
 import 'package:ssr_space/widgets/wallet_art.dart';
@@ -223,7 +223,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return Scaffold(
       backgroundColor: DribTokens.bgOf(context),
       appBar: AppBar(
-        title: Text(widget.wallet.name),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          widget.wallet.name,
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
         actions: [
           IconButton(
             icon: const DuoIcon(AppIcons.settings),
@@ -273,6 +281,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   typeLabel: widget.typeLabel,
                   balanceText: widget.balanceText,
                   count: items.length,
+                  totalIn: items
+                      .where((t) => t.type == 'in')
+                      .fold(0.0, (s, t) => s + t.amount),
+                  totalOut: items
+                      .where((t) => t.type == 'out')
+                      .fold(0.0, (s, t) => s + t.amount),
                 ),
                 if (svCount > 0) ...[
                   const SizedBox(height: SsrSpace.md),
@@ -327,7 +341,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: SsrSpace.lg),
           sliver: DecoratedSliver(
-            decoration: sectionCardDecoration(context),
+            decoration: BoxDecoration(
+              color: DribTokens.cardOf(context),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: DribTokens.cardShadow,
+            ),
             sliver: const SliverToBoxAdapter(
               child: SizedBox(height: SsrSpace.xs * 2),
             ),
@@ -339,7 +357,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: SsrSpace.lg),
         sliver: DecoratedSliver(
-          decoration: sectionCardDecoration(context),
+          decoration: BoxDecoration(
+            color: DribTokens.cardOf(context),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: DribTokens.cardShadow,
+          ),
           sliver: SliverPadding(
             padding: const EdgeInsets.symmetric(
               horizontal: SsrSpace.sm,
@@ -382,12 +404,45 @@ class _DeleteSection extends StatelessWidget {
 }
 
 /// Kop: jenis + saldo akhir + jumlah transaksi pembentuk.
+/// Pil arus masuk/keluar ala chip frame Detail Dompet.
+class _FlowChip extends StatelessWidget {
+  final String label;
+  final Color bg;
+  final Color fg;
+
+  const _FlowChip({required this.label, required this.bg, required this.fg});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          color: fg,
+        ),
+      ),
+    );
+  }
+}
+
 class _SummaryCard extends StatelessWidget {
   final String name;
   final String type;
   final String typeLabel;
   final String balanceText;
   final int count;
+  final double totalIn;
+  final double totalOut;
 
   const _SummaryCard({
     required this.name,
@@ -395,40 +450,72 @@ class _SummaryCard extends StatelessWidget {
     required this.typeLabel,
     required this.balanceText,
     required this.count,
+    required this.totalIn,
+    required this.totalOut,
   });
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return DribCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
-                  color: scheme.outline.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(SsrRadius.tile),
-                  border: Border.all(color: scheme.outline),
+                  color: walletTypePastel(type).bg,
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(child: WalletArt(type, name: name)),
               ),
               const SizedBox(width: SsrSpace.md),
-              Expanded(child: StatusChip(label: typeLabel)),
+              Expanded(
+                child: Text(
+                  typeLabel,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: DribTokens.textSecondary,
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: SsrSpace.xs),
+          const SizedBox(height: SsrSpace.md),
           Text(
             balanceText,
-            style: DribTokens.bigNumber(
-                size: 26, color: Theme.of(context).colorScheme.onSurface),
+            textAlign: TextAlign.center,
+            style: DribTokens.bigNumber(size: 25),
           ),
-          const SizedBox(height: SsrSpace.xs),
+          const SizedBox(height: SsrSpace.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: _FlowChip(
+                  label: '▲ ${tr('tx_in')} ${amt(totalIn)}',
+                  bg: const Color(0xFFD9F5E9),
+                  fg: DribTokens.successText,
+                ),
+              ),
+              const SizedBox(width: 7),
+              Flexible(
+                child: _FlowChip(
+                  label: '▼ ${tr('tx_out')} ${amt(totalOut)}',
+                  bg: const Color(0xFFFBDCDD),
+                  fg: DribTokens.errorText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: SsrSpace.sm),
           Text(
             tr('wd_count').replaceFirst('{n}', '$count'),
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],

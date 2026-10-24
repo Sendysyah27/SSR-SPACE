@@ -273,7 +273,17 @@ class _WalletsScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DribTokens.bgOf(context),
-      appBar: AppBar(title: Text(tr('nav_dompet'))),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          tr('nav_dompet'),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: body,
     );
   }
@@ -304,21 +314,39 @@ class _WalletOverview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (t != null)
-          DribCard(
+          Container(
             margin: const EdgeInsets.only(bottom: SsrSpace.md),
+            padding: const EdgeInsets.all(17),
+            decoration: BoxDecoration(
+              gradient: DribTokens.balanceGradient,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x800B1B3F),
+                  blurRadius: 30,
+                  offset: Offset(0, 16),
+                  spreadRadius: -14,
+                ),
+              ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   tr('w_total'),
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFB9CBEF),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   amt(t),
                   style: DribTokens.bigNumber(
-                      size: 26,
-                      color: Theme.of(context).colorScheme.onSurface),
+                    size: 24,
+                    color: DribTokens.onNavy,
+                  ),
                 ),
               ],
             ),
@@ -376,7 +404,12 @@ class _NewWalletForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(tr('w_new'), style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            tr('w_new'),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
           const SizedBox(height: SsrSpace.md),
           TextField(
             controller: nameC,
@@ -487,17 +520,16 @@ class _WalletListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DribCard(
-      margin: const EdgeInsets.only(bottom: SsrSpace.md),
-      padding: const EdgeInsets.symmetric(
-        horizontal: SsrSpace.md,
-        vertical: SsrSpace.xs,
-      ),
-      child: Column(
-        children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const Divider(height: 1),
-            WalletRow(
+    return Column(
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          DribCard(
+            margin: const EdgeInsets.only(bottom: SsrSpace.md),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 6,
+            ),
+            child: WalletRow(
               name: items[i].name,
               type: items[i].type,
               typeLabel: typeLabelOf(items[i].type),
@@ -516,9 +548,9 @@ class _WalletListCard extends StatelessWidget {
                 if (r == true) await onChanged();
               },
             ),
-          ],
+          ),
         ],
-      ),
+      ],
     );
   }
 }
@@ -539,11 +571,15 @@ class _CompositionStrip extends StatelessWidget {
         children: [
           Text(
             tr('comp_title'),
-            style: text.titleMedium,
+            style: text.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
           ),
           Text(
             tr('comp_sub'),
-            style: text.bodySmall,
+            style: text.bodySmall?.copyWith(
+                  color: DribTokens.textSecondary,
+                ),
           ),
           const SizedBox(height: SsrSpace.md),
           _CompChart(comp: comp),
@@ -641,27 +677,36 @@ Widget _compRow(
   double value,
   double pct,
 ) {
-  final text = Theme.of(context).textTheme;
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: SsrSpace.xs),
     child: Row(
       children: [
         Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: dot,
+            borderRadius: BorderRadius.circular(3),
+          ),
         ),
         const SizedBox(width: SsrSpace.sm),
         Expanded(
           child: Text(
             label,
-            style: text.bodyMedium?.copyWith(color: text.bodySmall?.color),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: DribTokens.textSecondary,
+            ),
           ),
         ),
         Text(
           '${amt(value)} ${(pct * 100).round()}%',
-          style: text.bodyMedium?.copyWith(
-            fontFeatures: const [FontFeature.tabularFigures()],
+          style: const TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w800,
+            color: DribTokens.navy,
+            fontFeatures: [FontFeature.tabularFigures()],
           ),
         ),
       ],
