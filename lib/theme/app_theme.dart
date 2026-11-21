@@ -28,7 +28,9 @@ class AppColors {
   static const chipWarnBg = Color(0xFFF6E4E1);
 }
 
-/// Token Industrial iPhone (2026-10-14, disetujui owner): chrome netral
+/// Token Paper Ledger (2026-11-21): chrome kertas hangat, satu aksen warna uang.
+/// Nilai Industrial iPhone lama diganti sesuai mockup `ssr-space-mockup-2026`.
+/// Rincian lama: chrome netral
 /// premium, satu aksen biru. Alasan tiap nilai:
 /// - scaffold/surface abu iOS (grup + kartu terbaca tanpa border tebal).
 /// - teks sekunder #6E6E73 di putih ≈5.0 (AA); dark #98989D di hitam aman.
@@ -38,24 +40,24 @@ class AppColors {
 /// Warna makna uang (emerald/rust/gold) TIDAK diubah: tetap untuk
 /// masuk/keluar/tabungan + label kata.
 class Ind {
-  static const scaffoldL = Color(0xFFEAF0F8);
+  static const scaffoldL = Color(0xFFF5F4EF);
   static const card2L = Color(0xFFFFFFFF);
-  static const ink = Color(0xFF10224E);
-  static const secondaryL = Color(0xFF42557C);
-  static const lineL = Color(0xFFB9CBEF);
-  static const blue = Color(0xFF5B9BF5);
-  static const scaffoldD = Color(0xFF0D1526);
-  static const surfaceD = Color(0xFF16203A);
-  static const inkD = Color(0xFFF5F5F7);
-  static const secondaryD = Color(0xFF98989D);
-  static const lineD = Color(0xFF38383A);
-  static const blueD = Color(0xFF5B9BF5);
+  static const ink = Color(0xFF191A16);
+  static const secondaryL = Color(0xFF565A52);
+  static const lineL = Color(0xFFE2E0D8);
+  static const blue = Color(0xFF0E4B44);
+  static const scaffoldD = Color(0xFF0C0D0B);
+  static const surfaceD = Color(0xFF161713);
+  static const inkD = Color(0xFFF2F1E9);
+  static const secondaryD = Color(0xFFA9AB9F);
+  static const lineD = Color(0xFF2A2B25);
+  static const blueD = Color(0xFF5FCBB0);
   // Semantik iOS (brief §1.1): KHUSUS grafik/fill besar, BUKAN teks
   // (di putih gagal AA: green ±2.2, orange ±2.1). Teks makna tetap
   // emerald/rust/gold-dark yang lolos AA. Deviasi tercatat (R-37).
-  static const green = Color(0xFF2FBF8F);
-  static const red = Color(0xFFE05252);
-  static const orange = Color(0xFFF5A55B);
+  static const green = Color(0xFF2FA37F);
+  static const red = Color(0xFFC0503F);
+  static const orange = Color(0xFFC08A2E);
 
   static List<BoxShadow> heroShadow(bool dark) => [
         BoxShadow(
@@ -211,7 +213,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.72),
+        fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(SsrRadius.input),
           borderSide: const BorderSide(color: Ind.lineL),
@@ -243,7 +245,7 @@ class AppTheme {
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: Colors.white.withValues(alpha: 0.85),
+        backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
@@ -275,7 +277,7 @@ class AppTheme {
   static ThemeData dark() {
     const scheme = ColorScheme.dark(
       primary: Ind.blueD,
-      onPrimary: Colors.white,
+      onPrimary: Ind.scaffoldD,
       surface: Ind.surfaceD,
       onSurface: Ind.inkD,
       error: AppColors.rust,
@@ -350,7 +352,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(48, 48),
           backgroundColor: Ind.blueD,
-          foregroundColor: Colors.white,
+          foregroundColor: Ind.scaffoldD,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(SsrRadius.button),
@@ -380,7 +382,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.06),
+        fillColor: Ind.surfaceD,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
@@ -423,7 +425,7 @@ class AppTheme {
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: Colors.white.withValues(alpha: 0.10),
+        backgroundColor: Ind.surfaceD,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),

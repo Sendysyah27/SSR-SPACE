@@ -934,8 +934,8 @@ class _FlowFilter extends StatelessWidget {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: dark
-            ? const Color(0xFF16203A)
-            : const Color(0xFFD9E6FA),
+            ? const Color(0xFF161713)
+            : const Color(0xFFE7E5DD),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(

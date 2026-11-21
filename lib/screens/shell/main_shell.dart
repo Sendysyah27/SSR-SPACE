@@ -285,7 +285,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       builder: (ctx) => _QaSheet(
         items: [
           _QaItem(_QuickAction.addTx, tr('qa_add_tx'), AppIcons.add,
-              const Color(0xFF5B9BF5)),
+              const Color(0xFF0E4B44)),
           _QaItem(_QuickAction.scan, tr('qa_scan'), AppIcons.scan,
               const Color(0xFF22B07D)),
           _QaItem(_QuickAction.ocr, tr('qa_ocr'),

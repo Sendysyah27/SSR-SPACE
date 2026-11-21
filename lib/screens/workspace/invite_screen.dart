@@ -335,7 +335,7 @@ class _RoleSeg extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: dark ? const Color(0xFF1B2A4A) : const Color(0xFFD9E6FA),
+        color: dark ? const Color(0xFF24251F) : const Color(0xFFE7E5DD),
         borderRadius: const BorderRadius.all(Radius.circular(14)),
       ),
       child: Row(

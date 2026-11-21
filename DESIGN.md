@@ -4,10 +4,25 @@
 
 Aplikasi pencatatan pemasukan dan pengeluaran multi-workspace untuk Indonesia. Dipakai tiap hari, sering malam, satu tangan.
 
+## Arah aktif: Paper Ledger 2026 (2026-11-21)
+
+Mockup acuan: `/sdcard/Download/ssr-space-mockup-2026/` (board + 6 layar).
+Menggantikan chrome biru iOS dan kartu bertumpuk:
+
+- Kertas hangat `#F5F4EF` light, `#0C0D0B` dark. Bukan biru, bukan hitam pekat.
+- Satu permukaan terangkat per layar (hero), sisanya baris di atas kertas dengan pemisah 1px `#E2E0D8` / `#2A2B25`.
+- Warna hanya untuk arti uang: emerald `#0E4B44` (dark `#5FCBB0`) masuk, rust `#A3362A` (dark `#E88A79`) keluar, gold `#7A5E14` (dark `#E3BC55`) hampir habis dan tabungan.
+- Nominal adalah fokus: 34px, tabular, tracking -1.2.
+- Radius tiga tingkat: 24 hero, 14 kontrol, 999 hanya tombol aksi.
+- Tanpa bayangan bertumpuk dan tanpa animasi masuk; MOTION 1.
+
+Status migrasi: tahap 1 = token warna (`Ind`, `DribTokens`) + Beranda. Layar lain
+masih memakai komponen lama dan menyusul bertahap.
+
 ## Dials
 
-Dial: ENERGY 2 / RHYTHM 2 / MOTION 1.
-Design Read: aplikasi keuangan phone-first untuk pemakai Indonesia, bahasa visual buku kas premium yang tenang dan fokus: hierarki tegas, permukaan bertingkat, transisi Material minimal. Dial ENERGY 2 / RHYTHM 2 / MOTION 1.
+Dial: ENERGY 1 / RHYTHM 2 / MOTION 1.
+Design Read: aplikasi keuangan phone-first untuk pemakai Indonesia, bahasa visual buku kas yang tenang dan fokus: satu bidang terangkat, angka sebagai pusat, warna hanya untuk arti uang. Dial ENERGY 1 / RHYTHM 2 / MOTION 1.
 
 ## Palette
 

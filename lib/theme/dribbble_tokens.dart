@@ -8,14 +8,14 @@ import 'package:flutter/material.dart';
 /// Palet (final, jangan tambah warna di luar ini tanpa revisi desain):
 /// - [bg]: latar aplikasi.
 /// - [card]: permukaan kartu.
-/// - [primary]: biru utama (tombol, aksen, link).
+/// - [primary]: emerald utama (aksi, aksen, link).
 /// - [navy]/[navyDeep]/[navyBright]: teks gelap + gradient.
 /// - [accentOrange]: KHUSUS badge kecil (dilarang untuk tombol/teks besar).
 ///
 /// Ungu/pink HANYA untuk ikon kategori pastel (bukan tombol/teks besar).
 abstract final class DribTokens {
   /// Latar aplikasi: biru-abu muda.
-  static const Color bg = Color(0xFFEAF0F8);
+  static const Color bg = Color(0xFFF5F4EF);
 
   /// Permukaan kartu: putih.
   static const Color card = Color(0xFFFFFFFF);
@@ -23,32 +23,32 @@ abstract final class DribTokens {
   /// Latar aplikasi sadar-tema: gelap (navy malam) saat mode dark.
   static Color bgOf(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF0D1526)
+          ? const Color(0xFF0C0D0B)
           : bg;
 
   /// Permukaan kartu sadar-tema: gelap (navy malam) saat mode dark.
   static Color cardOf(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF16203A)
+          ? const Color(0xFF161713)
           : card;
 
-  /// Biru utama: tombol, aksen, link.
-  static const Color primary = Color(0xFF5B9BF5);
+  /// Aksen utama: tombol, aksen, link.
+  static const Color primary = Color(0xFF0E4B44);
 
-  /// Navy teks/ikon gelap.
-  static const Color navy = Color(0xFF10224E);
+  /// Tinta teks/ikon.
+  static const Color navy = Color(0xFF191A16);
 
   /// Ujung gelap gradient kartu saldo & input nominal.
-  static const Color navyDeep = Color(0xFF0B1B3F);
+  static const Color navyDeep = Color(0xFF101210);
 
   /// Ujung terang gradient kartu saldo & input nominal.
-  static const Color navyBright = Color(0xFF1F3C88);
+  static const Color navyBright = Color(0xFF2A2E28);
 
   /// Oranye KHUSUS badge kecil.
   static const Color accentOrange = Color(0xFFF5A55B);
 
   /// Teks di atas gradient navy.
-  static const Color onNavy = Color(0xFFFFFFFF);
+  static const Color onNavy = Color(0xFFF5F4EF);
 
   /// Radius kartu.
   static const double cardRadius = 20;
@@ -78,7 +78,7 @@ abstract final class DribTokens {
   static const LinearGradient oceanDeep = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [navy, Color(0xFF0B4F4A)],
+    colors: [navy, Color(0xFF0E4B44)],
   );
 
   /// Varian gradient "midnight": navyDeep -> biru-hitam, diagonal
@@ -86,7 +86,7 @@ abstract final class DribTokens {
   static const LinearGradient midnightBlue = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [navyDeep, Color(0xFF101E42)],
+    colors: [navyDeep, Color(0xFF14150F)],
   );
 
   /// Varian gradient "steel": biru-abu -> navyBright, diagonal
@@ -94,20 +94,20 @@ abstract final class DribTokens {
   static const LinearGradient steelBlue = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF3B5B8C), navyBright],
+    colors: [Color(0xFF3A4038), navyBright],
   );
 
   /// Teks sekunder di atas kartu putih.
-  static const Color textSecondary = Color(0xFF42557C);
+  static const Color textSecondary = Color(0xFF565A52);
 
   /// Bolder aksi utama (hover/penting), tetap satu keluarga biru.
-  static const Color primaryStrong = Color(0xFF2E6BE6);
+  static const Color primaryStrong = Color(0xFF0A3B35);
 
   /// Tint biru terang untuk latar elemen non-hazard (particle/alert).
-  static const Color blueLight = Color(0xFFD6E7FF);
+  static const Color blueLight = Color(0xFFE7ECE6);
 
   /// Border kartu/sepertor.
-  static const Color border = Color(0xFFB9CBEF);
+  static const Color border = Color(0xFFE2E0D8);
 
   /// Teks aksen di surface terang (a11y).
   static const Color accentOrangeText = Color(0xFFD97316);
@@ -116,11 +116,11 @@ abstract final class DribTokens {
   /// Badge/tint aksen non-bahaya.
   static const Color accentOrangeBg = Color(0xFFFDEBD3);
 
-  static const Color success = Color(0xFF2FBF8F);
-  static const Color successText = Color(0xFF12805C);
+  static const Color success = Color(0xFF1E7A5F);
+  static const Color successText = Color(0xFF0E5B49);
 
-  static const Color error = Color(0xFFE05252);
-  static const Color errorText = Color(0xFFB3373C);
+  static const Color error = Color(0xFFC0503F);
+  static const Color errorText = Color(0xFF8E2C22);
 
   /// Ungu/pink HANYA untuk badge kategori pastel, bukan tombol/CTA.
   static const Color purple = Color(0xFF6D4BD8);

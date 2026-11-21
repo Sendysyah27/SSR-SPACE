@@ -172,7 +172,7 @@ class _VoiceListeningSheetState extends State<_VoiceListeningSheet>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    const micBlue = Color(0xFF5B9BF5);
+    const micBlue = Color(0xFF0E4B44);
     return Container(
       decoration: BoxDecoration(
         color: DribTokens.cardOf(context),

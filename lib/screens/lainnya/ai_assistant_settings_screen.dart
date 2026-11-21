@@ -141,7 +141,7 @@ class _AiAssistantSettingsScreenState
                   ChoiceChip(
                     label: Text(tr('ai_persona_${e.key}')),
                     selected: _persona.persona == e.key,
-                    selectedColor: const Color(0xFFD9E6FA),
+                    selectedColor: const Color(0xFFE7E5DD),
                     checkmarkColor: DribTokens.navy,
                     side: const BorderSide(color: DribTokens.border),
                     labelStyle: TextStyle(

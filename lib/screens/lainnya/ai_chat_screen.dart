@@ -1680,7 +1680,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? const Color(0xFF1B2A4A)
-                      : const Color(0xFFD9E6FA),
+                      : const Color(0xFFE7E5DD),
                   borderRadius:
                       const BorderRadius.all(Radius.circular(14)),
                 ),

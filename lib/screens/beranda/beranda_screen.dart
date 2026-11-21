@@ -56,7 +56,6 @@ import 'package:ssr_space/widgets/mask_toggle.dart';
 import 'package:ssr_space/widgets/month_picker.dart';
 import 'package:ssr_space/theme/dribbble_tokens.dart';
 import 'package:ssr_space/widgets/drib_card.dart';
-import 'package:ssr_space/widgets/restyle/balance_card.dart';
 import 'package:ssr_space/widgets/skeletons.dart';
 import 'package:ssr_space/widgets/state_views.dart';
 import 'package:ssr_space/widgets/tx_input_sheet.dart';
@@ -881,8 +880,8 @@ class BerandaScreenState extends State<BerandaScreen> {
       backgroundColor: DribTokens.bgOf(context),
       extendBodyBehindAppBar: false,
       appBar: AppBar(
-        // Batch 7 (2.61.0+170): blur AppBar dihapus demi performa.
-        backgroundColor: scheme.surface.withValues(alpha: 0.92),
+        // Paper Ledger: AppBar menyatu dengan kertas, bukan permukaan putih.
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: Padding(
           padding: const EdgeInsets.only(left: 12),
           child: InkWell(
@@ -1213,10 +1212,8 @@ class BerandaScreenState extends State<BerandaScreen> {
     );
   }
 
-  /// Hero TAHAP 2 restyle: BalanceCard gradient navy gaya Dribbble.
-  /// Data & copy sama persis (surplus, masuk/keluar, pctOut, bar progres).
-  /// Hero TAHAP 4a: pakai komponen BalanceCard (gradient navy).
-  /// Data & copy sama persis (surplus, masuk/keluar, pctOut, bar progres).
+  /// Hero Paper Ledger: satu permukaan terangkat, nominal sebagai fokus.
+  /// Data & copy tidak berubah (surplus/defisit, selisih, pctOut, bar share).
   Widget _surplusCard(
     double totalIn,
     double totalOut,
@@ -1224,192 +1221,182 @@ class BerandaScreenState extends State<BerandaScreen> {
     double inShare,
     int? pctOut,
   ) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final dark = theme.brightness == Brightness.dark;
     final positive = surplus >= 0;
-    const onHero = DribTokens.onNavy;
-    // Efek 3D premium: layered shadow 3 lapis halus di kartu SURPLUS.
+    final moneyIn = dark ? const Color(0xFF5FCBB0) : const Color(0xFF0E4B44);
+    final moneyOut = dark ? const Color(0xFFE88A79) : const Color(0xFFA3362A);
+    final share = inShare < 0 ? 0.0 : (inShare > 1 ? 1.0 : inShare);
     return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(DribTokens.sheetRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-          BoxShadow(
-            color: DribTokens.navy.withValues(alpha: 0.08),
-            blurRadius: 48,
-            offset: const Offset(0, 24),
-          ),
-        ],
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: scheme.outline),
       ),
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0.0, end: 1.0),
-        duration: GlassDuration.slow,
-        curve: GlassDuration.curve,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.scale(
-            scale: 0.96 + (0.04 * value),
-            child: child,
-          ),
-        );
-      },
-      child: BalanceCard(
-        label: positive ? tr('beranda_surplus') : tr('beranda_defisit'),
-        amount: amt(surplus),
-        onAmountTap: widget.onLaporan == null
-            ? null
-            : () => widget.onLaporan!.call(),
-        footer: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              tr('beranda_diff').replaceFirst('{m}', _monthLower()),
-              style: TextStyle(
-                color: onHero.withValues(alpha: 0.75),
-                fontSize: 13,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  (positive ? tr('beranda_surplus') : tr('beranda_defisit'))
+                      .toUpperCase(),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.1,
+                  ),
+                ),
               ),
-            ),
-            if (pctOut != null) ...[
-              const SizedBox(height: SsrSpace.sm),
               Text(
-                tr('beranda_vs_out').replaceFirst(
-                    '{p}', '${pctOut >= 0 ? '+' : ''}$pctOut'),
-                style: TextStyle(
-                  color: onHero.withValues(alpha: 0.75),
-                  fontSize: 13,
+                monthLabel(month),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ],
-            const SizedBox(height: SsrSpace.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: _heroMini(tr('tx_in'), amt(totalIn),
-                      AppIcons.arrowDown, Colors.green.shade300,
-                      onTap: () => _showTxListSheet(
-                          context,
-                          tr('beranda_month_in'),
-                          _monthFiltered(items, 'in'))),
-                ),
-                const SizedBox(width: GlassSpace.sm),
-                Expanded(
-                  child: _heroMini(tr('tx_out'), amt(totalOut),
-                      AppIcons.arrowUp, Colors.red.shade300,
-                      onTap: () => _showTxListSheet(
-                          context,
-                          tr('beranda_month_out'),
-                          _monthFiltered(items, 'out'))),
-                ),
-              ],
+          ),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: widget.onLaporan == null ? null : () => widget.onLaporan!(),
+            behavior:
+                widget.onLaporan == null ? null : HitTestBehavior.opaque,
+            child: Text(
+              amt(surplus),
+              style: TextStyle(
+                fontFamily: SsrFonts.body,
+                fontSize: 34,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -1.2,
+                height: 1.15,
+                color: scheme.onSurface,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
-            const SizedBox(height: SsrSpace.md),
-            SizedBox(
-              height: 8,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            tr('beranda_diff').replaceFirst('{m}', _monthLower()),
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 14),
+          Container(height: 1, color: scheme.outline),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _heroFlow(
+                  tr('tx_in'),
+                  amt(totalIn),
+                  AppIcons.arrowDown,
+                  moneyIn,
+                  onTap: () => _showTxListSheet(
+                      context, tr('beranda_month_in'), _monthFiltered(items, 'in')),
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 34,
+                color: scheme.outline,
+                margin: const EdgeInsets.symmetric(horizontal: 14),
+              ),
+              Expanded(
+                child: _heroFlow(
+                  tr('tx_out'),
+                  amt(totalOut),
+                  AppIcons.arrowUp,
+                  moneyOut,
+                  onTap: () => _showTxListSheet(
+                      context, tr('beranda_month_out'), _monthFiltered(items, 'out')),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: SizedBox(
+              height: 4,
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: onHero.withValues(alpha: 0.25),
-                        borderRadius: const BorderRadius.all(
-                            Radius.circular(4)),
-                      ),
-                    ),
+                    child: ColoredBox(color: scheme.outline),
                   ),
                   Positioned.fill(
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(
-                        begin: 0,
-                        end: inShare < 0
-                            ? 0.0
-                            : (inShare > 1 ? 1.0 : inShare),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FractionallySizedBox(
+                        widthFactor: share,
+                        heightFactor: 1,
+                        child: ColoredBox(color: moneyIn),
                       ),
-                      duration: SsrMotion.base,
-                      curve: SsrMotion.curve,
-                      builder: (context, value, _) {
-                        return Align(
-                          alignment: Alignment.centerLeft,
-                          child: FractionallySizedBox(
-                            widthFactor: value,
-                            heightFactor: 1,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: onHero,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
                     ),
                   ),
                 ],
               ),
             ),
+          ),
+          if (pctOut != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              tr('beranda_vs_out').replaceFirst(
+                  '{p}', '${pctOut >= 0 ? '+' : ''}$pctOut'),
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: scheme.onSurfaceVariant),
+            ),
           ],
-        ),
+        ],
       ),
-    ),
     );
   }
 
-  /// Kotak mini di hero: ikon + label + nominal putih di atas navy.
-  /// [onTap]: bila diisi, kotak bisa di-tap (mis. ke daftar bulan ini).
-  Widget _heroMini(
-      String label, String value, IconData icon, Color tint,
-      {VoidCallback? onTap}) {
+  /// Baris masuk/keluar di hero: label kecil di atas, nominal berwarna.
+  Widget _heroFlow(
+    String label,
+    String value,
+    IconData icon,
+    Color tint, {
+    VoidCallback? onTap,
+  }) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       behavior: onTap == null ? null : HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: DribTokens.onNavy.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                DuoIcon(icon, size: 13, color: tint),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      fontFamily: SsrFonts.body,
-                      color: DribTokens.border,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 10,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              DuoIcon(icon, size: 13, color: tint),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelSmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: const TextStyle(
-                fontFamily: SsrFonts.numeric,
-                color: DribTokens.onNavy,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-                fontFeatures: [FontFeature.tabularFigures()],
               ),
-              overflow: TextOverflow.ellipsis,
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: SsrFonts.body,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.4,
+              color: tint,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
-          ],
-        ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -1458,16 +1445,17 @@ class _PeriodPills extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? DribTokens.navy : DribTokens.cardOf(context),
+          color: active ? scheme.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          boxShadow: active ? null : DribTokens.cardShadow,
-          border: active ? null : Border.all(color: scheme.outline),
+          border: Border.all(
+            color: active ? scheme.primary : scheme.outline,
+          ),
         ),
         child: Text(
           _label(p),
           style: TextStyle(
-            color: active ? DribTokens.onNavy : scheme.onSurface,
-            fontWeight: FontWeight.w700,
+            color: active ? scheme.onPrimary : scheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
             fontSize: 13,
           ),
         ),
@@ -1592,34 +1580,25 @@ class _HomeMenuRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final items = <({
-      IconData icon,
-      String labelKey,
-      Color bg,
-      Widget screen,
-    })>[
+    final items = <({IconData icon, String labelKey, Widget screen})>[
       (
         icon: AppIcons.budget,
         labelKey: 'hm_menu_budget',
-        bg: const Color(0xFFFFF3D6),
         screen: const BudgetsScreen(),
       ),
       (
         icon: AppIcons.bills,
         labelKey: 'hm_menu_recurring',
-        bg: const Color(0xFFDCE9FF),
         screen: const RecurringBillsScreen(),
       ),
       (
         icon: AppIcons.topup,
         labelKey: 'hm_menu_goals',
-        bg: const Color(0xFFD9F2E3),
         screen: const GoalsScreen(),
       ),
       (
         icon: AppIcons.calendar,
         labelKey: 'hm_menu_bills',
-        bg: const Color(0xFFFFE8D6),
         screen: const SubscriptionsScreen(),
       ),
     ];
@@ -1634,33 +1613,21 @@ class _HomeMenuRow extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
                 decoration: BoxDecoration(
-                  color: items[i].bg,
-                  borderRadius: BorderRadius.circular(20),
-                  // Efek 3D premium: layered shadow 2 lapis halus.
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: theme.colorScheme.outline),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DuoIcon(items[i].icon,
-                        size: 26, color: DribTokens.navy),
+                        size: 24, color: theme.colorScheme.onSurface),
                     const SizedBox(height: 6),
                     Text(
                       tr(items[i].labelKey),
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: DribTokens.navy,
-                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 1,

@@ -199,7 +199,7 @@ class _VoiceDraftSheetState extends State<_VoiceDraftSheet> {
     final dt = d.dateTime;
     final ymd =
         '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-    const walletBlue = Color(0xFF5B9BF5);
+    const walletBlue = Color(0xFF0E4B44);
 
     return Container(
       decoration: BoxDecoration(

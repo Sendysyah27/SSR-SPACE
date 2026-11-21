@@ -834,6 +834,16 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.83.0+289 (2026-11-21)
+
+Tahap 1 arah desain "Paper Ledger 2026" (mockup `/sdcard/Download/ssr-space-mockup-2026/`, dial ENERGY 1 / RHYTHM 2 / MOTION 1). Visual-only: perilaku, data, copy, routing, dan Supabase tidak berubah.
+
+- `lib/theme/dribbble_tokens.dart`: palet pindah ke kertas `#F5F4EF` / dark `#0C0D0B`, kartu `#FFFFFF` / `#161713`, tinta `#191A16`, aksen emerald `#0E4B44`, border `#E2E0D8`; gradient saldo jadi tinta-emerald.
+- `lib/theme/app_theme.dart`: token `Ind` diganti ke palet yang sama (light + dark), input/bottom sheet padat tanpa alpha, warna grafik `green/red/orange` diturunkan agar tidak neon. Kontras terukur: tinta 15.9, sekunder 6.4, emerald 9.0, rust 6.1, gold 5.6 di atas kertas; dark 5.3 sampai 17.2.
+- `lib/screens/beranda/beranda_screen.dart`: hero SURPLUS/DEFISIT jadi satu permukaan putih radius 24 dengan garis 1px; label kecil, nominal 34px tabular, baris masuk/keluar dipisah hairline dengan warna makna, meter 4px. Animasi masuk + tiga lapis bayangan dihapus. Pill periode jadi emerald/outline tanpa bayangan. Menu pintasan jadi bidang netral (pastel + bayangan dihapus).
+- `DESIGN.md`: arah Paper Ledger dicatat sebagai arah aktif, menggantikan chrome biru iOS; status migrasi jujur (tahap 1 = token + Beranda).
+- Bump `2.83.0+289` + changelog ID/EN. Sisa layar (Transaksi, Budget, Laporan, Dompet, Profil, dll) masih memakai komponen lama; menyusul bertahap.
+
 ## 2.82.21+288 (2026-10-24)
 
 Patch rilis grup 9 - sisa terakhir restyle Batch 287: dua layar Workspace terakhir di-restyle plek frame mockup. RESTYLE SAJA: logika bisnis, API, state, routing, dan kontrak data TIDAK berubah.
