@@ -19,7 +19,10 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          channel: stable
+          # Pin exact: 3.50.1 menandai package:flutter/material.dart deprecated
+          # (115 info di seluruh lib/) -> flutter analyze merah. 3.47.8 = versi
+          # terakhir yang hijau (run 40070185971). Naikkan sadar, bukan otomatis.
+          flutter-version: '3.47.8'
           cache: true
       - run: flutter pub get
       - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0

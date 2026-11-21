@@ -1,18 +1,18 @@
 # Catatan Perubahan SSR SPACE
 
-## Yang baru di 2.83.0+289
+## Yang baru di 2.83.0+290
 
 1. Arah tampilan baru "Paper Ledger": latar kertas hangat, satu bidang putih sebagai fokus, garis tipis sebagai pemisah, dan warna hanya untuk arti uang (hijau masuk, merah keluar, emas hemat).
 2. Beranda tampil lebih tenang: saldo jadi angka terbesar, ringkasan masuk/keluar dipisah garis, dan pintasan memakai bidang netral tanpa bayangan bertumpuk.
 3. Tahap pertama ini menyentuh token warna aplikasi dan Beranda; layar lain menyusul di tahap berikutnya.
 
-## What's new in 2.83.0+289
+## What's new in 2.83.0+290
 
 1. A new look called "Paper Ledger": a warm paper background, a single white surface as the focal point, thin rules between sections, and color reserved for money meaning (green in, red out, gold savings).
 2. Home feels calmer: the balance is the largest number, income/expense sit under a hairline, and shortcuts use neutral surfaces without stacked shadows.
 3. This first stage covers the app color tokens and Home; the remaining screens follow in the next stage.
 
-Versi terpasang: 2.83.0+289.
+Versi terpasang: 2.83.0+290.
 
 ## Yang baru di 2.82.21+288
 
