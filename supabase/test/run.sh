@@ -16,7 +16,7 @@ drop schema if exists auth cascade;
 SQL
 
 # Baseline tunggal (pengganti migration_02..19, squash Batch 7).
-for f in setup.sql ../schema.sql ../migration_squashed.sql ../migration_20_entitlement.sql ../migration_21_gamification.sql ../migration_22_announcements.sql ../migration_31_security_policies.sql rls_test.sql; do
+for f in setup.sql ../schema.sql ../migration_squashed.sql ../migration_20_entitlement.sql ../migration_21_gamification.sql ../migration_22_announcements.sql ../migration_28_ai_learning.sql ../migration_30_ai_feedback.sql ../migration_31_security_policies.sql ../migration_32_security_policies_p2.sql rls_test.sql; do
   echo "== apply $f"
   psql "$DB" -v ON_ERROR_STOP=1 -q -f "$f"
 done

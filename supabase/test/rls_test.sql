@@ -1503,6 +1503,135 @@ exception when others then
   raise exception 'ASSERT GAGAL: T37e admin insert member gagal (%)', sqlerrm;
 end $$;
 
+-- ===== T38: budgets — baca member, tulis ikut mode ruang (migration_32) =====
+-- Org A dijadikan "bendahara": hanya owner/admin boleh menulis.
+reset role;
+update organizations set space_mode = 'bendahara'
+  where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+
+set role authenticated;
+set test.user_id = '44444444-4444-4444-8444-444444444444'; -- dave = member Org A
+select t_assert(
+  (select count(*) from budgets
+    where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1') >= 1,
+  'T38 member tetap bisa baca budgets');
+do $$
+begin
+  insert into budgets (org_id, category, month, limit_amount)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'UjiT38', '2030-01', 1000);
+  raise exception 'ASSERT GAGAL: T38 member tulis budgets di mode bendahara lolos';
+exception when sqlstate '42501' then null;
+end $$;
+
+set test.user_id = '22222222-2222-4222-8222-222222222222'; -- bob = admin Org A
+do $$
+begin
+  insert into budgets (org_id, category, month, limit_amount)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'UjiT38', '2030-01', 1000);
+exception when others then
+  raise exception 'ASSERT GAGAL: T38 admin tulis budgets gagal (%)', sqlerrm;
+end $$;
+
+-- Mode bebas: member boleh menulis lagi.
+reset role;
+update organizations set space_mode = 'bebas'
+  where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+set role authenticated;
+set test.user_id = '44444444-4444-4444-8444-444444444444';
+do $$
+begin
+  insert into budgets (org_id, category, month, limit_amount)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'UjiT38', '2030-02', 2000);
+exception when others then
+  raise exception 'ASSERT GAGAL: T38 member tulis budgets mode bebas gagal (%)', sqlerrm;
+end $$;
+
+-- ===== T39: subscriptions read-only untuk anggota (migration_32) =====
+select t_assert(
+  (select count(*) from subscriptions
+    where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1') >= 1,
+  'T39 member baca subscriptions');
+do $$
+begin
+  insert into subscriptions (org_id, plan, status)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'pro', 'active');
+  raise exception 'ASSERT GAGAL: T39 member insert subscriptions lolos';
+exception when sqlstate '42501' then null;
+end $$;
+
+reset role;
+do $$
+begin
+  insert into subscriptions (org_id, plan, status)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', 'free', 'active');
+exception when others then
+  raise exception 'ASSERT GAGAL: T39 service insert subscriptions gagal (%)', sqlerrm;
+end $$;
+
+-- ===== T40: dataset AI wajib keanggotaan org (migration_32) =====
+set role authenticated;
+set test.user_id = '44444444-4444-4444-8444-444444444444'; -- dave, anggota Org A saja
+do $$
+begin
+  insert into ai_correction_events (org_id, user_id, payload)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+          '44444444-4444-4444-8444-444444444444', '{}'::jsonb);
+  insert into user_merchant_aliases (org_id, user_id, merchant_key)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+          '44444444-4444-4444-8444-444444444444', 'warung');
+  insert into ai_assistant_feedback (org_id, user_id, rating, context)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+          '44444444-4444-4444-8444-444444444444', 1, 'ok');
+exception when others then
+  raise exception 'ASSERT GAGAL: T40 insert AI di org sendiri gagal (%)', sqlerrm;
+end $$;
+
+do $$
+begin
+  insert into ai_correction_events (org_id, user_id, payload)
+  values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',
+          '44444444-4444-4444-8444-444444444444', '{}'::jsonb);
+  raise exception 'ASSERT GAGAL: T40 koreksi AI org asing lolos';
+exception when sqlstate '42501' then null;
+end $$;
+
+do $$
+begin
+  insert into user_merchant_aliases (org_id, user_id, merchant_key)
+  values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',
+          '44444444-4444-4444-8444-444444444444', 'asing');
+  raise exception 'ASSERT GAGAL: T40 alias org asing lolos';
+exception when sqlstate '42501' then null;
+end $$;
+
+do $$
+begin
+  insert into ai_assistant_feedback (org_id, user_id, rating, context)
+  values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',
+          '44444444-4444-4444-8444-444444444444', 1, 'asing');
+  raise exception 'ASSERT GAGAL: T40 feedback org asing lolos';
+exception when sqlstate '42501' then null;
+end $$;
+
+set test.user_id = '11111111-1111-4111-8111-111111111111'; -- alice
+select t_assert(
+  (select count(*) from ai_correction_events
+    where user_id = '44444444-4444-4444-8444-444444444444') = 0,
+  'T40 alice tak melihat event AI milik dave');
+
+-- Bersihkan baris uji T38-T40.
+reset role;
+delete from budgets where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+  and category = 'UjiT38';
+delete from subscriptions where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+  and plan = 'free';
+delete from ai_correction_events
+  where user_id = '44444444-4444-4444-8444-444444444444';
+delete from user_merchant_aliases
+  where user_id = '44444444-4444-4444-8444-444444444444';
+delete from ai_assistant_feedback
+  where user_id = '44444444-4444-4444-8444-444444444444';
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');

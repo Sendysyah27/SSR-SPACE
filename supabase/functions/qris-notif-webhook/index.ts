@@ -2,7 +2,11 @@
 // Spec: BRIEF-QRIS-PAYMENT-SSRSPACE.md §5.3 & §6.
 // Dipanggil watcher Termux di HP Sendy setelah mem-parsing notifikasi
 // pembayaran GoPay (paket com.gojek.gopay, title "Pembayaran QRIS statis
-// diterima"). Auth: header x-webhook-secret == env QRIS_WEBHOOK_SECRET.
+// diterima"). Auth: HMAC-SHA256 atas `${timestamp}.${rawBody}` dengan
+// secret env QRIS_WEBHOOK_SECRET; header x-webhook-timestamp (unix detik)
+// + x-webhook-signature (hex, prefix "sha256=" opsional). Jendela ±300 dtk
+// menutup replay. Header lama x-webhook-secret hanya diterima bila env
+// QRIS_ALLOW_LEGACY_SECRET=1 (transisi, default mati).
 // Body: { amount: number, ... } — field lain dari notifikasi (packageName,
 // title, content, when) diterima untuk audit pemanggil tapi diabaikan.
 //
@@ -18,6 +22,10 @@
 // Deploy: supabase functions deploy qris-notif-webhook --no-verify-jwt
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  timingSafeEqualString,
+  verifyWebhookHmac,
+} from "./webhook_auth.ts";
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -27,19 +35,43 @@ function json(body: unknown, status = 200): Response {
 }
 
 const PERMANENT_EXPIRY = "9999-12-31T23:59:59.000Z";
+const MAX_SKEW_SECONDS = 300;
 
 serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   const secret = Deno.env.get("QRIS_WEBHOOK_SECRET") ?? "";
-  const given = req.headers.get("x-webhook-secret") ?? "";
-  if (!secret || given !== secret) {
-    return json({ error: "Secret tidak valid" }, 401);
+  if (!secret) {
+    return json({ error: "Webhook belum dikonfigurasi" }, 500);
+  }
+
+  // Baca body mentah sekali: HMAC menutup byte persis yang dikirim.
+  const rawBody = await req.text();
+  const hmac = await verifyWebhookHmac({
+    secret,
+    timestamp: req.headers.get("x-webhook-timestamp") ?? "",
+    signature: req.headers.get("x-webhook-signature") ?? "",
+    rawBody,
+    nowSeconds: Math.floor(Date.now() / 1000),
+    maxSkewSeconds: MAX_SKEW_SECONDS,
+  });
+
+  let authorized = hmac.ok;
+  if (
+    !authorized &&
+    Deno.env.get("QRIS_ALLOW_LEGACY_SECRET") === "1"
+  ) {
+    const legacy = req.headers.get("x-webhook-secret") ?? "";
+    authorized = legacy !== "" && timingSafeEqualString(legacy, secret);
+  }
+  if (!authorized) {
+    const reason = hmac.ok ? "legacy_secret_invalid" : hmac.reason;
+    return json({ error: "Signature tidak valid", reason }, 401);
   }
 
   let body: { amount?: number };
   try {
-    body = await req.json();
+    body = JSON.parse(rawBody);
   } catch {
     return json({ error: "Body JSON tidak valid" }, 400);
   }

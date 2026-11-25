@@ -1,5 +1,21 @@
 # Catatan Perubahan SSR SPACE
 
+## Yang baru di 2.83.0+294
+
+1. Anggaran: di mode Bendahara hanya owner/admin yang bisa mengubah anggaran; anggota tetap bisa melihat. Di mode Bebas tidak ada perubahan.
+2. Langganan (billing) sekarang hanya bisa dibaca dari app; perubahan status hanya lewat server.
+3. Data belajar AI (koreksi, alias merchant, umpan balik) kini terikat ke workspace tempat kamu menjadi anggota.
+4. Webhook pembayaran QRIS kini memakai tanda tangan HMAC + batas waktu, sehingga notifikasi palsu/ulang tidak bisa mengaktifkan langganan.
+
+## What's new in 2.83.0+294
+
+1. Budgets: in Treasurer mode only owners/admins can edit budgets; members can still view them. Free mode is unchanged.
+2. Subscriptions (billing) are now read-only in the app; status changes happen server-side only.
+3. AI learning data (corrections, merchant aliases, feedback) is now bound to workspaces you are a member of.
+4. The QRIS payment webhook now uses an HMAC signature with a time window, so forged or replayed notifications cannot activate a subscription.
+
+Versi terpasang: 2.83.0+294.
+
 ## Yang baru di 2.83.0+293
 
 1. Keamanan cadangan: file backup terenkripsi kini memakai AES-256-GCM (terautentikasi) — sebelumnya zip berpassword yang lemah. Backup lama tetap bisa dibuka.
