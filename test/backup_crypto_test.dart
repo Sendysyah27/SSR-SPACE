@@ -35,7 +35,7 @@ void main() {
 
   test('base64 rusak -> throw', () async {
     expect(
-      () => decryptBackup('${encBackupMarker2}!!!', pass),
+      () => decryptBackup('$encBackupMarker2!!!', pass),
       throwsA(isA<BackupDecryptException>()),
     );
   });

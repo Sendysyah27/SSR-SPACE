@@ -210,7 +210,7 @@ class _BackupScreenState extends State<BackupScreen> {
     final pass = await _askBackupPassword(confirm: false);
     if (pass == null || pass.isEmpty) return null;
     try {
-      return decryptBackup(raw, pass);
+      return await decryptBackup(raw, pass);
     } on BackupDecryptException {
       if (!mounted) return null;
       setState(() => err = tr('bx_enc_wrong'));
