@@ -18,7 +18,11 @@ void main() {
     expect(newPasswordError('', ''), 'short');
   });
 
-  test('tepat 6 char = sah', () {
-    expect(newPasswordError('abcdef', 'abcdef'), isNull);
+  test('tepat 6 char = short (kebijakan minimal 8)', () {
+    expect(newPasswordError('abcdef', 'abcdef'), 'short');
+  });
+
+  test('tepat 8 char = sah', () {
+    expect(newPasswordError('abcdefgh', 'abcdefgh'), isNull);
   });
 }
