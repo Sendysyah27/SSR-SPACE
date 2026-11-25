@@ -1,5 +1,15 @@
 # Catatan Perubahan SSR SPACE
 
+## Yang baru di 2.83.0+298
+
+1. Perbaikan internal (kebersihan kode, tanpa perubahan perilaku) setelah batch keamanan 2.83.0+297.
+
+## What's new in 2.83.0+298
+
+1. Internal cleanup (code hygiene, no behavior change) following the 2.83.0+297 security batch.
+
+Versi terpasang: 2.83.0+298.
+
 ## Yang baru di 2.83.0+297
 
 1. Obrolan, memori, dan catatan belajar AI kini terenkripsi di HP-mu (kunci disimpan di keystore perangkat), bukan lagi teks polos.
