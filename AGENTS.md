@@ -289,10 +289,11 @@ Urutan list penting: **myBCA sebelum BCA**.
   - Receiver `ScheduledNotificationBootReceiver`: `exported="false"`.
   - Receiver `.TodayWidgetProvider`: `exported="false"`.
   - Activity `.ai.AiSettingsActivity`: `exported="false"`.
-  - Catatan keamanan: `android:allowBackup` default **true** (tak di-set CI)
-    → file app ikut auto-backup Google; PIN sudah di flutter_secure_storage
-    (Wave 2 #7). Bila menambah secret file-based baru, pertimbangkan
-    `allowBackup="false"` atau backup rules eksplisit.
+  - Catatan keamanan: `android:allowBackup` **dipaksa `false` oleh CI**
+    (sejak 2.83.0+295) + `FlutterSharedPreferences.xml` dikecualikan di
+    `backup_rules.xml`/`data_extraction_rules.xml` → prefs Flutter
+    (chat/memori AI, penanda PIN) tak ikut cloud backup maupun transfer
+    perangkat. PIN sendiri di flutter_secure_storage (Wave 2 #7).
 
 ### 4.9 Fase 2 hardening (v2.3.7+20)
 
@@ -543,3 +544,4 @@ Before starting, ask the user when antislop applies: during the work, or after i
 - **Audit keamanan+kualitas + fix P0/P1 (2026-11-25, lokal, belum commit):** laporan `/sdcard/Download/SSR-SPACE-audit/audit-2026-11-25.md` (4 agen read-only). Fix: [P0] `migration_31_security_policies.sql` (org plan dipatok free di policy INSERT + CHECK role org_members + admin tak bisa insert owner) — **WAJIB user jalankan di SQL Editor**; [P1] backup ZipCrypto→AES-256-GCM (dep `cryptography`, marker SSR-ENC2, ENC1 tetap dibaca, `encryptBackup`/`decryptBackup` async); PIN SHA-256→PBKDF2 100k (upgrade otomatis hash lama); saldo dompet lewat `amt()` (tutup bocor mask); `maskPii` di `ai_correction`; subset catch senyap + gate CI `tool/check_silent_catch.sh` (baseline 169). Bump `2.83.0+293` + changelog. Verifikasi lokal: `dart analyze` backup_crypto bersih + suite RLS (Postgres Termux) hijau termasuk T37. Sisa P2/P3 di laporan.
 - **P2 RLS batch 1 (2026-11-25, lokal, belum commit):** `migration_32_security_policies_p2.sql` (WAJIB user jalankan di SQL Editor) — `budgets` jadi SELECT member + tulis via `can_write_space(org_id)` (mode bendahara terkunci owner/admin), `subscriptions` read-only anggota (tulis service_role), `ai_correction_events`/`user_merchant_aliases`/`ai_assistant_feedback` wajib `user_id = auth.uid()` DAN `is_org_member(org_id)`; helper baru `is_org_member`. `supabase/test/run.sh` ikut apply mig 28/30/32; assert T38–T40 lulus lokal via Postgres Termux. Bump `2.83.0+294` + changelog. Ditunda: rate-limit invite (butuh kontrak return-code).
 - **Webhook QRIS HMAC (2026-11-25, lokal, belum deploy):** `supabase/functions/qris-notif-webhook/{webhook_auth.ts,index.ts,webhook_auth_test.ts}` — signature HMAC-SHA256 atas `<timestamp>.<rawBody>`, jendela ±300 dtk, constant-time, legacy `x-webhook-secret` hanya via env `QRIS_ALLOW_LEGACY_SECRET=1`; watcher `~/qris-watcher/watcher.py` kirim timestamp+signature (secret lama tetap dikirim saat transisi). Verifikasi lokal: vector HMAC Python↔TS identik + 9 assert Node harness (deno binary HP rusak; `deno test` disiapkan untuk CI/PC). **SUDAH deploy 2026-11-25** via Supabase CLI 3.4.0 (`--use-api`, terpasang di `~/.local/bin/supabase` via `grun`) + watcher restart (1 instance). Verifikasi live: HMAC valid 200, signature salah/tampered/stale 401, legacy `x-webhook-secret` 401 setelah `QRIS_ALLOW_LEGACY_SECRET=0`; selftest watcher LOLOS.
+- **P2 client batch A (2026-11-25, lokal):** `android:allowBackup="false"` dipaksa CI (blok manifest dipindah keluar loop dep yang dulu bisa skip diam) + `FlutterSharedPreferences.xml` dikecualikan di `backup_rules.xml`/`data_extraction_rules.xml` → chat/memori AI & penanda PIN tak ikut cloud backup/transfer. Lockout PIN: `lib/utils/lockout_logic.dart` murni (high-water anti jam-mundur, backoff 60 dtk → 2x, cap 24 jam) + wiring `session_service` (`pin_lock_level`, `pin_hw`, counter reset saat sukses) + `test/lockout_logic_test.dart` (6 skenario; verifikasi lokal `dart --enable-asserts`). Bump `2.83.0+295`.

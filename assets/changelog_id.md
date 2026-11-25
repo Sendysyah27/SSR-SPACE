@@ -1,5 +1,17 @@
 # Catatan Perubahan SSR SPACE
 
+## Yang baru di 2.83.0+295
+
+1. Cadangan otomatis Android dimatikan: riwayat/chat AI dan penanda keamanan lokal tidak ikut tersalin ke Google Drive atau perangkat lain. Data workspace tetap di server seperti biasa.
+2. PIN makin sulit ditebak: setelah 5 kali salah, jeda bertambah 1 menit, 2 menit, 4 menit, dan seterusnya (maksimal 24 jam). Memundurkan jam HP tidak lagi memperpendek jeda.
+
+## What's new in 2.83.0+295
+
+1. Android auto-backup is disabled: local AI chat/memory and security markers no longer travel to Google Drive or another device. Workspace data stays on the server as before.
+2. PIN guessing gets slower: after 5 wrong tries the wait grows 1 min, 2 min, 4 min, and so on (capped at 24 hours). Rolling the phone clock back no longer shortens the wait.
+
+Versi terpasang: 2.83.0+295.
+
 ## Yang baru di 2.83.0+294
 
 1. Anggaran: di mode Bendahara hanya owner/admin yang bisa mengubah anggaran; anggota tetap bisa melihat. Di mode Bebas tidak ada perubahan.

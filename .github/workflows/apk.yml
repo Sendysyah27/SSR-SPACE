@@ -230,13 +230,23 @@ jobs:
           assert 'security-crypto' in t, 'dep security-crypto gagal disuntik'
           mf = pathlib.Path('android/app/src/main/AndroidManifest.xml')
           mt = mf.read_text()
+          # allowBackup=false: prefs Flutter (riwayat/chat & memori AI,
+          # penanda PIN) tak boleh ikut Google backup / transfer perangkat.
+          # Jangan di dalam loop dep: dulu blok ini ke-skip diam-diam saat
+          # security-crypto sudah ada di template.
+          if 'android:allowBackup="true"' in mt:
+              mt = mt.replace('android:allowBackup="true"',
+                              'android:allowBackup="false"')
+          if 'android:allowBackup' not in mt:
+              mt = mt.replace('<application',
+                              '<application android:allowBackup="false"', 1)
           if 'android:fullBackupContent' not in mt:
               mt = mt.replace('<application', '<application android:fullBackupContent="@xml/backup_rules" android:dataExtractionRules="@xml/data_extraction_rules"', 1)
-              print('manifest: backup rules added')
           if 'AiSettingsActivity' not in mt:
               mt = mt.replace('</application>', '        <activity android:name=".ai.AiSettingsActivity" android:exported="false" />\n    </application>')
-              print('manifest: AiSettingsActivity added')
           mf.write_text(mt)
+          assert 'android:allowBackup="false"' in mt, 'allowBackup gagal dipaksa false'
+          assert 'android:fullBackupContent' in mt, 'backup rules gagal disuntik'
           print('AI native integration OK')
           PYEOF
       - run: |

@@ -5,6 +5,7 @@ import 'package:cryptography/cryptography.dart' as cg;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:ssr_space/utils/lockout_logic.dart';
 
 /// PIN: hash+garam di secure storage (Keystore/Keychain), bukan prefs.
 /// Yang tetap di prefs hanya penanda non-rahasia `pin_set` agar [hasPin]
@@ -125,12 +126,36 @@ class SessionService {
     // Bersihkan format lama bila tersisa.
     await _remove(_kPinHash);
     await _remove(_kPinSalt);
-    await _set('pin_fail', 0);
+    await _saveLockout(const PinLockout());
+  }
+
+  PinLockout _lockoutState() => PinLockout(
+        failCount: _get<int>('pin_fail') ?? 0,
+        level: _get<int>('pin_lock_level') ?? 0,
+        lockUntilMs: _get<int>('pin_lock_until') ?? 0,
+        highWaterMs: _get<int>('pin_hw') ?? 0,
+      );
+
+  Future<void> _saveLockout(PinLockout state) async {
+    await _set('pin_fail', state.failCount);
+    await _set('pin_lock_level', state.level);
+    await _set('pin_lock_until', state.lockUntilMs);
+    await _set('pin_hw', state.highWaterMs);
   }
 
   Future<bool> verifyPin(String pin) async {
-    final lockUntil = _get<int>('pin_lock_until') ?? 0;
-    if (DateTime.now().millisecondsSinceEpoch < lockUntil) return false;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final lock = _lockoutState();
+    if (pinIsLockedOut(lock, nowMs)) {
+      // Tetap naikkan high-water agar jam mundur tak memperpendek lockout.
+      await _saveLockout(PinLockout(
+        failCount: lock.failCount,
+        level: lock.level,
+        lockUntilMs: lock.lockUntilMs,
+        highWaterMs: effectiveNowMs(nowMs, lock.highWaterMs),
+      ));
+      return false;
+    }
     var hash = await _secRead(_kPinHash);
     var salt = await _secRead(_kPinSalt);
     var kdf = await _secRead(_kPinKdf);
@@ -165,24 +190,20 @@ class SessionService {
       }
     }
     if (ok) {
-      await _set('pin_fail', 0);
+      await _saveLockout(pinRegisterSuccess(lock, nowMs));
       unlockAt = DateTime.now();
       lastActiveAt = DateTime.now();
       sessionId = const Uuid().v4();
     } else {
-      final f = (_get<int>('pin_fail') ?? 0) + 1;
-      await _set('pin_fail', f);
-      if (f >= 5) {
-        await _set('pin_lock_until',
-            DateTime.now().add(const Duration(seconds: 60)).millisecondsSinceEpoch);
-        await _set('pin_fail', 0);
-      }
+      await _saveLockout(pinRegisterFailure(lock, nowMs).state);
     }
     return ok;
   }
 
-  bool get isLockedOut =>
-      DateTime.now().millisecondsSinceEpoch < (_get<int>('pin_lock_until') ?? 0);
+  bool get isLockedOut => pinIsLockedOut(
+        _lockoutState(),
+        DateTime.now().millisecondsSinceEpoch,
+      );
 
   /// Buka via biometrik (PIN tak diketik): efek sama dengan verifyPin
   /// sukses (tanpa menyentuh counter gagal/lockout).

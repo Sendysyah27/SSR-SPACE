@@ -6,4 +6,8 @@
 <full-backup-content>
     <!-- Exclude AI key prefs dari backup -->
     <exclude domain="sharedpref" path="ai_key_prefs.xml"/>
+    <!-- Flutter shared_preferences: riwayat/chat & memori AI, penanda PIN.
+         allowBackup=false sudah mematikan cloud backup; exclude ini menutup
+         jalur transfer perangkat (Android 12+). -->
+    <exclude domain="sharedpref" path="FlutterSharedPreferences.xml"/>
 </full-backup-content>
