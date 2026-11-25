@@ -1953,6 +1953,8 @@ jobs:
           assert 'io.flutter.plugins.sharedpreferences' in rules.read_text()
           print('mlkit+shared_preferences proguard ok:', target)
           EOF
+      - name: Gate catch senyap (audit P1-5)
+        run: bash tool/check_silent_catch.sh
       - run: flutter analyze
       - run: flutter test
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4

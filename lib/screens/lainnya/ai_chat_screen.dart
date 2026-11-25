@@ -21,6 +21,7 @@ import 'package:ssr_space/services/ai_merchant_alias.dart';
 import 'package:ssr_space/services/ai_parse_rules.dart';
 import 'package:ssr_space/services/ai_pii.dart';
 import 'package:ssr_space/services/ai_persona.dart';
+import 'package:ssr_space/services/ai_prefs_crypto.dart';
 import 'package:ssr_space/services/ai_chat_parse.dart';
 import 'package:ssr_space/services/ai_soul.dart';
 import 'package:ssr_space/services/app_categories.dart';
@@ -96,6 +97,12 @@ class _ChatMsg {
   /// 'kuota_habis' | 'rate_limited' | 'jaringan' |
   /// 'server_tidak_tersedia'. Null = bukan error ber-state.
   final String? stateKind;
+
+  /// Kandidat memori/ringkasan dari balasan model yang MENUNGGU
+  /// konfirmasi user (audit P2-13) — tak pernah disimpan otomatis.
+  /// Kosong = tak ada tawaran. Tidak diarsipkan (ephemeral sesi ini).
+  final List<String> memFacts;
+  final List<String> memSummaries;
   const _ChatMsg({
     required this.mine,
     required this.text,
@@ -112,10 +119,34 @@ class _ChatMsg {
     this.vizData,
     this.rating = 0,
     this.stateKind,
+    this.memFacts = const [],
+    this.memSummaries = const [],
   });
 
   bool get hasAction =>
       action != null || billAction != null || budgetAction != null;
+
+  bool get hasPendingMemory =>
+      memFacts.isNotEmpty || memSummaries.isNotEmpty;
+
+  /// Salinan tanpa tawaran memori (setelah disimpan/dibuang).
+  _ChatMsg clearMemory() => _ChatMsg(
+        mine: mine,
+        text: text,
+        provider: provider,
+        isError: isError,
+        image: image,
+        action: action,
+        billAction: billAction,
+        budgetAction: budgetAction,
+        pendingAction: pendingAction,
+        command: command,
+        mode: mode,
+        viz: viz,
+        vizData: vizData,
+        rating: rating,
+        stateKind: stateKind,
+      );
 
   /// Salinan dengan rating umpan balik baru (field lain tetap).
   _ChatMsg withRating(int r) => _ChatMsg(
@@ -134,6 +165,8 @@ class _ChatMsg {
         vizData: vizData,
         rating: r,
         stateKind: stateKind,
+        memFacts: memFacts,
+        memSummaries: memSummaries,
       );
 }
 
@@ -213,7 +246,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
             'rating': m.rating,
             'state': m.stateKind,
           }).toList();
-      await p.setString(_kSession, jsonEncode(list));
+      await p.setString(_kSession, await encodeAiStore(jsonEncode(list)));
     } catch (_) {}
   }
 
@@ -221,7 +254,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
   Future<void> _loadSession() async {
     try {
       final p = await SharedPreferences.getInstance();
-      final raw = p.getString(_kSession);
+      final stored = p.getString(_kSession);
+      if (stored == null || stored.isEmpty) return;
+      // Enkripsi-at-rest (P2-10): dekripsi transparan; arsip lama
+      // (plaintext tanpa marker) tetap terbaca.
+      final raw = await decodeAiStore(stored);
       if (raw == null || raw.isEmpty) return;
       final d = jsonDecode(raw);
       if (d is! List) return;
@@ -493,21 +530,19 @@ class _AiChatScreenState extends State<AiChatScreen> {
         unawaited(recordAiUse(orgId, 'chat'));
       }
       if (!mounted) return;
-      unawaited(
-          addAiMemory(parseIngatBlocks(r.text)).then((_) async {
-        final n = await loadAiMemory();
-        debugPrint('ai memori: ${n.length} fakta');
-      }));
-      // Memori.md dalam app: simpan ringkasan percakapan penting.
-      // Hanya jumlah yang di-log, bukan isi ringkasan.
-      unawaited(addAiSummary(parseRingkasBlocks(r.text)).then((_) async {
-        final n = await loadAiSummaries();
-        debugPrint('ai memori: ${n.length} ringkasan');
-      }));
+      // Audit P2-13: JANGAN auto-persist memori hasil model (risiko
+      // stored prompt-injection). Saring dulu — tolak konten berbau
+      // instruksi + cap panjang — lalu tawarkan lewat kartu konfirmasi;
+      // disimpan HANYA bila user setuju.
+      final memFacts = filterMemoryItems(parseIngatBlocks(r.text));
+      final memSummaries = filterMemoryItems(
+        parseRingkasBlocks(r.text),
+        maxLen: aiSummaryItemMaxChars,
+      );
       // Kontrak JSON baru: ekstrak reply + action tervalidasi.
       // Blok ```ingat```/```ringkas``` (memori) dibuang dulu dari teks
-      // yang di-parse agar jsonDecode tidak gagal; fitur ingat+ringkas
-      // tetap jalan dari r.text mentah pada addAiMemory/addAiSummary.
+      // yang di-parse agar jsonDecode tidak gagal; kandidat memori
+      // disaring di atas (P2-13) lalu ditawarkan lewat kartu konfirmasi.
       final walletNames = await _walletNames();
       final parsed = parseChatReply(
         stripRingkasBlocks(stripIngatBlocks(r.text)),
@@ -569,6 +604,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
           viz: asisten ? parsed.viz : null,
           vizData: asisten ? snap : null,
           mode: _mode,
+          memFacts: memFacts,
+          memSummaries: memSummaries,
         ));
         if (asisten) _freshReply = _items.last;
         _sending = false;
@@ -618,6 +655,25 @@ class _AiChatScreenState extends State<AiChatScreen> {
       await saveAssistantFeedback(rating: v, replyText: m.text);
       await syncAssistantFeedback();
     }());
+  }
+
+  /// Simpan kandidat memori/ringkasan SETELAH user setuju (audit P2-13).
+  Future<void> _saveMemory(_ChatMsg m) async {
+    final i = _items.indexWhere((e) => identical(e, m));
+    if (i < 0) return;
+    await addAiMemory(m.memFacts);
+    await addAiSummary(m.memSummaries);
+    if (!mounted) return;
+    setState(() => _items[i] = m.clearMemory());
+    _toBottom();
+  }
+
+  /// Buang tawaran memori (user menolak) — tak menyimpan apa pun.
+  void _discardMemory(_ChatMsg m) {
+    final i = _items.indexWhere((e) => identical(e, m));
+    if (i < 0 || !mounted) return;
+    setState(() => _items[i] = m.clearMemory());
+    _toBottom();
   }
 
   /// Muat label chip sisa kuota AI untuk header Mode Asisten (batch
@@ -1224,6 +1280,21 @@ class _AiChatScreenState extends State<AiChatScreen> {
       _toBottom();
       return;
     }
+    // Audit P3-4: FAIL-CLOSED. Tanpa dompet valid, JANGAN simpan baris
+    // yatim (wallet_id null) — form manual pun wajib dompet. Minta user
+    // sebutkan/pilih dompet lalu coba lagi.
+    if (walletId == null) {
+      setState(() {
+        _items.add(_ChatMsg(
+          mine: false,
+          text: tr('ai_need_wallet'),
+          isError: true,
+          provider: 'Mang AI',
+        ));
+      });
+      _toBottom();
+      return;
+    }
     try {
       final when = txWhen(DateTime.now());
       final newId = await TransactionService().add(
@@ -1439,7 +1510,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
         );
         break;
       case 'add_wallet':
-        await _runAddWallet(cmd);
+        // Audit P3-3: saldo awal mengubah keuangan — WAJIB dikonfirmasi
+        // eksplisit (nominal diketik user), bukan satu ketuk dari model.
+        final confirmed = await _confirmAddWallet(cmd);
+        if (confirmed == null) break;
+        await _runAddWallet(cmd, openingOverride: confirmed);
         break;
       case 'add_category':
         await _runAddCategory(cmd);
@@ -1569,14 +1644,74 @@ class _AiChatScreenState extends State<AiChatScreen> {
     unawaited(_saveSession());
   }
 
+  /// Dialog konfirmasi tambah dompet (audit P3-3): nominal saldo awal
+  /// DIKETIK/dikonfirmasi user (prefill dari usulan model, boleh diubah).
+  /// Return saldo awal terkonfirmasi (>= 0), atau null bila user batal.
+  Future<int?> _confirmAddWallet(Map<String, dynamic> cmd) async {
+    final name = (cmd['name'] as String? ?? '').trim();
+    if (name.isEmpty) return null;
+    final type = cmd['wallet_type'] as String? ?? 'cash';
+    final suggested = cmd['opening_balance'] as int? ?? 0;
+    final ctrl = TextEditingController(
+      text: suggested > 0 ? '$suggested' : '',
+    );
+    final confirmed = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('ai_cmd_add_wallet')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$name \u00b7 ${_walletTypeLabel(type)}'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: tr('ai_opening_balance'),
+                hintText: '0',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              tr('ai_wallet_opening_note'),
+              style: Theme.of(ctx).textTheme.bodySmall,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(tr('ai_cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              final digits = ctrl.text.replaceAll(RegExp(r'[^0-9]'), '');
+              Navigator.pop(ctx, int.tryParse(digits) ?? 0);
+            },
+            child: Text(tr('ai_run')),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    return confirmed;
+  }
+
   /// Buat dompet baru: jalur yang sama seperti form manual
   /// (WalletService.create + transaksi 'Saldo awal' bila ada saldo
   /// awal; gagal saldo awal -> dompet dibatalkan, pola wallets_screen).
-  Future<void> _runAddWallet(Map<String, dynamic> cmd) async {
+  /// [openingOverride] = saldo awal yang SUDAH dikonfirmasi user
+  /// (audit P3-3); bila null, pakai usulan model (jalur lama).
+  Future<void> _runAddWallet(
+    Map<String, dynamic> cmd, {
+    int? openingOverride,
+  }) async {
     final name = (cmd['name'] as String? ?? '').trim();
     if (name.isEmpty) return;
     final type = cmd['wallet_type'] as String? ?? 'cash';
-    final opening = cmd['opening_balance'] as int? ?? 0;
+    final opening = openingOverride ?? (cmd['opening_balance'] as int? ?? 0);
     String orgId = '';
     try {
       orgId = await activeOrgId();
@@ -1966,6 +2101,13 @@ class _AiChatScreenState extends State<AiChatScreen> {
                               _FeedbackRow(
                                 rating: m.rating,
                                 onRate: (v) => _setRating(m, v),
+                              ),
+                            if (!m.mine && m.hasPendingMemory)
+                              _MemoryConfirmCard(
+                                facts: m.memFacts,
+                                summaries: m.memSummaries,
+                                onSave: () => _saveMemory(m),
+                                onDiscard: () => _discardMemory(m),
                               ),
                             if (m.viz != null && m.vizData != null)
                               AiVizCard(viz: m.viz!, data: m.vizData!),
@@ -2507,6 +2649,88 @@ class _Bubble extends StatelessWidget {
 
 /// Kartu konfirmasi aksi dari AI (transaksi/tagihan/budget): user ketuk
 /// Jalankan -> eksekusi nyata. Tanpa auto-eksekusi.
+/// Kartu konfirmasi memori AI (audit P2-13): tawarkan fakta/ringkasan
+/// hasil model; user memutuskan Simpan / Jangan simpan. Disimpan hanya
+/// bila user setuju.
+class _MemoryConfirmCard extends StatelessWidget {
+  final List<String> facts;
+  final List<String> summaries;
+  final VoidCallback onSave;
+  final VoidCallback onDiscard;
+  const _MemoryConfirmCard({
+    required this.facts,
+    required this.summaries,
+    required this.onSave,
+    required this.onDiscard,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = <String>[
+      for (final f in facts) '\u2022 $f',
+      for (final s in summaries) '\u2022 $s',
+    ];
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(top: 2, bottom: 4),
+        padding: const EdgeInsets.all(SsrSpace.md),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.84,
+        ),
+        decoration: BoxDecoration(
+          color: DribTokens.cardOf(context),
+          borderRadius: const BorderRadius.all(Radius.circular(20)),
+          boxShadow: DribTokens.cardShadow,
+          border: Border.all(color: DribTokens.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              tr('ai_mem_confirm_t'),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: DribTokens.navy,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            for (final l in lines)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  l,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: DribTokens.textSecondary,
+                      ),
+                ),
+              ),
+            const SizedBox(height: SsrSpace.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onDiscard,
+                    child: Text(tr('ai_mem_discard')),
+                  ),
+                ),
+                const SizedBox(width: SsrSpace.sm),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: onSave,
+                    child: Text(tr('ai_mem_save')),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ActionCard extends StatelessWidget {
   final String title;
   final String? note;

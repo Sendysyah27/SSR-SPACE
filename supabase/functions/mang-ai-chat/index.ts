@@ -412,7 +412,18 @@ serve(async (req) => {
     p_org_id: orgId,
     p_kind: "ai",
   });
-  if (!quotaErr && quota && quota.allowed !== true) {
+  // Fail-CLOSED: bila RPC kuota error (timeout/DB tak terjangkau), jangan
+  // layani request — 503 jujur lebih baik daripada membuka kuota gratis.
+  if (quotaErr) {
+    return json(
+      {
+        error: "Kuota AI tidak dapat diverifikasi, coba lagi",
+        code: "QUOTA_CHECK_FAILED",
+      },
+      503,
+    );
+  }
+  if (quota && quota.allowed !== true) {
     return json(
       { error: "Kuota AI bulan ini sudah habis", code: "QUOTA_EXCEEDED" },
       403,

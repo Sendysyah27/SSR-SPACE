@@ -1,5 +1,27 @@
 # Catatan Perubahan SSR SPACE
 
+## Yang baru di 2.83.0+297
+
+1. Obrolan, memori, dan catatan belajar AI kini terenkripsi di HP-mu (kunci disimpan di keystore perangkat), bukan lagi teks polos.
+2. AI tidak lagi menyimpan "ingatan" sendiri diam-diam: setiap fakta/ringkasan yang mau disimpan muncul konfirmasi dulu, dan teks berisi perintah tersembunyi disaring.
+3. Gabung workspace lewat kode undangan kini dibatasi: percobaan beruntun yang gagal otomatis dijeda, jadi kode lebih aman dari tebakan.
+4. Scan struk kini menampilkan catatan privasi (foto dikirim ke layanan AI lalu dihapus) dan opsi "kirim teks saja" tanpa foto.
+5. Tambah dompet lewat Mang AI tidak lagi satu tap: saldo awal diketik dan dikonfirmasi manual.
+6. Aksi AI tidak bisa lagi menyimpan transaksi tanpa dompet.
+7. Sejumlah penguatan internal: token join berformat kode (tanpa bocor pesan), fungsi trigger tak lagi bisa dipanggil dari luar, pembuatan order QRIS dibatasi, dan log diagnostik tidak lagi menulis di build rilis.
+
+## What's new in 2.83.0+297
+
+1. AI chat, memory, and learning notes are now encrypted on your phone (key kept in the device keystore) instead of stored as plain text.
+2. AI no longer silently saves "memories": every fact/summary it wants to keep asks for your confirmation first, and text containing hidden instructions is filtered.
+3. Joining a workspace by invite code is now rate-limited: repeated failed attempts are paused, making codes harder to guess.
+4. Receipt scan now shows a privacy note (photo is sent to the AI service then deleted) and a "send text only" option without the photo.
+5. Adding a wallet via Mang AI is no longer one-tap: the opening balance is typed and confirmed manually.
+6. AI actions can no longer save a transaction without a wallet.
+7. Internal hardening: invite tokens resolve by code (no leaking messages), trigger functions are no longer callable from clients, QRIS order creation is capped, and the diagnostic log no longer writes in release builds.
+
+Versi terpasang: 2.83.0+297.
+
 ## Yang baru di 2.83.0+296
 
 1. AI sekarang default ke 9router lokal di HP-mu sendiri: chat, asisten, insight laporan, dan scan struk semuanya lewat model milikmu. Isi API key sekali di chip provider AI.

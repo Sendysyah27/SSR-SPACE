@@ -15,6 +15,11 @@ import { make_dynamic } from "../_shared/qris.ts";
 // ubah di sini bila Sendy memutuskan lain).
 const ORDER_EXPIRY_MINUTES = 30;
 
+// Batas order aktif (pending/awaiting_confirmation) per user. Pool kode
+// unik global hanya 900 (100-999); tanpa batas, satu user bisa menguras
+// pool lewat loop. Order lewat jendela bayar dianggap bebas.
+const MAX_LIVE_ORDERS_PER_USER = 5;
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -68,6 +73,31 @@ serve(async (req) => {
     .eq("user_id", user.id)
     .maybeSingle();
   if (!member) return json({ error: "Bukan anggota workspace ini" }, 403);
+
+  // Bebaskan kode dari order pending yang sudah lewat jendela bayar:
+  // partial unique index hanya mengunci status pending/awaiting, jadi
+  // menandai stale sebagai 'expired' mengembalikan kode ke pool.
+  await db
+    .from("payment_orders")
+    .update({ status: "expired", updated_at: new Date().toISOString() })
+    .eq("status", "pending")
+    .lte("expires_at", new Date().toISOString());
+
+  // Cap order aktif per user — cegah loop menguras pool kode unik.
+  const { count: liveCount } = await db
+    .from("payment_orders")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .in("status", ["pending", "awaiting_confirmation"]);
+  if ((liveCount ?? 0) >= MAX_LIVE_ORDERS_PER_USER) {
+    return json(
+      {
+        error: "Terlalu banyak order aktif. Selesaikan atau tunggu kedaluwarsa.",
+        code: "TOO_MANY_PENDING",
+      },
+      429,
+    );
+  }
 
   // Harga dari plan_pricing (server-side).
   const { data: plan } = await db

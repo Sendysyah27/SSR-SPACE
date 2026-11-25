@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/services/ai_pii.dart';
+import 'package:ssr_space/services/ai_prefs_crypto.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 
@@ -57,10 +59,17 @@ const _aliasStopwords = {
   'dan', 'yang', 'ini', 'itu', 'tadi', 'lagi', 'sama', 'dengan', 'rp',
 };
 
-/// Normalisasi teks -> kunci alias. MURNI: lowercase, non-alfanumerik
-/// jadi spasi, buang kata umum, maks 4 token pertama.
+/// Normalisasi teks -> kunci alias. MURNI: mask PII (kartu/rekening/
+/// HP), buang digit run panjang (fragmen telepon/kartu), lowercase,
+/// non-alfanumerik jadi spasi, buang kata umum, maks 4 token pertama.
+/// P2-11: kunci tak boleh menyimpan fragmen PII mentah.
 String normalizeMerchantKey(String raw) {
-  final cleaned = raw.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ');
+  final masked = maskPii(raw)
+      .toLowerCase()
+      // Buang digit run panjang (>= 7) yang lolos masking — sisa
+      // potongan nomor kartu/rekening/telepon.
+      .replaceAll(RegExp(r'\d{7,}'), ' ');
+  final cleaned = masked.replaceAll(RegExp(r'[^a-z0-9]+'), ' ');
   final tokens = [
     for (final t in cleaned.split(RegExp(r'\s+')))
       if (t.isNotEmpty && !_aliasStopwords.contains(t)) t,
@@ -135,7 +144,10 @@ String aliasHintBlock(MerchantAlias a) {
 Future<List<MerchantAlias>> loadMerchantAliases() async {
   try {
     final p = await SharedPreferences.getInstance();
-    final raw = p.getString(_kMerchantAliases);
+    final stored = p.getString(_kMerchantAliases);
+    if (stored == null || stored.isEmpty) return [];
+    // Enkripsi-at-rest (P2-10): dekripsi transparan.
+    final raw = await decodeAiStore(stored);
     if (raw == null || raw.isEmpty) return [];
     final d = jsonDecode(raw);
     if (d is! List) return [];
@@ -152,7 +164,7 @@ Future<void> _saveMerchantAliases(List<MerchantAlias> items) async {
   final p = await SharedPreferences.getInstance();
   await p.setString(
     _kMerchantAliases,
-    jsonEncode([for (final a in items) a.toJson()]),
+    await encodeAiStore(jsonEncode([for (final a in items) a.toJson()])),
   );
 }
 

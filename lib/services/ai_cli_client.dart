@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'ai_key_store.dart';
 import 'ai_nine_client.dart';
+import 'ai_pii.dart';
 import 'ai_server_client.dart';
 import 'ai_soul.dart';
 import 'firebase_ai_parser.dart';
@@ -153,8 +154,9 @@ Future<({String text, String provider})> aiChatViaCli(
       : '';
   final full = '$convo$data$prompt';
 
-  // Mask data sensitif sebelum kirim (nomor panjang >= 10 digit)
-  final masked = _maskLongNumbers(full);
+  // Mask PII sebelum kirim (kartu/rekening/telepon). Nominal uang
+  // dibiarkan utuh — `maskPii` hanya menyamarkan pola yang jelas PII.
+  final masked = maskPii(full);
 
   final args = <String, dynamic>{'prompt': masked};
   final effectiveTimeout = timeout ?? cliTimeout;
@@ -201,11 +203,6 @@ Future<({String text, String provider})> aiChatViaCli(
     if (e is AiFailure) rethrow;
     throw AiFailure('server', '[AI] ${_snip(e.toString())}');
   }
-}
-
-/// Mask nomor panjang (>= 10 digit) untuk keamanan.
-String _maskLongNumbers(String text) {
-  return text.replaceAll(RegExp(r'\d{10,}'), '[MASKED]');
 }
 
 // ---------------------------------------------------------------------------

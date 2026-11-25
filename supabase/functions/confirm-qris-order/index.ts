@@ -15,7 +15,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 const ORDER_FIELDS =
-  "id, org_id, plan_code, amount_total, status, expires_at, paid_at";
+  "id, org_id, user_id, plan_code, amount_total, status, expires_at, paid_at";
 
 serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -54,14 +54,21 @@ serve(async (req) => {
     .maybeSingle();
   if (!order) return json({ error: "Order tidak ditemukan" }, 404);
 
-  // Pemanggil wajib anggota org pemilik order.
-  const { data: member } = await db
-    .from("org_members")
-    .select("org_id")
-    .eq("org_id", order.org_id as string)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!member) return json({ error: "Bukan anggota workspace ini" }, 403);
+  // Hak akses: pemilik order sendiri, ATAU owner/admin org pemilik order.
+  // (Anggota biasa tak boleh mendorong order anggota lain.)
+  const isOrderOwner = (order.user_id as string) === user.id;
+  if (!isOrderOwner) {
+    const { data: member } = await db
+      .from("org_members")
+      .select("role")
+      .eq("org_id", order.org_id as string)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const role = member?.role as string | undefined;
+    if (role !== "owner" && role !== "admin") {
+      return json({ error: "Tidak berhak mengonfirmasi order ini" }, 403);
+    }
+  }
 
   if (order.status === "awaiting_confirmation") {
     return json(order, 200); // sudah dikonfirmasi sebelumnya (idempoten)

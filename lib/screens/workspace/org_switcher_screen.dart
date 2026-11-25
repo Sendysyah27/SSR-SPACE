@@ -146,7 +146,7 @@ class _OrgSwitcherScreenState extends State<OrgSwitcherScreen> {
       joinErr = null;
     });
     try {
-      await InviteService().join(code);
+      await InviteService().joinOrgV2(code);
       joinC.clear();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1632,6 +1632,142 @@ delete from user_merchant_aliases
 delete from ai_assistant_feedback
   where user_id = '44444444-4444-4444-8444-444444444444';
 
+-- ===== T41: join_org_by_invite_v2 — kode hasil + rate limit (migration_33) =====
+-- Fixture terisolasi: org H baru + hana (owner) + heri (joiner) + husnul
+-- (uji rate limit). Org lain (A) sudah pro sehingga tak mau dijadikan
+-- sandaran kuota anggota.
+reset role;
+insert into auth.users (id) values
+  ('a1000000-0000-4000-8000-0000000000a1'),  -- hana (owner Org H)
+  ('a2000000-0000-4000-8000-0000000000a2'),  -- heri (joiner)
+  ('a3000000-0000-4000-8000-0000000000a3')   -- husnul (rate limit)
+on conflict (id) do nothing;
+insert into organizations (id, name, created_by)
+values ('a0000000-0000-4000-8000-0000000000a0', 'Org H',
+        'a1000000-0000-4000-8000-0000000000a1');
+insert into org_members (org_id, user_id, role)
+values ('a0000000-0000-4000-8000-0000000000a0',
+        'a1000000-0000-4000-8000-0000000000a1', 'owner');
+insert into org_invites (org_id, role, token_hash, created_by, max_uses, expires_at)
+values ('a0000000-0000-4000-8000-0000000000a0', 'member',
+        encode(sha256(convert_to('T41JOINOK', 'UTF8')), 'hex'),
+        'a1000000-0000-4000-8000-0000000000a1', 5, now() + interval '1 day');
+set role authenticated;
+
+-- T41a: grant — authenticated boleh, anon ditolak (revoke pola T09/T34j).
+select t_assert(has_function_privilege('authenticated',
+    'public.join_org_by_invite_v2(text)', 'execute'),
+  'T41a authenticated boleh execute join_org_by_invite_v2');
+select t_assert(not has_function_privilege('anon',
+    'public.join_org_by_invite_v2(text)', 'execute'),
+  'T41a anon tak boleh execute join_org_by_invite_v2');
+
+-- T41b: happy path — heri join → code 'ok' + org H yang benar.
+-- (Panggilan disimpan sekali via subquery: dua panggilan langsung akan
+-- mengubah hasil jadi already_member.)
+set test.user_id = 'a2000000-0000-4000-8000-0000000000a2';
+select t_assert(
+  (select (r->>'code') = 'ok'
+      and (r->>'org_id') = 'a0000000-0000-4000-8000-0000000000a0'
+   from (select public.join_org_by_invite_v2('T41JOINOK') as r) s),
+  'T41b v2 happy path → code ok + org benar');
+select t_assert(
+  (select count(*) from org_members
+   where org_id = 'a0000000-0000-4000-8000-0000000000a0'
+     and user_id = 'a2000000-0000-4000-8000-0000000000a2') = 1,
+  'T41b heri jadi member Org H');
+-- Re-join → already_member (idempoten, tanpa sentuh used_count).
+select t_assert(
+  (select (r->>'code') = 'already_member'
+      and (r->>'org_id') = 'a0000000-0000-4000-8000-0000000000a0'
+   from (select public.join_org_by_invite_v2('T41JOINOK') as r) s),
+  'T41b re-join → already_member');
+reset role;
+select t_assert(
+  (select used_count from org_invites
+   where org_id = 'a0000000-0000-4000-8000-0000000000a0') = 1,
+  'T41b used_count idempoten = 1');
+set role authenticated;
+
+-- T41c: token asing → invalid (tanpa raise).
+set test.user_id = 'a3000000-0000-4000-8000-0000000000a3';
+select t_assert(
+  (select (r->>'code') = 'invalid'
+   from (select public.join_org_by_invite_v2('TIDAK-ADA-T41') as r) s),
+  'T41c token asing → code invalid');
+
+-- T41c: rate limit — >= 10 percobaan/10 menit → rate_limited.
+-- (husnul sudah 1 percobaan di atas; tambah 10 lebih via superuser.)
+reset role;
+insert into join_attempts (user_id)
+select 'a3000000-0000-4000-8000-0000000000a3' from generate_series(1, 10);
+set role authenticated;
+set test.user_id = 'a3000000-0000-4000-8000-0000000000a3';
+select t_assert(
+  (select (r->>'code') = 'rate_limited'
+   from (select public.join_org_by_invite_v2('T41JOINOK') as r) s),
+  'T41c >10 percobaan/10 menit → rate_limited');
+
+-- T41c: join_attempts RPC-only — client tak bisa baca/tulis.
+-- (Grant dicabut penuh, jadi baca naik 42501, bukan sekadar 0 baris.)
+set test.user_id = 'a2000000-0000-4000-8000-0000000000a2';
+do $$
+begin
+  perform 1 from join_attempts limit 1;
+  raise exception 'ASSERT GAGAL: T41c client baca join_attempts lolos';
+exception when sqlstate '42501' then null;
+end $$;
+do $$
+begin
+  insert into join_attempts (user_id)
+  values ('a2000000-0000-4000-8000-0000000000a2');
+  raise exception 'ASSERT GAGAL: T41c client insert join_attempts lolos';
+exception when sqlstate '42501' then null;
+end $$;
+
+-- T41c: anon tak boleh execute v2 (pola T09).
+set role anon;
+set test.user_id = '';
+do $$
+begin
+  perform public.join_org_by_invite_v2('T41JOINOK');
+  raise exception 'ASSERT GAGAL: T41c anon bisa execute join_org_by_invite_v2';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+set role authenticated;
+
+-- ===== T42: trigger quota tak executable client (migration_33 / P2-8) =====
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+select t_assert(not has_function_privilege('authenticated',
+    'public.enforce_member_quota()', 'execute'),
+  'T42 enforce_member_quota revoked dari authenticated');
+select t_assert(not has_function_privilege('authenticated',
+    'public.enforce_auto_quota()', 'execute'),
+  'T42 enforce_auto_quota revoked dari authenticated');
+select t_assert(not has_function_privilege('anon',
+    'public.enforce_member_quota()', 'execute'),
+  'T42 enforce_member_quota revoked dari anon');
+select t_assert(not has_function_privilege('anon',
+    'public.enforce_auto_quota()', 'execute'),
+  'T42 enforce_auto_quota revoked dari anon');
+-- Eksekusi langsung sebagai authenticated → permission denied
+-- (trigger internal tetap menembak; lihat T06/T28/T34g yang masih hijau).
+do $$
+begin
+  perform public.enforce_auto_quota();
+  raise exception 'ASSERT GAGAL: T42 authenticated bisa execute enforce_auto_quota';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+do $$
+begin
+  perform public.enforce_member_quota();
+  raise exception 'ASSERT GAGAL: T42 authenticated bisa execute enforce_member_quota';
+exception when others then
+  if sqlerrm not like '%permission denied%' then raise; end if;
+end $$;
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');

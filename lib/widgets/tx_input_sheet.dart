@@ -516,7 +516,19 @@ class _TxInputSheetState extends State<TxInputSheet> {
     final src = await showGlassDialog<ImageSource>(
       context: context,
       title: Text(tr('rcp_scan')),
-      content: Text(tr('rcp_scan_hint')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(tr('rcp_scan_hint')),
+          const SizedBox(height: 8),
+          // Audit P2-12: catatan persetujuan upload foto struk ke AI.
+          Text(
+            tr('rcp_consent'),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, ImageSource.camera),

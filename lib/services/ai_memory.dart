@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'ai_prefs_crypto.dart';
 import 'ai_soul.dart';
 
 // Memori AI Chat: daftar fakta singkat user (maks 20, FIFO).
@@ -12,7 +13,11 @@ const _kAiMemory = 'ai_memory_facts';
 Future<List<String>> loadAiMemory() async {
   try {
     final p = await SharedPreferences.getInstance();
-    final raw = p.getString(_kAiMemory);
+    final stored = p.getString(_kAiMemory);
+    if (stored == null || stored.isEmpty) return [];
+    // Enkripsi-at-rest (P2-10): dekripsi transparan; plaintext lama
+    // (tanpa marker) dikembalikan apa adanya.
+    final raw = await decodeAiStore(stored);
     if (raw == null || raw.isEmpty) return [];
     final d = jsonDecode(raw);
     if (d is! List) return [];
@@ -37,7 +42,7 @@ Future<void> addAiMemory(Iterable<String> facts) async {
       cur.removeAt(0);
     }
     final p = await SharedPreferences.getInstance();
-    await p.setString(_kAiMemory, jsonEncode(cur));
+    await p.setString(_kAiMemory, await encodeAiStore(jsonEncode(cur)));
   } catch (e) {
     // best-effort: gagal simpan memori = chat tetap jalan (tanpa memori).
     debugPrint('addAiMemory gagal: $e');
@@ -49,7 +54,7 @@ Future<void> removeAiMemory(String fact) async {
     final cur = await loadAiMemory();
     cur.remove(fact);
     final p = await SharedPreferences.getInstance();
-    await p.setString(_kAiMemory, jsonEncode(cur));
+    await p.setString(_kAiMemory, await encodeAiStore(jsonEncode(cur)));
   } catch (e) {
     // best-effort: gagal hapus memori = daftar lama tak berubah.
     debugPrint('removeAiMemory gagal: $e');
@@ -72,7 +77,10 @@ const _kAiSummary = 'ai_memory_summaries';
 Future<List<String>> loadAiSummaries() async {
   try {
     final p = await SharedPreferences.getInstance();
-    final raw = p.getString(_kAiSummary);
+    final stored = p.getString(_kAiSummary);
+    if (stored == null || stored.isEmpty) return [];
+    // Enkripsi-at-rest (P2-10): dekripsi transparan.
+    final raw = await decodeAiStore(stored);
     if (raw == null || raw.isEmpty) return [];
     final d = jsonDecode(raw);
     if (d is! List) return [];
@@ -97,7 +105,7 @@ Future<void> addAiSummary(Iterable<String> items) async {
       cur.removeAt(0);
     }
     final p = await SharedPreferences.getInstance();
-    await p.setString(_kAiSummary, jsonEncode(cur));
+    await p.setString(_kAiSummary, await encodeAiStore(jsonEncode(cur)));
   } catch (_) {}
 }
 
@@ -110,7 +118,7 @@ Future<void> updateAiSummary(String oldText, String newText) async {
     if (i < 0) return;
     cur[i] = t;
     final p = await SharedPreferences.getInstance();
-    await p.setString(_kAiSummary, jsonEncode(cur));
+    await p.setString(_kAiSummary, await encodeAiStore(jsonEncode(cur)));
   } catch (_) {}
 }
 
@@ -119,7 +127,7 @@ Future<void> removeAiSummary(String item) async {
     final cur = await loadAiSummaries();
     cur.remove(item);
     final p = await SharedPreferences.getInstance();
-    await p.setString(_kAiSummary, jsonEncode(cur));
+    await p.setString(_kAiSummary, await encodeAiStore(jsonEncode(cur)));
   } catch (_) {}
 }
 
@@ -140,6 +148,6 @@ Future<void> updateAiMemory(String oldFact, String newFact) async {
     if (i < 0) return;
     cur[i] = t;
     final p = await SharedPreferences.getInstance();
-    await p.setString(_kAiMemory, jsonEncode(cur));
+    await p.setString(_kAiMemory, await encodeAiStore(jsonEncode(cur)));
   } catch (_) {}
 }

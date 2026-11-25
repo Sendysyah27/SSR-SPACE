@@ -10,6 +10,7 @@ import 'package:ssr_space/services/nfc_emoney_logic.dart';
 import 'package:ssr_space/services/notif_parse.dart';
 import 'package:ssr_space/services/transaction_service.dart';
 import 'package:ssr_space/services/wallet_service.dart';
+import 'package:ssr_space/utils/ledger_consts.dart';
 
 bool _nfcInitDone = false;
 
@@ -207,7 +208,7 @@ Future<String> linkCardAsWallet({
         type: 'in',
         amount: balance.toDouble(),
         walletId: walletId,
-        category: 'Saldo awal',
+        category: kCategoryOpeningBalance,
         note: 'Saldo awal $bank •• $last4 via NFC',
         date: ymd(now),
       );

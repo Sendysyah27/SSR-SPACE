@@ -23,6 +23,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'ai_key_store.dart';
+import 'ai_pii.dart';
 import 'ai_soul.dart';
 import 'firebase_ai_parser.dart' show AiFailure;
 import 'nine_prompts.dart';
@@ -32,9 +33,6 @@ const nineProviderName = '9router-lokal';
 
 const nineTimeout = Duration(seconds: 60);
 const nineVisionTimeout = Duration(seconds: 120);
-
-String _maskLongNumbers(String text) =>
-    text.replaceAll(RegExp(r'\d{10,}'), '[MASKED]');
 
 String _snip(String s, [int max = 200]) =>
     s.length <= max ? s : s.substring(0, max);
@@ -112,7 +110,7 @@ Future<({String text, String provider})> aiChatViaNine(
   final data = (dataContext ?? '').trim().isNotEmpty
       ? '${dataContext!.trim()}\n'
       : '';
-  final masked = _maskLongNumbers('$convo$data$prompt');
+  final masked = maskPii('$convo$data$prompt');
 
   final Object userContent = hasImage
       ? <Map<String, dynamic>>[

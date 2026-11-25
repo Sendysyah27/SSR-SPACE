@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/ai_pii.dart';
+import 'package:ssr_space/services/ai_prefs_crypto.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 
@@ -135,7 +136,11 @@ CorrectionEvent? buildCorrectionEvent({
 Future<List<CorrectionEvent>> loadCorrectionEvents() async {
   try {
     final p = await SharedPreferences.getInstance();
-    final raw = p.getString(_kCorrectionEvents);
+    final stored = p.getString(_kCorrectionEvents);
+    if (stored == null || stored.isEmpty) return [];
+    // Enkripsi-at-rest (P2-10): dekripsi transparan; plaintext lama
+    // (tanpa marker) dikembalikan apa adanya.
+    final raw = await decodeAiStore(stored);
     if (raw == null || raw.isEmpty) return [];
     final d = jsonDecode(raw);
     if (d is! List) return [];
@@ -152,7 +157,7 @@ Future<void> _saveCorrectionEvents(List<CorrectionEvent> items) async {
   final p = await SharedPreferences.getInstance();
   await p.setString(
     _kCorrectionEvents,
-    jsonEncode([for (final e in items) e.toJson()]),
+    await encodeAiStore(jsonEncode([for (final e in items) e.toJson()])),
   );
 }
 

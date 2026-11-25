@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
 import 'package:ssr_space/utils/currency.dart';
+import 'package:ssr_space/utils/ledger_consts.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/plan_limits.dart';
@@ -171,7 +172,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
             type: 'in',
             amount: opening.toDouble(),
             walletId: id,
-            category: 'Saldo awal',
+            category: kCategoryOpeningBalance,
             note: 'Saldo awal $name',
             date: ymd(DateTime.now()),
           );

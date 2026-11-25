@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ssr_space/services/ai_quota.dart';
 import 'package:ssr_space/services/ai_pii.dart';
 import 'package:ssr_space/services/ai_cli_client.dart';
@@ -34,6 +36,37 @@ Uint8List? lastVisionPhotoBytes;
 
 /// MIME foto di [lastVisionPhotoBytes].
 String? lastVisionPhotoMime;
+
+/// Kunci string catatan persetujuan upload foto struk ke AI (audit
+/// P2-12). Teksnya di strings.dart `rcp_consent`; permukaan scan
+/// menampilkannya sebelum user memilih sumber foto.
+const receiptConsentKey = 'rcp_consent';
+
+/// Kunci prefs: kirim teks OCR saja (tanpa foto) untuk scan struk.
+/// Mengurangi PII (nomor kartu/nama/alamat) yang keluar device.
+const receiptOcrOnlyPref = 'rcp_ocr_only';
+
+/// True bila user memilih "teks saja, tanpa upload foto".
+/// Default OFF (jalur vision foto). Fail-safe -> false.
+Future<bool> receiptOcrOnly() async {
+  try {
+    return (await SharedPreferences.getInstance())
+            .getBool(receiptOcrOnlyPref) ??
+        false;
+  } catch (_) {
+    return false;
+  }
+}
+
+Future<void> setReceiptOcrOnly(bool v) async {
+  try {
+    await (await SharedPreferences.getInstance())
+        .setBool(receiptOcrOnlyPref, v);
+  } catch (e) {
+    // best-effort: gagal simpan pref = tetap jalur default (vision).
+    debugPrint('setReceiptOcrOnly gagal: $e');
+  }
+}
 
 /// Foto struk (kamera/galeri) -> Mang AI SERVER vision langsung
 /// (model VL via Edge Function mang-ai-chat), TANPA OCR.
@@ -124,30 +157,40 @@ Future<({ReceiptData data, String provider, String? category})>
     var lastRaw = '';
     var usedProvider = serverProviderName;
 
+    // Audit P2-12: preferensi "teks saja (tanpa foto)" — lewati
+    // upload gambar, langsung jalur OCR->AI teks. Mode "AI Vision"
+    // eksplisit (strictVision) tetap dihormati.
+    final ocrOnly = await receiptOcrOnly();
+    final skipVision = ocrOnly && !strictVision;
+
     // 1) Vision langsung via Mang AI server (model VL).
-    try {
-      final r = await aiChatViaCli(
-        'Uraikan struk pada gambar terlampir.',
-        imageBytes: bytes,
-        mimeType: mimeType,
-        system: system,
-        kind: 'receipt',
-        categories: cats,
-        // Struk 43 item -> JSON ribuan token; 30 dtk terlalu sempit.
-        timeout: visionScanTimeout,
-      );
-      usedProvider = r.provider;
-      lastRaw = r.text;
-      // Tahap E: satu parser JSON (EF menormalisasi keluaran
-      // model jadi JSON ketat; parser format baris dipensiunkan).
-      scanned = parseReceiptScanJson(_stripFence(r.text), cats);
-      if (scanned == null) {
-        lastDetail = 'AI tidak mengembalikan data struk yang valid.';
+    if (!skipVision) {
+      try {
+        final r = await aiChatViaCli(
+          'Uraikan struk pada gambar terlampir.',
+          imageBytes: bytes,
+          mimeType: mimeType,
+          system: system,
+          kind: 'receipt',
+          categories: cats,
+          // Struk 43 item -> JSON ribuan token; 30 dtk terlalu sempit.
+          timeout: visionScanTimeout,
+        );
+        usedProvider = r.provider;
+        lastRaw = r.text;
+        // Tahap E: satu parser JSON (EF menormalisasi keluaran
+        // model jadi JSON ketat; parser format baris dipensiunkan).
+        scanned = parseReceiptScanJson(_stripFence(r.text), cats);
+        if (scanned == null) {
+          lastDetail = 'AI tidak mengembalikan data struk yang valid.';
+        }
+      } on AiFailure catch (e) {
+        lastDetail = (e.detail ?? e.code).trim();
+      } catch (e) {
+        lastDetail = _snip(e.toString());
       }
-    } on AiFailure catch (e) {
-      lastDetail = (e.detail ?? e.code).trim();
-    } catch (e) {
-      lastDetail = _snip(e.toString());
+    } else {
+      lastDetail = 'Mode teks saja aktif (tanpa upload foto).';
     }
 
     // 2) OCR lokal -> Mang AI server (teks), untuk model yang buta gambar.

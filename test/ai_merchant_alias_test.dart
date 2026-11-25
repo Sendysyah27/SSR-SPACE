@@ -25,6 +25,21 @@ void main() {
     test('transfer via DANA', () {
       expect(normalizeMerchantKey('TRANSFER via DANA'), 'transfer dana');
     });
+    test('P2-11 buang digit run panjang (>=7)', () {
+      expect(normalizeMerchantKey('transfer 1234567890'), 'transfer');
+      expect(
+        RegExp(r'\d{7,}').hasMatch(normalizeMerchantKey('topup 9876543210')),
+        isFalse,
+      );
+    });
+    test('P2-11 nominal pendek tetap utuh', () {
+      expect(normalizeMerchantKey('kopi 25000'), 'kopi 25000');
+    });
+    test('P2-11 mask PII kartu/rekening tidak bocor penuh', () {
+      final k = normalizeMerchantKey('rekening 1234567890');
+      expect(k.contains('1234567890'), isFalse);
+      expect(k.contains('7890'), isTrue);
+    });
   });
 
   group('trigramSimilarity', () {

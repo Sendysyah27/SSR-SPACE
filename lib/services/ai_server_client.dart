@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../utils/org_prefs.dart';
 import 'ai_key_store.dart';
+import 'ai_pii.dart';
 import 'ai_soul.dart';
 import 'firebase_ai_parser.dart';
 import 'supabase_config.dart';
@@ -18,8 +19,9 @@ import 'supabase_config.dart';
 // cuma device yang menjalankan opencode serve sendiri.
 //
 // Komposisi prompt PERSIS seperti jalur lama di aiChatViaCli:
-// history block (chatHistoryBlock) + dataContext + prompt, lalu masking
-// nomor panjang (>= 10 digit). System: dari pemanggil bila ada; bila
+// history block (chatHistoryBlock) + dataContext + prompt, lalu
+// masking PII (kartu/rekening/telepon — nominal uang dibiarkan utuh,
+// lihat `maskPii` di ai_pii.dart). System: dari pemanggil bila ada; bila
 // tidak, aiSoul — dulu system default datang dari native Kotlin
 // (DEFAULT_SYSTEM), di jalur server soul dikirim eksplisit sebagai
 // message 'system'. Nilai timeout disamakan dengan ai_cli_client
@@ -33,13 +35,27 @@ const serverProviderName = 'mang-ai-server';
 const _serverTimeout = Duration(seconds: 30);
 const _serverVisionTimeout = Duration(seconds: 120);
 
-/// Mask nomor panjang (>= 10 digit) untuk keamanan (sama seperti
-/// _maskLongNumbers di ai_cli_client.dart).
-String _maskLongNumbers(String text) =>
-    text.replaceAll(RegExp(r'\d{10,}'), '[MASKED]');
-
 String _snip(String s, [int max = 200]) =>
     s.length <= max ? s : s.substring(0, max);
+
+/// Batas karakter gabungan prompt (riwayat + konteks data + prompt)
+/// yang boleh dikirim ke Edge Function (audit P3-5). Klien tampered
+/// bisa mengirim payload raksasa; batas ini menjaga server tak dibanjiri.
+/// Chat normal jauh di bawah ambang (satu pesan + 16 turn riwayat).
+const aiServerPromptMaxChars = 24000;
+
+/// Potong [s] ke maksimum [max] karakter. MURNI. Simpan bagian AWAL
+/// (riwayat/konteks) + bagian AKHIR (prompt user terbaru ada di akhir)
+/// dengan penanda di tengah, jadi konteks awal & pertanyaan terakhir
+/// tetap terbaca model.
+String capPromptLength(String s, [int max = aiServerPromptMaxChars]) {
+  if (max <= 0 || s.length <= max) return s;
+  const marker = '\n…[dipotong]…\n';
+  if (max <= marker.length + 2) return s.substring(s.length - max);
+  final head = ((max - marker.length) * 0.6).floor();
+  final tail = max - marker.length - head;
+  return '${s.substring(0, head)}$marker${s.substring(s.length - tail)}';
+}
 
 /// Ekstrak pesan error ringkas dari detail FunctionException
 /// (Map {error: ...} / String JSON / String polos).
@@ -84,7 +100,7 @@ Future<({String text, String provider})> aiChatViaServer(
       : '${chatHistoryBlock(history)}\n';
   final data =
       (dataContext ?? '').trim().isNotEmpty ? '${dataContext!.trim()}\n' : '';
-  final masked = _maskLongNumbers('$convo$data$prompt');
+  final masked = capPromptLength(maskPii('$convo$data$prompt'));
 
   final orgId = await activeOrgId();
   if (orgId.isEmpty) {

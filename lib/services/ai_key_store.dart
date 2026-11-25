@@ -7,6 +7,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Kunci tak pernah ditampilkan mentah di UI (hanya status ***).
 const _kZenKey = 'ssr_zen_api_key';
 
+/// True bila [url] aman dikirim bersama kunci AI/password.
+/// Hanya `https://` — atau `http://` ke LOOPBACK (`127.0.0.1`,
+/// `localhost`, `::1`) yang tak keluar device. MURNI (dart:core).
+/// Alasan (audit P3-9): base URL `http://` non-loopback akan mengirim
+/// kunci/password dalam cleartext di jaringan.
+bool isSafeAiBaseUrl(String url) {
+  final t = url.trim();
+  if (t.startsWith('https://')) return true;
+  if (!t.startsWith('http://')) return false;
+  final host = Uri.tryParse(t)?.host.toLowerCase() ?? '';
+  return host == '127.0.0.1' || host == 'localhost' || host == '::1';
+}
+
 const _storage = FlutterSecureStorage();
 
 Future<String?> readZenKey() async {
@@ -131,19 +144,32 @@ Future<String> nineBaseUrl() async {
     if (!v.startsWith('http://') && !v.startsWith('https://')) {
       return defaultNineBaseUrl;
     }
+    // Netralkan nilai lama tak aman (http non-loopback) -> default.
+    if (!isSafeAiBaseUrl(v)) return defaultNineBaseUrl;
     return v;
   } catch (_) {
     return defaultNineBaseUrl;
   }
 }
 
-Future<void> setNineBaseUrl(String v) async {
+/// Simpan base URL 9router. Nilai `http://` non-loopback DITOLAK
+/// (audit P3-9): tak disimpan sama sekali, pemanggil tetap pakai
+/// default loopback aman (`http://127.0.0.1:20128`). Return true bila
+/// tersimpan, false bila ditolak.
+Future<bool> setNineBaseUrl(String v) async {
+  final raw = v.trim();
+  if (raw.isNotEmpty && !isSafeAiBaseUrl(raw)) {
+    // tolak non-loopback http — kunci akan travel cleartext.
+    debugPrint('setNineBaseUrl: tolak base URL tak aman (http non-loopback)');
+    return false;
+  }
   try {
-    await (await SharedPreferences.getInstance())
-        .setString(_kNineBase, v.trim());
+    await (await SharedPreferences.getInstance()).setString(_kNineBase, raw);
+    return true;
   } catch (e) {
     // best-effort: gagal simpan base = tetap pakai default 127.0.0.1.
     debugPrint('setNineBaseUrl gagal: $e');
+    return false;
   }
 }
 
@@ -217,17 +243,32 @@ Future<String> aiBaseUrl() async {
     if (!v.startsWith('http://') && !v.startsWith('https://')) {
       return defaultLocalBaseUrl;
     }
+    // Netralkan nilai lama tak aman (http non-loopback) -> default.
+    if (!isSafeAiBaseUrl(v)) return defaultLocalBaseUrl;
     return v;
   } catch (_) {
     return defaultLocalBaseUrl;
   }
 }
 
-Future<void> setAiBaseUrl(String v) async {
+/// Simpan base URL opencode lokal. `http://` non-loopback DITOLAK
+/// (audit P3-9): tak disimpan, pemanggil tetap pakai default loopback.
+/// Return true bila tersimpan, false bila ditolak.
+Future<bool> setAiBaseUrl(String v) async {
+  final raw = v.trim();
+  if (raw.isNotEmpty && !isSafeAiBaseUrl(raw)) {
+    // tolak non-loopback http — password akan travel cleartext.
+    debugPrint('setAiBaseUrl: tolak base URL tak aman (http non-loopback)');
+    return false;
+  }
   try {
-    await (await SharedPreferences.getInstance())
-        .setString(_kAiBaseUrl, v.trim());
-  } catch (_) {}
+    await (await SharedPreferences.getInstance()).setString(_kAiBaseUrl, raw);
+    return true;
+  } catch (e) {
+    // best-effort: gagal simpan base = tetap pakai default 127.0.0.1.
+    debugPrint('setAiBaseUrl gagal: $e');
+    return false;
+  }
 }
 
 // Sakelar AI (prefs biasa, default ON). Tanpa prefs (error) = ON.

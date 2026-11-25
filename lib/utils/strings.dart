@@ -1536,6 +1536,14 @@ const _t = <String, Map<String, String>>{
     'id': 'Kode undangan tidak valid.',
     'en': 'Invalid invite code.',
   },
+  'iv_ratelimited': {
+    'id': 'Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.',
+    'en': 'Too many attempts. Wait a moment and try again.',
+  },
+  'iv_already_member': {
+    'id': 'Kamu sudah menjadi anggota workspace ini.',
+    'en': 'You are already a member of this workspace.',
+  },
   'iv_needlogin': {
     'id': 'Masuk dulu ke aplikasi.',
     'en': 'Sign in to the app first.',
@@ -3067,6 +3075,38 @@ const _t = <String, Map<String, String>>{
     'en':
         'Startup did not finish. Close and reopen the app. '
         'If it keeps failing, reinstall the latest version.',
+  },
+  // Audit 2026-11-25 (P2-13/P3-3/P3-4): konfirmasi memori AI, dompet
+  // fail-closed, saldo awal diketik, consent foto struk.
+  'ai_need_wallet': {
+    'id': 'Pilih dompet dulu sebelum menyimpan transaksi ini.',
+    'en': 'Pick a wallet before saving this transaction.',
+  },
+  'ai_wallet_opening_note': {
+    'id':
+        'Saldo awal diketik manual dan dicatat sebagai transaksi Masuk.',
+    'en':
+        'Opening balance is typed manually and saved as an Income transaction.',
+  },
+  'ai_mem_confirm_t': {
+    'id': 'Simpan ke memori AI?',
+    'en': 'Save to AI memory?',
+  },
+  'ai_mem_save': {'id': 'Simpan', 'en': 'Save'},
+  'ai_mem_discard': {'id': 'Jangan simpan', 'en': "Don't save"},
+  'rcp_consent': {
+    'id':
+        'Foto struk dikirim ke layanan AI untuk dibaca. Sembunyikan atau '
+        'potong data sensitif (nomor kartu, nama) bila perlu; foto dihapus '
+        'setelah dibaca.',
+    'en':
+        'The receipt photo is sent to an AI service to be read. Hide or crop '
+        'sensitive data (card number, name) if needed; the photo is deleted '
+        'after reading.',
+  },
+  'rcp_ocr_only': {
+    'id': 'Kirim teks saja (tanpa foto)',
+    'en': 'Send text only (no photo)',
   },
 };
 

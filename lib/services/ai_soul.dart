@@ -236,6 +236,65 @@ String stripRingkasBlocks(String text) {
       .trim();
 }
 
+/// Batas panjang satu item memori/ringkasan setelah disaring.
+const aiMemoryItemMaxChars = 200;
+const aiSummaryItemMaxChars = 500;
+
+/// Penanda konten berbau INSTRUKSI/role/JSON — bukan fakta netral.
+/// Dipakai [isInstructionLikeMemory] (anti stored prompt-injection,
+/// audit P2-13): model bisa dipengaruhi teks tak-terpercaya lalu emit
+/// blok memori berisi perintah yang tersimpan lintas sesi.
+const _memoryInstructionMarkers = <String>[
+  'abaikan',
+  'ignore',
+  'jangan ikuti',
+  'ikuti perintah',
+  'instruksi',
+  'disregard',
+  'override',
+  'jailbreak',
+  'system',
+  'prompt',
+  'assistant:',
+  'user:',
+  'kamu adalah',
+  'you are',
+  'sudo',
+];
+
+/// True bila [text] berbau instruksi/role/blok kode — TIDAK layak jadi
+/// memori. MURNI (dart:core). Aturan: mengandung salah satu penanda
+/// instruksi, ATAU mengandung pagar ``` atau pasangan `{` `}` (JSON).
+bool isInstructionLikeMemory(String text) {
+  final t = text.toLowerCase();
+  for (final m in _memoryInstructionMarkers) {
+    if (t.contains(m)) return true;
+  }
+  if (t.contains('```')) return true;
+  if (t.contains('{') && t.contains('}')) return true;
+  return false;
+}
+
+/// Saring kandidat memori/ringkasan hasil model. MURNI:
+/// - buang kosong;
+/// - tolak yang berbau instruksi ([isInstructionLikeMemory]);
+/// - potong ke [maxLen] karakter;
+/// - dedupe; jaga urutan.
+List<String> filterMemoryItems(
+  Iterable<String> items, {
+  int maxLen = aiMemoryItemMaxChars,
+}) {
+  final out = <String>[];
+  for (final raw in items) {
+    final t = raw.trim();
+    if (t.isEmpty) continue;
+    if (isInstructionLikeMemory(t)) continue;
+    final v = t.length <= maxLen ? t : t.substring(0, maxLen);
+    if (!out.contains(v)) out.add(v);
+  }
+  return out;
+}
+
 class TxDraft {
   final String type;
   final double amount;
