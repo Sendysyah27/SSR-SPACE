@@ -1,5 +1,19 @@
 # Catatan Perubahan SSR SPACE
 
+## Yang baru di 2.83.0+296
+
+1. AI sekarang default ke 9router lokal di HP-mu sendiri: chat, asisten, insight laporan, dan scan struk semuanya lewat model milikmu. Isi API key sekali di chip provider AI.
+2. Scan struk tidak lagi butuh server: prompt dan validasi hasil dikerjakan di app. Saat pakai 9router, kuota AI paket tidak terpakai.
+3. Mang AI Server dan Zen API tetap tersedia — pilih di chip provider AI kapan saja.
+
+## What's new in 2.83.0+296
+
+1. AI now defaults to the 9router running on your own phone: chat, assistant, report insights, and receipt scan all use your own model. Paste the API key once in the AI provider chip.
+2. Receipt scan no longer needs the server: the prompt and result validation happen in the app. Usage does not count against your plan's AI quota when 9router is active.
+3. Mang AI Server and Zen API are still available — switch any time from the AI provider chip.
+
+Versi terpasang: 2.83.0+296.
+
 ## Yang baru di 2.83.0+295
 
 1. Cadangan otomatis Android dimatikan: riwayat/chat AI dan penanda keamanan lokal tidak ikut tersalin ke Google Drive atau perangkat lain. Data workspace tetap di server seperti biasa.

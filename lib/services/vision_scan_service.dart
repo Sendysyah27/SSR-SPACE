@@ -14,6 +14,7 @@ import 'package:ssr_space/services/receipt_currency.dart';
 import 'package:ssr_space/services/receipt_parse.dart';
 import 'package:ssr_space/services/receipt_scan_parse.dart';
 import 'package:ssr_space/services/firebase_ai_parser.dart';
+import 'package:ssr_space/services/nine_prompts.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 
 export 'package:image_picker/image_picker.dart' show ImageSource;
@@ -101,8 +102,10 @@ Future<({ReceiptData data, String provider, String? category})>
     final categories = appCategories.value;
     // Batch 284 tahap E: prompt receipt lengkap + daftar kategori
     // dirakit EF dari DB; klien mengirim prompt JSON ringkas TANPA
-    // daftar kategori (scanReceiptJsonPrompt).
+    // daftar kategori (scanReceiptJsonPrompt). 2.83.0+296: jalur
+    // 9router merakit prompt receipt lokal dari [cats] (port EF).
     final system = scanReceiptJsonPrompt();
+    final cats = receiptCategoriesFor(categories);
 
     // Gate kuota AI (entitlement Fase 1) HANYA untuk jalur AI
     // (vision langsung + OCR->AI di bawah). OCR on-device
@@ -110,7 +113,7 @@ Future<({ReceiptData data, String provider, String? category})>
     // lempar sebelum model dipanggil (pemanggil petakan ke paywall).
     // Fail-open: server diam -> lolos.
     final orgId = await activeOrgId();
-    if (orgId.isNotEmpty && !await aiAllowed(orgId)) {
+    if (!await aiQuotaAllows(orgId)) {
       throw const VisionScanException('q_ai_exceeded');
     }
 
@@ -128,8 +131,8 @@ Future<({ReceiptData data, String provider, String? category})>
         imageBytes: bytes,
         mimeType: mimeType,
         system: system,
-        forceLocal: true,
         kind: 'receipt',
+        categories: cats,
         // Struk 43 item -> JSON ribuan token; 30 dtk terlalu sempit.
         timeout: visionScanTimeout,
       );
@@ -137,7 +140,7 @@ Future<({ReceiptData data, String provider, String? category})>
       lastRaw = r.text;
       // Tahap E: satu parser JSON (EF menormalisasi keluaran
       // model jadi JSON ketat; parser format baris dipensiunkan).
-      scanned = parseReceiptScanJson(_stripFence(r.text), categories);
+      scanned = parseReceiptScanJson(_stripFence(r.text), cats);
       if (scanned == null) {
         lastDetail = 'AI tidak mengembalikan data struk yang valid.';
       }
@@ -162,13 +165,13 @@ Future<({ReceiptData data, String provider, String? category})>
             // disuntikkan klien per scan.
             'TEKS OCR STRUK:\n${maskPii(ocr.length <= 4000 ? ocr : ocr.substring(0, 4000))}',
             system: system,
-            forceLocal: true,
             kind: 'receipt',
+            categories: cats,
           );
           usedProvider = r.provider;
           lastRaw = '$ocr\n${r.text}';
           // Tahap E: satu parser JSON (sama seperti jalur vision).
-          scanned = parseReceiptScanJson(_stripFence(r.text), categories);
+          scanned = parseReceiptScanJson(_stripFence(r.text), cats);
           if (scanned == null) {
             lastDetail = 'AI tidak mengembalikan data struk yang valid.';
           }
@@ -185,8 +188,19 @@ Future<({ReceiptData data, String provider, String? category})>
           'rcp_fail', (lastDetail ?? 'Struk tak terbaca.').trim());
     }
     // Sukses AI -> catat satu pemakaian kuota (fail-silent).
-    if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'receipt'));
+    if (orgId.isNotEmpty && await aiShouldRecordUsage()) {
+      unawaited(recordAiUse(orgId, 'receipt'));
+    }
     final s = scanned;
+    // Kategori hasil AI dipetakan ke daftar app user (bisa saja model
+    // memilih kategori di luar daftar app saat daftar kustom).
+    String outCategory = s.category;
+    if (!categories.any(
+        (c) => c.trim().toLowerCase() == s.category.toLowerCase())) {
+      outCategory = categories.contains('Lainnya')
+          ? 'Lainnya'
+          : (categories.isEmpty ? s.category : categories.first);
+    }
     // Batch 284 tahap B: deteksi mata uang asing dari teks mentah;
     // konversi ke IDR dikerjakan pemanggil (applyFxConversion) agar
     // kurs + hasil konversi tampil di sheet review.
@@ -218,7 +232,7 @@ Future<({ReceiptData data, String provider, String? category})>
         fxOriginal: fxCode == null ? null : s.total.toDouble(),
       ),
       provider: usedProvider,
-      category: s.category,
+      category: outCategory,
     );
   } catch (e, st) {
     if (e is VisionScanException || e is AiFailure) rethrow;

@@ -1,3 +1,4 @@
+import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/app_config_service.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
@@ -35,7 +36,8 @@ Future<({String? quota, String? promo})> loadAiEntryBadges() async {
   String? promo;
   try {
     final orgId = await activeOrgId();
-    if (orgId.isNotEmpty) {
+    // Provider 9router lokal (default) = tanpa kuota server -> tanpa badge.
+    if (orgId.isNotEmpty && !await aiIsLocalProvider()) {
       quota = aiQuotaBadgeLabel(await quotaCheck(orgId, 'ai'));
     }
   } catch (_) {}

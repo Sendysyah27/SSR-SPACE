@@ -146,7 +146,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   String? _pendingMime;
   String _lastUserText = '';
   String _dataCtx = '';
-  String _providerId = 'server';
+  String _providerId = 'nine';
 
   /// Mode chat aktif: 'catat' (parser transaksi, perilaku asli) atau
   /// 'asisten' (analis ala Ollo, batch 281C).
@@ -333,6 +333,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
         low.contains('sesi login berakhir')) {
       return d.replaceFirst('[AI] ', '');
     }
+    // 9router lokal (provider default): pesan sudah spesifik untuk user
+    // (key belum diisi / ditolak / host tak terjangkau) — tampilkan apa
+    // adanya, jangan disamarkan jadi 'key salah' atau 'server sibuk'.
+    if (d.contains('[9router]')) {
+      return d.replaceFirst('[9router] ', '');
+    }
     // Server Mang AI bermasalah / gateway tak terjangkau.
     if (low.contains('ai gateway') ||
         low.contains('ai_upstream') ||
@@ -393,9 +399,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
     _lastUserText = text;
     // Gate kuota AI (entitlement Fase 1): tiap kirim dicek. Mentok ->
     // paywall + batal (tanpa panggil model, tanpa bubble user baru).
-    // Fail-open: server diam -> lolos (aiAllowed true).
+    // Fail-open: server diam -> lolos. Provider 9router (lokal) = bebas.
     final orgId = await activeOrgId();
-    if (orgId.isNotEmpty && !await aiAllowed(orgId)) {
+    if (!await aiQuotaAllows(orgId)) {
       if (!mounted) return;
       await requirePro(context, tr('q_ai_exceeded'));
       return;
@@ -482,7 +488,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
               : (_dataCtx.isEmpty ? null : maskPii(_dataCtx)),
           system: asisten ? '$aiAssistantSoul $aiAssistantVizHint' : null);
       // Sukses -> catat pemakaian kuota AI (fail-silent, tanpa blokir UI).
-      if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'chat'));
+      // Provider 9router lokal = tanpa RPC kuota.
+      if (orgId.isNotEmpty && await aiShouldRecordUsage()) {
+        unawaited(recordAiUse(orgId, 'chat'));
+      }
       if (!mounted) return;
       unawaited(
           addAiMemory(parseIngatBlocks(r.text)).then((_) async {
@@ -816,11 +825,25 @@ class _AiChatScreenState extends State<AiChatScreen> {
     }
   }
 
-  /// Pilih provider AI: Mang AI Server (default — gratis, kuota per
-  /// plan, tanpa setup) atau OpenCode Zen (API key sendiri, diatur di
-  /// Pengaturan AI). Jalur OpenCode lokal sudah dihapus di 2.82.13+280.
+  /// Label chip provider (ID -> teks pendek).
+  String _providerLabel(String id) {
+    if (id == 'zen') return tr('ai_prov_zen');
+    if (id == 'server') return tr('ai_prov_server');
+    return tr('ai_prov_nine');
+  }
+
+  /// Pilih provider AI: 9router lokal (default sejak 2.83.0+296, API
+  /// key + base + model sendiri), Mang AI Server (gratis, kuota per
+  /// plan), atau Zen API. Jalur OpenCode lokal dihapus di 2.82.13+280.
   Future<void> _openProvider() async {
-    var pick = _providerId == 'zen' ? 'zen' : 'server';
+    final storedKey = await readNineKey();
+    final baseC = TextEditingController(text: await nineBaseUrl());
+    final modelC = TextEditingController(text: await nineModel());
+    final keyC = TextEditingController();
+    var hasKey = storedKey != null;
+    var pick = _providerId;
+    if (pick != 'nine' && pick != 'zen' && pick != 'server') pick = 'nine';
+    var err = '';
     await showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
@@ -834,47 +857,149 @@ class _AiChatScreenState extends State<AiChatScreen> {
               top: SsrSpace.md,
               bottom: MediaQuery.of(ctx).viewInsets.bottom + SsrSpace.md,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(tr('ai_prov_t'),
-                    style: Theme.of(ctx).textTheme.titleMedium),
-                const SizedBox(height: SsrSpace.sm),
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(
-                        value: 'server', label: Text(tr('ai_prov_server'))),
-                    ButtonSegment(
-                        value: 'zen', label: Text(tr('ai_prov_zen'))),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    tr('ai_prov_t'),
+                    style: Theme.of(ctx).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: SsrSpace.sm),
+                  SegmentedButton<String>(
+                    showSelectedIcon: false,
+                    segments: [
+                      ButtonSegment(
+                        value: 'nine',
+                        label: Text(tr('ai_prov_nine_short')),
+                      ),
+                      ButtonSegment(
+                        value: 'server',
+                        label: Text(tr('ai_prov_server_short')),
+                      ),
+                      ButtonSegment(
+                        value: 'zen',
+                        label: Text(tr('ai_prov_zen_short')),
+                      ),
+                    ],
+                    selected: {pick},
+                    onSelectionChanged: (s) => setSheet(() {
+                      pick = s.first;
+                      err = '';
+                    }),
+                  ),
+                  if (pick == 'nine') ...[
+                    const SizedBox(height: SsrSpace.sm),
+                    Text(
+                      tr('ai_nine_hint'),
+                      style: Theme.of(ctx).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: SsrSpace.sm),
+                    TextField(
+                      controller: keyC,
+                      obscureText: true,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      decoration: InputDecoration(
+                        labelText: tr('ai_nine_key'),
+                        hintText: hasKey ? tr('ai_nine_key_hint') : null,
+                      ),
+                    ),
+                    const SizedBox(height: SsrSpace.sm),
+                    TextField(
+                      controller: baseC,
+                      keyboardType: TextInputType.url,
+                      autocorrect: false,
+                      decoration: InputDecoration(
+                        labelText: tr('ai_nine_base'),
+                        hintText: defaultNineBaseUrl,
+                      ),
+                    ),
+                    const SizedBox(height: SsrSpace.sm),
+                    TextField(
+                      controller: modelC,
+                      autocorrect: false,
+                      decoration: InputDecoration(
+                        labelText: tr('ai_nine_model'),
+                        hintText: defaultNineModel,
+                      ),
+                    ),
+                    if (hasKey)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          label: Text(tr('ai_nine_clear')),
+                          onPressed: () async {
+                            await clearNineKey();
+                            if (!ctx.mounted) return;
+                            setSheet(() {
+                              hasKey = false;
+                              err = '';
+                            });
+                          },
+                        ),
+                      ),
                   ],
-                  selected: {pick},
-                  onSelectionChanged: (s) =>
-                      setSheet(() => pick = s.first),
-                ),
-                const SizedBox(height: SsrSpace.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () async {
-                          await setAiProviderId(pick);
-                          if (mounted) {
-                            setState(() => _providerId = pick);
-                          }
-                          if (ctx.mounted) Navigator.pop(ctx);
-                        },
-                        child: Text(tr('ai_prov_save')),
+                  if (err.isNotEmpty) ...[
+                    const SizedBox(height: SsrSpace.xs),
+                    Text(
+                      err,
+                      style: TextStyle(
+                        color: Theme.of(ctx).colorScheme.error,
+                        fontSize: 12,
                       ),
                     ),
                   ],
-                ),
-              ],
+                  const SizedBox(height: SsrSpace.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () async {
+                            if (pick == 'nine' &&
+                                !hasKey &&
+                                keyC.text.trim().isEmpty) {
+                              setSheet(() => err = tr('ai_nine_need_key'));
+                              return;
+                            }
+                            await setAiProviderId(pick);
+                            if (pick == 'nine') {
+                              if (keyC.text.trim().isNotEmpty) {
+                                await writeNineKey(keyC.text);
+                              }
+                              await setNineBaseUrl(
+                                baseC.text.trim().isEmpty
+                                    ? defaultNineBaseUrl
+                                    : baseC.text.trim(),
+                              );
+                              await setNineModel(
+                                modelC.text.trim().isEmpty
+                                    ? defaultNineModel
+                                    : modelC.text.trim(),
+                              );
+                            }
+                            if (mounted) {
+                              setState(() => _providerId = pick);
+                            }
+                            if (ctx.mounted) Navigator.pop(ctx);
+                          },
+                          child: Text(tr('ai_prov_save')),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+    baseC.dispose();
+    modelC.dispose();
+    keyC.dispose();
   }
 
   /// Nama-nama dompet workspace aktif, untuk validasi aksi AI.
@@ -1949,9 +2074,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ActionChip(
-                    label: Text(_providerId == 'zen'
-                        ? tr('ai_prov_zen')
-                        : tr('ai_prov_server')),
+                    label: Text(_providerLabel(_providerId)),
                     avatar: const Icon(Icons.smart_toy_outlined,
                         size: 16, color: DribTokens.primaryStrong),
                     backgroundColor: const Color(0xFFE3EEFD),

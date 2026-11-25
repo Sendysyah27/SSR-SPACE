@@ -3,24 +3,30 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 import 'ai_key_store.dart';
+import 'ai_nine_client.dart';
 import 'ai_server_client.dart';
 import 'ai_soul.dart';
 import 'firebase_ai_parser.dart';
 import 'supabase_config.dart';
 
-// Router AI Mang AI (sejak 2.82.13+280):
-//  1. 'server' (DEFAULT): Edge Function `mang-ai-chat` -> AI Gateway
+// Router AI Mang AI:
+//  1. 'nine' (DEFAULT sejak 2.83.0+296): 9router lokal user
+//     (OpenAI-compatible, http://127.0.0.1:20128) dengan API key
+//     sendiri. Semua kind — chat, quick, insight, DAN receipt (vision)
+//     — lewat sini. Prompt receipt + normalisasi JSON dikerjakan lokal
+//     (nine_prompts.dart) karena tidak ada EF. Lihat ai_nine_client.dart.
+//  2. 'server' (opt-in): Edge Function `mang-ai-chat` -> AI Gateway
 //     (Cloudflare Worker) -> free-tier OpenCode. Lihat
 //     ai_server_client.dart. Jalan untuk SEMUA user (cukup login +
 //     anggota workspace); kuota per plan ditegakkan server.
-//  2. 'zen' (opt-in): MethodChannel 'ssr_space/ai' method 'complete'
+//  3. 'zen' (opt-in): MethodChannel 'ssr_space/ai' method 'complete'
 //     ke Kotlin ZenProvider (https://opencode.ai/zen/v1) dengan API
-//     key milik user sendiri (Pengaturan AI).
+//     key milik user sendiri.
 //
 // Jalur 'local' (opencode serve lokal di Termux) DIHAPUS dari jalur
 // eksekusi: baseUrl + password lokal tidak lagi dipakai di sini.
 // MethodChannel 'completeWithImage' native juga tidak lagi dipakai —
-// gambar selalu lewat server (model vision).
+// gambar lewat 9router (vision) atau server (model vision).
 //
 // Throw [AiFailure] jujur (kode: empty | timeout | denied | server).
 
@@ -44,9 +50,11 @@ String _snip(String s, [int max = 300]) =>
 const _aiChannel = MethodChannel('ssr_space/ai');
 
 /// Cek apakah AI tersedia. Untuk hide/disable fitur, bukan error.
-/// Provider server: cukup ada sesi Supabase. Provider zen: ada API key.
+/// Provider nine: ada API key 9router. Provider server: ada sesi
+/// Supabase. Provider zen: key Zen di native.
 Future<bool> aiHasKey() async {
   final provider = await aiProviderId();
+  if (provider == 'nine') return (await readNineKey()) != null;
   if (provider != 'zen') {
     try {
       return SupabaseConfig.client.auth.currentSession != null;
@@ -82,8 +90,11 @@ Future<({String text, String provider})> aiChatViaCli(
   // agar pemanggil lama tidak berubah, perilaku: true -> server.
   bool forceLocal = false,
   // Jenis pemakaian untuk kuota server: 'chat' | 'receipt' | 'quick'.
-  // Diteruskan ke aiChatViaServer.
+  // Penerus: server (kuota) / nine (penentu prompt receipt).
   String kind = 'chat',
+  // Kategori app untuk prompt receipt jalur 9router (null = daftar
+  // bawaan). Jalur server mengabaikan ini (EF membaca kategori DB).
+  List<String>? categories,
   // Timeout kustom; null = cliTimeout (30 dtk). Vision scan pakai
   // visionScanTimeout (120 dtk) karena output item bisa sangat panjang.
   Duration? timeout,
@@ -92,9 +103,35 @@ Future<({String text, String provider})> aiChatViaCli(
     throw const AiFailure('empty', 'prompt kosong');
   }
 
-  // Default baru: semua lewat server (teks DAN gambar). 'zen' hanya
-  // bila user eksplisit memilihnya; forceLocal (paksa server) menang.
-  if (await aiProviderId() != 'zen' || forceLocal) {
+  // forceLocal (nama lama) = PAKSA jalur SERVER, menang atas prefs.
+  if (forceLocal) {
+    return aiChatViaServer(
+      prompt,
+      imageBytes: imageBytes,
+      mimeType: mimeType,
+      history: history,
+      dataContext: dataContext,
+      system: system,
+      kind: kind,
+      timeout: timeout,
+    );
+  }
+
+  final provider = await aiProviderId();
+  if (provider == 'nine') {
+    return aiChatViaNine(
+      prompt,
+      imageBytes: imageBytes,
+      mimeType: mimeType,
+      history: history,
+      dataContext: dataContext,
+      system: system,
+      kind: kind,
+      categories: categories,
+      timeout: timeout,
+    );
+  }
+  if (provider != 'zen') {
     return aiChatViaServer(
       prompt,
       imageBytes: imageBytes,

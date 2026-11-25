@@ -2737,6 +2737,28 @@ const _t = <String, Map<String, String>>{
   'ai_cleared': {'id': 'Kunci dihapus.', 'en': 'Key deleted.'},
   'ai_test': {'id': 'Tes AI', 'en': 'Test AI'},
   'ai_prov_t': {'id': 'Provider AI', 'en': 'AI provider'},
+  'ai_prov_nine': {'id': '9router', 'en': '9router'},
+  'ai_prov_nine_short': {'id': '9router', 'en': '9router'},
+  'ai_prov_server_short': {'id': 'Server', 'en': 'Server'},
+  'ai_prov_zen_short': {'id': 'Zen', 'en': 'Zen'},
+  'ai_nine_hint': {
+    'id': '9router lokal di HP (OpenAI-compatible). Isi API key dari '
+        'dashboard 9router; base default 127.0.0.1:20128.',
+    'en': 'Local 9router on this phone (OpenAI-compatible). Paste the API '
+        'key from the 9router dashboard; default base 127.0.0.1:20128.',
+  },
+  'ai_nine_key': {'id': 'API key 9router', 'en': '9router API key'},
+  'ai_nine_key_hint': {
+    'id': 'Sudah tersimpan \u2014 kosongkan bila tak ingin ganti.',
+    'en': 'Already stored \u2014 leave empty to keep it.',
+  },
+  'ai_nine_base': {'id': 'Base URL', 'en': 'Base URL'},
+  'ai_nine_model': {'id': 'Model', 'en': 'Model'},
+  'ai_nine_need_key': {
+    'id': 'Isi API key 9router dulu.',
+    'en': 'Enter the 9router API key first.',
+  },
+  'ai_nine_clear': {'id': 'Hapus API key', 'en': 'Delete API key'},
   'ai_prov_zen': {'id': 'Zen API', 'en': 'Zen API'},
   'ai_prov_server': {'id': 'Mang AI Server (gratis)', 'en': 'Mang AI Server (free)'},
   'ai_prov_local': {'id': 'OpenCode lokal', 'en': 'Local OpenCode'},

@@ -1276,9 +1276,9 @@ class _AiCardState extends State<_AiCard> {
     });
     // Gate kuota AI (entitlement Fase 1): Tes = aksi user eksplisit ->
     // mentok = paywall + batal (tanpa panggil model).
-    // Fail-open: server diam -> lolos (aiAllowed true).
+    // Fail-open: server diam -> lolos. Provider 9router (lokal) = bebas.
     final orgId = await activeOrgId();
-    if (orgId.isNotEmpty && !await aiAllowed(orgId)) {
+    if (!await aiQuotaAllows(orgId)) {
       if (!mounted) return;
       setState(() {
         _busy = false;
@@ -1292,7 +1292,9 @@ class _AiCardState extends State<_AiCard> {
       final r = await aiChatViaCli('Halo')
           .timeout(const Duration(seconds: 120));
       // Sukses -> catat pemakaian kuota AI (fail-silent, tanpa blokir UI).
-      if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'chat'));
+      if (orgId.isNotEmpty && await aiShouldRecordUsage()) {
+        unawaited(recordAiUse(orgId, 'chat'));
+      }
       out = '[CLI: ${r.provider}]\n'
           '${r.text.trim().isEmpty ? 'AI: (kosong)' : r.text}';
     } on AiFailure catch (e) {

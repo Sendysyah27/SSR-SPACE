@@ -214,11 +214,14 @@ class ReportsScreenState extends State<ReportsScreen> {
       // Gate kuota AI (entitlement Fase 1): insight = prefetch otomatis
       // tiap buka Laporan (bukan aksi user) -> mentok = fail-silent
       // (kartu sembunyi), tanpa paywall. Cache di atas tetap tampil
-      // tanpa makan kuota. Fail-open: server diam -> lolos.
-      if (orgId.isNotEmpty && !await aiAllowed(orgId)) return;
+      // tanpa makan kuota. Fail-open: server diam -> lolos. Provider
+      // 9router (lokal) = bebas, tanpa RPC kuota.
+      if (!await aiQuotaAllows(orgId)) return;
       final r = await aiChat(prompt);
       // Sukses -> catat pemakaian kuota AI (fail-silent, tanpa blokir UI).
-      if (orgId.isNotEmpty) unawaited(recordAiUse(orgId, 'insight'));
+      if (orgId.isNotEmpty && await aiShouldRecordUsage()) {
+        unawaited(recordAiUse(orgId, 'insight'));
+      }
       if (!mounted) return;
       // Kontrak Mang AI: {"reply":"...","action":...} -> tampilkan reply saja.
       final parsed = parseChatReply(r.text);

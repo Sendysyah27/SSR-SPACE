@@ -1,3 +1,4 @@
+import 'package:ssr_space/services/ai_key_store.dart';
 import 'package:ssr_space/services/plan_limits.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 
@@ -6,6 +7,24 @@ import 'package:ssr_space/services/supabase_config.dart';
 // 'ai' + record_ai_usage) adalah sumber kebenaran; klien fail-open:
 // server tak jawab / RPC belum ada di DB lama / offline -> izinkan,
 // jangan blokir buta. Prefill tetap, simpan tetap manual.
+//
+// Sejak 2.83.0+296 provider default = 'nine' (9router lokal milik
+// user). Panggilan itu TIDAK menyentuh server sama sekali, jadi kuota
+// plan tidak berlaku: [aiQuotaAllows] selalu true, [aiShouldRecordUsage]
+// false. Server/Zen tetap digerbangi seperti sebelumnya.
+
+// true bila boleh pakai AI untuk [orgId]. Provider lokal (9router) =
+// selalu boleh; selain itu server check_quota 'ai'.
+// null/exception -> true (fail-open, jangan blokir buta).
+Future<bool> aiQuotaAllows(String orgId) async {
+  if (orgId.isEmpty) return true;
+  if (await aiIsLocalProvider()) return true;
+  return aiAllowed(orgId);
+}
+
+// true bila pemakaian AI perlu dicatat ke server (kuota plan).
+// Provider lokal = false (tanpa RPC).
+Future<bool> aiShouldRecordUsage() async => !(await aiIsLocalProvider());
 
 // true bila boleh pakai AI untuk [orgId] (server check_quota 'ai').
 // null/exception -> true (fail-open, jangan blokir buta).
@@ -21,7 +40,8 @@ Future<bool> aiAllowed(String orgId) async {
 
 // Catat satu pemakaian AI ([kind]: 'chat' | 'receipt' | 'quick') via RPC
 // record_ai_usage. Dipanggil SETELAH panggilan AI sukses. Gagal = diam
-// (fail-silent): RPC belum ada di DB lama, offline, dsb.
+// (fail-silent): RPC belum ada di DB lama, offline, dsb. Pemanggil
+// wajib cek [aiShouldRecordUsage] dulu.
 Future<void> recordAiUse(String orgId, String kind) async {
   try {
     await SupabaseConfig.client.rpc(

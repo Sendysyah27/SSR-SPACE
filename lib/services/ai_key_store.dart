@@ -78,31 +78,128 @@ Future<void> clearLocalPass() async {
   }
 }
 
-// Pilihan provider AI (prefs biasa, bukan rahasia): 'server' | 'zen'.
-// Default + fallback aman = 'server' (Mang AI server, sejak
-// 2.82.13+280). Nilai lama 'local' (OpenCode lokal, sudah dihapus
-// dari jalur eksekusi) bermigrasi ke 'server'.
+// Kunci API 9router lokal di Keystore/Keychain (OpenAI-compatible,
+// http://127.0.0.1:20128). Sejak 2.83.0+296 provider default 'nine'.
+const _kNineKey = 'ssr_nine_api_key';
+
+Future<String?> readNineKey() async {
+  try {
+    final v = await _storage.read(key: _kNineKey);
+    if (v == null || v.trim().isEmpty) return null;
+    return v.trim();
+  } catch (_) {
+    return null;
+  }
+}
+
+Future<void> writeNineKey(String v) async {
+  try {
+    if (v.trim().isEmpty) {
+      await _storage.delete(key: _kNineKey);
+    } else {
+      await _storage.write(key: _kNineKey, value: v.trim());
+    }
+  } catch (e) {
+    // best-effort: gagal simpan key = mode tanpa key (tak bocor ke log).
+    debugPrint('writeNineKey gagal: $e');
+  }
+}
+
+Future<void> clearNineKey() async {
+  try {
+    await _storage.delete(key: _kNineKey);
+  } catch (e) {
+    // best-effort: hapus key gagal = sudah tak ada / tetap aman.
+    debugPrint('clearNineKey gagal: $e');
+  }
+}
+
+// Base URL + model 9router (prefs biasa, bukan rahasia).
+const _kNineBase = 'ai_nine_base';
+const _kNineModel = 'ai_nine_model';
+const defaultNineBaseUrl = 'http://127.0.0.1:20128';
+const defaultNineModel = 'tokenharbor/deepseek-v4.1-flash:free';
+
+Future<String> nineBaseUrl() async {
+  try {
+    var v = ((await SharedPreferences.getInstance()).getString(_kNineBase) ??
+            '')
+        .trim();
+    while (v.endsWith('/')) {
+      v = v.substring(0, v.length - 1);
+    }
+    if (!v.startsWith('http://') && !v.startsWith('https://')) {
+      return defaultNineBaseUrl;
+    }
+    return v;
+  } catch (_) {
+    return defaultNineBaseUrl;
+  }
+}
+
+Future<void> setNineBaseUrl(String v) async {
+  try {
+    await (await SharedPreferences.getInstance())
+        .setString(_kNineBase, v.trim());
+  } catch (e) {
+    // best-effort: gagal simpan base = tetap pakai default 127.0.0.1.
+    debugPrint('setNineBaseUrl gagal: $e');
+  }
+}
+
+Future<String> nineModel() async {
+  try {
+    final v =
+        ((await SharedPreferences.getInstance()).getString(_kNineModel) ?? '')
+            .trim();
+    return v.isEmpty ? defaultNineModel : v;
+  } catch (_) {
+    return defaultNineModel;
+  }
+}
+
+Future<void> setNineModel(String v) async {
+  try {
+    await (await SharedPreferences.getInstance())
+        .setString(_kNineModel, v.trim());
+  } catch (e) {
+    // best-effort: gagal simpan model = tetap pakai model default.
+    debugPrint('setNineModel gagal: $e');
+  }
+}
+
+// Pilihan provider AI (prefs biasa, bukan rahasia):
+// 'nine' (9router lokal — DEFAULT sejak 2.83.0+296) | 'zen' | 'server'.
+// Nilai lama 'local' (OpenCode lokal, sudah dihapus dari jalur
+// eksekusi) bermigrasi ke 'nine'.
 const _kAiProvider = 'ai_provider';
 
 Future<String> aiProviderId() async {
   try {
     final v =
         (await SharedPreferences.getInstance()).getString(_kAiProvider);
-    return v == 'zen' ? 'zen' : 'server';
+    if (v == 'nine') return 'nine';
+    if (v == 'zen') return 'zen';
+    if (v == 'server') return 'server';
+    return 'nine';
   } catch (_) {
-    return 'server';
+    return 'nine';
   }
 }
 
 Future<void> setAiProviderId(String v) async {
+  final id = (v == 'zen' || v == 'server') ? v : 'nine';
   try {
-    await (await SharedPreferences.getInstance())
-        .setString(_kAiProvider, v == 'zen' ? 'zen' : 'server');
+    await (await SharedPreferences.getInstance()).setString(_kAiProvider, id);
   } catch (e) {
-    // best-effort: gagal simpan preferensi provider = default 'server'.
+    // best-effort: gagal simpan preferensi provider = default 'nine'.
     debugPrint('setAiProviderId gagal: $e');
   }
 }
+
+/// True bila provider aktif = 9router lokal (panggilan AI tidak lewat
+/// server, jadi kuota AI plan & guard server tidak berlaku).
+Future<bool> aiIsLocalProvider() async => (await aiProviderId()) == 'nine';
 
 // Base URL opencode serve lokal (prefs biasa, bukan rahasia).
 const _kAiBaseUrl = 'ai_base_url';
