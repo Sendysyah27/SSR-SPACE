@@ -72,7 +72,10 @@ class ArcadeScreenState extends State<ArcadeScreen> {
         try {
           final dates = await TransactionService().listDates(orgId);
           streakDays = dailyStreak(dates, now).days;
-        } catch (_) {}
+        } catch (e) {
+          // best-effort: gagal hitung streak = tampil 0, bukan crash.
+          debugPrint('arcade streak gagal: $e');
+        }
         // Riwayat 12 bulan (hemat, tabungan, goals).
         var saved = 0.0;
         var goalsHit = 0;

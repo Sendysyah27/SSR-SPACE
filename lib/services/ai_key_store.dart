@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,13 +26,19 @@ Future<void> writeZenKey(String v) async {
     } else {
       await _storage.write(key: _kZenKey, value: v.trim());
     }
-  } catch (_) {}
+  } catch (e) {
+    // best-effort: gagal simpan kunci = tetap mode anonim (bukan crash).
+    debugPrint('writeZenKey gagal: $e');
+  }
 }
 
 Future<void> clearZenKey() async {
   try {
     await _storage.delete(key: _kZenKey);
-  } catch (_) {}
+  } catch (e) {
+    // best-effort: hapus kunci gagal = sudah tak ada / tetap aman.
+    debugPrint('clearZenKey gagal: $e');
+  }
 }
 
 // Password opencode serve lokal (Keystore/Keychain, bukan prefs).
@@ -56,13 +63,19 @@ Future<void> writeLocalPass(String v) async {
     } else {
       await _storage.write(key: _kLocalPass, value: v.trim());
     }
-  } catch (_) {}
+  } catch (e) {
+    // best-effort: password lokal gagal disimpan (tak bocor ke log).
+    debugPrint('writeLocalPass gagal: $e');
+  }
 }
 
 Future<void> clearLocalPass() async {
   try {
     await _storage.delete(key: _kLocalPass);
-  } catch (_) {}
+  } catch (e) {
+    // best-effort: hapus password gagal = tetap aman.
+    debugPrint('clearLocalPass gagal: $e');
+  }
 }
 
 // Pilihan provider AI (prefs biasa, bukan rahasia): 'server' | 'zen'.
@@ -85,7 +98,10 @@ Future<void> setAiProviderId(String v) async {
   try {
     await (await SharedPreferences.getInstance())
         .setString(_kAiProvider, v == 'zen' ? 'zen' : 'server');
-  } catch (_) {}
+  } catch (e) {
+    // best-effort: gagal simpan preferensi provider = default 'server'.
+    debugPrint('setAiProviderId gagal: $e');
+  }
 }
 
 // Base URL opencode serve lokal (prefs biasa, bukan rahasia).

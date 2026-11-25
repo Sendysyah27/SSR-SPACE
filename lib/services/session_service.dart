@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
+import 'package:cryptography/cryptography.dart' as cg;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -8,11 +9,17 @@ import 'package:uuid/uuid.dart';
 /// PIN: hash+garam di secure storage (Keystore/Keychain), bukan prefs.
 /// Yang tetap di prefs hanya penanda non-rahasia `pin_set` agar [hasPin]
 /// tetap sinkron, plus counter lockout (tidak sensitif).
-/// Migrasi: hash lama di prefs diverifikasi sekali saat PIN benar, lalu
-/// dipindah ke secure storage + dihapus dari prefs.
+///
+/// KDF: PBKDF2-HMAC-SHA256 100k iterasi (memperlambat tebakan offline;
+/// PIN ruangnya cuma 10^6, jadi SHA-256 sekali putar terlalu cepat).
+/// Penanda `pin_kdf` membedakan format; hash lama (SHA-256) masih bisa
+/// diverifikasi sekali lalu otomatis di-upgrade ke PBKDF2 saat PIN benar.
 const _kPinHash = 'pin_hash';
 const _kPinSalt = 'pin_salt';
+const _kPinKdf = 'pin_kdf';
 const _kPinSet = 'pin_set';
+const _pinKdfPbkdf2 = 'pbkdf2-sha256:100000';
+const _pinKdfIterations = 100000;
 const _storage = FlutterSecureStorage();
 
 class SessionService {
@@ -74,8 +81,21 @@ class SessionService {
     }
   }
 
+  /// KDF lama (pra-2026-11-25): SHA-256 sekali putar. Dipertahankan hanya
+  /// untuk verifikasi + upgrade hash lama; PIN baru selalu PBKDF2.
   String _hashPin(String salt, String pin) =>
       sha256.convert(utf8.encode('$salt::$pin')).toString();
+
+  /// KDF baru: PBKDF2-HMAC-SHA256. Salt = byte dari garam heksadesimal.
+  Future<String> _derivePin(String salt, String pin) async {
+    final key = await cg.Pbkdf2(
+      macAlgorithm: cg.Hmac.sha256(),
+      iterations: _pinKdfIterations,
+      bits: 256,
+    ).deriveKeyFromPassword(password: pin, nonce: utf8.encode(salt));
+    final bytes = await key.extractBytes();
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  }
 
   String _newSalt() => List.generate(
           16,
@@ -98,8 +118,9 @@ class SessionService {
 
   Future<void> setPin(String pin) async {
     final salt = _newSalt();
-    await _secWrite(_kPinHash, _hashPin(salt, pin));
+    await _secWrite(_kPinHash, await _derivePin(salt, pin));
     await _secWrite(_kPinSalt, salt);
+    await _secWrite(_kPinKdf, _pinKdfPbkdf2);
     await _set(_kPinSet, true);
     // Bersihkan format lama bila tersisa.
     await _remove(_kPinHash);
@@ -112,6 +133,7 @@ class SessionService {
     if (DateTime.now().millisecondsSinceEpoch < lockUntil) return false;
     var hash = await _secRead(_kPinHash);
     var salt = await _secRead(_kPinSalt);
+    var kdf = await _secRead(_kPinKdf);
     if (hash == null || salt == null) {
       // Migrasi satu-kali dari prefs lama: PIN benar -> pindah.
       final legacyHash = _get<String>(_kPinHash);
@@ -126,10 +148,22 @@ class SessionService {
         await _set(_kPinSet, true);
         hash = legacyHash;
         salt = legacySalt;
+        kdf = null; // masih sha256 lama -> di-upgrade di bawah
       }
     }
-    final ok =
-        hash != null && salt != null && _hashPin(salt, pin) == hash;
+    var ok = false;
+    if (hash != null && salt != null) {
+      if (kdf == null) {
+        // Format lama (SHA-256). Bila benar, upgrade diam-diam ke PBKDF2.
+        ok = _hashPin(salt, pin) == hash;
+        if (ok) {
+          await _secWrite(_kPinHash, await _derivePin(salt, pin));
+          await _secWrite(_kPinKdf, _pinKdfPbkdf2);
+        }
+      } else {
+        ok = await _derivePin(salt, pin) == hash;
+      }
+    }
     if (ok) {
       await _set('pin_fail', 0);
       unlockAt = DateTime.now();

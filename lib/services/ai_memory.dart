@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ai_soul.dart';
 
@@ -37,7 +38,10 @@ Future<void> addAiMemory(Iterable<String> facts) async {
     }
     final p = await SharedPreferences.getInstance();
     await p.setString(_kAiMemory, jsonEncode(cur));
-  } catch (_) {}
+  } catch (e) {
+    // best-effort: gagal simpan memori = chat tetap jalan (tanpa memori).
+    debugPrint('addAiMemory gagal: $e');
+  }
 }
 
 Future<void> removeAiMemory(String fact) async {
@@ -46,7 +50,10 @@ Future<void> removeAiMemory(String fact) async {
     cur.remove(fact);
     final p = await SharedPreferences.getInstance();
     await p.setString(_kAiMemory, jsonEncode(cur));
-  } catch (_) {}
+  } catch (e) {
+    // best-effort: gagal hapus memori = daftar lama tak berubah.
+    debugPrint('removeAiMemory gagal: $e');
+  }
 }
 
 Future<void> clearAiMemory() async {

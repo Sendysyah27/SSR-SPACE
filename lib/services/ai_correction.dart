@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssr_space/services/ai_pii.dart';
 import 'package:ssr_space/services/supabase_config.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 
@@ -115,9 +116,12 @@ CorrectionEvent? buildCorrectionEvent({
   }
   if (changed.isEmpty) return null;
   final t = now ?? DateTime.now();
-  final src = sourceText.length <= 300
+  final rawSrc = sourceText.length <= 300
       ? sourceText
       : sourceText.substring(0, 300);
+  // Masking PII (rekening/kartu/HP) sebelum disimpan lokal & disinkron ke
+  // server — konsisten dgn jalur feedback (ai_assistant_feedback).
+  final src = maskPii(rawSrc);
   return CorrectionEvent(
     id: 'ce${t.microsecondsSinceEpoch}',
     ts: t.toIso8601String(),

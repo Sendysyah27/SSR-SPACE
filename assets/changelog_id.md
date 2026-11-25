@@ -1,5 +1,21 @@
 # Catatan Perubahan SSR SPACE
 
+## Yang baru di 2.83.0+293
+
+1. Keamanan cadangan: file backup terenkripsi kini memakai AES-256-GCM (terautentikasi) — sebelumnya zip berpassword yang lemah. Backup lama tetap bisa dibuka.
+2. Keamanan PIN: kunci PIN diperkuat PBKDF2 (jauh lebih lambat ditebak offline); PIN lama diperkuat otomatis.
+3. Saldo tiap dompet kini ikut mode "Samarkan nominal".
+4. Teks chat ke AI yang mengandung nomor rekening/kartu disamarkan sebelum dikirim; admin workspace tak bisa lagi mengangkat diri jadi owner; workspace baru selalu Gratis.
+
+## What's new in 2.83.0+293
+
+1. Backup security: encrypted backup files now use AES-256-GCM (authenticated) instead of a weak password-protected zip. Existing backups still open.
+2. PIN security: the PIN key is strengthened with PBKDF2 (far slower to guess offline); an old PIN is upgraded automatically.
+3. Each wallet's balance now respects "Hide amounts".
+4. Chat text containing account/card numbers is masked before it is sent; a workspace admin can no longer promote themselves to owner; new workspaces are always Free.
+
+Versi terpasang: 2.83.0+293.
+
 ## Yang baru di 2.83.0+292
 
 1. Arah tampilan baru "Paper Ledger": latar kertas hangat, satu bidang putih sebagai fokus, garis tipis sebagai pemisah, dan warna hanya untuk arti uang (hijau masuk, merah keluar, emas hemat).

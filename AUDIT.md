@@ -834,6 +834,19 @@ Wave 4 audit 4-skill-dev: 7 PENTING tersisa (tanpa ubah logika bisnis).
   dibutuhkan. Prune "sisakan 3 terbaru": tidak ada yang dihapus
   (hanya 1 aset tersisa).
 
+## 2.83.0+293 (2026-11-25)
+
+Audit keamanan + kualitas (laporan `/sdcard/Download/SSR-SPACE-audit/audit-2026-11-25.md`); perbaikan P0 + P1. Belum commit/push (menunggu perintah user).
+
+- **P0** — `migration_31_security_policies.sql` (WAJIB dijalankan user di SQL Editor): policy INSERT `organizations` mengunci `plan='free'` + `plan_expires_at is null` (klien tak bisa bikin workspace Pro sendiri → tutup bypass paywall/kuota); `org_members.role` diberi CHECK; cabang admin pada policy "join own org" dibatasi ke `member`/`admin` (admin tak bisa naik jadi owner).
+- **P1 backup** — `backup_crypto.dart`: ZipCrypto → AES-256-GCM (PBKDF2-HMAC-SHA256 210k + salt 16 + nonce 12 + tag). Marker baru `SSR-ENC2:`; format lama `SSR-ENC1:` tetap bisa dibaca. `encryptBackup`/`decryptBackup` kini async; helper `isEncBackup`; `backup_screen` disesuaikan. Dep baru `cryptography`.
+- **P1 PIN** — `session_service.dart`: KDF dari SHA-256 sekali putar → PBKDF2 100k (penanda `pin_kdf`); hash lama diverifikasi sekali lalu di-upgrade otomatis saat PIN benar.
+- **P1 privasi** — `wallets_screen.dart`: saldo per-dompet lewat `amt()` (ikut mode "Samarkan nominal"; sebelumnya bocor via `formatMoney`).
+- **P1 PII** — `ai_correction.dart`: `sourceText` event koreksi lewat `maskPii` sebelum simpan lokal + sinkron server.
+- **P1 catch senyap** — `ai_key_store`/`ai_memory`/`arcade_screen` ditambah `// best-effort:` + `debugPrint`; gate CI `tool/check_silent_catch.sh` (baseline 169) agar tak nambah.
+- Test: `test/backup_crypto_test.dart` diperbarui (async + beda-nonce + payload terpotong); assert RLS `T37a/c/d/e` (migration_31) lulus lokal via Postgres Termux.
+- Bump `2.83.0+293` + changelog ID/EN. Belum: P2/P3 (RLS budgets/subscriptions, webhook HMAC + anti-replay, deep-link App Links, allowBackup) — daftar di laporan audit.
+
 ## 2.83.0+289 (2026-11-21)
 
 Tahap 1 arah desain "Paper Ledger 2026" (mockup `/sdcard/Download/ssr-space-mockup-2026/`, dial ENERGY 1 / RHYTHM 2 / MOTION 1). Visual-only: perilaku, data, copy, routing, dan Supabase tidak berubah.

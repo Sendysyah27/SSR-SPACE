@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ssr_space/utils/org_prefs.dart';
 import 'package:ssr_space/utils/mask.dart';
-import 'package:ssr_space/utils/currency.dart';
 import 'package:ssr_space/utils/strings.dart';
 import 'package:ssr_space/services/wallet_service.dart';
 import 'package:ssr_space/services/plan_limits.dart';
@@ -107,15 +106,11 @@ class _WalletsScreenState extends State<WalletsScreen> {
   }
 
   String _balanceLabel(String walletId) {
-    String cur = 'IDR';
-    for (final w in items) {
-      if (w.id == walletId) { cur = w.currency; break; }
-    }
     if (!balancesOk) return tr('w_notloaded');
     for (final b in balances) {
-      if (b.walletId == walletId) return formatMoney(b.balance, cur);
+      if (b.walletId == walletId) return amt(b.balance);
     }
-    return formatMoney(0, cur);
+    return amt(0);
   }
 
   double? _totalBalance() {

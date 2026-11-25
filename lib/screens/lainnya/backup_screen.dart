@@ -176,7 +176,7 @@ class _BackupScreenState extends State<BackupScreen> {
         txs: b.txs,
         budgets: b.budgets,
       ));
-      final payload = encryptBackup(content, pass);
+      final payload = await encryptBackup(content, pass);
       final now = DateTime.now();
       final name =
           'ssr-space-backup-${now.year.toString().padLeft(4, '0')}'
@@ -260,7 +260,7 @@ class _BackupScreenState extends State<BackupScreen> {
       ParsedBackup parsed;
       try {
         final raw = pasted.trim();
-        final jsonText = raw.startsWith(encBackupMarker)
+        final jsonText = isEncBackup(raw)
             ? await _decryptPasted(raw)
             : raw;
         if (jsonText == null) return; // batal / password salah

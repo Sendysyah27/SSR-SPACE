@@ -1447,6 +1447,62 @@ select t_assert(
           where e->>'id' = 'rm-update-log' and e->>'status' = 'in_progress'),
   'T36f status apa adanya (rm-update-log=in_progress)');
 
+-- ===== T37: patch keamanan migration_31 (audit 2026-11-25) =====
+reset role;
+insert into auth.users (id)
+  values ('44444444-4444-4444-8444-444444444444') -- dave (aktor baru)
+  on conflict (id) do nothing;
+-- bob dijadikan admin Org A (superuser, bypass RLS) utk uji eskalasi.
+insert into org_members (org_id, user_id, role)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+          '22222222-2222-4222-8222-222222222222', 'admin')
+  on conflict (org_id, user_id) do update set role = 'admin';
+
+-- T37a [P0]: klien tak bisa membuat org ber-plan='pro'.
+set role authenticated;
+set test.user_id = '11111111-1111-4111-8111-111111111111';
+do $$
+begin
+  insert into organizations (id, name, created_by, plan)
+  values ('cccccccc-cccc-4ccc-8ccc-ccccccccccc1', 'Sneaky',
+          '11111111-1111-4111-8111-111111111111', 'pro');
+  raise exception 'ASSERT GAGAL: T37a org plan=pro dari klien lolos';
+exception when sqlstate '42501' then null;
+end $$;
+
+-- T37c [P1]: CHECK role menolak nilai asing (superuser).
+reset role;
+do $$
+begin
+  insert into org_members (org_id, user_id, role)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+          '44444444-4444-4444-8444-444444444444', 'superuser');
+  raise exception 'ASSERT GAGAL: T37c role asing lolos CHECK';
+exception when check_violation then null;
+end $$;
+
+-- T37d [P1]: admin tak bisa meng-insert anggota ber-role owner.
+set role authenticated;
+set test.user_id = '22222222-2222-4222-8222-222222222222'; -- bob = admin Org A
+do $$
+begin
+  insert into org_members (org_id, user_id, role)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+          '44444444-4444-4444-8444-444444444444', 'owner');
+  raise exception 'ASSERT GAGAL: T37d admin insert owner lolos';
+exception when sqlstate '42501' then null;
+end $$;
+
+-- T37e [P1]: admin tetap boleh menambah member biasa.
+do $$
+begin
+  insert into org_members (org_id, user_id, role)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+          '44444444-4444-4444-8444-444444444444', 'member');
+exception when others then
+  raise exception 'ASSERT GAGAL: T37e admin insert member gagal (%)', sqlerrm;
+end $$;
+
 -- ===== Selesai =====
 reset role;
 select t_assert(true, 'SELESAI semua tes lulus');
