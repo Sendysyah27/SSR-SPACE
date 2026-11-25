@@ -837,8 +837,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
   /// plan), atau Zen API. Jalur OpenCode lokal dihapus di 2.82.13+280.
   Future<void> _openProvider() async {
     final storedKey = await readNineKey();
-    final baseC = TextEditingController(text: await nineBaseUrl());
-    final modelC = TextEditingController(text: await nineModel());
+    final baseUrl = await nineBaseUrl();
+    final modelName = await nineModel();
+    if (!mounted) return;
+    final baseC = TextEditingController(text: baseUrl);
+    final modelC = TextEditingController(text: modelName);
     final keyC = TextEditingController();
     var hasKey = storedKey != null;
     var pick = _providerId;
